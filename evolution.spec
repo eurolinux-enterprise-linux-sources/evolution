@@ -30,7 +30,7 @@
 
 Name: evolution
 Version: 2.32.3
-Release: 34%{?dist}
+Release: 36%{?dist}
 Group: Applications/Productivity
 Summary: Mail and calendar client for GNOME
 License: GPLv2+ and GFDL
@@ -212,6 +212,12 @@ Patch55: evolution-2.32.3-dateedit-24hr-time-format.patch
 
 # RH bug #1139166
 Patch56: evolution-2.32.3-limit-notify-retries.patch
+
+# RH bug #633169
+Patch57: evolution-2.32.3-translation-zh-WeekdayName.patch
+
+# RH bug #1078817
+Patch58: evolution-2.32.3-translation-update2.patch
 
 ## Dependencies ###
 
@@ -420,6 +426,8 @@ This package contains the plugin to import Microsoft Personal Storage Table
 %patch54 -p1 -b .mark-all-read-async-folderinfo
 %patch55 -p1 -b .dateedit-24hr-time-format
 %patch56 -p1 -b .limit-notify-retries
+%patch57 -p1 -b .translation-zh-WeekdayName
+%patch58 -p1 -b .translation-update2
 
 mkdir -p krb5-fakeprefix/include
 mkdir -p krb5-fakeprefix/lib
@@ -817,6 +825,12 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Thu Mar 03 2016 Milan Crha <mcrha@redhat.com> - 2.32.3-36.el6
+- Add patch for RH bug #1078817 (New translatable string added)
+
+* Mon Jan 11 2016 Milan Crha <mcrha@redhat.com> - 2.32.3-35.el6
+- Add patch for RH bug #633169 (zh_CN/zh_TW: Use full weekday name in the reply credits line)
+
 * Mon Sep 08 2014 Milan Crha <mcrha@redhat.com> - 2.32.3-34.el6
 - Add patch for RH bug #1139166 (Do not retry new mail notification show)
 

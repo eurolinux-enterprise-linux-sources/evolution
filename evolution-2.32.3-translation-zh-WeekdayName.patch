@@ -1,0 +1,24 @@
+diff -up evolution-2.32.3/po/zh_CN.po.translation-zh-WeekdayName evolution-2.32.3/po/zh_CN.po
+--- evolution-2.32.3/po/zh_CN.po.translation-zh-WeekdayName	2016-01-11 14:43:57.020007401 +0100
++++ evolution-2.32.3/po/zh_CN.po	2016-01-11 14:45:18.622003887 +0100
+@@ -10284,7 +10284,7 @@ msgid ""
+ "On ${AbbrevWeekdayName}, ${Year}-${Month}-${Day} at ${24Hour}:${Minute} "
+ "${TimeZone}, ${Sender} wrote:"
+ msgstr ""
+-"在 ${Year}-${Month}-${Day}${AbbrevWeekdayName}的 ${24Hour}:${Minute} "
++"在 ${Year}-${Month}-${Day}${WeekdayName}的 ${24Hour}:${Minute} "
+ "${TimeZone}，${Sender}写道："
+ 
+ #: ../mail/em-composer-utils.c:2383
+diff -up evolution-2.32.3/po/zh_TW.po.translation-zh-WeekdayName evolution-2.32.3/po/zh_TW.po
+--- evolution-2.32.3/po/zh_TW.po.translation-zh-WeekdayName	2016-01-11 14:43:57.023007401 +0100
++++ evolution-2.32.3/po/zh_TW.po	2016-01-11 14:45:36.614003112 +0100
+@@ -10324,7 +10324,7 @@ msgid ""
+ "On ${AbbrevWeekdayName}, ${Year}-${Month}-${Day} at ${24Hour}:${Minute} "
+ "${TimeZone}, ${Sender} wrote:"
+ msgstr ""
+-"於 ${AbbrevWeekdayName}，${Year}-${Month}-${Day} 於 ${24Hour}:${Minute} "
++"於 ${WeekdayName}，${Year}-${Month}-${Day} 於 ${24Hour}:${Minute} "
+ "${TimeZone}，${Sender} 提到："
+ 
+ #: ../mail/em-composer-utils.c:2383
