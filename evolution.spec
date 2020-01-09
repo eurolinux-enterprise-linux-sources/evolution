@@ -30,7 +30,7 @@
 
 Name: evolution
 Version: 2.32.3
-Release: 36%{?dist}
+Release: 37%{?dist}
 Group: Applications/Productivity
 Summary: Mail and calendar client for GNOME
 License: GPLv2+ and GFDL
@@ -218,6 +218,12 @@ Patch57: evolution-2.32.3-translation-zh-WeekdayName.patch
 
 # RH bug #1078817
 Patch58: evolution-2.32.3-translation-update2.patch
+
+# RH bug #1066063
+Patch59: evolution-2.32.3-crash-reminder-snooze.patch
+
+# RH bug #1133507
+Patch60: evolution-2.32.3-calendar-event-time-font.patch
 
 ## Dependencies ###
 
@@ -428,6 +434,8 @@ This package contains the plugin to import Microsoft Personal Storage Table
 %patch56 -p1 -b .limit-notify-retries
 %patch57 -p1 -b .translation-zh-WeekdayName
 %patch58 -p1 -b .translation-update2
+%patch59 -p1 -b .crash-reminder-snooze
+%patch60 -p1 -b .calendar-event-time-font
 
 mkdir -p krb5-fakeprefix/include
 mkdir -p krb5-fakeprefix/lib
@@ -825,6 +833,10 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Wed Aug 31 2016 Milan Crha <mcrha@redhat.com> - 2.32.3-37.el6
+- Add patch for RH bug #1066063 (Use-after-free on a reminder snooze)
+- Add patch for RH bug #1133507 (Calendar event times not drawn with correct font)
+
 * Thu Mar 03 2016 Milan Crha <mcrha@redhat.com> - 2.32.3-36.el6
 - Add patch for RH bug #1078817 (New translatable string added)
 

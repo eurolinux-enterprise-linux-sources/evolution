@@ -1,0 +1,19 @@
+diff -up evolution-2.32.3/calendar/gui/alarm-notify/alarm-queue.c.crash-reminder-snooze evolution-2.32.3/calendar/gui/alarm-notify/alarm-queue.c
+--- evolution-2.32.3/calendar/gui/alarm-notify/alarm-queue.c.crash-reminder-snooze	2016-08-31 11:44:17.035959721 +0200
++++ evolution-2.32.3/calendar/gui/alarm-notify/alarm-queue.c	2016-08-31 11:44:18.087959718 +0200
+@@ -1217,7 +1217,6 @@ notify_dialog_cb (AlarmNotifyResult resu
+ 		d(printf("%s:%d (notify_dialog_cb) - Creating a snooze\n",__FILE__, __LINE__));
+ 		create_snooze (tray_data->cqa, tray_data->alarm_id, snooze_mins);
+ 		tray_data->snooze_set = TRUE;
+-		tray_list_remove_data (tray_data);
+ 		if (alarm_notifications_dialog) {
+ 			GtkTreeSelection *selection =
+ 				gtk_tree_view_get_selection (
+@@ -1241,6 +1240,7 @@ notify_dialog_cb (AlarmNotifyResult resu
+ 			}
+ 
+ 		}
++		tray_list_remove_data (tray_data);
+ 
+ 		break;
+ 
