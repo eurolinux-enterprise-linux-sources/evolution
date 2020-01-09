@@ -1,0 +1,161 @@
+diff -up evolution-3.12.11/calendar/gui/e-calendar-view.c.calendar-tooltip-date-format evolution-3.12.11/calendar/gui/e-calendar-view.c
+--- evolution-3.12.11/calendar/gui/e-calendar-view.c.calendar-tooltip-date-format	2015-06-16 22:46:01.311668442 +0200
++++ evolution-3.12.11/calendar/gui/e-calendar-view.c	2015-06-16 22:46:01.329668304 +0200
+@@ -1948,7 +1948,7 @@ get_label (struct icaltimetype *tt,
+ 
+ 	tmp_tm = icaltimetype_to_tm_with_zone (tt, f_zone, t_zone);
+ 
+-	return e_datetime_format_format_tm ("calendar", "table", DTFormatKindDateTime, &tmp_tm);
++	return e_datetime_format_format_tm ("calendar", "table", tt->is_date ? DTFormatKindDate : DTFormatKindDateTime, &tmp_tm);
+ }
+ 
+ void
+diff -up evolution-3.12.11/calendar/gui/e-memo-table.c.calendar-tooltip-date-format evolution-3.12.11/calendar/gui/e-memo-table.c
+--- evolution-3.12.11/calendar/gui/e-memo-table.c.calendar-tooltip-date-format	2014-10-09 11:05:48.000000000 +0200
++++ evolution-3.12.11/calendar/gui/e-memo-table.c	2015-06-16 22:46:01.329668304 +0200
+@@ -459,9 +459,7 @@ memo_table_query_tooltip (GtkWidget *wid
+ 	gchar *tmp;
+ 	const gchar *str;
+ 	GString *tmp2;
+-	gchar buff[1001];
+ 	gboolean free_text = FALSE;
+-	gboolean use_24_hour_format;
+ 	ECalComponent *new_comp;
+ 	ECalComponentOrganizer organizer;
+ 	ECalComponentDateTime dtstart, dtdue;
+@@ -586,41 +584,42 @@ memo_table_query_tooltip (GtkWidget *wid
+ 	}
+ 
+ 	tmp2 = g_string_new ("");
+-	use_24_hour_format = e_cal_model_get_use_24_hour_format (model);
+ 
+ 	if (dtstart.value) {
+-		buff[0] = 0;
++		gchar *str;
+ 
+-		tmp_tm = icaltimetype_to_tm_with_zone (
+-			dtstart.value, zone, default_zone);
+-		e_time_format_date_and_time (
+-			&tmp_tm, use_24_hour_format,
+-			FALSE, FALSE, buff, 1000);
++		tmp_tm = icaltimetype_to_tm_with_zone (dtstart.value, zone, default_zone);
++		str = e_datetime_format_format_tm ("calendar", "table",
++			dtstart.value->is_date ? DTFormatKindDate : DTFormatKindDateTime,
++			&tmp_tm);
+ 
+-		if (buff[0]) {
++		if (str && *str) {
+ 			/* Translators: This is followed by an event's start date/time */
+ 			g_string_append (tmp2, _("Start: "));
+-			g_string_append (tmp2, buff);
++			g_string_append (tmp2, str);
+ 		}
++
++		g_free (str);
+ 	}
+ 
+ 	if (dtdue.value) {
+-		buff[0] = 0;
++		gchar *str;
+ 
+-		tmp_tm = icaltimetype_to_tm_with_zone (
+-			dtdue.value, zone, default_zone);
+-		e_time_format_date_and_time (
+-			&tmp_tm, use_24_hour_format,
+-			FALSE, FALSE, buff, 1000);
++		tmp_tm = icaltimetype_to_tm_with_zone (dtdue.value, zone, default_zone);
++		str = e_datetime_format_format_tm ("calendar", "table",
++			dtdue.value->is_date ? DTFormatKindDate : DTFormatKindDateTime,
++			&tmp_tm);
+ 
+-		if (buff[0]) {
++		if (str && *str) {
+ 			if (tmp2->len)
+ 				g_string_append (tmp2, "; ");
+ 
+ 			/* Translators: This is followed by an event's due date/time */
+ 			g_string_append (tmp2, _("Due: "));
+-			g_string_append (tmp2, buff);
++			g_string_append (tmp2, str);
+ 		}
++
++		g_free (str);
+ 	}
+ 
+ 	if (tmp2->len) {
+diff -up evolution-3.12.11/calendar/gui/e-task-table.c.calendar-tooltip-date-format evolution-3.12.11/calendar/gui/e-task-table.c
+--- evolution-3.12.11/calendar/gui/e-task-table.c.calendar-tooltip-date-format	2014-10-09 11:05:52.000000000 +0200
++++ evolution-3.12.11/calendar/gui/e-task-table.c	2015-06-16 22:46:01.330668296 +0200
+@@ -760,9 +760,7 @@ task_table_query_tooltip (GtkWidget *wid
+ 	gchar *tmp;
+ 	const gchar *str;
+ 	GString *tmp2;
+-	gchar buff[1001];
+ 	gboolean free_text = FALSE;
+-	gboolean use_24_hour_format;
+ 	ECalComponent *new_comp;
+ 	ECalComponentOrganizer organizer;
+ 	ECalComponentDateTime dtstart, dtdue;
+@@ -871,7 +869,6 @@ task_table_query_tooltip (GtkWidget *wid
+ 	e_cal_component_get_due (new_comp, &dtdue);
+ 
+ 	default_zone = e_cal_model_get_timezone (model);
+-	use_24_hour_format = e_cal_model_get_use_24_hour_format (model);
+ 
+ 	if (dtstart.tzid) {
+ 		zone = icalcomponent_get_timezone (
+@@ -889,36 +886,38 @@ task_table_query_tooltip (GtkWidget *wid
+ 	tmp2 = g_string_new ("");
+ 
+ 	if (dtstart.value) {
+-		buff[0] = 0;
++		gchar *str;
+ 
+-		tmp_tm = icaltimetype_to_tm_with_zone (
+-			dtstart.value, zone, default_zone);
+-		e_time_format_date_and_time (
+-			&tmp_tm, use_24_hour_format,
+-			FALSE, FALSE, buff, 1000);
++		tmp_tm = icaltimetype_to_tm_with_zone (dtstart.value, zone, default_zone);
++		str = e_datetime_format_format_tm ("calendar", "table",
++			dtstart.value->is_date ? DTFormatKindDate : DTFormatKindDateTime,
++			&tmp_tm);
+ 
+-		if (buff[0]) {
++		if (str && *str) {
+ 			g_string_append (tmp2, _("Start: "));
+-			g_string_append (tmp2, buff);
++			g_string_append (tmp2, str);
+ 		}
++
++		g_free (str);
+ 	}
+ 
+ 	if (dtdue.value) {
+-		buff[0] = 0;
++		gchar *str;
+ 
+-		tmp_tm = icaltimetype_to_tm_with_zone (
+-			dtdue.value, zone, default_zone);
+-		e_time_format_date_and_time (
+-			&tmp_tm, use_24_hour_format,
+-			FALSE, FALSE, buff, 1000);
++		tmp_tm = icaltimetype_to_tm_with_zone (dtdue.value, zone, default_zone);
++		str = e_datetime_format_format_tm ("calendar", "table",
++			dtdue.value->is_date ? DTFormatKindDate : DTFormatKindDateTime,
++			&tmp_tm);
+ 
+-		if (buff[0]) {
++		if (str && *str) {
+ 			if (tmp2->len)
+ 				g_string_append (tmp2, "; ");
+ 
+ 			g_string_append (tmp2, _("Due: "));
+-			g_string_append (tmp2, buff);
++			g_string_append (tmp2, str);
+ 		}
++
++		g_free (str);
+ 	}
+ 
+ 	if (tmp2->len) {

@@ -1,0 +1,31 @@
+diff -up evolution-3.12.11/composer/e-composer-private.c.crash-composer-gallery evolution-3.12.11/composer/e-composer-private.c
+--- evolution-3.12.11/composer/e-composer-private.c.crash-composer-gallery	2014-10-29 12:12:27.000000000 +0100
++++ evolution-3.12.11/composer/e-composer-private.c	2015-05-22 11:47:18.659085597 +0200
+@@ -289,7 +289,7 @@ e_composer_private_constructed (EMsgComp
+ 		GTK_SCROLLED_WINDOW (widget), GTK_SHADOW_IN);
+ 	gtk_widget_set_size_request (widget, -1, GALLERY_INITIAL_HEIGHT);
+ 	gtk_paned_pack1 (GTK_PANED (container), widget, FALSE, FALSE);
+-	priv->gallery_scrolled_window = g_object_ref_sink (widget);
++	priv->gallery_scrolled_window = g_object_ref_sink (widget); /* despite the ref, do not unref in dispose */
+ 	gtk_widget_show (widget);
+ 
+ 	/* Reparent the scrolled window containing the GtkHTML widget
+@@ -308,7 +308,7 @@ e_composer_private_constructed (EMsgComp
+ 		settings, "composer-gallery-path");
+ 	widget = e_picture_gallery_new (gallery_path);
+ 	gtk_container_add (GTK_CONTAINER (container), widget);
+-	priv->gallery_icon_view = g_object_ref_sink (widget);
++	priv->gallery_icon_view = g_object_ref_sink (widget); /* despite the ref, do not unref in dispose */
+ 	g_free (gallery_path);
+ 
+ 	e_signal_connect_notify (
+@@ -435,9 +435,6 @@ e_composer_private_dispose (EMsgComposer
+ 		composer->priv->composer_actions = NULL;
+ 	}
+ 
+-	g_clear_object (&composer->priv->gallery_icon_view);
+-	g_clear_object (&composer->priv->gallery_scrolled_window);
+-
+ 	g_hash_table_remove_all (composer->priv->inline_images);
+ 	g_hash_table_remove_all (composer->priv->inline_images_by_url);
+ 

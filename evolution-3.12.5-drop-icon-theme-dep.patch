@@ -1,0 +1,37 @@
+diff -up evolution-3.12.11/configure.ac.drop-icon-theme-dep evolution-3.12.11/configure.ac
+--- evolution-3.12.11/configure.ac.drop-icon-theme-dep	2015-01-12 12:33:47.000000000 +0100
++++ evolution-3.12.11/configure.ac	2015-05-04 16:58:37.036720821 +0200
+@@ -49,7 +49,6 @@ m4_define([gtkhtml_minimum_version], [4.
+ m4_define([gdk_pixbuf_minimum_version], [2.24.0])
+ m4_define([gcr_minimum_version], [3.4])
+ m4_define([gnome_desktop_minimum_version], [2.91.3])
+-m4_define([gnome_icon_theme_minimum_version], [2.30.2.1])
+ m4_define([gsettings_desktop_schemas_minimum_version], [2.91.92])
+ m4_define([webkitgtk_minimum_version], [2.0.1])
+ m4_define([libgdata_minimum_version], [0.10])
+@@ -503,25 +502,6 @@ AC_CHECK_HEADERS(sys/wait.h, AC_DEFINE(H
+ AC_CHECK_FUNCS(mkdtemp)
+ 
+ dnl **************************************************
+-dnl Gnome Icon Theme
+-dnl **************************************************
+-AC_MSG_CHECKING(for icon theme)
+-PKG_CHECK_EXISTS([gnome-icon-theme >= gnome_icon_theme_minimum_version],
+-		 have_icon_theme=yes, have_icon_theme=no)
+-if test "x$have_icon_theme" != "xyes"; then
+-	PKG_CHECK_EXISTS([adwaita-icon-theme],
+-		 have_icon_theme=yes, have_icon_theme=no)
+-fi
+-
+-if test "x$have_icon_theme" != "xyes"; then
+-   AC_MSG_RESULT(no)
+-   AC_MSG_FAILURE([You need to have gnome-icon-theme or adwaita-icon-theme installed.])
+-else
+-   AC_MSG_RESULT(yes)
+-fi
+-
+-
+-dnl **************************************************
+ dnl Accessibility support
+ dnl **************************************************
+ PKG_CHECK_MODULES([A11Y], [atk])
