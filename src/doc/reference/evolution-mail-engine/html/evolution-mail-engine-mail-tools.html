@@ -1,0 +1,128 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>mail-tools: Evolution Mail Engine Reference Manual</title>
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="index.html" title="Evolution Mail Engine Reference Manual">
+<link rel="up" href="ch03.html" title="Miscellaneous">
+<link rel="prev" href="evolution-mail-engine-mail-ops.html" title="mail-ops">
+<link rel="next" href="evolution-mail-engine-mail-vfolder.html" title="mail-vfolder">
+<meta name="generator" content="GTK-Doc V1.25 (XML mode)">
+<link rel="stylesheet" href="style.css" type="text/css">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table class="navigation" id="top" width="100%" summary="Navigation header" cellpadding="2" cellspacing="5"><tr valign="middle">
+<td width="100%" align="left" class="shortcuts">
+<a href="#" class="shortcut">Top</a><span id="nav_description">  <span class="dim">|</span> 
+                  <a href="#evolution-mail-engine-mail-tools.description" class="shortcut">Description</a></span>
+</td>
+<td><a accesskey="h" href="index.html"><img src="home.png" width="16" height="16" border="0" alt="Home"></a></td>
+<td><a accesskey="u" href="ch03.html"><img src="up.png" width="16" height="16" border="0" alt="Up"></a></td>
+<td><a accesskey="p" href="evolution-mail-engine-mail-ops.html"><img src="left.png" width="16" height="16" border="0" alt="Prev"></a></td>
+<td><a accesskey="n" href="evolution-mail-engine-mail-vfolder.html"><img src="right.png" width="16" height="16" border="0" alt="Next"></a></td>
+</tr></table>
+<div class="refentry">
+<a name="evolution-mail-engine-mail-tools"></a><div class="titlepage"></div>
+<div class="refnamediv"><table width="100%"><tr>
+<td valign="top">
+<h2><span class="refentrytitle"><a name="evolution-mail-engine-mail-tools.top_of_page"></a>mail-tools</span></h2>
+<p>mail-tools</p>
+</td>
+<td class="gallery_image" valign="top" align="right"></td>
+</tr></table></div>
+<div class="refsect1">
+<a name="evolution-mail-engine-mail-tools.functions"></a><h2>Functions</h2>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="functions_return">
+<col class="functions_name">
+</colgroup>
+<tbody>
+<tr>
+<td class="function_type">
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="returnvalue">gchar</span></a> *
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-tools.html#mail-tool-do-movemail" title="mail_tool_do_movemail ()">mail_tool_do_movemail</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">struct <span class="returnvalue">_camel_header_raw</span> *
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-tools.html#mail-tool-remove-xevolution-headers" title="mail_tool_remove_xevolution_headers ()">mail_tool_remove_xevolution_headers</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-tools.html#mail-tool-restore-xevolution-headers" title="mail_tool_restore_xevolution_headers ()">mail_tool_restore_xevolution_headers</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="returnvalue">gchar</span></a> *
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-tools.html#mail-tool-generate-forward-subject" title="mail_tool_generate_forward_subject ()">mail_tool_generate_forward_subject</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">CamelMimePart</span> *
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-tools.html#mail-tool-make-message-attachment" title="mail_tool_make_message_attachment ()">mail_tool_make_message_attachment</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect1">
+<a name="evolution-mail-engine-mail-tools.description"></a><h2>Description</h2>
+</div>
+<div class="refsect1">
+<a name="evolution-mail-engine-mail-tools.functions_details"></a><h2>Functions</h2>
+<div class="refsect2">
+<a name="mail-tool-do-movemail"></a><h3>mail_tool_do_movemail ()</h3>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="returnvalue">gchar</span></a> *
+mail_tool_do_movemail (<em class="parameter"><code><span class="type">CamelStore</span> *store</code></em>,
+                       <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Error-Reporting.html#GError"><span class="type">GError</span></a> **error</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-tool-remove-xevolution-headers"></a><h3>mail_tool_remove_xevolution_headers ()</h3>
+<pre class="programlisting">struct <span class="returnvalue">_camel_header_raw</span> *
+mail_tool_remove_xevolution_headers (<em class="parameter"><code><span class="type">CamelMimeMessage</span> *message</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-tool-restore-xevolution-headers"></a><h3>mail_tool_restore_xevolution_headers ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+mail_tool_restore_xevolution_headers (<em class="parameter"><code><span class="type">CamelMimeMessage</span> *message</code></em>,
+                                      <em class="parameter"><code><span class="type">struct _camel_header_raw</span> *Param2</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-tool-generate-forward-subject"></a><h3>mail_tool_generate_forward_subject ()</h3>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="returnvalue">gchar</span></a> *
+mail_tool_generate_forward_subject (<em class="parameter"><code><span class="type">CamelMimeMessage</span> *msg</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-tool-make-message-attachment"></a><h3>mail_tool_make_message_attachment ()</h3>
+<pre class="programlisting"><span class="returnvalue">CamelMimePart</span> *
+mail_tool_make_message_attachment (<em class="parameter"><code><span class="type">CamelMimeMessage</span> *message</code></em>);</pre>
+</div>
+</div>
+<div class="refsect1">
+<a name="evolution-mail-engine-mail-tools.other_details"></a><h2>Types and Values</h2>
+</div>
+</div>
+<div class="footer">
+<hr>Generated by GTK-Doc V1.25</div>
+</body>
+</html>

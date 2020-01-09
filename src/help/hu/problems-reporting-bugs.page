@@ -16,12 +16,36 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
   <title>Hibák jelentése</title>
 
-<p>Ha nincs szüksége a beállításokkal kapcsolatos segítségre, de biztos benne, hogy hibát vagy hibás viselkedést észlelt az Evolution szoftverben, vagy ha új funkciót szeretne kérni, akkor beküldhet egy jelentést a <link href="http://bugzilla.gnome.org">GNOME hibakövető rendszerébe</link>. Ne feledje, hogy ehhez először regisztrálnia kell. Kerülje a már meglévő hibák ismételt bejelentését, és először olvassa el a <link href="https://bugzilla.gnome.org/page.cgi?id=bug-writing.html">hibajelentés-írási irányelveket</link>.</p><p>Ne feledje azt sem, hogy a GNOME asztali környezet terjesztői néha saját változtatásokat hajtanak végre az Evolutionbe, amelyek nem részei a GNOME által kiadott Evolutionnek. Ezt a felhasználók nehezen veszik észre, de ha tudja, hogy egy ilyen változtatás okozza a hibát, akkor inkább <link href="https://live.gnome.org/Bugsquad/TriageGuide/NonGnome#Bug_trackers_for_distributions">a megfelelő GNOME terjesztés hibajelentőjébe küldje</link> a jelentést.</p>
+<p>Ha nincs szüksége a beállításokkal kapcsolatos segítségre, de biztos benne, hogy hibát vagy hibás viselkedést észlelt az <app>Evolution</app> szoftverben, vagy ha új funkciót szeretne kérni, akkor beküldhet egy jelentést a <link href="http://bugzilla.gnome.org">GNOME hibakövető rendszerébe</link>. Ne feledje, hogy ehhez először regisztrálnia kell. Kerülje a már meglévő hibák ismételt bejelentését, és először olvassa el a <link href="https://bugzilla.gnome.org/page.cgi?id=bug-writing.html">hibajelentés-írási irányelveket</link>.</p><p>Ne feledje azt sem, hogy a GNOME asztali környezet terjesztői néha saját változtatásokat hajtanak végre az <app>Evolutionbe</app>, amelyek nem részei a GNOME által kiadott <app>Evolutionnek</app>. Ezt a felhasználók nehezen veszik észre, de ha tudja, hogy egy ilyen változtatás okozza a hibát, akkor inkább <link href="https://wiki.gnome.org/Bugsquad/TriageGuide/NonGnome#Bug_trackers_for_distributions">a megfelelő GNOME terjesztés hibajelentőjébe küldje</link> a jelentést.</p>
 
-<p>Hibák jelentésekor próbálja pontosan megfogalmazni a problémát, mivel ez segít másoknak reprodukálni és javítani a hibát. Ha lehet, akkor adja meg az Evolution verzióját (lásd: <guiseq><gui>Súgó</gui><gui>Névjegy</gui></guiseq>, a disztribúciója nevét (Például: Debian, Fedora, OpenSUSE, Ubuntu), és a probléma reprodukálásának pontos lépéseit, kattintásról kattintásra. További információkért lásd a <link href="https://bugzilla.gnome.org/page.cgi?id=bug-writing.html">hibajelentés-írási irányelveket</link>.</p>
+<p>Hibák jelentésekor próbálja pontosan megfogalmazni a problémát, mivel ez segít másoknak reprodukálni és javítani a hibát. Ha lehet, akkor adja meg az <app>Evolution</app> verzióját (lásd: <guiseq><gui>Súgó</gui><gui>Névjegy</gui></guiseq>, a disztribúciója nevét (Például: Debian, Fedora, OpenSUSE, Ubuntu), és a probléma reprodukálásának pontos lépéseit, kattintásról kattintásra. További információkért lásd a <link href="https://bugzilla.gnome.org/page.cgi?id=bug-writing.html">hibajelentés-írási irányelveket</link>.</p>
 
 </page>

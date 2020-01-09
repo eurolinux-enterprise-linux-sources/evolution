@@ -28,7 +28,13 @@
 #include <errno.h>
 #include <glib/gi18n.h>
 
+#ifdef HAVE_AUTOAR
+#include <gnome-autoar/gnome-autoar.h>
+#include <gnome-autoar/autoar-gtk.h>
+#endif
+
 #include "e-mktemp.h"
+#include "e-misc-utils.h"
 
 #define E_ATTACHMENT_STORE_GET_PRIVATE(obj) \
 	(G_TYPE_INSTANCE_GET_PRIVATE \
@@ -47,10 +53,155 @@ enum {
 	PROP_TOTAL_SIZE
 };
 
+enum {
+	ATTACHMENT_ADDED,
+	ATTACHMENT_REMOVED,
+	LAST_SIGNAL
+};
+
+static gulong signals[LAST_SIGNAL];
+
 G_DEFINE_TYPE (
 	EAttachmentStore,
 	e_attachment_store,
 	GTK_TYPE_LIST_STORE)
+
+static void
+attachment_store_update_file_info_cb (EAttachment *attachment,
+				      const gchar *caption,
+				      const gchar *content_type,
+				      const gchar *description,
+				      gint64 size,
+				      gpointer user_data)
+{
+	EAttachmentStore *store = user_data;
+	GtkTreeIter iter;
+
+	g_return_if_fail (E_IS_ATTACHMENT (attachment));
+	g_return_if_fail (E_IS_ATTACHMENT_STORE (store));
+
+	if (e_attachment_store_find_attachment_iter (store, attachment, &iter)) {
+		gtk_list_store_set (
+			GTK_LIST_STORE (store), &iter,
+			E_ATTACHMENT_STORE_COLUMN_CAPTION, caption,
+			E_ATTACHMENT_STORE_COLUMN_CONTENT_TYPE, content_type,
+			E_ATTACHMENT_STORE_COLUMN_DESCRIPTION, description,
+			E_ATTACHMENT_STORE_COLUMN_SIZE, size,
+			-1);
+	}
+}
+
+static void
+attachment_store_update_icon_cb (EAttachment *attachment,
+				 GIcon *icon,
+				 gpointer user_data)
+{
+	EAttachmentStore *store = user_data;
+	GtkTreeIter iter;
+
+	g_return_if_fail (E_IS_ATTACHMENT (attachment));
+	g_return_if_fail (E_IS_ATTACHMENT_STORE (store));
+
+	if (e_attachment_store_find_attachment_iter (store, attachment, &iter)) {
+		gtk_list_store_set (
+			GTK_LIST_STORE (store), &iter,
+			E_ATTACHMENT_STORE_COLUMN_ICON, icon,
+			-1);
+	}
+}
+
+static void
+attachment_store_update_progress_cb (EAttachment *attachment,
+				     gboolean loading,
+				     gboolean saving,
+				     gint percent,
+				     gpointer user_data)
+{
+	EAttachmentStore *store = user_data;
+	GtkTreeIter iter;
+
+	g_return_if_fail (E_IS_ATTACHMENT (attachment));
+	g_return_if_fail (E_IS_ATTACHMENT_STORE (store));
+
+	if (e_attachment_store_find_attachment_iter (store, attachment, &iter)) {
+		gtk_list_store_set (
+			GTK_LIST_STORE (store), &iter,
+			E_ATTACHMENT_STORE_COLUMN_LOADING, loading,
+			E_ATTACHMENT_STORE_COLUMN_SAVING, saving,
+			E_ATTACHMENT_STORE_COLUMN_PERCENT, percent,
+			-1);
+	}
+}
+
+static void
+attachment_store_load_failed_cb (EAttachment *attachment,
+				 gpointer user_data)
+{
+	EAttachmentStore *store = user_data;
+
+	g_return_if_fail (E_IS_ATTACHMENT (attachment));
+	g_return_if_fail (E_IS_ATTACHMENT_STORE (store));
+
+	e_attachment_store_remove_attachment (store, attachment);
+}
+
+static void
+attachment_store_attachment_notify_cb (GObject *attachment,
+				       GParamSpec *param,
+				       gpointer user_data)
+{
+	EAttachmentStore *store = user_data;
+
+	g_return_if_fail (E_IS_ATTACHMENT (attachment));
+	g_return_if_fail (param != NULL);
+	g_return_if_fail (E_IS_ATTACHMENT_STORE (store));
+
+	if (g_str_equal (param->name, "loading")) {
+		g_object_notify (G_OBJECT (store), "num-loading");
+	} else if (g_str_equal (param->name, "file-info")) {
+		g_object_notify (G_OBJECT (store), "total-size");
+	}
+}
+
+static void
+attachment_store_attachment_added (EAttachmentStore *store,
+				   EAttachment *attachment)
+{
+	g_return_if_fail (E_IS_ATTACHMENT_STORE (store));
+	g_return_if_fail (E_IS_ATTACHMENT (attachment));
+
+	g_signal_connect (attachment, "update-file-info",
+		G_CALLBACK (attachment_store_update_file_info_cb), store);
+	g_signal_connect (attachment, "update-icon",
+		G_CALLBACK (attachment_store_update_icon_cb), store);
+	g_signal_connect (attachment, "update-progress",
+		G_CALLBACK (attachment_store_update_progress_cb), store);
+	g_signal_connect (attachment, "load-failed",
+		G_CALLBACK (attachment_store_load_failed_cb), store);
+	g_signal_connect (attachment, "notify",
+		G_CALLBACK (attachment_store_attachment_notify_cb), store);
+
+	e_attachment_update_store_columns (attachment);
+}
+
+static void
+attachment_store_attachment_removed (EAttachmentStore *store,
+				     EAttachment *attachment)
+{
+	g_return_if_fail (E_IS_ATTACHMENT_STORE (store));
+	g_return_if_fail (E_IS_ATTACHMENT (attachment));
+
+	g_signal_handlers_disconnect_by_func (attachment,
+		G_CALLBACK (attachment_store_update_file_info_cb), store);
+	g_signal_handlers_disconnect_by_func (attachment,
+		G_CALLBACK (attachment_store_update_icon_cb), store);
+	g_signal_handlers_disconnect_by_func (attachment,
+		G_CALLBACK (attachment_store_update_progress_cb), store);
+	g_signal_handlers_disconnect_by_func (attachment,
+		G_CALLBACK (attachment_store_load_failed_cb), store);
+	g_signal_handlers_disconnect_by_func (attachment,
+		G_CALLBACK (attachment_store_attachment_notify_cb), store);
+}
 
 static void
 attachment_store_get_property (GObject *object,
@@ -118,6 +269,9 @@ e_attachment_store_class_init (EAttachmentStoreClass *class)
 	object_class->dispose = attachment_store_dispose;
 	object_class->finalize = attachment_store_finalize;
 
+	class->attachment_added = attachment_store_attachment_added;
+	class->attachment_removed = attachment_store_attachment_removed;
+
 	g_object_class_install_property (
 		object_class,
 		PROP_NUM_ATTACHMENTS,
@@ -153,6 +307,22 @@ e_attachment_store_class_init (EAttachmentStoreClass *class)
 			G_MAXUINT64,
 			0,
 			G_PARAM_READABLE));
+
+	signals[ATTACHMENT_ADDED] = g_signal_new (
+		"attachment-added",
+		G_TYPE_FROM_CLASS (class),
+		G_SIGNAL_RUN_LAST,
+		G_STRUCT_OFFSET (EAttachmentStoreClass, attachment_added),
+		NULL, NULL, NULL,
+		G_TYPE_NONE, 1, E_TYPE_ATTACHMENT);
+
+	signals[ATTACHMENT_REMOVED] = g_signal_new (
+		"attachment-removed",
+		G_TYPE_FROM_CLASS (class),
+		G_SIGNAL_RUN_LAST,
+		G_STRUCT_OFFSET (EAttachmentStoreClass, attachment_removed),
+		NULL, NULL, NULL,
+		G_TYPE_NONE, 1, E_TYPE_ATTACHMENT);
 }
 
 static void
@@ -180,7 +350,7 @@ e_attachment_store_init (EAttachmentStore *store)
 	types[column++] = G_TYPE_BOOLEAN;	/* COLUMN_SAVING */
 	types[column++] = G_TYPE_UINT64;	/* COLUMN_SIZE */
 
-	g_assert (column == E_ATTACHMENT_STORE_NUM_COLUMNS);
+	g_return_if_fail (column == E_ATTACHMENT_STORE_NUM_COLUMNS);
 
 	gtk_list_store_set_column_types (
 		GTK_LIST_STORE (store), G_N_ELEMENTS (types), types);
@@ -219,13 +389,12 @@ e_attachment_store_add_attachment (EAttachmentStore *store,
 		store->priv->attachment_index,
 		g_object_ref (attachment), reference);
 
-	/* This lets the attachment tell us when to update. */
-	e_attachment_set_reference (attachment, reference);
-
 	g_object_freeze_notify (G_OBJECT (store));
 	g_object_notify (G_OBJECT (store), "num-attachments");
 	g_object_notify (G_OBJECT (store), "total-size");
 	g_object_thaw_notify (G_OBJECT (store));
+
+	g_signal_emit (store, signals[ATTACHMENT_ADDED], 0, attachment);
 }
 
 gboolean
@@ -237,6 +406,7 @@ e_attachment_store_remove_attachment (EAttachmentStore *store,
 	GtkTreeModel *model;
 	GtkTreePath *path;
 	GtkTreeIter iter;
+	gboolean removed;
 
 	g_return_val_if_fail (E_IS_ATTACHMENT_STORE (store), FALSE);
 	g_return_val_if_fail (E_IS_ATTACHMENT (attachment), FALSE);
@@ -248,12 +418,12 @@ e_attachment_store_remove_attachment (EAttachmentStore *store,
 		return FALSE;
 
 	if (!gtk_tree_row_reference_valid (reference)) {
-		g_hash_table_remove (hash_table, attachment);
+		if (g_hash_table_remove (hash_table, attachment))
+			g_signal_emit (store, signals[ATTACHMENT_REMOVED], 0, attachment);
 		return FALSE;
 	}
 
 	e_attachment_cancel (attachment);
-	e_attachment_set_reference (attachment, NULL);
 
 	model = gtk_tree_row_reference_get_model (reference);
 	path = gtk_tree_row_reference_get_path (reference);
@@ -261,12 +431,15 @@ e_attachment_store_remove_attachment (EAttachmentStore *store,
 	gtk_tree_path_free (path);
 
 	gtk_list_store_remove (GTK_LIST_STORE (store), &iter);
-	g_hash_table_remove (hash_table, attachment);
+	removed = g_hash_table_remove (hash_table, attachment);
 
 	g_object_freeze_notify (G_OBJECT (store));
 	g_object_notify (G_OBJECT (store), "num-attachments");
 	g_object_notify (G_OBJECT (store), "total-size");
 	g_object_thaw_notify (G_OBJECT (store));
+
+	if (removed)
+		g_signal_emit (store, signals[ATTACHMENT_REMOVED], 0, attachment);
 
 	return TRUE;
 }
@@ -281,6 +454,12 @@ e_attachment_store_remove_all (EAttachmentStore *store)
 	if (!g_hash_table_size (store->priv->attachment_index))
 		return;
 
+	g_object_freeze_notify (G_OBJECT (store));
+
+	/* Get the list of attachments before clearing the list store,
+	   otherwise there would be returned no attachments. */
+	list = e_attachment_store_get_attachments (store);
+
 	/* Clear the list store before cancelling EAttachment load/save
 	 * operations.  This will invalidate the EAttachment's tree row
 	 * reference so it won't try to update the row's icon column in
@@ -288,14 +467,14 @@ e_attachment_store_remove_all (EAttachmentStore *store)
 	 * the list store is being disposed. */
 	gtk_list_store_clear (GTK_LIST_STORE (store));
 
-	g_object_freeze_notify (G_OBJECT (store));
-
-	list = e_attachment_store_get_attachments (store);
 	for (iter = list; iter; iter = iter->next) {
 		EAttachment *attachment = iter->data;
 
 		e_attachment_cancel (attachment);
-		g_hash_table_remove (store->priv->attachment_index, iter->data);
+
+		g_warn_if_fail (g_hash_table_remove (store->priv->attachment_index, attachment));
+
+		g_signal_emit (store, signals[ATTACHMENT_REMOVED], 0, attachment);
 	}
 
 	g_list_foreach (list, (GFunc) g_object_unref, NULL);
@@ -448,12 +627,32 @@ e_attachment_store_run_load_dialog (EAttachmentStore *store,
 {
 	GtkFileChooser *file_chooser;
 	GtkWidget *dialog;
-	GtkWidget *option;
+
+	GtkBox *extra_box;
+	GtkWidget *extra_box_widget;
+	GtkWidget *option_display;
+
+#ifdef HAVE_AUTOAR
+	GtkBox *option_format_box;
+	GtkWidget *option_format_box_widget;
+	GtkWidget *option_format_label;
+	GtkWidget *option_format_combo;
+#endif
+
 	GtkImage *preview;
+
 	GSList *files, *iter;
 	const gchar *disposition;
 	gboolean active;
 	gint response;
+
+#ifdef HAVE_AUTOAR
+	GSettings *settings;
+	char *format_string;
+	char *filter_string;
+	gint format;
+	gint filter;
+#endif
 
 	g_return_if_fail (E_IS_ATTACHMENT_STORE (store));
 	g_return_if_fail (GTK_IS_WINDOW (parent));
@@ -461,13 +660,25 @@ e_attachment_store_run_load_dialog (EAttachmentStore *store,
 	dialog = gtk_file_chooser_dialog_new (
 		_("Add Attachment"), parent,
 		GTK_FILE_CHOOSER_ACTION_OPEN,
+#ifdef HAVE_AUTOAR
+		_("_Open"), GTK_RESPONSE_OK,
+#endif
 		_("_Cancel"), GTK_RESPONSE_CANCEL,
-		_("A_ttach"), GTK_RESPONSE_OK, NULL);
+#ifdef HAVE_AUTOAR
+		_("A_ttach"), GTK_RESPONSE_CLOSE,
+#else
+		_("A_ttach"), GTK_RESPONSE_OK,
+#endif
+		NULL);
 
 	file_chooser = GTK_FILE_CHOOSER (dialog);
 	gtk_file_chooser_set_local_only (file_chooser, FALSE);
 	gtk_file_chooser_set_select_multiple (file_chooser, TRUE);
+#ifdef HAVE_AUTOAR
+	gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_CLOSE);
+#else
 	gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_OK);
+#endif
 	gtk_window_set_icon_name (GTK_WINDOW (dialog), "mail-attachment");
 
 	preview = GTK_IMAGE (gtk_image_new ());
@@ -478,19 +689,79 @@ e_attachment_store_run_load_dialog (EAttachmentStore *store,
 		file_chooser, "update-preview",
 		G_CALLBACK (update_preview_cb), preview);
 
-	option = gtk_check_button_new_with_mnemonic (
+	extra_box_widget = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+	extra_box = GTK_BOX (extra_box_widget);
+
+	option_display = gtk_check_button_new_with_mnemonic (
 		_("_Suggest automatic display of attachment"));
-	gtk_file_chooser_set_extra_widget (file_chooser, option);
-	gtk_widget_show (option);
+	gtk_box_pack_start (extra_box, option_display, FALSE, FALSE, 0);
+
+#ifdef HAVE_AUTOAR
+	option_format_box_widget = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
+	option_format_box = GTK_BOX (option_format_box_widget);
+	gtk_box_pack_start (extra_box, option_format_box_widget, FALSE, FALSE, 0);
+
+	settings = e_util_ref_settings ("org.gnome.evolution.shell");
+
+	format_string = g_settings_get_string (settings, "autoar-format");
+	filter_string = g_settings_get_string (settings, "autoar-filter");
+
+	if (!e_enum_from_string (AUTOAR_TYPE_FORMAT, format_string, &format)) {
+		format = AUTOAR_FORMAT_ZIP;
+	}
+	if (!e_enum_from_string (AUTOAR_TYPE_FILTER, filter_string, &filter)) {
+		filter = AUTOAR_FILTER_NONE;
+	}
+
+	option_format_label = gtk_label_new (
+		_("Archive selected directories using this format:"));
+	option_format_combo = autoar_gtk_chooser_simple_new (
+		format,
+		filter);
+	gtk_box_pack_start (option_format_box, option_format_label, FALSE, FALSE, 0);
+	gtk_box_pack_start (option_format_box, option_format_combo, FALSE, FALSE, 0);
+#endif
+
+	gtk_file_chooser_set_extra_widget (file_chooser, extra_box_widget);
+	gtk_widget_show_all (extra_box_widget);
+
+	e_util_load_file_chooser_folder (file_chooser);
 
 	response = gtk_dialog_run (GTK_DIALOG (dialog));
 
+#ifdef HAVE_AUTOAR
+	if (response != GTK_RESPONSE_OK && response != GTK_RESPONSE_CLOSE)
+#else
 	if (response != GTK_RESPONSE_OK)
+#endif
 		goto exit;
 
+	e_util_save_file_chooser_folder (file_chooser);
+
 	files = gtk_file_chooser_get_files (file_chooser);
-	active = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (option));
+	active = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (option_display));
 	disposition = active ? "inline" : "attachment";
+
+#ifdef HAVE_AUTOAR
+	autoar_gtk_chooser_simple_get (option_format_combo, &format, &filter);
+
+	if (!e_enum_to_string (AUTOAR_TYPE_FORMAT, format)) {
+		format = AUTOAR_FORMAT_ZIP;
+	}
+
+	if (!e_enum_to_string (AUTOAR_TYPE_FORMAT, filter)) {
+		filter = AUTOAR_FILTER_NONE;
+	}
+
+	g_settings_set_string (
+		settings,
+		"autoar-format",
+		e_enum_to_string (AUTOAR_TYPE_FORMAT, format));
+	g_settings_set_string (
+		settings,
+		"autoar-filter",
+		e_enum_to_string (AUTOAR_TYPE_FILTER, filter));
+#endif
 
 	for (iter = files; iter != NULL; iter = g_slist_next (iter)) {
 		EAttachment *attachment;
@@ -500,6 +771,7 @@ e_attachment_store_run_load_dialog (EAttachmentStore *store,
 		e_attachment_set_file (attachment, file);
 		e_attachment_set_disposition (attachment, disposition);
 		e_attachment_store_add_attachment (store, attachment);
+
 		e_attachment_load_async (
 			attachment, (GAsyncReadyCallback)
 			e_attachment_load_handle_error, parent);
@@ -511,6 +783,11 @@ e_attachment_store_run_load_dialog (EAttachmentStore *store,
 
 exit:
 	gtk_widget_destroy (dialog);
+#ifdef HAVE_AUTOAR
+	g_object_unref (settings);
+	g_free (format_string);
+	g_free (filter_string);
+#endif
 }
 
 GFile *
@@ -521,6 +798,18 @@ e_attachment_store_run_save_dialog (EAttachmentStore *store,
 	GtkFileChooser *file_chooser;
 	GtkFileChooserAction action;
 	GtkWidget *dialog;
+
+#ifdef HAVE_AUTOAR
+	GtkBox *extra_box;
+	GtkWidget *extra_box_widget;
+
+	GtkBox *extract_box;
+	GtkWidget *extract_box_widget;
+
+	GSList *extract_group;
+	GtkWidget *extract_dont, *extract_only, *extract_org;
+#endif
+
 	GFile *destination;
 	const gchar *title;
 	gint response;
@@ -551,10 +840,42 @@ e_attachment_store_run_save_dialog (EAttachmentStore *store,
 	gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_OK);
 	gtk_window_set_icon_name (GTK_WINDOW (dialog), "mail-attachment");
 
+#ifdef HAVE_AUTOAR
+	extra_box_widget = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+	extra_box = GTK_BOX (extra_box_widget);
+
+	extract_box_widget = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+	extract_box = GTK_BOX (extract_box_widget);
+	gtk_box_pack_start (extra_box, extract_box_widget, FALSE, FALSE, 5);
+
+	extract_dont = gtk_radio_button_new_with_mnemonic (NULL,
+		_("Do _not extract files from the attachment"));
+	gtk_box_pack_start (extract_box, extract_dont, FALSE, FALSE, 0);
+
+	extract_group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (extract_dont));
+	extract_only = gtk_radio_button_new_with_mnemonic (extract_group,
+		_("Save extracted files _only"));
+	gtk_box_pack_start (extract_box, extract_only, FALSE, FALSE, 0);
+
+	extract_group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (extract_only));
+	extract_org = gtk_radio_button_new_with_mnemonic (extract_group,
+		_("Save extracted files and the original _archive"));
+	gtk_box_pack_start (extract_box, extract_org, FALSE, FALSE, 0);
+
+	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (extract_dont), TRUE);
+
+	gtk_widget_show_all (extra_box_widget);
+	gtk_file_chooser_set_extra_widget (file_chooser, extra_box_widget);
+#endif
+
 	if (action == GTK_FILE_CHOOSER_ACTION_SAVE) {
 		EAttachment *attachment;
 		GFileInfo *file_info;
 		const gchar *name = NULL;
+
+#ifdef HAVE_AUTOAR
+		gchar *mime_type;
+#endif
 
 		attachment = attachment_list->data;
 		file_info = e_attachment_ref_file_info (attachment);
@@ -568,19 +889,115 @@ e_attachment_store_run_save_dialog (EAttachmentStore *store,
 
 		gtk_file_chooser_set_current_name (file_chooser, name);
 
+#ifdef HAVE_AUTOAR
+		mime_type = e_attachment_dup_mime_type (attachment);
+		if (!autoar_check_mime_type_supported (mime_type)) {
+			gtk_widget_hide (extra_box_widget);
+		}
+
+		g_free (mime_type);
+#endif
+
 		g_clear_object (&file_info);
 	}
 
+	e_util_load_file_chooser_folder (file_chooser);
+
 	response = gtk_dialog_run (GTK_DIALOG (dialog));
 
-	if (response == GTK_RESPONSE_OK)
+	if (response == GTK_RESPONSE_OK) {
+#ifdef HAVE_AUTOAR
+		gboolean save_self, save_extracted;
+#endif
+
+		e_util_save_file_chooser_folder (file_chooser);
 		destination = gtk_file_chooser_get_file (file_chooser);
-	else
+
+#ifdef HAVE_AUTOAR
+		save_self =
+			gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (extract_dont)) ||
+			gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (extract_org));
+		save_extracted =
+			gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (extract_only)) ||
+			gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (extract_org));
+
+		if (action == GTK_FILE_CHOOSER_ACTION_SAVE) {
+			e_attachment_set_save_self (attachment_list->data, save_self);
+			e_attachment_set_save_extracted (attachment_list->data, save_extracted);
+		} else {
+			GList *iter;
+
+			for (iter = attachment_list; iter != NULL; iter = iter->next) {
+				EAttachment *attachment;
+				gchar *mime_type;
+
+				attachment = iter->data;
+				mime_type = e_attachment_dup_mime_type (attachment);
+
+				if (autoar_check_mime_type_supported (mime_type)) {
+					e_attachment_set_save_self (attachment, save_self);
+					e_attachment_set_save_extracted (attachment, save_extracted);
+				} else {
+					e_attachment_set_save_self (attachment, TRUE);
+					e_attachment_set_save_extracted (attachment, FALSE);
+				}
+
+				g_free (mime_type);
+			}
+		}
+#endif
+	} else {
 		destination = NULL;
+	}
 
 	gtk_widget_destroy (dialog);
 
 	return destination;
+}
+
+gboolean
+e_attachment_store_transform_num_attachments_to_visible_boolean (GBinding *binding,
+								 const GValue *from_value,
+								 GValue *to_value,
+								 gpointer user_data)
+{
+	g_return_val_if_fail (from_value != NULL, FALSE);
+	g_return_val_if_fail (to_value != NULL, FALSE);
+	g_return_val_if_fail (G_VALUE_HOLDS_UINT (from_value), FALSE);
+	g_return_val_if_fail (G_VALUE_HOLDS_BOOLEAN (to_value), FALSE);
+
+	g_value_set_boolean (to_value, g_value_get_uint (from_value) != 0);
+
+	return TRUE;
+}
+
+gboolean
+e_attachment_store_find_attachment_iter (EAttachmentStore *store,
+					 EAttachment *attachment,
+					 GtkTreeIter *out_iter)
+{
+	GtkTreeRowReference *reference;
+	GtkTreeModel *model;
+	GtkTreePath *path;
+	gboolean found;
+
+	g_return_val_if_fail (E_IS_ATTACHMENT_STORE (store), FALSE);
+	g_return_val_if_fail (E_IS_ATTACHMENT (attachment), FALSE);
+	g_return_val_if_fail (out_iter != NULL, FALSE);
+
+	reference = g_hash_table_lookup (store->priv->attachment_index, attachment);
+
+	if (!reference || !gtk_tree_row_reference_valid (reference))
+		return FALSE;
+
+	model = gtk_tree_row_reference_get_model (reference);
+	g_return_val_if_fail (model == GTK_TREE_MODEL (store), FALSE);
+
+	path = gtk_tree_row_reference_get_path (reference);
+	found = gtk_tree_model_get_iter (model, out_iter, path);
+	gtk_tree_path_free (path);
+
+	return found;
 }
 
 /******************** e_attachment_store_get_uris_async() ********************/

@@ -17,9 +17,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -48,11 +54,11 @@
   <p>Si no puede ver ningún correo en ninguna carpeta compruebe que no ha maximizado la vista previa de correos (de tal forma que el panel de la lista de correos está oculta). Para ello, pulse <guiseq><gui>Ver</gui><gui>Vista previa</gui><gui>Mostrar vista previa del correo</gui></guiseq>.</p>
  </item>
  <item>
-  <p>Mire en la carpeta <gui>SPAM</gui>. Los correos marcados como SPAM desaparecen de la carpeta original y se mueven a la carpeta de SPAM.</p>
+  <p>Mire en la carpeta <gui>SPAM</gui>. Los correos marcados como SPAM desaparecen de la carpeta original y se mueven a la carpeta de <gui>SPAM</gui>.</p>
  </item>
  <!-- Does the following option still exist? -->
  <item>
-  <p>Pulse <guiseq><gui>Editar</gui><gui>Mostrar mensajes eliminados</gui></guiseq> para asegurarse de que se muestran todos los mensajes.</p>
+  <p>Pulse en <guiseq><gui>Ver</gui><gui>Mostrar mensajes eliminados</gui></guiseq> para asegurarse de que se muestran todos los mensajes.</p>
  </item>
  <item>
   <p>Compruebe su carpeta predeterminada en <guiseq><gui>Editar</gui><gui>Preferencias</gui><gui>Cuentas de correo-e</gui><gui>Editar</gui><gui>Predeterminados</gui></guiseq>. Posiblemente esté establecida una carpeta distinta de la que cree.</p>

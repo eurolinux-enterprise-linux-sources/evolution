@@ -1,0 +1,425 @@
+From 439bf03a5120db0ab3bff9958721297b4c32aa71 Mon Sep 17 00:00:00 2001
+From: Milan Crha <mcrha@redhat.com>
+Date: Fri, 7 Oct 2016 13:24:43 +0200
+Subject: Bug 772175 - Allow hiding menu bar (and show it via alt)
+
+---
+ data/org.gnome.evolution.shell.gschema.xml.in | 10 +++
+ shell/e-shell-window-actions.c                | 25 +++++++
+ shell/e-shell-window-actions.h                |  2 +
+ shell/e-shell-window-private.c                | 90 ++++++++++++++++++++++++++
+ shell/e-shell-window-private.h                |  3 +
+ shell/e-shell-window.c                        | 93 ++++++++++++++++++++++++++-
+ shell/e-shell-window.h                        |  5 ++
+ ui/evolution-shell.ui                         |  1 +
+ 8 files changed, 228 insertions(+), 1 deletion(-)
+
+diff --git a/data/org.gnome.evolution.shell.gschema.xml.in b/data/org.gnome.evolution.shell.gschema.xml.in
+index 02a5a18..13b3b36 100644
+--- a/data/org.gnome.evolution.shell.gschema.xml.in
++++ b/data/org.gnome.evolution.shell.gschema.xml.in
+@@ -60,6 +60,16 @@
+       <_summary>Window button style</_summary>
+       <_description>The style of the window buttons.  Can be "text", "icons", "both", "toolbar".  If "toolbar" is set, the style of the buttons is determined by the GNOME toolbar setting.</_description>
+     </key>
++    <key name="menubar-visible" type="b">
++      <default>true</default>
++      <_summary>Menubar is visible</_summary>
++      <_description>Whether the menubar should be visible.</_description>
++    </key>
++    <key name="menubar-visible-sub" type="b">
++      <default>true</default>
++      <_summary>Menubar is visible</_summary>
++      <_description>Whether the menubar should be visible.</_description>
++    </key>
+     <key name="toolbar-visible" type="b">
+       <default>true</default>
+       <_summary>Toolbar is visible</_summary>
+diff --git a/shell/e-shell-window-actions.c b/shell/e-shell-window-actions.c
+index 5665821..c1db9c6 100644
+--- a/shell/e-shell-window-actions.c
++++ b/shell/e-shell-window-actions.c
+@@ -522,6 +522,17 @@ action_search_save_cb (GtkAction *action,
+ }
+ 
+ /**
++ * E_SHELL_WINDOW_ACTION_SHOW_MENUBAR:
++ * @window: an #EShellWindow
++ *
++ * This toggle action controls whether the menu bar is visible.
++ *
++ * Main menu item: View -> Layout -> Show Menu Bar
++ *
++ * Since: 3.24
++ **/
++
++/**
+  * E_SHELL_WINDOW_ACTION_SHOW_SIDEBAR:
+  * @window: an #EShellWindow
+  *
+@@ -1022,6 +1033,14 @@ static EPopupActionEntry shell_popup_entries[] = {
+ 
+ static GtkToggleActionEntry shell_toggle_entries[] = {
+ 
++	{ "show-menubar",
++	  NULL,
++	  N_("Show _Menu Bar"),
++	  NULL,
++	  N_("Show the menu bar"),
++	  NULL,
++	  TRUE },
++
+ 	{ "show-sidebar",
+ 	  NULL,
+ 	  N_("Show Side _Bar"),
+@@ -1272,6 +1291,12 @@ e_shell_window_actions_init (EShellWindow *shell_window)
+ 		e_shell_utils_is_quick_reference_available (e_shell_window_get_shell (shell_window)));
+ 
+ 	e_binding_bind_property (
++		shell_window, "menubar-visible",
++		ACTION (SHOW_MENUBAR), "active",
++		G_BINDING_BIDIRECTIONAL |
++		G_BINDING_SYNC_CREATE);
++
++	e_binding_bind_property (
+ 		shell_window, "sidebar-visible",
+ 		ACTION (SHOW_SIDEBAR), "active",
+ 		G_BINDING_BIDIRECTIONAL |
+diff --git a/shell/e-shell-window-actions.h b/shell/e-shell-window-actions.h
+index 09682c4..b3e37fb 100644
+--- a/shell/e-shell-window-actions.h
++++ b/shell/e-shell-window-actions.h
+@@ -74,6 +74,8 @@
+ 	E_SHELL_WINDOW_ACTION ((window), "search-save")
+ #define E_SHELL_WINDOW_ACTION_SELECT_ALL(window) \
+ 	E_SHELL_WINDOW_ACTION ((window), "select-all")
++#define E_SHELL_WINDOW_ACTION_SHOW_MENUBAR(window) \
++	E_SHELL_WINDOW_ACTION ((window), "show-menubar")
+ #define E_SHELL_WINDOW_ACTION_SHOW_SIDEBAR(window) \
+ 	E_SHELL_WINDOW_ACTION ((window), "show-sidebar")
+ #define E_SHELL_WINDOW_ACTION_SHOW_SWITCHER(window) \
+diff --git a/shell/e-shell-window-private.c b/shell/e-shell-window-private.c
+index f9e21b1..2de82b6 100644
+--- a/shell/e-shell-window-private.c
++++ b/shell/e-shell-window-private.c
+@@ -247,6 +247,77 @@ e_shell_window_private_init (EShellWindow *shell_window)
+ }
+ 
+ static gboolean
++delayed_menubar_show_cb (gpointer user_data)
++{
++	EShellWindow *shell_window = user_data;
++
++	g_return_val_if_fail (E_IS_SHELL_WINDOW (shell_window), FALSE);
++
++	shell_window->priv->delayed_menubar_show_id = 0;
++
++	if (!e_shell_window_get_menubar_visible (shell_window)) {
++		GtkWidget *main_menu;
++
++		main_menu = e_shell_window_get_managed_widget (shell_window, "/main-menu");
++
++		gtk_widget_show (main_menu);
++		gtk_widget_grab_focus (main_menu);
++	}
++
++	return FALSE;
++}
++
++static void
++e_shell_window_event_after_cb (EShellWindow *shell_window,
++			       GdkEvent *event)
++{
++	GtkWidget *main_menu;
++
++	g_return_if_fail (event != NULL);
++
++	if (event->type != GDK_KEY_PRESS &&
++	    event->type != GDK_KEY_RELEASE &&
++	    event->type != GDK_BUTTON_RELEASE &&
++	    event->type != GDK_FOCUS_CHANGE)
++		return;
++
++	g_return_if_fail (E_IS_SHELL_WINDOW (shell_window));
++
++	if (e_shell_window_get_menubar_visible (shell_window))
++		return;
++
++	main_menu = e_shell_window_get_managed_widget (shell_window, "/main-menu");
++
++	if (event->type == GDK_KEY_PRESS) {
++		GdkEventKey *key_event;
++
++		key_event = (GdkEventKey *) event;
++
++		if ((key_event->keyval == GDK_KEY_Alt_L || key_event->keyval == GDK_KEY_Alt_R) &&
++		    !(key_event->state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK | GDK_SUPER_MASK | GDK_HYPER_MASK | GDK_META_MASK))) {
++			if (shell_window->priv->delayed_menubar_show_id) {
++				g_source_remove (shell_window->priv->delayed_menubar_show_id);
++				shell_window->priv->delayed_menubar_show_id = 0;
++
++				delayed_menubar_show_cb (shell_window);
++			} else {
++				/* To not flash when using Alt+Tab or similar system-wide shortcuts */
++				shell_window->priv->delayed_menubar_show_id =
++					e_named_timeout_add (250, delayed_menubar_show_cb, shell_window);
++			}
++		}
++	} else if (event->type != GDK_BUTTON_RELEASE || !(event->button.state & GDK_MOD1_MASK)) {
++		if (shell_window->priv->delayed_menubar_show_id) {
++			g_source_remove (shell_window->priv->delayed_menubar_show_id);
++			shell_window->priv->delayed_menubar_show_id = 0;
++		}
++
++		if (gtk_widget_get_visible (main_menu))
++			gtk_widget_hide (main_menu);
++	}
++}
++
++static gboolean
+ shell_window_check_is_main_instance (GtkApplication *application,
+ 				     GtkWindow *window)
+ {
+@@ -444,6 +515,11 @@ e_shell_window_private_constructed (EShellWindow *shell_window)
+ 			G_SETTINGS_BIND_DEFAULT);
+ 
+ 		g_settings_bind (
++			settings, "menubar-visible",
++			shell_window, "menubar-visible",
++			G_SETTINGS_BIND_DEFAULT);
++
++		g_settings_bind (
+ 			settings, "sidebar-visible",
+ 			shell_window, "sidebar-visible",
+ 			G_SETTINGS_BIND_DEFAULT);
+@@ -464,6 +540,12 @@ e_shell_window_private_constructed (EShellWindow *shell_window)
+ 			G_SETTINGS_BIND_DEFAULT);
+ 	} else {
+ 		g_settings_bind (
++			settings, "menubar-visible-sub",
++			shell_window, "menubar-visible",
++			G_SETTINGS_BIND_DEFAULT |
++			G_SETTINGS_BIND_GET_NO_CHANGES);
++
++		g_settings_bind (
+ 			settings, "folder-bar-width-sub",
+ 			priv->content_pane, "position",
+ 			G_SETTINGS_BIND_DEFAULT |
+@@ -521,6 +603,9 @@ e_shell_window_private_constructed (EShellWindow *shell_window)
+ 	gtk_application_add_window (GTK_APPLICATION (shell), window);
+ 
+ 	g_object_unref (settings);
++
++	g_signal_connect (shell_window, "event-after",
++		G_CALLBACK (e_shell_window_event_after_cb), NULL);
+ }
+ 
+ void
+@@ -528,6 +613,11 @@ e_shell_window_private_dispose (EShellWindow *shell_window)
+ {
+ 	EShellWindowPrivate *priv = shell_window->priv;
+ 
++	if (priv->delayed_menubar_show_id) {
++		g_source_remove (priv->delayed_menubar_show_id);
++		priv->delayed_menubar_show_id = 0;
++	}
++
+ 	/* Need to disconnect handlers before we unref the shell. */
+ 	if (priv->signal_handler_ids != NULL) {
+ 		GArray *array = priv->signal_handler_ids;
+diff --git a/shell/e-shell-window-private.h b/shell/e-shell-window-private.h
+index 0ef85d5..f761fb8 100644
+--- a/shell/e-shell-window-private.h
++++ b/shell/e-shell-window-private.h
+@@ -90,11 +90,14 @@ struct _EShellWindowPrivate {
+ 
+ 	guint destroyed        : 1;  /* XXX Do we still need this? */
+ 	guint safe_mode : 1;
++	guint menubar_visible : 1;
+ 	guint sidebar_visible : 1;
+ 	guint switcher_visible : 1;
+ 	guint taskbar_visible : 1;
+ 	guint toolbar_visible : 1;
+ 	guint is_main_instance : 1;
++
++	gulong delayed_menubar_show_id;
+ };
+ 
+ void		e_shell_window_private_init	(EShellWindow *shell_window);
+diff --git a/shell/e-shell-window.c b/shell/e-shell-window.c
+index 6d3b3c5..0fe229f 100644
+--- a/shell/e-shell-window.c
++++ b/shell/e-shell-window.c
+@@ -38,6 +38,7 @@ enum {
+ 	PROP_GEOMETRY,
+ 	PROP_SAFE_MODE,
+ 	PROP_SHELL,
++	PROP_MENUBAR_VISIBLE,
+ 	PROP_SIDEBAR_VISIBLE,
+ 	PROP_SWITCHER_VISIBLE,
+ 	PROP_TASKBAR_VISIBLE,
+@@ -322,6 +323,12 @@ shell_window_set_property (GObject *object,
+ 				g_value_get_object (value));
+ 			return;
+ 
++		case PROP_MENUBAR_VISIBLE:
++			e_shell_window_set_menubar_visible (
++				E_SHELL_WINDOW (object),
++				g_value_get_boolean (value));
++			return;
++
+ 		case PROP_SIDEBAR_VISIBLE:
+ 			e_shell_window_set_sidebar_visible (
+ 				E_SHELL_WINDOW (object),
+@@ -387,6 +394,12 @@ shell_window_get_property (GObject *object,
+ 				E_SHELL_WINDOW (object)));
+ 			return;
+ 
++		case PROP_MENUBAR_VISIBLE:
++			g_value_set_boolean (
++				value, e_shell_window_get_menubar_visible (
++				E_SHELL_WINDOW (object)));
++			return;
++
+ 		case PROP_SIDEBAR_VISIBLE:
+ 			g_value_set_boolean (
+ 				value, e_shell_window_get_sidebar_visible (
+@@ -507,6 +520,18 @@ shell_window_close_alert (EShellWindow *shell_window)
+ 	}
+ }
+ 
++static void
++shell_window_menubar_deactivate_cb (GtkWidget *main_menu,
++				    gpointer user_data)
++{
++	EShellWindow *shell_window = user_data;
++
++	g_return_if_fail (E_IS_SHELL_WINDOW (shell_window));
++
++	if (!e_shell_window_get_menubar_visible (shell_window))
++		gtk_widget_hide (main_menu);
++}
++
+ static GtkWidget *
+ shell_window_construct_menubar (EShellWindow *shell_window)
+ {
+@@ -514,7 +539,14 @@ shell_window_construct_menubar (EShellWindow *shell_window)
+ 
+ 	main_menu = e_shell_window_get_managed_widget (
+ 		shell_window, "/main-menu");
+-	gtk_widget_show (main_menu);
++
++	g_signal_connect (main_menu, "deactivate",
++		G_CALLBACK (shell_window_menubar_deactivate_cb), shell_window);
++
++	e_binding_bind_property (
++		shell_window, "menubar-visible",
++		main_menu, "visible",
++		G_BINDING_SYNC_CREATE);
+ 
+ 	e_signal_connect_notify (
+ 		shell_window, "notify::active-view",
+@@ -994,6 +1026,24 @@ e_shell_window_class_init (EShellWindowClass *class)
+ 			G_PARAM_STATIC_STRINGS));
+ 
+ 	/**
++	 * EShellWindow:menubar-visible
++	 *
++	 * Whether the shell window's menu bar is visible.
++	 *
++	 * Since: 3.24
++	 **/
++	g_object_class_install_property (
++		object_class,
++		PROP_MENUBAR_VISIBLE,
++		g_param_spec_boolean (
++			"menubar-visible",
++			"Menubar Visible",
++			"Whether the shell window's menu bar is visible",
++			TRUE,
++			G_PARAM_READWRITE |
++			G_PARAM_STATIC_STRINGS));
++
++	/**
+ 	 * EShellWindow:sidebar-visible
+ 	 *
+ 	 * Whether the shell window's side bar is visible.
+@@ -1565,6 +1615,47 @@ e_shell_window_add_action_group (EShellWindow *shell_window,
+ }
+ 
+ /**
++ * e_shell_window_get_menubar_visible:
++ * @shell_window: an #EShellWindow
++ *
++ * Returns %TRUE if @shell_window<!-- -->'s menu bar is visible.
++ *
++ * Returns: %TRUE is the menu bar is visible
++ *
++ * Since: 3.24
++ **/
++gboolean
++e_shell_window_get_menubar_visible (EShellWindow *shell_window)
++{
++	g_return_val_if_fail (E_IS_SHELL_WINDOW (shell_window), FALSE);
++
++	return shell_window->priv->menubar_visible;
++}
++
++/**
++ * e_shell_window_set_menubar_visible:
++ * @shell_window: an #EShellWindow
++ * @menubar_visible: whether the menu bar should be visible
++ *
++ * Makes @shell_window<!-- -->'s menu bar visible or invisible.
++ *
++ * Since: 3.24
++ **/
++void
++e_shell_window_set_menubar_visible (EShellWindow *shell_window,
++				    gboolean menubar_visible)
++{
++	g_return_if_fail (E_IS_SHELL_WINDOW (shell_window));
++
++	if (shell_window->priv->menubar_visible == menubar_visible)
++		return;
++
++	shell_window->priv->menubar_visible = menubar_visible;
++
++	g_object_notify (G_OBJECT (shell_window), "menubar-visible");
++}
++
++/**
+  * e_shell_window_get_sidebar_visible:
+  * @shell_window: an #EShellWindow
+  *
+diff --git a/shell/e-shell-window.h b/shell/e-shell-window.h
+index c67c1ea..1c6c9a5 100644
+--- a/shell/e-shell-window.h
++++ b/shell/e-shell-window.h
+@@ -115,6 +115,11 @@ void		e_shell_window_set_safe_mode	(EShellWindow *shell_window,
+ 						 gboolean safe_mode);
+ void		e_shell_window_add_action_group (EShellWindow *shell_window,
+ 						 const gchar *group_name);
++gboolean	e_shell_window_get_menubar_visible
++						(EShellWindow *shell_window);
++void		e_shell_window_set_menubar_visible
++						(EShellWindow *shell_window,
++						 gboolean menubar_visible);
+ gboolean	e_shell_window_get_sidebar_visible
+ 						(EShellWindow *shell_window);
+ void		e_shell_window_set_sidebar_visible
+diff --git a/ui/evolution-shell.ui b/ui/evolution-shell.ui
+index bc7e349..9035fb2 100644
+--- a/ui/evolution-shell.ui
++++ b/ui/evolution-shell.ui
+@@ -43,6 +43,7 @@
+       </menu>
+       <menu action='window-menu'/>
+       <menu action='layout-menu'>
++        <menuitem action='show-menubar'/>
+         <menuitem action='show-toolbar'/>
+         <menuitem action='show-taskbar'/>
+         <menuitem action='show-sidebar'/>
+-- 
+cgit v0.12
+

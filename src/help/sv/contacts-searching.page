@@ -21,63 +21,68 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Searching contacts.</desc>
+    <desc>Sök efter kontakter.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Searching Contacts</title>
+  <title>Söka efter kontakter</title>
 
 <section id="search-single">
-  <title>Searching in a Single Contact</title>
+  <title>Sök inom en kontakt</title>
 
-  <p>To find text in the displayed contact, select
-  <guiseq><gui>Edit</gui><gui>Find in Contact…</gui></guiseq> from the main
-  menu.</p>
+  <p>För att hitta text i den visade kontakten, välj <guiseq><gui>Redigera</gui><gui>Sök i kontakt…</gui></guiseq> från huvudmenyn.</p>
 
 </section>
 
 <section id="search-many">
-  <title>Searching Across Contacts</title>
+  <title>Sök över kontakter</title>
 
   <section id="quick-search">
-    <title>Quick Search</title>
-      <p>In the Contacts view, you can quickly search for contacts either by
-      category or by contact's info.</p>
-      <p>Searching by contact's info:</p>
+    <title>Snabbsökning</title>
+      <p>I kontaktvyn kan du snabbt söka efter kontakter antingen efter kategori eller efter kontaktens information.</p>
+      <p>Sök efter kontaktinfo:</p>
 
       <steps>
         <item>
-	  <p>Click the search icon
-	  <media type="image" mime="image/png" its:translate="no" src="figures/search-icon.png"/>
-	  to expand the drop-down list.</p>
+	  <p>Klicka på sökikonen <media type="image" mime="image/png" its:translate="no" src="figures/search-icon.png"/> för att expandera rullgardinslistan.</p>
         </item>
         <item>
-	  <p>Select the search condition from the list.</p>
+	  <p>Välj sökvillkoret från listan.</p>
 	</item>
         <item>
-	  <p>Enter the text you want to search for and press
-	  <key>Enter</key>.</p>
+	  <p>Mata in texten du vill söka efter och tryck <key>Retur</key>.</p>
 	</item>
         <item>
-	  <p><app>Evolution</app> displays the search results.</p>
+	  <p><app>Evolution</app> visar sökresultaten.</p>
 	</item>
       </steps>
 
-      <p>Searching by category:</p>
+      <p>Sök efter kategori:</p>
 
       <steps>
         <item>
-	  <p>Click the <gui>Show</gui> drop-down list.</p>
+	  <p>Klicka på rullgardinsmenyn <gui>Visa</gui>.</p>
 	</item>
         <item>
-	  <p>Select the category from the list.</p>
+	  <p>Välj kategorin från listan.</p>
 	</item>
         <item>
-	  <p><app>Evolution</app> displays the search results.</p>
+	  <p><app>Evolution</app> visar sökresultaten.</p>
 	</item>
       </steps>
 
-      <p>If you want to set several search conditions, you should use an
-      Advanced search, which is described below.</p>
+      <p>Om du vill ställa in flera sökvillkor bör du använda en Avancerad sökning som beskrivs nedan.</p>
     </section>
 
     <!-- As advanced-search, clearing-search, saved-searches,

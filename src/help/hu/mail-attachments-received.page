@@ -19,12 +19,36 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
 <title>Kapott levelek mellékleteinek kezelése</title>
 
-<p>Ha mellékleteket tartalmazó leveleket kap, akkor az Evolution az e-mail fejléce és szövege között megjeleníti a mellékletek számát, és egy <gui style="button">Mentés</gui> vagy <gui style="button">Összes mentése</gui> gombot.</p>
-<note style="tip"><p>Az Evolution nem támogatja az összes üzenet összes mellékletének egyszerre történő mentését egy mappában.</p></note>
+<p>Ha mellékleteket tartalmazó leveleket kap, akkor az <app>Evolution</app> az e-mail fejléce és szövege között megjeleníti a mellékletek számát, és egy <gui style="button">Mentés</gui> vagy <gui style="button">Összes mentése</gui> gombot.</p>
+<note style="tip"><p>Az <app>Evolution</app> nem támogatja az összes üzenet összes mellékletének egyszerre történő mentését egy mappában.</p></note>
 
 <p>A mellékletek listája elérhető az e-mail alján is.</p>
 <p>Melléklet lemezre mentéséhez kattintson a mellékletikon melletti lefelé mutató nyílra, majd válassza a <gui>Mentés másként</gui> menüpontot.</p>

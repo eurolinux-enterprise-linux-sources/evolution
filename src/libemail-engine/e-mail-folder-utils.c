@@ -101,6 +101,7 @@ e_mail_folder_append_message_sync (CamelFolder *folder,
                                    GError **error)
 {
 	CamelMedium *medium;
+	gchar *full_display_name;
 	gboolean success;
 
 	g_return_val_if_fail (CAMEL_IS_FOLDER (folder), FALSE);
@@ -108,10 +109,12 @@ e_mail_folder_append_message_sync (CamelFolder *folder,
 
 	medium = CAMEL_MEDIUM (message);
 
+	full_display_name = e_mail_folder_to_full_display_name (folder, NULL);
 	camel_operation_push_message (
 		cancellable,
 		_("Saving message to folder '%s'"),
-		camel_folder_get_display_name (folder));
+		full_display_name ? full_display_name : camel_folder_get_display_name (folder));
+	g_free (full_display_name);
 
 	if (camel_medium_get_header (medium, "X-Mailer") == NULL)
 		camel_medium_set_header (medium, "X-Mailer", X_MAILER);
@@ -247,7 +250,7 @@ mail_folder_expunge_pop3_stores (CamelFolder *folder,
 			folder, uids->pdata[ii]);
 
 		if (info != NULL) {
-			flags = camel_message_info_flags (info);
+			flags = camel_message_info_get_flags (info);
 			camel_message_info_unref (info);
 		}
 
@@ -722,13 +725,21 @@ emfu_get_messages_hash_sync (CamelFolder *folder,
 					content, stream, cancellable, error);
 
 				if (n_bytes >= 0) {
+					guint data_len;
+
 					/* The CamelStreamMem owns the buffer. */
 					buffer = camel_stream_mem_get_byte_array (
 						CAMEL_STREAM_MEM (stream));
 					g_return_val_if_fail (buffer != NULL, NULL);
 
-					digest = g_compute_checksum_for_data (
-						G_CHECKSUM_SHA256, buffer->data, buffer->len);
+					data_len = buffer->len;
+
+					/* Strip trailing white-spaces and empty lines */
+					while (data_len > 0 && g_ascii_isspace (buffer->data[data_len - 1]))
+						data_len--;
+
+					if (data_len > 0)
+						digest = g_compute_checksum_for_data (G_CHECKSUM_SHA256, buffer->data, data_len);
 				}
 
 				g_object_unref (stream);
@@ -790,8 +801,11 @@ e_mail_folder_find_duplicate_messages_sync (CamelFolder *folder,
 		const gchar *digest;
 
 		info = camel_folder_get_message_info (folder, key);
-		message_id = camel_message_info_message_id (info);
-		flags = camel_message_info_flags (info);
+		if (!info)
+			continue;
+
+		message_id = camel_message_info_get_message_id (info);
+		flags = camel_message_info_get_flags (info);
 
 		/* Skip messages marked for deletion. */
 		if (flags & CAMEL_MESSAGE_DELETED) {
@@ -1130,9 +1144,8 @@ e_mail_folder_remove_sync (CamelFolder *folder,
 	CamelFolderInfo *to_remove;
 	CamelFolderInfo *next = NULL;
 	CamelStore *parent_store;
-	const gchar *display_name;
 	const gchar *full_name;
-	const gchar *message;
+	gchar *full_display_name;
 	gboolean success = TRUE;
 	GCancellable *transparent_cancellable = NULL;
 	gulong cbid = 0;
@@ -1142,9 +1155,10 @@ e_mail_folder_remove_sync (CamelFolder *folder,
 	full_name = camel_folder_get_full_name (folder);
 	parent_store = camel_folder_get_parent_store (folder);
 
-	message = _("Removing folder '%s'");
-	display_name = camel_folder_get_display_name (folder);
-	camel_operation_push_message (cancellable, message, display_name);
+	full_display_name = e_mail_folder_to_full_display_name (folder, NULL);
+	camel_operation_push_message (cancellable, _("Removing folder '%s'"),
+		full_display_name ? full_display_name : camel_folder_get_display_name (folder));
+	g_free (full_display_name);
 
 	if (cancellable) {
 		transparent_cancellable = g_cancellable_new ();
@@ -1275,31 +1289,32 @@ mail_folder_remove_attachments_thread (GSimpleAsyncResult *simple,
 		g_simple_async_result_take_error (simple, error);
 }
 
-/* Helper for e_mail_folder_remove_attachments_sync() */
 static gboolean
-mail_folder_strip_message (CamelFolder *folder,
-                           CamelMimeMessage *message,
-                           const gchar *message_uid,
-                           GCancellable *cancellable,
-                           GError **error)
+mail_folder_strip_message_level (CamelMimePart *in_part,
+				 GCancellable *cancellable)
 {
 	CamelDataWrapper *content;
 	CamelMultipart *multipart;
 	gboolean modified = FALSE;
-	gboolean success = TRUE;
 	guint ii, n_parts;
 
-	content = camel_medium_get_content (CAMEL_MEDIUM (message));
+	g_return_val_if_fail (CAMEL_IS_MIME_PART (in_part), FALSE);
+
+	content = camel_medium_get_content (CAMEL_MEDIUM (in_part));
+
+	if (CAMEL_IS_MIME_MESSAGE (content)) {
+		return mail_folder_strip_message_level (CAMEL_MIME_PART (content), cancellable);
+	}
 
 	if (!CAMEL_IS_MULTIPART (content))
-		return TRUE;
+		return FALSE;
 
 	multipart = CAMEL_MULTIPART (content);
 	n_parts = camel_multipart_get_number (multipart);
 
 	/* Replace MIME parts with "attachment" or "inline" dispositions
 	 * with a small "text/plain" part saying the file was removed. */
-	for (ii = 0; ii < n_parts; ii++) {
+	for (ii = 0; ii < n_parts && !g_cancellable_is_cancelled (cancellable); ii++) {
 		CamelMimePart *mime_part;
 		const gchar *disposition;
 		gboolean is_attachment;
@@ -1337,8 +1352,26 @@ mail_folder_strip_message (CamelFolder *folder,
 				mime_part, disposition);
 
 			modified = TRUE;
+		} else {
+			modified = mail_folder_strip_message_level (mime_part, cancellable) || modified;
 		}
 	}
+
+	return modified;
+}
+
+/* Helper for e_mail_folder_remove_attachments_sync() */
+static gboolean
+mail_folder_strip_message (CamelFolder *folder,
+                           CamelMimeMessage *message,
+                           const gchar *message_uid,
+                           GCancellable *cancellable,
+                           GError **error)
+{
+	gboolean modified;
+	gboolean success = TRUE;
+
+	modified = mail_folder_strip_message_level (CAMEL_MIME_PART (message), cancellable);
 
 	/* Append the modified message with removed attachments to
 	 * the folder and mark the original message for deletion. */
@@ -1389,26 +1422,34 @@ e_mail_folder_remove_attachments_sync (CamelFolder *folder,
 
 	for (ii = 0; success && ii < message_uids->len; ii++) {
 		CamelMimeMessage *message;
-		const gchar *uid;
+		CamelFolder *real_folder = NULL, *use_folder;
+		gchar *real_message_uid = NULL;
+		const gchar *uid, *use_message_uid;
 		gint percent;
 
 		uid = g_ptr_array_index (message_uids, ii);
 
-		message = camel_folder_get_message_sync (
-			folder, uid, cancellable, error);
+		em_utils_get_real_folder_and_message_uid (folder, uid, &real_folder, NULL, &real_message_uid);
+
+		use_folder = real_folder ? real_folder : folder;
+		use_message_uid = real_message_uid ? real_message_uid : uid;
+		message = camel_folder_get_message_sync (use_folder, use_message_uid, cancellable, error);
 
 		if (message == NULL) {
+			g_clear_object (&real_folder);
+			g_free (real_message_uid);
 			success = FALSE;
 			break;
 		}
 
-		success = mail_folder_strip_message (
-			folder, message, uid, cancellable, error);
+		success = mail_folder_strip_message (use_folder, message, use_message_uid, cancellable, error);
 
 		percent = ((ii + 1) * 100) / message_uids->len;
 		camel_operation_progress (cancellable, percent);
 
-		g_object_unref (message);
+		g_clear_object (&real_folder);
+		g_clear_object (&message);
+		g_free (real_message_uid);
 	}
 
 	camel_operation_pop_message (cancellable);
@@ -2071,4 +2112,63 @@ e_mail_folder_uri_to_markup (CamelSession *session,
 	g_free (folder_name);
 
 	return markup;
+}
+
+/**
+ * e_mail_folder_to_full_display_name:
+ * @folder: a #CamelFolder
+ * @error: return location for a #GError, or %NULL
+ *
+ * Returns similar description as e_mail_folder_uri_to_markup(), only without markup
+ * and rather for a @folder, than for a folder URI. Returned pointer should be freed
+ * with g_free() when no longer needed.
+ *
+ * Returns: a newly-allocated string, or %NULL
+ *
+ * Since: 3.18
+ **/
+gchar *
+e_mail_folder_to_full_display_name (CamelFolder *folder,
+				    GError **error)
+{
+	CamelSession *session;
+	CamelStore *store;
+	gchar *folder_uri, *full_display_name = NULL, *folder_name = NULL;
+
+	g_return_val_if_fail (CAMEL_IS_FOLDER (folder), NULL);
+
+	folder_uri = e_mail_folder_uri_from_folder (folder);
+	if (!folder_uri)
+		return NULL;
+
+	store = camel_folder_get_parent_store (folder);
+	if (!store) {
+		g_warn_if_reached ();
+		g_free (folder_uri);
+
+		return NULL;
+	}
+
+	session = camel_service_ref_session (CAMEL_SERVICE (store));
+	if (!session) {
+		g_warn_if_reached ();
+		g_free (folder_uri);
+
+		return NULL;
+	}
+
+	if (e_mail_folder_uri_parse (session, folder_uri, NULL, &folder_name, error)) {
+		const gchar *service_display_name;
+
+		service_display_name = camel_service_get_display_name (CAMEL_SERVICE (store));
+
+		full_display_name = g_strdup_printf ("%s : %s", service_display_name, folder_name);
+
+		g_free (folder_name);
+	}
+
+	g_clear_object (&session);
+	g_free (folder_uri);
+
+	return full_display_name;
 }

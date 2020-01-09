@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-search-folders-refresh" xml:lang="fr">
 
   <info>
-    <desc>Les différentes façons de mettre à jour les dossiers de recherche.</desc>
+    <desc>Ways of updating <gui>Search</gui> folders.</desc>
     
     <link type="guide" xref="mail-search-folders"/>
 
@@ -53,13 +53,13 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
-<title>Mise à jour des dossiers de recherche</title>
+<title>Updating/refreshing <gui>Search</gui> folders</title>
 
-<p>Il peut arriver qu'un de vos dossiers de recherche n'ait pas été mis à jour depuis l'arrivée de nouveaux courriels ou depuis la destruction d'un courriel par exemple. Cela signifie que la liste des courriels dans le dossier n'est pas à jour.</p>
+<p>It might happen that one of your <gui>Search</gui> folders has not updated since some new email arrived or since an email was deleted, for example. This will mean that the list of emails in the folder is not up-to-date.</p>
 
 <p>Vous pouvez rafraîchir l'affichage du dossier de recherche soit en allant dans un autre dossier puis en retournant dans le dossier de recherche ou en faisant un clic-droit sur le dossier de recherche et en sélectionnant <gui>Actualiser</gui>.</p>
 

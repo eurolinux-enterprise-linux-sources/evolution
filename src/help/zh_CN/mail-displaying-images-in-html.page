@@ -26,11 +26,11 @@
 
 <title>Images in HTML messages</title>
 
-<p>When someone sends you HTML mail that includes an image in the body of the message (for example, the welcome message in your Inbox), Evolution displays the image inside the message.</p>
+<p>When someone sends you HTML mail that includes an image in the body of the message (for example, the welcome message in your Inbox), <app>Evolution</app> displays the image inside the message.</p>
 
 <section id="loading">
 <title>Loading images</title>
-<p>一些图片则是邮件中的链接，而不是邮件本身的一部分。 Evolution可以从Internet上下载这些图片，但不会自动进行这些操作，除非您要求Evolution这么做。 这是因为远程图片可能载入、显示得很慢，而且甚至可能被垃圾邮件发送者所利用来追踪收件人。 所以说，不自动载入图片有助于保护您的隐私。</p>
+<p>Some images are links in a message, rather than being part of the message. <app>Evolution</app> can download those images from the Internet, but does not do so unless you request it. This is because remotely hosted images can be slow to load and display, and can even be used by spammers to track who reads the email. Not automatically loading images helps protect your privacy.</p>
 
 <p>To load the images for one message, click <guiseq><gui>View</gui><gui>Load Images</gui></guiseq> or press <keyseq><key>Ctrl</key><key>I</key></keyseq>.</p>
 
@@ -47,7 +47,7 @@
 
 <section id="saving">
 <title>Saving images</title>
-<p>To save an image that is embedded in an HTML email, right-click on the image and click <gui>Save Image...</gui>.</p>
+<p>To save an image that is embedded in an HTML email, right-click on the image and click <gui>Save Image…</gui>.</p>
 <!-- This is available only since version 3.1.5, see https://bugzilla.gnome.org/show_bug.cgi?id=655669 -->
 </section>
 

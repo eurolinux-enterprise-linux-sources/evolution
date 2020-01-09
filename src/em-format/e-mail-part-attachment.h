@@ -52,7 +52,7 @@ struct _EMailPartAttachment {
 	EMailPart parent;
 	EMailPartAttachmentPrivate *priv;
 
-	gchar *attachment_view_part_id;
+	gchar *part_id_with_attachment;
 
 	gboolean shown;
 	const gchar *snoop_mime_type;
@@ -67,6 +67,11 @@ EMailPartAttachment *
 		e_mail_part_attachment_new	(CamelMimePart *mime_part,
 						 const gchar *id);
 EAttachment *	e_mail_part_attachment_ref_attachment
+						(EMailPartAttachment *part);
+void		e_mail_part_attachment_set_expandable
+						(EMailPartAttachment *part,
+						 gboolean expandable);
+gboolean	e_mail_part_attachment_get_expandable
 						(EMailPartAttachment *part);
 
 G_END_DECLS

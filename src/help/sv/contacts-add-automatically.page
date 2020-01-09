@@ -17,24 +17,26 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Automatically add senders of mail that you have received to your
-    contacts.</desc>
+    <desc>Lägg automatiskt till avsändare till dina kontakter för e-postmeddelande som du tagit emot.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Adding people automatically to my contacts</title>
+  <title>Lägga till folk automatiskt till mina kontakter</title>
 
-  <p>You can add people automatically to your contacts when you reply to
-  received email. Enable the plugin <gui>Automatic Contacts</gui> by going to
-  <guiseq><gui>Edit</gui><gui>Plugins</gui></guiseq>; click on
-  <gui>Automatic Contacts</gui> so that it shows a check mark. Then go to
-  <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Contacts</gui>
-  <gui>Automatic Contacts</gui></guiseq> and enable the
-  <gui>Create address book entries when sending emails</gui> option and select
-  an address book in the drop-down field below that will receive the new
-  contacts.</p>
+  <p>Du kan automatisk lägga till människor till dina kontakter när du svarar på mottagen e-post. Aktivera insticksmodulen <gui>Automatiska kontakter</gui> genom att gå till <guiseq><gui>Redigera</gui><gui>Insticksmoduler</gui></guiseq>; klicka på <gui>Automatiska kontakter</gui> så att en bock visas. Gå sedan till <guiseq><gui>Redigera</gui><gui>Inställningar</gui><gui>Kontakter</gui> <gui>Automatiska kontakter</gui></guiseq> och aktivera alternativet <gui>Skapa poster i adressboken när meddelanden skickas</gui> och välj en adressbok som får de nya kontakterna i rullgardinsfältet undertill.</p>
 
-  <p>From now on, contacts will be automatically created for senders of
-  received mail when you reply to that mail.</p>
+  <p>Från om med nu kommer kontakter automatiskt att skapas för avsändare av mottagen e-post när du svarar på det e-postmeddelandet.</p>
   <!-- Location in Preferences is correct only since 3.1.5, as
      https://bugzilla.gnome.org/show_bug.cgi?id=655492 was fixed -->
 

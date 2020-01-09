@@ -4,7 +4,7 @@
   <info>
     <link type="guide" xref="contacts-using-several-addressbooks"/>
 
-    <revision pkgversion="3.1.5" version="0.3" date="2011-07-28" status="final"/>
+    <revision pkgversion="3.1.5" version="0.4" date="2015-03-09" status="final"/>
 
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
@@ -21,127 +21,115 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Use shared address books on a local network.</desc>
+    <desc>Jak používat sdílený adresář na místní síti.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Adding LDAP access</title>
+  <title>Přidání přistupu k LDAP</title>
 
-  <p>The LDAP protocol was created to let users share contact information over
-  a network by sharing access to a central directory. LDAP allows a company to
-  maintain a shared set of contact information. Many companies keep a common
-  LDAP address book for all their employees or for client contacts.</p>
+  <p>Protokol LDAP byl vytvořen, aby uživatelům umožnil sdílet kontakty po síti pomocí sdílení přístupu do centrálního adresáře. LDAP umožňuje firmám udržovat sdílené kontakty. Mnoho firem udržuje společný adresář LDAP pro všechny své zaměstnance nebo klienty.</p>
 
 <section id="add-ldap-addressbook">
-  <title>Adding an LDAP address book</title>
+  <title>Přidání adresáře LDAP</title>
 
   <steps>
     <item>
-      <p>Click <guiseq><gui>File</gui><gui>New</gui>
-      <gui>Address Book</gui></guiseq>.</p>
+      <p>Klikněte na <guiseq><gui>Soubor</gui> <gui>Nový</gui> <gui>Adresář</gui></guiseq>.</p>
     </item>
     <item>
-      <p>In the <gui>General</gui> tab, select the type
-      <gui>On LDAP Servers</gui>.</p>
+      <p>Na kartě <gui>Obecné</gui> vyberte typ <gui>Na serveru LDAP</gui>.</p>
     </item>
     <item>
-      <p>Vložte název, který preferujete.</p>
+      <p>Vložte název, kterému dáváte přednost.</p>
     </item>
     <item>
-      <p>Enter the address of the server, the port number (the default number
-      is 389) and whether you want to connect securely.</p>
+      <p>Zadejte adresu serveru, číslo portu (výchozí je 389) a jestli se chcete připojovat zabezpečeně.</p>
     </item>
     <item>
-      <p>Define the login method and your user name.</p>
+      <p>Určete způsob přihlašování a své uživatelské jméno.</p>
     </item>
     <item>
       <p>Klikněte na <gui style="button">Použít</gui>.</p>
     </item>
     <item>
-      <p>In the <gui>Details</gui> tab you can define the following
-      settings:</p>
+      <p>Na kartě <gui>Používání LDAP</gui> zadejte následující věci:</p>
       <list>
         <item>
-	  <p>Search Base: The search base is the starting point for a directory
-	  search. Contact your system administrator for information about the
-	  correct settings.</p>
+	  <p>Základ vyhledávání: Je počáteční bod pro prohledávání adresáře. Ohledně správného nastavení kontaktujte správce vaší sítě.</p>
         </item>
         <item>
-	  <p>Search Scope: The search scope is the breadth of a given search.
-	  The following options are available:</p>
+	  <p>Rozsah vyhledávání: Jedná se o hloubku prohledávání.</p>
+	  <p>Dostupné jsou následující volby:</p>
           <list>
             <item>
-	      <p>One: Searches the Search Base and one entry below it.</p>
+	      <p>Jedna úroveň: Prohledává se základ vyhledávání a jeden záznam pod ním.</p>
 	    </item>
             <item>
-	      <p>Sub: Searches the Search Base and all entries below it.</p>
+	      <p>Podstrom: Prohledává základ vyhledávání a všechny záznamy pod ním.</p>
             </item>
           </list>
         </item>
         <item>
-	  <p>Search Filter: The search filter can be set here for all the LDAP
-	  queries. For example:</p>
+	  <p>Filtr hledání: Filtr hledání zde může být nastaven pro všechny dotazy LDAP. Například:</p>
           <list>
             <item>
-              <p><code>ObjectClass=*</code>: Lists all the objects from the
-              server.</p>
+              <p><code>ObjectClass=*</code>: Seznam všech objektů na serveru.</p>
 	    </item>
             <item>
-	      <p><code>ObjectClass=User</code>: Lists only the users.</p>
+	      <p><code>ObjectClass=User</code>: Jen seznam uživatelů.</p>
 	    </item>
             <item>
-	      <p><code>Filter (|(ObjectClass=User)(ObjectClass=groupOfNames))</code>:
-	      Retrieves the User and Contact List objects.</p>
+	      <p><code>Filter (|(ObjectClass=User)(ObjectClass=groupOfNames))</code>: Získává objekty ze seznamu uživatelů a kontaktů.</p>
 	    </item>
             <item>
-	      <p><code>(&amp;(mail=*)(ObjectClass=*))</code>: Lists the objects
-	      associated with the email addresses.</p>
+	      <p><code>(&amp;(mail=*)(ObjectClass=*))</code>: Vypíše objekty, které mají přiřazenu nějakou e-mailovou adresu.</p>
 	    </item>
           </list>
         </item>
         <item>
-	  <p>Timeout (minutes): The maximum time <app>Evolution</app> attempts
-	  to download data from the server before giving up.</p>
+	  <p>Časové omezení (v minutách): Maximální čas, po který se <app>Evolution</app> pokouší stahovat data ze serveru před tím, než to vzdá.</p>
         </item>
         <item>
-	  <p>Download Limit: The maximum number of results for a given search.
-	  Most servers refuse to send more than 500 contacts, but you can set
-	  the number lower if you want to shorten downloads for very broad
-	  searches.</p>
+	  <p>Limit stahování: Maximální počet výsledků pro určité vyhledávání. Většina serverů odmítá poslat více než 500, ale můžete nastavit číslo nižší, pokud chcete zkrátit stahování velmi rozsáhlých vyhledávání.</p>
         </item>
       </list>
     </item>
   </steps>
 
   <note style="tip">
-    <p>If you are unsure about some settings, ask your system
-    administrator.</p>
+    <p>Pokud si nejste jistí, jaká je adresa vašeho serveru, kontaktujte svého správce sítě.</p>
   </note>
 
 </section>
 
 <section id="ldap-vs-local-addressbooks">
-  <title>Differences to local address books</title>
+  <title>Rozdíl oproti místním adresářům</title>
 
-  <p>LDAP address books work like local address books on your computer, with
-  the following exceptions:</p>
+  <p>Adresáře LDAP fungují podobně jak místní adresáře ve vašem počítači, ale s těmito odlišnostmi:</p>
 
   <list>
     <item>
-      <p>Složky v síti jsou dostupné, pouze když jste k síti připojeni. Používáte-li notebook nebo máte modemové připojení, možná budete chtít kopírovat nebo ukládat do cache něco z adresáře v síti. Uděláte to přetažením a pustěním požadovaných kontaktů do místního adresáře.</p>
+      <p>Složky v síti jsou dostupné, pouze když jste k síti připojeni. Používáte-li notebook nebo máte modemové připojení, možná budete chtít kopírovat nebo ukládat některé věci ze síťového adresáře do mezipaměti. Uděláte to přetažením a upustěním požadovaných kontaktů do místního adresáře.</p>
     </item>
     <item>
-      <p>Můžete také složku v síti označit pro použití při odpojení. Složku označíte tak, že kliknete pravým tlačítkem na složku, vyberete Nastavení a vyberete Zkopírovat obsah adresáře lokálně pro práci při odpojení.</p>
+      <p>Můžete také složku v síti označit pro použití při odpojení. Složku označíte tak, že kliknete pravým tlačítkem na složku, kliknete na <gui>Vlastnosti</gui> a vyberete <gui>Zkopírovat obsah složky lokálně pro práci při odpojení</gui>.</p>
     </item>
     <item>
-      <p>To prevent excess network traffic, <app>Evolution</app> does not
-      normally load data from the LDAP server upon opening.</p>
+      <p>Aby zbytečně nezatěžoval síťový provoz, <app>Evolution</app> normálně nenačítá data ze serveru LDAP, dokud složku neotevřete.</p>
     </item>
     <item>
-      <p>Depending on your server settings, you might not be able to edit all
-      the fields in a contact stored on an LDAP server. Some servers prohibit
-      some or all changes, and others use a smaller set of fields than
-      <app>Evolution</app> allows. Check with your system administrator if you
-      need different settings.</p>
+      <p>V závislosti na nastavení vašeho serveru možná nebudete moci upravovat všechna pole v kontaktech uložených na serveru LDAP. Některé servery zakazují některé nebo veškeré změny, jiné používají menší sadu polí, než umožňuje <app>Evolution</app>. Pokud potřebujete jiné nastavení, obraťte se na správce vaší sítě.</p>
     </item>
   </list>
 

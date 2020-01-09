@@ -1,0 +1,597 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ESpellDictionary: Evolution Utilities Reference Manual</title>
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="index.html" title="Evolution Utilities Reference Manual">
+<link rel="up" href="ch09.html" title="HTML Editing">
+<link rel="prev" href="ESpellChecker.html" title="ESpellChecker">
+<link rel="next" href="ch10.html" title="Mail Signatures">
+<meta name="generator" content="GTK-Doc V1.25 (XML mode)">
+<link rel="stylesheet" href="style.css" type="text/css">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table class="navigation" id="top" width="100%" summary="Navigation header" cellpadding="2" cellspacing="5"><tr valign="middle">
+<td width="100%" align="left" class="shortcuts">
+<a href="#" class="shortcut">Top</a><span id="nav_description">  <span class="dim">|</span> 
+                  <a href="#ESpellDictionary.description" class="shortcut">Description</a></span><span id="nav_hierarchy">  <span class="dim">|</span> 
+                  <a href="#ESpellDictionary.object-hierarchy" class="shortcut">Object Hierarchy</a></span><span id="nav_properties">  <span class="dim">|</span> 
+                  <a href="#ESpellDictionary.properties" class="shortcut">Properties</a></span>
+</td>
+<td><a accesskey="h" href="index.html"><img src="home.png" width="16" height="16" border="0" alt="Home"></a></td>
+<td><a accesskey="u" href="ch09.html"><img src="up.png" width="16" height="16" border="0" alt="Up"></a></td>
+<td><a accesskey="p" href="ESpellChecker.html"><img src="left.png" width="16" height="16" border="0" alt="Prev"></a></td>
+<td><a accesskey="n" href="ch10.html"><img src="right.png" width="16" height="16" border="0" alt="Next"></a></td>
+</tr></table>
+<div class="refentry">
+<a name="ESpellDictionary"></a><div class="titlepage"></div>
+<div class="refnamediv"><table width="100%"><tr>
+<td valign="top">
+<h2><span class="refentrytitle"><a name="ESpellDictionary.top_of_page"></a>ESpellDictionary</span></h2>
+<p>ESpellDictionary</p>
+</td>
+<td class="gallery_image" valign="top" align="right"></td>
+</tr></table></div>
+<div class="refsect1">
+<a name="ESpellDictionary.functions"></a><h2>Functions</h2>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="functions_return">
+<col class="functions_name">
+</colgroup>
+<tbody>
+<tr>
+<td class="function_type">
+<a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="returnvalue">ESpellDictionary</span></a> *
+</td>
+<td class="function_name">
+<a class="link" href="ESpellDictionary.html#e-spell-dictionary-new" title="e_spell_dictionary_new ()">e_spell_dictionary_new</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="returnvalue">ESpellDictionary</span></a> *
+</td>
+<td class="function_name">
+<a class="link" href="ESpellDictionary.html#e-spell-dictionary-new-bare" title="e_spell_dictionary_new_bare ()">e_spell_dictionary_new_bare</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#guint"><span class="returnvalue">guint</span></a>
+</td>
+<td class="function_name">
+<a class="link" href="ESpellDictionary.html#e-spell-dictionary-hash" title="e_spell_dictionary_hash ()">e_spell_dictionary_hash</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+</td>
+<td class="function_name">
+<a class="link" href="ESpellDictionary.html#e-spell-dictionary-equal" title="e_spell_dictionary_equal ()">e_spell_dictionary_equal</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="returnvalue">gint</span></a>
+</td>
+<td class="function_name">
+<a class="link" href="ESpellDictionary.html#e-spell-dictionary-compare" title="e_spell_dictionary_compare ()">e_spell_dictionary_compare</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="returnvalue">gchar</span></a> *
+</td>
+<td class="function_name">
+<a class="link" href="ESpellDictionary.html#e-spell-dictionary-get-name" title="e_spell_dictionary_get_name ()">e_spell_dictionary_get_name</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="returnvalue">gchar</span></a> *
+</td>
+<td class="function_name">
+<a class="link" href="ESpellDictionary.html#e-spell-dictionary-get-code" title="e_spell_dictionary_get_code ()">e_spell_dictionary_get_code</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">struct <a class="link" href="ESpellChecker.html" title="ESpellChecker"><span class="returnvalue">_ESpellChecker</span></a> *
+</td>
+<td class="function_name">
+<a class="link" href="ESpellDictionary.html#e-spell-dictionary-ref-spell-checker" title="e_spell_dictionary_ref_spell_checker ()">e_spell_dictionary_ref_spell_checker</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+</td>
+<td class="function_name">
+<a class="link" href="ESpellDictionary.html#e-spell-dictionary-check-word" title="e_spell_dictionary_check_word ()">e_spell_dictionary_check_word</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="ESpellDictionary.html#e-spell-dictionary-learn-word" title="e_spell_dictionary_learn_word ()">e_spell_dictionary_learn_word</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="ESpellDictionary.html#e-spell-dictionary-ignore-word" title="e_spell_dictionary_ignore_word ()">e_spell_dictionary_ignore_word</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<a href="/usr/share/gtk-doc/html/glibglib-Doubly-Linked-Lists.html#GList"><span class="returnvalue">GList</span></a> *
+</td>
+<td class="function_name">
+<a class="link" href="ESpellDictionary.html#e-spell-dictionary-get-suggestions" title="e_spell_dictionary_get_suggestions ()">e_spell_dictionary_get_suggestions</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="ESpellDictionary.html#e-spell-dictionary-store-correction" title="e_spell_dictionary_store_correction ()">e_spell_dictionary_store_correction</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect1">
+<a name="ESpellDictionary.properties"></a><h2>Properties</h2>
+<div class="informaltable"><table class="informaltable" border="0">
+<colgroup>
+<col width="150px" class="properties_type">
+<col width="300px" class="properties_name">
+<col width="200px" class="properties_flags">
+</colgroup>
+<tbody><tr>
+<td class="property_type">
+<a class="link" href="ESpellChecker.html" title="ESpellChecker"><span class="type">ESpellChecker</span></a> *</td>
+<td class="property_name"><a class="link" href="ESpellDictionary.html#ESpellDictionary--spell-checker" title="The “spell-checker” property">spell-checker</a></td>
+<td class="property_flags">Read / Write / Construct Only</td>
+</tr></tbody>
+</table></div>
+</div>
+<div class="refsect1">
+<a name="ESpellDictionary.object-hierarchy"></a><h2>Object Hierarchy</h2>
+<pre class="screen">    <a href="/usr/share/gtk-doc/html/gobjectgobject-The-Base-Object-Type.html#GObject-struct">GObject</a>
+    <span class="lineart">╰──</span> ESpellDictionary
+</pre>
+</div>
+<div class="refsect1">
+<a name="ESpellDictionary.description"></a><h2>Description</h2>
+</div>
+<div class="refsect1">
+<a name="ESpellDictionary.functions_details"></a><h2>Functions</h2>
+<div class="refsect2">
+<a name="e-spell-dictionary-new"></a><h3>e_spell_dictionary_new ()</h3>
+<pre class="programlisting"><a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="returnvalue">ESpellDictionary</span></a> *
+e_spell_dictionary_new (<em class="parameter"><code><span class="type">struct _ESpellChecker</span> *spell_checker</code></em>,
+                        <em class="parameter"><code><span class="type">EnchantDict</span> *enchant_dict</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-spell-dictionary-new-bare"></a><h3>e_spell_dictionary_new_bare ()</h3>
+<pre class="programlisting"><a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="returnvalue">ESpellDictionary</span></a> *
+e_spell_dictionary_new_bare (<em class="parameter"><code><span class="type">struct _ESpellChecker</span> *spell_checker</code></em>,
+                             <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *language_tag</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-spell-dictionary-hash"></a><h3>e_spell_dictionary_hash ()</h3>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#guint"><span class="returnvalue">guint</span></a>
+e_spell_dictionary_hash (<em class="parameter"><code><a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a> *dictionary</code></em>);</pre>
+<p>Generates a hash value for <em class="parameter"><code>dictionary</code></em>
+ based on its ISO code.
+This function is intended for easily hashing an <a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a>
+to add to a <a href="/usr/share/gtk-doc/html/glibglib-Hash-Tables.html#GHashTable"><span class="type">GHashTable</span></a> or similar data structure.</p>
+<div class="refsect3">
+<a name="e-spell-dictionary-hash.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody><tr>
+<td class="parameter_name"><p>dictionary</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr></tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="e-spell-dictionary-hash.returns"></a><h4>Returns</h4>
+<p> a hash value for <em class="parameter"><code>dictionary</code></em>
+</p>
+</div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-spell-dictionary-equal"></a><h3>e_spell_dictionary_equal ()</h3>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+e_spell_dictionary_equal (<em class="parameter"><code><a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a> *dictionary1</code></em>,
+                          <em class="parameter"><code><a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a> *dictionary2</code></em>);</pre>
+<p>Checks two <a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a> instances for equality based on their
+ISO codes.</p>
+<div class="refsect3">
+<a name="e-spell-dictionary-equal.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>dictionary1</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>dictionary2</p></td>
+<td class="parameter_description"><p>another <a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="e-spell-dictionary-equal.returns"></a><h4>Returns</h4>
+<p> <a href="/usr/share/gtk-doc/html/glibglib-Standard-Macros.html#TRUE:CAPS"><code class="literal">TRUE</code></a> if <em class="parameter"><code>dictionary1</code></em>
+and <em class="parameter"><code>dictionary2</code></em>
+are equal</p>
+</div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-spell-dictionary-compare"></a><h3>e_spell_dictionary_compare ()</h3>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="returnvalue">gint</span></a>
+e_spell_dictionary_compare (<em class="parameter"><code><a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a> *dictionary1</code></em>,
+                            <em class="parameter"><code><a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a> *dictionary2</code></em>);</pre>
+<p>Compares <em class="parameter"><code>dictionary1</code></em>
+ and <em class="parameter"><code>dictionary2</code></em>
+ by their display names for
+the purpose of lexicographical sorting.  Use this function where a
+<a href="/usr/share/gtk-doc/html/glibglib-Doubly-Linked-Lists.html#GCompareFunc"><span class="type">GCompareFunc</span></a> callback is required, such as <a href="/usr/share/gtk-doc/html/glibglib-Doubly-Linked-Lists.html#g-list-sort"><code class="function">g_list_sort()</code></a>.</p>
+<div class="refsect3">
+<a name="e-spell-dictionary-compare.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>dictionary1</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>dictionary2</p></td>
+<td class="parameter_description"><p>another <a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="e-spell-dictionary-compare.returns"></a><h4>Returns</h4>
+<p> 0 if the names match,
+a negative value if <em class="parameter"><code>dictionary1</code></em>
+&lt; <em class="parameter"><code>dictionary2</code></em>
+,
+or a positive value of <em class="parameter"><code>dictionary1</code></em>
+&gt; <em class="parameter"><code>dictionary2</code></em>
+</p>
+</div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-spell-dictionary-get-name"></a><h3>e_spell_dictionary_get_name ()</h3>
+<pre class="programlisting">const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="returnvalue">gchar</span></a> *
+e_spell_dictionary_get_name (<em class="parameter"><code><a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a> *dictionary</code></em>);</pre>
+<p>Returns the display name of the dictionary (for example
+"English (British)")</p>
+<div class="refsect3">
+<a name="e-spell-dictionary-get-name.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody><tr>
+<td class="parameter_name"><p>dictionary</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr></tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="e-spell-dictionary-get-name.returns"></a><h4>Returns</h4>
+<p> the display name of the <em class="parameter"><code>dictionary</code></em>
+</p>
+</div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-spell-dictionary-get-code"></a><h3>e_spell_dictionary_get_code ()</h3>
+<pre class="programlisting">const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="returnvalue">gchar</span></a> *
+e_spell_dictionary_get_code (<em class="parameter"><code><a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a> *dictionary</code></em>);</pre>
+<p>Returns the ISO code of the spell-checking language for
+<em class="parameter"><code>dictionary</code></em>
+ (for example "en_US").</p>
+<div class="refsect3">
+<a name="e-spell-dictionary-get-code.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody><tr>
+<td class="parameter_name"><p>dictionary</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr></tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="e-spell-dictionary-get-code.returns"></a><h4>Returns</h4>
+<p> the language code of the <em class="parameter"><code>dictionary</code></em>
+</p>
+</div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-spell-dictionary-ref-spell-checker"></a><h3>e_spell_dictionary_ref_spell_checker ()</h3>
+<pre class="programlisting">struct <a class="link" href="ESpellChecker.html" title="ESpellChecker"><span class="returnvalue">_ESpellChecker</span></a> *
+e_spell_dictionary_ref_spell_checker (<em class="parameter"><code><a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a> *dictionary</code></em>);</pre>
+<p>Returns a new reference to the <a class="link" href="ESpellChecker.html" title="ESpellChecker"><span class="type">ESpellChecker</span></a> which owns the dictionary.
+Unreference the <a class="link" href="ESpellChecker.html" title="ESpellChecker"><span class="type">ESpellChecker</span></a> with <a href="/usr/share/gtk-doc/html/gobjectgobject-The-Base-Object-Type.html#g-object-unref"><code class="function">g_object_unref()</code></a> when finished with it.</p>
+<div class="refsect3">
+<a name="e-spell-dictionary-ref-spell-checker.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody><tr>
+<td class="parameter_name"><p>dictionary</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr></tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="e-spell-dictionary-ref-spell-checker.returns"></a><h4>Returns</h4>
+<p> an <a class="link" href="ESpellChecker.html" title="ESpellChecker"><span class="type">ESpellChecker</span></a></p>
+</div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-spell-dictionary-check-word"></a><h3>e_spell_dictionary_check_word ()</h3>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+e_spell_dictionary_check_word (<em class="parameter"><code><a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a> *dictionary</code></em>,
+                               <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *word</code></em>,
+                               <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gsize"><span class="type">gsize</span></a> length</code></em>);</pre>
+<p>Tries to lookup the <em class="parameter"><code>word</code></em>
+ in the <em class="parameter"><code>dictionary</code></em>
+ to check whether
+it's spelled correctly or not.</p>
+<div class="refsect3">
+<a name="e-spell-dictionary-check-word.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>dictionary</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>word</p></td>
+<td class="parameter_description"><p>a word to spell-check</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>length</p></td>
+<td class="parameter_description"><p>length of <em class="parameter"><code>word</code></em>
+in bytes or -1 when <a href="/usr/share/gtk-doc/html/glibglib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a>-terminated</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="e-spell-dictionary-check-word.returns"></a><h4>Returns</h4>
+<p> <a href="/usr/share/gtk-doc/html/glibglib-Standard-Macros.html#TRUE:CAPS"><code class="literal">TRUE</code></a> if <em class="parameter"><code>word</code></em>
+is recognized, <a href="/usr/share/gtk-doc/html/glibglib-Standard-Macros.html#FALSE:CAPS"><code class="literal">FALSE</code></a> otherwise</p>
+</div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-spell-dictionary-learn-word"></a><h3>e_spell_dictionary_learn_word ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+e_spell_dictionary_learn_word (<em class="parameter"><code><a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a> *dictionary</code></em>,
+                               <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *word</code></em>,
+                               <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gsize"><span class="type">gsize</span></a> length</code></em>);</pre>
+<p>Permanently adds <em class="parameter"><code>word</code></em>
+ to <em class="parameter"><code>dictionary</code></em>
+ so that next time calling
+<code class="function">e_spell_dictionary_check()</code> on the <em class="parameter"><code>word</code></em>
+ will return <a href="/usr/share/gtk-doc/html/glibglib-Standard-Macros.html#TRUE:CAPS"><code class="literal">TRUE</code></a>.</p>
+<div class="refsect3">
+<a name="e-spell-dictionary-learn-word.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>dictionary</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>word</p></td>
+<td class="parameter_description"><p>a word to add to <em class="parameter"><code>dictionary</code></em>
+</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>length</p></td>
+<td class="parameter_description"><p>length of <em class="parameter"><code>word</code></em>
+in bytes or -1 when <a href="/usr/share/gtk-doc/html/glibglib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a>-terminated</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-spell-dictionary-ignore-word"></a><h3>e_spell_dictionary_ignore_word ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+e_spell_dictionary_ignore_word (<em class="parameter"><code><a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a> *dictionary</code></em>,
+                                <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *word</code></em>,
+                                <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gsize"><span class="type">gsize</span></a> length</code></em>);</pre>
+<p>Adds <em class="parameter"><code>word</code></em>
+ to temporary ignore list of the <em class="parameter"><code>dictionary</code></em>
+, so that
+<code class="function">e_spell_dictionary_check()</code> on the <em class="parameter"><code>word</code></em>
+ will return <a href="/usr/share/gtk-doc/html/glibglib-Standard-Macros.html#TRUE:CAPS"><code class="literal">TRUE</code></a>. The
+list is cleared when the dictionary is freed.</p>
+<div class="refsect3">
+<a name="e-spell-dictionary-ignore-word.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>dictionary</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>word</p></td>
+<td class="parameter_description"><p>a word to add to ignore list</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>length</p></td>
+<td class="parameter_description"><p>length of <em class="parameter"><code>word</code></em>
+in bytes or -1 when <a href="/usr/share/gtk-doc/html/glibglib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a>-terminated</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-spell-dictionary-get-suggestions"></a><h3>e_spell_dictionary_get_suggestions ()</h3>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Doubly-Linked-Lists.html#GList"><span class="returnvalue">GList</span></a> *
+e_spell_dictionary_get_suggestions (<em class="parameter"><code><a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a> *dictionary</code></em>,
+                                    <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *word</code></em>,
+                                    <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gsize"><span class="type">gsize</span></a> length</code></em>);</pre>
+<p>Provides list of alternative spellings of <em class="parameter"><code>word</code></em>
+.</p>
+<p>Free the returned spelling suggestions with <a href="/usr/share/gtk-doc/html/glibglib-Memory-Allocation.html#g-free"><code class="function">g_free()</code></a>, and the list
+itself with <a href="/usr/share/gtk-doc/html/glibglib-Doubly-Linked-Lists.html#g-list-free"><code class="function">g_list_free()</code></a>.  An easy way to free the list properly in
+one step is as follows:</p>
+<div class="informalexample">
+  <table class="listing_frame" border="0" cellpadding="0" cellspacing="0">
+    <tbody>
+      <tr>
+        <td class="listing_lines" align="right"><pre>1</pre></td>
+        <td class="listing_code"><pre class="programlisting"><span class="function"><a href="/usr/share/gtk-doc/html/glibglib-Doubly-Linked-Lists.html#g-list-free-full">g_list_free_full</a></span><span class="normal"> </span><span class="symbol">(</span><span class="normal">list</span><span class="symbol">,</span><span class="normal"> </span><span class="symbol">(</span><span class="normal"><a href="/usr/share/gtk-doc/html/glibglib-Datasets.html#GDestroyNotify">GDestroyNotify</a></span><span class="symbol">)</span><span class="normal"> <a href="/usr/share/gtk-doc/html/glibglib-Memory-Allocation.html#g-free">g_free</a></span><span class="symbol">);</span></pre></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p></p>
+<div class="refsect3">
+<a name="e-spell-dictionary-get-suggestions.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>dictionary</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>word</p></td>
+<td class="parameter_description"><p>a word to which to find suggestions</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>length</p></td>
+<td class="parameter_description"><p>length of <em class="parameter"><code>word</code></em>
+in bytes or -1 when <a href="/usr/share/gtk-doc/html/glibglib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a>-terminated</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="e-spell-dictionary-get-suggestions.returns"></a><h4>Returns</h4>
+<p> a list of spelling suggestions for <em class="parameter"><code>word</code></em>
+</p>
+</div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-spell-dictionary-store-correction"></a><h3>e_spell_dictionary_store_correction ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+e_spell_dictionary_store_correction (<em class="parameter"><code><a class="link" href="ESpellDictionary.html" title="ESpellDictionary"><span class="type">ESpellDictionary</span></a> *dictionary</code></em>,
+                                     <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *misspelled</code></em>,
+                                     <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gsize"><span class="type">gsize</span></a> misspelled_length</code></em>,
+                                     <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *correction</code></em>,
+                                     <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gsize"><span class="type">gsize</span></a> correction_length</code></em>);</pre>
+</div>
+</div>
+<div class="refsect1">
+<a name="ESpellDictionary.other_details"></a><h2>Types and Values</h2>
+</div>
+<div class="refsect1">
+<a name="ESpellDictionary.property-details"></a><h2>Property Details</h2>
+<div class="refsect2">
+<a name="ESpellDictionary--spell-checker"></a><h3>The <code class="literal">“spell-checker”</code> property</h3>
+<pre class="programlisting">  “spell-checker”            <a class="link" href="ESpellChecker.html" title="ESpellChecker"><span class="type">ESpellChecker</span></a> *</pre>
+<p>Parent spell checker.</p>
+<p>Flags: Read / Write / Construct Only</p>
+</div>
+</div>
+</div>
+<div class="footer">
+<hr>Generated by GTK-Doc V1.25</div>
+</body>
+</html>

@@ -24,19 +24,25 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
@@ -59,13 +65,13 @@
       <p>(Optional) Geben Sie einen Ort im <gui>Ort</gui>-Feld ein.</p>
     </item>
     <item>
-      <p>Um dieses Ereignis als ganztägig festzulegen, klicken Sie auf <guiseq><gui>Optionen</gui><gui>Ganztägiges Ereignis</gui></guiseq>, oder auf den Knopf <gui>Ganztägiges Ereignis</gui> in der Werkzeugleiste.</p>
+      <p>Um diesen Termin als ganztägig festzulegen, klicken Sie auf <guiseq><gui>Optionen</gui><gui>Ganztägiger Termin</gui></guiseq>, oder auf den Knopf <gui>Ganztägiger Termin</gui> in der Werkzeugleiste.</p>
     </item>
     <item>
       <p>Wählen Sie Datum und Zeit.</p>
     </item>
     <item>
-      <p>Wenn das Ereignis nicht ganztägig ist, so wählen Sie entweder <gui>Für</gui> zum Angeben der Dauer oder <gui>Bis</gui> zum Festlegen der Endzeit des Ereignisses.</p>
+      <p>Wenn der Termin nicht ganztägig ist, so wählen Sie entweder <gui>Für</gui> zum Angeben der Dauer oder <gui>Bis</gui> zum Festlegen der Endzeit des Termins.</p>
     </item>
     <item>
       <p>(Optional) Geben Sie eine Beschreibung im <gui>Beschreibung</gui>-Feld ein.</p>
@@ -75,6 +81,6 @@
     </item>
   </steps>
 
-  <p>Sie können ebenfalls eine <link xref="calendar-timezones">Zeitzone</link> festlegen, eine <link xref="using-categories">Kategorie</link>, eine <link xref="calendar-alarms-and-reminders">Erinnerung</link>, eine <link xref="calendar-recurrence">Wiederholung</link> oder eine <link xref="calendar-classifications">Einstufung</link> für das Ereignis, oder einen Anhang hinzufügen.</p>
+  <p>Sie können ebenfalls eine <link xref="calendar-timezones">Zeitzone</link> festlegen, eine <link xref="using-categories">Kategorie</link>, eine <link xref="calendar-alarms-and-reminders">Erinnerung</link>, eine <link xref="calendar-recurrence">Wiederholung</link> oder eine <link xref="calendar-classifications">Einstufung</link> für den Termin, oder einen Anhang hinzufügen.</p>
 
 </page>

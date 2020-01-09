@@ -15,6 +15,30 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
 <title>Megfelelő csatlakozó kiválasztása</title>
@@ -25,7 +49,7 @@
 <if:choose xmlns:if="http://projectmallard.org/if/1.0/">
   <if:when test="action:install">
     <note style="info package">
-      <p><link action="install:evolution-ews" href="http://projects.gnome.org/evolution/download" style="button">Az evolution-ews telepítése</link></p>
+      <p><link action="install:evolution-ews" href="https://wiki.gnome.org/Apps/Evolution#Get_the_Source_Code" style="button">Az evolution-ews telepítése</link></p>
     </note>
   </if:when>
 </if:choose>
@@ -36,7 +60,7 @@
 <if:choose xmlns:if="http://projectmallard.org/if/1.0/">
   <if:when test="action:install">
     <note style="info package">
-      <p><link action="install:evolution-mapi" href="http://projects.gnome.org/evolution/download" style="button">Az evolution-mapi telepítése</link></p>
+      <p><link action="install:evolution-mapi" href="https://wiki.gnome.org/Apps/Evolution#Get_the_Source_Code" style="button">Az evolution-mapi telepítése</link></p>
     </note>
   </if:when>
 </if:choose>

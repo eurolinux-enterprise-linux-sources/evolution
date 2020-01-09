@@ -24,6 +24,7 @@
 #include <e-util/e-util.h>
 
 #include <em-format/e-mail-formatter.h>
+#include <mail/e-mail-remote-content.h>
 
 /* Standard GObject macros */
 #define E_TYPE_MAIL_DISPLAY \
@@ -57,11 +58,16 @@ struct _EMailDisplay {
 
 struct _EMailDisplayClass {
 	EWebViewClass parent_class;
-
 };
 
 GType		e_mail_display_get_type		(void) G_GNUC_CONST;
-GtkWidget *	e_mail_display_new		(void);
+GtkWidget *	e_mail_display_new		(EMailRemoteContent *remote_content);
+EAttachmentStore *
+		e_mail_display_get_attachment_store
+						(EMailDisplay *display);
+EAttachmentView *
+		e_mail_display_get_attachment_view
+						(EMailDisplay *display);
 EMailFormatterMode
 		e_mail_display_get_mode		(EMailDisplay *display);
 void		e_mail_display_set_mode		(EMailDisplay *display,
@@ -88,12 +94,32 @@ GtkAction *	e_mail_display_get_action	(EMailDisplay *display,
 						 const gchar *action_name);
 void		e_mail_display_set_status	(EMailDisplay *display,
 						 const gchar *status);
-gchar *		e_mail_display_get_selection_plain_text
-						(EMailDisplay *display);
+gchar *		e_mail_display_get_selection_content_multipart_sync
+						(EMailDisplay *display,
+						 gboolean *is_html,
+						 GCancellable *cancellable,
+						 GError **error);
+gchar *		e_mail_display_get_selection_plain_text_sync
+						(EMailDisplay *display,
+						 GCancellable *cancellable,
+						 GError **error);
 void		e_mail_display_load_images	(EMailDisplay *display);
 void		e_mail_display_set_force_load_images
 						(EMailDisplay *display,
 						 gboolean force_load_images);
+gboolean	e_mail_display_has_skipped_remote_content_sites
+						(EMailDisplay *display);
+GList *		e_mail_display_get_skipped_remote_content_sites
+						(EMailDisplay *display);
+EMailRemoteContent *
+		e_mail_display_ref_remote_content
+						(EMailDisplay *display);
+void		e_mail_display_set_remote_content
+						(EMailDisplay *display,
+						 EMailRemoteContent *remote_content);
+gboolean	e_mail_display_process_magic_spacebar
+						(EMailDisplay *display,
+						 gboolean towards_bottom);
 
 G_END_DECLS
 

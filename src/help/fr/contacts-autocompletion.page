@@ -58,20 +58,15 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
   <title>Complétion automatique des destinataires de courriel</title>
 
-  <p>You can enter the first three letters of names and email addresses in the
-  recipients text field and <app>Evolution</app> will present you with a list
-  of matches from your address books.</p>
+  <p>Vous pouvez saisir les trois premières lettres des noms et adresses électroniques dans le champ des destinataires et <app>Evolution</app> vous affiche une liste de correspondances à partir de vos carnets d'adresses.</p>
 
-  <p>To enable autocompletion, go to
-  <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Contacts</gui>
-  <gui>Autocompletion</gui></guiseq> and choose the address books from the list
-  that <app>Evolution</app> should look in for matches.</p>
+  <p>Pour activer la complétion automatique, allez dans <guiseq><gui>Édition</gui><gui>Préférences</gui><gui>Contacts</gui><gui>Complétion automatique</gui></guiseq> et choisissez les carnets d'adresses dans la liste qu'<app>Evolution</app> doit parcourir pour trouver des correspondances.</p>
 
   <p>Sélectionnez <gui>Toujours afficher l'adresse du contact auto-complétée</gui> pour afficher aussi l'adresse électronique avec le nom d'utilisateur. Cela peut être utile pour distinguer si un contact possède plusieurs adresses électroniques.</p>
 

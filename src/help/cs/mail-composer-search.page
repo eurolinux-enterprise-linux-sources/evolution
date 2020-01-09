@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-composer-search" xml:lang="cs">
 
   <info>
-    <desc>Searching for text in the mail composer.</desc>
+    <desc>Jak hledat text v editoru zpráv.</desc>
     
     <link type="guide" xref="index#mail-composing"/>
     <link type="guide" xref="searching-items"/>
@@ -16,24 +16,33 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Searching in the mail composer</title>
+<title>Hledání v editoru zpráv</title>
 
-<p>Under the <gui>Edit</gui> menu in the message composer there are several text searching features available.</p>
+<p>V nabídce <gui>Upravit</gui> v editoru zpráv máte k dispozici několik funkcí pro vyhledávání textu.</p>
 
 <list>
-<item><p><gui>Find</gui>:
-</p><p>Vložte slovo nebo frázi a Evolution ji najde ve vašich zprávách.</p></item>
+<item><p><gui>Hledat</gui>:</p><p>Vložte slovo nebo frázi a <app>Evolution</app> ji najde ve vaší zprávě.</p></item>
 
-<item><p><gui>Find Again</gui>:
-</p><p>Vyberte tuto položku, chcete-li opakovat poslední vyhledávání, které jste provedli.</p></item>
+<item><p><gui>Hledat další</gui>:</p><p>Vyberte tuto položku, chcete-li opakovat poslední vyhledávání, které jste provedli.</p></item>
 
-<item><p><gui>Replace</gui>:
-</p><p>Nalezněte slovo nebo frázi a nahraďte ji něčím jiným.</p></item>
+<item><p><gui>Nahradit</gui>:</p><p>Nalezněte slovo nebo frázi a nahraďte ji něčím jiným.</p></item>
 </list>
 
-<p>For all of these menu items you can choose whether to search backwards in the document from the point where your cursor is. You can also determine whether the search is to be case sensitive in determining a match</p>
-<p>If you have a technical background you can also select the option to use <link href="https://en.wikipedia.org/wiki/Regular_expression">Regular expressions</link> for searching.</p>
+<p>Pro všechny tyto položky nabídky můžete zvolit, zda hledat v dokumentu z bodu, kde se nachází kurzor, směrem k začátku. Můžete také určit, zda se má při porovnávání rozlišovat velikost písmen.</p>
+<p>Pokud máte příslušné technické znalosti, můžete k vyhledávání použít také <link href="https://en.wikipedia.org/wiki/Regular_expression">Regulární výrazy</link>.</p>
 
 </page>

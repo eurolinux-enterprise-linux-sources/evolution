@@ -9,6 +9,8 @@
 	<name xml:lang="ast">SpamAssassin</name>
 	<name xml:lang="be">SpamAssassin</name>
 	<name xml:lang="bg">SpamAssassin</name>
+	<name xml:lang="bn_IN">SpamAssassin</name>
+	<name xml:lang="bs">SpamAssassin</name>
 	<name xml:lang="ca">SpamAssassin</name>
 	<name xml:lang="ca@valencia">SpamAssaren</name>
 	<name xml:lang="cs">SpamAssassin</name>
@@ -21,10 +23,12 @@
 	<name xml:lang="eu">SpamAssassin</name>
 	<name xml:lang="fi">SpamAssassin</name>
 	<name xml:lang="fr">SpamAssassin</name>
+	<name xml:lang="fur">SpamAssassin</name>
 	<name xml:lang="ga">SpamAssassin</name>
 	<name xml:lang="gl">SpamAssassin</name>
 	<name xml:lang="gu">SpamAssassin</name>
 	<name xml:lang="hi">SpamAssassin</name>
+	<name xml:lang="hr">SpamAssassin</name>
 	<name xml:lang="hu">SpamAssassin</name>
 	<name xml:lang="id">SpamAssassin</name>
 	<name xml:lang="it">SpamAssassin</name>
@@ -38,6 +42,7 @@
 	<name xml:lang="mr">SpamAssassin</name>
 	<name xml:lang="nb">SpamAssassin</name>
 	<name xml:lang="nl">SpamAssassin</name>
+	<name xml:lang="oc">SpamAssassin</name>
 	<name xml:lang="or">SpamAssassin</name>
 	<name xml:lang="pa">SpamAssassin</name>
 	<name xml:lang="pl">SpamAssassin</name>
@@ -61,30 +66,49 @@
 	<name xml:lang="zh_HK">SpamAssassin</name>
 	<name xml:lang="zh_TW">SpamAssassin</name>
 	<summary>Junk filter using SpamAssassin</summary>
-	<summary xml:lang="as">SpamAssassin ব্যৱহাৰ কৰি আবৰ্জনাৰ ফিল্টাৰ</summary>
 	<summary xml:lang="bg">Програма за защита от спам чрез SpamAssasin</summary>
+	<summary xml:lang="bs">Filter za smeće koristeći SpamAssassin</summary>
+	<summary xml:lang="ca">Filtra la brossa amb SpamAssassin</summary>
 	<summary xml:lang="cs">Filtr nevyžádané pošty používá SpamAssassin</summary>
+	<summary xml:lang="da">Spamfilter med SpamAssassin</summary>
 	<summary xml:lang="de">Filter für unerwünschte Nachrichten, der den SpamAssassin-Filter verwendet</summary>
-	<summary xml:lang="el">Φιλτράρισμα ανεπιθύμητων με SpamAssassin</summary>
+	<summary xml:lang="el">Φίλτρο ανεπιθύμητων χρησιμοποιώντας το SpamAssassin</summary>
+	<summary xml:lang="en_GB">Junk filter using SpamAssassin</summary>
 	<summary xml:lang="es">Filtro de spam usando SpamAssassin</summary>
-	<summary xml:lang="fr">Filtre les pourriels avec SpamAssassin</summary>
-	<summary xml:lang="gl">Filtra os correos non desexados usando SpamAssassin.</summary>
-	<summary xml:lang="gu"> SpamAssassin મદદથી નકામુ ફિલ્ટર</summary>
+	<summary xml:lang="eu">Baztergarriak iragazteko SpamAssassin erabiltzen</summary>
+	<summary xml:lang="fi">Roskapostisuodatus SpamAssassinia käyttäen</summary>
+	<summary xml:lang="fr">Filtre de pourriel utilisant SpamAssassin</summary>
+	<summary xml:lang="fur">Filtrâ i malvolûts doprant SpamAssassin</summary>
+	<summary xml:lang="gl">Filtrar spam usando SpamAssassin</summary>
 	<summary xml:lang="hu">Levélszemétszűrő szoftver SpamAssassin használatával</summary>
 	<summary xml:lang="id">Penyaring sampah memakai SpamAssassin</summary>
 	<summary xml:lang="it">Filtra indesiderata usando SpamAssassin</summary>
 	<summary xml:lang="kn">ಸ್ಪ್ಯಾಮ್‌ಅಸಾಸಿನ್ ಬಳಸಿಕೊಂಡು ರದ್ದಿಯನ್ನು ಫಿಲ್ಟರ್ ಮಾಡು</summary>
+	<summary xml:lang="ko">프매어새신 사용 정크메일 필터링</summary>
 	<summary xml:lang="lt">Šlamšto filtravimas naudojant SpamAssassin</summary>
 	<summary xml:lang="lv">Mēstuļu filtrēšanas, izmantojot SpamAssassin</summary>
-	<summary xml:lang="nb">Søppelfilter som bruker SpamAssassin</summary>
-	<summary xml:lang="pl">Filtrowanie niechcianych wiadomości używając SpamAssassin</summary>
-	<summary xml:lang="pt">Filtrar lixo usando SpamAssassin</summary>
-	<summary xml:lang="pt_BR">Filtro de lixo usando SpamAssassin</summary>
-	<summary xml:lang="sl">Filter za vsiljeno pošto SpamAssassin</summary>
-	<summary xml:lang="sr">Пропусник непожељне користећи Убицу спама</summary>
-	<summary xml:lang="sr@latin">Propusnik nepoželjne koristeći Ubicu spama</summary>
+	<summary xml:lang="nb">Søppelfilter bruker SpamAssassin</summary>
+	<summary xml:lang="nl">Spamfilter gebruikmakend van SpamAssassin</summary>
+	<summary xml:lang="oc">Filtra de corrièr electronic indesirable utilizant SpamAssassin</summary>
+	<summary xml:lang="pl">Filtrowanie niechcianych wiadomości za pomocą SpamAssassin</summary>
+	<summary xml:lang="pt">Filtrar não solicitado usando SpamAssassin</summary>
+	<summary xml:lang="pt_BR">Filtro de spam usando SpamAssassin</summary>
+	<summary xml:lang="ru">Фильтр спама с помощью SpamAssassin</summary>
+	<summary xml:lang="sk">Filtrovanie nevyžiadanej pošty pomocou programu SpamAssassin</summary>
+	<summary xml:lang="sl">Filtriranje neželenih sporočil s SpamAssassin</summary>
+	<summary xml:lang="sr">Филтер непожељне поруке помоћу Убице спама</summary>
+	<summary xml:lang="sr@latin">Filter nepoželjne poruke pomoću Ubice spama</summary>
+	<summary xml:lang="sv">Skräppostfilter som använder SpamAssassin</summary>
+	<summary xml:lang="ta">SpamAssassin பயன்படுத்தி குப்பை வடிகட்டி</summary>
+	<summary xml:lang="tr">SpamAssassin kullanarak önemsiz ileti filtrele</summary>
+	<summary xml:lang="uk">Фільтрувати спам через SpamAssassin</summary>
+	<summary xml:lang="zh_CN">使用 SpamAssassin 过滤垃圾</summary>
+	<summary xml:lang="zh_TW">使用 SpamAssassin 垃圾郵件過濾器</summary>
 	<url type="homepage">https://live.gnome.org/Apps/Evolution</url>
 	<metadata_license>CC0-1.0</metadata_license>
 	<project_license>LGPL</project_license>
 	<updatecontact>evolution-hackers_at_gnome.org</updatecontact>
+	<kudos>
+		<kudo>ModernToolkit</kudo>
+	</kudos>
 </component>

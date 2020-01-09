@@ -181,7 +181,7 @@ ecp_new_view (ECell *ecell,
 
 	ecp_view = g_new0 (ECellPopupView, 1);
 
-	ecp_view->cell_view.ecell = ecell;
+	ecp_view->cell_view.ecell = g_object_ref (ecell);
 	ecp_view->cell_view.e_table_model = table_model;
 	ecp_view->cell_view.e_table_item_view = e_table_item_view;
 	ecp_view->cell_view.kill_view_cb = NULL;
@@ -201,6 +201,15 @@ static void
 ecp_kill_view (ECellView *ecv)
 {
 	ECellPopupView *ecp_view = (ECellPopupView *) ecv;
+
+	if (E_IS_CELL_POPUP (ecp_view->cell_view.ecell)) {
+		ECellPopup *ecp = E_CELL_POPUP (ecp_view->cell_view.ecell);
+
+		if (ecp->popup_cell_view == ecp_view)
+			ecp->popup_cell_view = NULL;
+	}
+
+	g_clear_object (&ecp_view->cell_view.ecell);
 
 	if (ecp_view->cell_view.kill_view_cb)
 		ecp_view->cell_view.kill_view_cb (
@@ -282,7 +291,6 @@ ecp_draw (ECellView *ecv,
 
 	if (show_popup_arrow) {
 		GtkStyleContext *style_context;
-		GdkRGBA color;
 		gint arrow_x;
 		gint arrow_y;
 		gint arrow_size;
@@ -306,11 +314,7 @@ ecp_draw (ECellView *ecv,
 		gtk_style_context_add_class (
 			style_context, GTK_STYLE_CLASS_CELL);
 
-		gtk_style_context_get_background_color (
-			style_context, GTK_STATE_FLAG_NORMAL, &color);
-
 		cairo_save (cr);
-		gdk_cairo_set_source_rgba (cr, &color);
 		gtk_render_background (
 			style_context, cr,
 			(gdouble) arrow_x,
@@ -532,6 +536,8 @@ void
 e_cell_popup_queue_cell_redraw (ECellPopup *ecp)
 {
 	ETableItem *eti;
+
+	g_return_if_fail (ecp->popup_cell_view != NULL);
 
 	eti = E_TABLE_ITEM (ecp->popup_cell_view->cell_view.e_table_item_view);
 

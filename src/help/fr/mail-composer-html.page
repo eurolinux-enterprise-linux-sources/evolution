@@ -50,7 +50,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -58,7 +58,7 @@
 
 <p/>
 
-<p>Les outils de formatage pour le formatage et l'alignement de base sont situés dans la barre d'outils en dessous de la ligne <gui>Sujet</gui>. Ils figurent aussi dans les menus <gui>Insertion</gui> et <gui>Format</gui>.</p>
+<p>Les outils de formatage pour l'alignement de base et le formatage des paragraphes sont situés dans la barre d'outils en dessous de la ligne <gui>Sujet</gui>. Ils figurent aussi dans les menus <gui>Insertion</gui> et <gui>Format</gui>.</p>
      <p>Les icônes de la barre d'outils sont expliquées par des infobulles qui apparaissent lorsque vous laissez immobile le pointeur de la souris au-dessus des boutons. </p>
 
 <p>En principe, il n'est pas possible de définir des styles de texte ou la taille, ou d'insérer des images dans les messages. Cependant, la plupart des logiciels de messagerie récents savent le faire  à l'aide du format HTML à la manière des pages Web.</p>

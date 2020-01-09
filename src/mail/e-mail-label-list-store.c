@@ -26,6 +26,7 @@
 
 #include <glib/gi18n.h>
 #include <camel/camel.h>
+#include <e-util/e-util.h>
 
 #define E_MAIL_LABEL_LIST_STORE_GET_PRIVATE(obj) \
 	(G_TYPE_INSTANCE_GET_PRIVATE \
@@ -43,7 +44,7 @@ enum {
 static guint signals[LAST_SIGNAL];
 
 struct _EMailLabelListStorePrivate {
-	GHashTable *tag_index;
+	GHashTable *tag_index; /* gchar *tag_name ~> GtkTreeIter * */
 	GSettings *mail_settings;
 	guint idle_changed_id;
 };
@@ -106,6 +107,29 @@ mail_label_list_store_encode_label (const gchar *label_name,
 		g_string_append_printf (string, "|%s", label_tag);
 
 	return g_string_free (string, FALSE);
+}
+
+static void
+mail_label_list_store_fill_tag_index (EMailLabelListStore *store)
+{
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+
+	g_hash_table_remove_all (store->priv->tag_index);
+
+	model = GTK_TREE_MODEL (store);
+	if (!gtk_tree_model_get_iter_first (model, &iter))
+		return;
+
+	do {
+		gchar *tag;
+
+		tag = e_mail_label_list_store_get_tag (store, &iter);
+		if (!tag)
+			continue;
+
+		g_hash_table_insert (store->priv->tag_index, tag, gtk_tree_iter_copy (&iter));
+	} while (gtk_tree_model_iter_next (model, &iter));
 }
 
 static void
@@ -265,6 +289,8 @@ labels_model_changed_idle_cb (gpointer user_data)
 		store->priv->mail_settings,
 		labels_settings_changed_cb, store);
 
+	mail_label_list_store_fill_tag_index (store);
+
 	g_signal_emit (store, signals[CHANGED], 0);
 
 	return FALSE;
@@ -274,6 +300,8 @@ static void
 labels_model_changed_cb (EMailLabelListStore *store)
 {
 	g_return_if_fail (E_IS_MAIL_LABEL_LIST_STORE (store));
+
+	mail_label_list_store_fill_tag_index (store);
 
 	/* do the actual save and signal emission on idle,
 	 * to accumulate as many changes as possible */
@@ -326,6 +354,8 @@ labels_settings_changed_cb (GSettings *settings,
 	if (g_hash_table_size (changed_labels) == 0) {
 		g_hash_table_destroy (changed_labels);
 		g_strfreev (strv);
+
+		mail_label_list_store_fill_tag_index (store);
 		return;
 	}
 
@@ -348,6 +378,8 @@ labels_settings_changed_cb (GSettings *settings,
 
 	g_signal_handlers_unblock_by_func (
 		store, labels_model_changed_cb, store);
+
+	mail_label_list_store_fill_tag_index (store);
 }
 
 static void
@@ -358,7 +390,7 @@ mail_label_list_store_constructed (GObject *object)
 	store = E_MAIL_LABEL_LIST_STORE (object);
 
 	/* Connect to GSettings' change notifications */
-	store->priv->mail_settings = g_settings_new ("org.gnome.evolution.mail");
+	store->priv->mail_settings = e_util_ref_settings ("org.gnome.evolution.mail");
 	g_signal_connect (
 		store->priv->mail_settings, "changed::labels",
 		G_CALLBACK (labels_settings_changed_cb), store);
@@ -383,32 +415,6 @@ mail_label_list_store_constructed (GObject *object)
 
 	/* Chain up to parent's constructed() method. */
 	G_OBJECT_CLASS (e_mail_label_list_store_parent_class)->constructed (object);
-}
-
-static void
-mail_label_list_store_row_inserted (GtkTreeModel *model,
-                                    GtkTreePath *path,
-                                    GtkTreeIter *iter)
-{
-	EMailLabelListStore *store;
-	GtkTreeRowReference *reference;
-	GHashTable *tag_index;
-	gchar *tag;
-
-	store = E_MAIL_LABEL_LIST_STORE (model);
-	tag = e_mail_label_list_store_get_tag (store, iter);
-	g_return_if_fail (tag != NULL);
-
-	/* Hash table takes ownership of both tag and reference. */
-	tag_index = store->priv->tag_index;
-	reference = gtk_tree_row_reference_new (model, path);
-	g_hash_table_insert (tag_index, tag, reference);
-
-	/* We don't need to do anything special for row deletion.
-	 * The reference will automatically become invalid (that's
-	 * why we're storing references and not iterators or paths),
-	 * so garbage collection is not important.  We'll do it
-	 * lazily. */
 }
 
 static void
@@ -438,7 +444,6 @@ e_mail_label_list_store_class_init (EMailLabelListStoreClass *class)
 static void
 e_mail_label_list_store_interface_init (GtkTreeModelIface *iface)
 {
-	iface->row_inserted = mail_label_list_store_row_inserted;
 }
 
 static void
@@ -450,7 +455,7 @@ e_mail_label_list_store_init (EMailLabelListStore *store)
 	tag_index = g_hash_table_new_full (
 		g_str_hash, g_str_equal,
 		(GDestroyNotify) g_free,
-		(GDestroyNotify) gtk_tree_row_reference_free);
+		(GDestroyNotify) gtk_tree_iter_free);
 
 	store->priv = E_MAIL_LABEL_LIST_STORE_GET_PRIVATE (store);
 	store->priv->tag_index = tag_index;
@@ -657,31 +662,18 @@ e_mail_label_list_store_lookup (EMailLabelListStore *store,
                                 const gchar *tag,
                                 GtkTreeIter *iter)
 {
-	GtkTreeRowReference *reference;
-	GHashTable *tag_index;
-	GtkTreeModel *model;
-	GtkTreePath *path;
+	GtkTreeIter *stored_iter;
 
 	g_return_val_if_fail (E_IS_MAIL_LABEL_LIST_STORE (store), FALSE);
 	g_return_val_if_fail (tag != NULL, FALSE);
 	g_return_val_if_fail (iter != NULL, FALSE);
 
-	tag_index = store->priv->tag_index;
-	reference = g_hash_table_lookup (tag_index, tag);
+	stored_iter = g_hash_table_lookup (store->priv->tag_index, tag);
 
-	if (reference == NULL)
+	if (!stored_iter)
 		return FALSE;
 
-	if (!gtk_tree_row_reference_valid (reference)) {
-		/* Garbage collect the dead reference. */
-		g_hash_table_remove (tag_index, tag);
-		return FALSE;
-	}
-
-	model = gtk_tree_row_reference_get_model (reference);
-	path = gtk_tree_row_reference_get_path (reference);
-	gtk_tree_model_get_iter (model, iter, path);
-	gtk_tree_path_free (path);
+	*iter = *stored_iter;
 
 	return TRUE;
 }

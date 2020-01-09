@@ -54,7 +54,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -65,7 +65,7 @@
 
 <p>Pour supprimer un message, sélectionnez-le et appuyez sur la touche <key>Suppr</key> ou cliquez sur le bouton <gui style="button">Supprimer</gui> de la barre d'outils ou pressez <keyseq><key>Ctrl</key><key>D</key></keyseq> ou faites un clic-droit sur le message et choisissez <gui>Supprimer</gui>.</p>
 
-<p>Lorsque vous pressez la touche <key>Suppr</key> ou cliquez sur l'icône de la Corbeille, votre message n'est pas détruit, mais marqué pour suppression. Vous pouvez voir tous les messages marqués pour suppression dans le dossier Corbeille. Pour afficher les messages marqués pour suppression, cliquez sur <guiseq><gui>Affichage</gui><gui>Afficher les messages supprimés</gui></guiseq>. Ces messages apparaissent barrés avant d'être supprimés plus tard.</p>
+<p>When you press Delete or click the <gui>Trash</gui> folder, your mail is not actually deleted, but is marked for deletion. You can see all message marked for deletion in the <gui>Trash</gui> folder. To show deleted messages, click <guiseq><gui>View</gui><gui>Show Deleted Messages</gui></guiseq>. You can view the messages stricken off for later deletion.</p>
 
 <p>Pour effacer définitivement tous les messages supprimés d'un dossier, cliquez sur <guiseq><gui>Dossier</gui><gui>Nettoyer</gui></guiseq> ou appuyez sur <keyseq><key>Ctrl</key><key>E</key></keyseq>.</p>
 </section>
@@ -73,9 +73,9 @@
 <section id="undelete">
 <title>Récupération de messages</title>
 
-<p>Vous pouvez récupérer un message qui a été supprimé, mais pas nettoyé. Pour récupérer un message, sélectionnez le message et choisissez <guiseq><gui>Édition</gui><gui>Récupérer le message</gui></guiseq>. Notez que <guiseq><gui>Affichage</gui><gui>Afficher les messages supprimés</gui></guiseq> doit être activé pour que cela fonctionne.</p>
+<p>You can undelete a message that has been deleted but not expunged yet. To undelete a message, select the message, click <guiseq><gui>Edit</gui><gui>Undelete message</gui></guiseq>. Note that <guiseq><gui>View</gui><gui>Show Deleted Messages</gui></guiseq> must be enabled for this to work.</p>
 
-<p>Si vous avez marqué un message pour la suppression, sa récupération retire cette marque et le message n'apparaît plus dans le dossier Corbeille.</p>
+<p>If you have marked a message for deletion, undeleting it unmarks it, and the message is not shown anymore in the <gui>Trash</gui> folder.</p>
 </section>
 
 </page>

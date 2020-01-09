@@ -82,6 +82,8 @@ struct _EMailSessionClass {
 						 CamelStore *store);
 	void		(*store_removed)	(EMailSession *session,
 						 CamelStore *store);
+	void		(*allow_auth_prompt)	(EMailSession *session,
+						 ESource *source);
 };
 
 GType		e_mail_session_get_type		(void);
@@ -150,6 +152,13 @@ CamelFolder *	e_mail_session_uri_to_folder_finish
 EMVFolderContext *
 		e_mail_session_create_vfolder_context
 						(EMailSession *session);
+
+void		e_mail_session_flush_outbox	(EMailSession *session);
+void		e_mail_session_schedule_outbox_flush
+						(EMailSession *session,
+						 gint delay_minutes);
+void		e_mail_session_cancel_scheduled_outbox_flush
+						(EMailSession *session);
 gboolean	e_mail_session_mark_service_used_sync
 						(EMailSession *session,
 						 CamelService *service,
@@ -157,6 +166,9 @@ gboolean	e_mail_session_mark_service_used_sync
 void		e_mail_session_unmark_service_used
 						(EMailSession *session,
 						 CamelService *service);
+void		e_mail_session_emit_allow_auth_prompt
+						(EMailSession *session,
+						 ESource *source);
 
 /* Useful GBinding transform functions */
 gboolean	e_binding_transform_service_to_source

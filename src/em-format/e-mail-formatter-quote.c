@@ -38,14 +38,11 @@ struct _EMailFormatterQuotePrivate {
 };
 
 /* internal formatter extensions */
-GType e_mail_formatter_quote_attachment_get_type (void);
 GType e_mail_formatter_quote_headers_get_type (void);
 GType e_mail_formatter_quote_message_rfc822_get_type (void);
 GType e_mail_formatter_quote_text_enriched_get_type (void);
 GType e_mail_formatter_quote_text_html_get_type (void);
 GType e_mail_formatter_quote_text_plain_get_type (void);
-
-void e_mail_formatter_quote_internal_extensions_load (EMailExtensionRegistry *ereg);
 
 static gpointer e_mail_formatter_quote_parent_class = 0;
 
@@ -57,7 +54,6 @@ mail_formatter_quote_run (EMailFormatter *formatter,
 {
 	EMailFormatterQuote *qf;
 	EMailFormatterQuoteContext *qf_context;
-	GSettings *settings;
 	GQueue queue = G_QUEUE_INIT;
 	GList *head, *link;
 	const gchar *string;
@@ -73,31 +69,6 @@ mail_formatter_quote_run (EMailFormatter *formatter,
 	g_seekable_seek (
 		G_SEEKABLE (stream),
 		0, G_SEEK_SET, NULL, NULL);
-
-	settings = g_settings_new ("org.gnome.evolution.mail");
-	if (g_settings_get_boolean (settings, "composer-top-signature")) {
-		string = "<br>\n";
-		g_output_stream_write_all (
-			stream, string, strlen (string),
-			NULL, cancellable, NULL);
-	}
-	g_object_unref (settings);
-
-	if (qf->priv->credits != NULL && *qf->priv->credits != '\0') {
-		g_output_stream_write_all (
-			stream, qf->priv->credits,
-			strlen (qf->priv->credits),
-			NULL, cancellable, NULL);
-	}
-
-	if (qf->priv->flags & E_MAIL_FORMATTER_QUOTE_FLAG_CITE) {
-		string = "<!--+GtkHTML:<DATA class=\"ClueFlow\" "
-			"key=\"orig\" value=\"1\">-->\n"
-			"<blockquote type=cite>\n";
-		g_output_stream_write_all (
-			stream, string, strlen (string),
-			NULL, cancellable, NULL);
-	}
 
 	e_mail_part_list_queue_parts (context->part_list, NULL, &queue);
 
@@ -133,12 +104,35 @@ mail_formatter_quote_run (EMailFormatter *formatter,
 	while (!g_queue_is_empty (&queue))
 		g_object_unref (g_queue_pop_head (&queue));
 
-	if (qf->priv->flags & E_MAIL_FORMATTER_QUOTE_FLAG_CITE) {
-		string = "</blockquote><!--+GtkHTML:"
-			"<DATA class=\"ClueFlow\" clear=\"orig\">-->";
+	/* Before we were inserting the BR elements and the credits in front of
+	 * the actual HTML code of the message. But this was wrong as when WebKit
+	 * was loading the given HTML code that looked like
+	 * <br>CREDITS<html>MESSAGE_CODE</html> WebKit parsed it like
+	 * <html><br>CREDITS</html><html>MESSAGE_CODE</html>. As no elements are
+	 * allowed outside of the HTML root element WebKit wrapped them into
+	 * another HTML root element. Afterwards the first root element was
+	 * treated as the primary one and all the elements from the second's root
+	 * HEAD and BODY elements were moved to the first one.
+	 * Thus the HTML that was loaded into composer contained the i.e. META
+	 * or STYLE definitions in the body.
+	 * So if we want to put something into the message we have to put it into
+	 * the special span element and it will be moved to body in EHTMLEditorView */
+	if (qf->priv->credits && *qf->priv->credits) {
+		gchar *credits = g_strdup_printf (
+			"<span class=\"-x-evo-to-body\" data-credits=\"%s\"></span>",
+			qf->priv->credits);
 		g_output_stream_write_all (
-			stream, string, strlen (string),
-			NULL, cancellable, NULL);
+			stream, credits, strlen (credits), NULL, cancellable, NULL);
+		g_free (credits);
+	}
+
+	/* If we want to cite the message we have to append the special span element
+	 * after the message and cite it in EHTMLEditorView because of reasons
+	 * mentioned above */
+	if (qf->priv->flags & E_MAIL_FORMATTER_QUOTE_FLAG_CITE) {
+		string = "<span class=\"-x-evo-cite-body\"></span>";
+		g_output_stream_write_all (
+			stream, string, strlen (string), NULL, cancellable, NULL);
 	}
 }
 
@@ -151,6 +145,13 @@ e_mail_formatter_quote_init (EMailFormatterQuote *formatter)
 static void
 e_mail_formatter_quote_finalize (GObject *object)
 {
+	EMailFormatterQuote *formatter;
+
+	formatter = E_MAIL_FORMATTER_QUOTE (object);
+
+	g_free (formatter->priv->credits);
+	formatter->priv->credits = NULL;
+
 	/* Chain up to parent's finalize() */
 	G_OBJECT_CLASS (e_mail_formatter_quote_parent_class)->finalize (object);
 }
@@ -159,7 +160,6 @@ static void
 e_mail_formatter_quote_base_init (EMailFormatterQuoteClass *class)
 {
 	/* Register internal extensions. */
-	g_type_ensure (e_mail_formatter_quote_attachment_get_type ());
 	g_type_ensure (e_mail_formatter_quote_headers_get_type ());
 	g_type_ensure (e_mail_formatter_quote_message_rfc822_get_type ());
 	g_type_ensure (e_mail_formatter_quote_text_enriched_get_type ());

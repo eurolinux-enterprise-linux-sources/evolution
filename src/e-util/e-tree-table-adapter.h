@@ -81,6 +81,11 @@ ETableSortInfo *e_tree_table_adapter_get_sort_info
 void		e_tree_table_adapter_set_sort_info
 						(ETreeTableAdapter *etta,
 						 ETableSortInfo *sort_info);
+gboolean	e_tree_table_adapter_get_sort_children_ascending
+						(ETreeTableAdapter *etta);
+void		e_tree_table_adapter_set_sort_children_ascending
+						(ETreeTableAdapter *etta,
+						 gboolean sort_children_ascending);
 ETreeModel *	e_tree_table_adapter_get_source_model
 						(ETreeTableAdapter *etta);
 
@@ -128,6 +133,8 @@ xmlDoc *	e_tree_table_adapter_save_expanded_state_xml
 void		e_tree_table_adapter_load_expanded_state_xml
 						(ETreeTableAdapter *etta,
 						 xmlDoc *doc);
+void		e_tree_table_adapter_clear_nodes_silent
+						(ETreeTableAdapter *etta);
 
 G_END_DECLS
 

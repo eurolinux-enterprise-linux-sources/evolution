@@ -28,7 +28,7 @@ typedef ESourceConfigBackendClass EBookConfigGoogleClass;
 typedef struct _Context Context;
 
 struct _Context {
-	gint placeholder;
+	GtkWidget *user_entry; /* not referenced */
 };
 
 /* Module Entry Points */
@@ -65,7 +65,7 @@ book_config_google_insert_widgets (ESourceConfigBackend *backend,
 		G_OBJECT (backend), uid, context,
 		(GDestroyNotify) book_config_google_context_free);
 
-	e_source_config_add_user_entry (config, scratch_source);
+	context->user_entry = e_source_config_add_user_entry (config, scratch_source);
 
 	e_source_config_add_refresh_interval (config, scratch_source);
 }
@@ -75,29 +75,47 @@ book_config_google_check_complete (ESourceConfigBackend *backend,
                                    ESource *scratch_source)
 {
 	ESourceAuthentication *extension;
+	Context *context;
+	gboolean correct;
 	const gchar *extension_name;
 	const gchar *user;
+
+	context = g_object_get_data (G_OBJECT (backend), e_source_get_uid (scratch_source));
+	g_return_val_if_fail (context != NULL, FALSE);
 
 	extension_name = E_SOURCE_EXTENSION_AUTHENTICATION;
 	extension = e_source_get_extension (scratch_source, extension_name);
 	user = e_source_authentication_get_user (extension);
 
-	return (user != NULL && *user != '\0');
+	correct = user != NULL && *user != '\0';
+
+	e_util_set_entry_issue_hint (context->user_entry, correct ? NULL : _("User name cannot be empty"));
+
+	return correct;
 }
 
 static void
 book_config_google_commit_changes (ESourceConfigBackend *backend,
                                    ESource *scratch_source)
 {
+	ESource *collection_source;
+	ESourceConfig *config;
 	ESourceAuthentication *extension;
 	const gchar *extension_name;
 	const gchar *user;
 
+	config = e_source_config_backend_get_config (backend);
+	collection_source = e_source_config_get_collection_source (config);
+
 	extension_name = E_SOURCE_EXTENSION_AUTHENTICATION;
 	extension = e_source_get_extension (scratch_source, extension_name);
 
-	e_source_authentication_set_host (extension, "www.google.com");
-	e_source_authentication_set_method (extension, "ClientLogin");
+	if (!collection_source || (
+	    !e_source_has_extension (collection_source, E_SOURCE_EXTENSION_GOA) &&
+	    !e_source_has_extension (collection_source, E_SOURCE_EXTENSION_UOA))) {
+		e_source_authentication_set_host (extension, "www.google.com");
+		e_source_authentication_set_method (extension, "Google");
+	}
 
 	user = e_source_authentication_get_user (extension);
 	g_return_if_fail (user != NULL);

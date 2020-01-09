@@ -19,9 +19,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -39,8 +45,8 @@
 
 <title>Separar correo POP de más de una cuenta</title>
 
-<p>No es posible tener cuentas separadas en el panel de cuentas y la lista de carpetas. Evolution solo tiene una bandeja de entrada única para el correo entrante.</p>
-<p>Puede usar UMAP en lugar de POP o mover los correos electrónicos entrantes a diferentes carpetas <link xref="mail-folders">creando carpetas</link> y <link xref="mail-filters">creando filtros</link>: cree una carpeta nueva y cree dos subcarpetas (para correo entrante y para correo enviado para esa cuenta). Ahora configure un filtro de correo de entrada en <guiseq><gui>Editar</gui><gui>Filtros de correos...</gui><gui style="button">Añadir</gui></guiseq> para mover el correo entrante a la carpeta de correo entrante filtrando la dirección de correo del destinatario y configure un filtro de salida para mover el correo saliente a la carpeta de correo saliente filtrando la dirección del remitente.</p>
+<p>No es posible tener cuentas separadas en el panel de cuentas y la lista de carpetas. <app>Evolution</app> solo tiene una bandeja de entrada única para el correo entrante.</p>
+<p>Puede usar UMAP en lugar de POP o mover los correos electrónicos entrantes a diferentes carpetas <link xref="mail-folders">creando carpetas</link> y <link xref="mail-filters">creando filtros</link>: cree una carpeta nueva y cree dos subcarpetas (para correo entrante y para correo enviado para esa cuenta). Ahora configure un filtro de correo de entrada en <guiseq><gui>Editar</gui><gui>Filtros de correos…</gui><gui style="button">Añadir</gui></guiseq> para mover el correo entrante a la carpeta de correo entrante filtrando la dirección de correo del destinatario y configure un filtro de salida para mover el correo saliente a la carpeta de correo saliente filtrando la dirección del remitente.</p>
 
 <!-- https://bugzilla.gnome.org/show_bug.cgi?id=273944 -->
 

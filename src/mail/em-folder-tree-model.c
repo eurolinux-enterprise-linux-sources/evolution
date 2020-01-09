@@ -65,6 +65,13 @@ struct _EMFolderTreeModelPrivate {
 	GMutex store_index_lock;
 };
 
+typedef struct _FolderUnreadInfo {
+	guint unread;
+	guint unread_last_sel;
+	gboolean is_drafts;
+	guint32 fi_flags;
+} FolderUnreadInfo;
+
 struct _StoreInfo {
 	volatile gint ref_count;
 
@@ -73,6 +80,10 @@ struct _StoreInfo {
 
 	/* CamelFolderInfo::full_name -> GtkTreeRowReference */
 	GHashTable *full_hash;
+
+	/* CamelFolderInfo::full_name ~> FolderUnreadInfo * - last known unread count
+	   for folders which are not loaded in the tree yet */
+	GHashTable *full_hash_unread;
 
 	/* CamelStore signal handler IDs */
 	gulong folder_created_handler_id;
@@ -171,6 +182,7 @@ store_info_unref (StoreInfo *si)
 		g_object_unref (si->store);
 		gtk_tree_row_reference_free (si->row);
 		g_hash_table_destroy (si->full_hash);
+		g_hash_table_destroy (si->full_hash_unread);
 
 		g_slice_free (StoreInfo, si);
 	}
@@ -193,6 +205,8 @@ store_info_new (EMFolderTreeModel *model,
 		(GEqualFunc) g_str_equal,
 		(GDestroyNotify) g_free,
 		(GDestroyNotify) gtk_tree_row_reference_free);
+
+	si->full_hash_unread = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
 
 	handler_id = g_signal_connect_data (
 		store, "folder-created",
@@ -490,8 +504,10 @@ folder_tree_model_remove_folders (EMFolderTreeModel *folder_tree_model,
 		COL_STRING_FULL_NAME, &full_name,
 		COL_BOOL_IS_STORE, &is_store, -1);
 
-	if (full_name != NULL)
+	if (full_name != NULL) {
 		g_hash_table_remove (si->full_hash, full_name);
+		g_hash_table_remove (si->full_hash_unread, full_name);
+	}
 
 	gtk_tree_store_remove (GTK_TREE_STORE (model), toplevel);
 
@@ -773,7 +789,8 @@ static void
 folder_tree_model_set_unread_count (EMFolderTreeModel *model,
                                     CamelStore *store,
                                     const gchar *full,
-                                    gint unread)
+                                    gint unread,
+				    MailFolderCache *folder_cache)
 {
 	GtkTreeRowReference *reference;
 	GtkTreeModel *tree_model;
@@ -782,6 +799,7 @@ folder_tree_model_set_unread_count (EMFolderTreeModel *model,
 	GtkTreeIter iter;
 	StoreInfo *si;
 	guint old_unread = 0;
+	gboolean unread_increased = FALSE, is_drafts = FALSE;
 
 	g_return_if_fail (EM_IS_FOLDER_TREE_MODEL (model));
 	g_return_if_fail (CAMEL_IS_STORE (store));
@@ -794,11 +812,53 @@ folder_tree_model_set_unread_count (EMFolderTreeModel *model,
 	if (si == NULL)
 		return;
 
-	reference = g_hash_table_lookup (si->full_hash, full);
-	if (!gtk_tree_row_reference_valid (reference))
-		goto exit;
-
 	tree_model = GTK_TREE_MODEL (model);
+
+	reference = g_hash_table_lookup (si->full_hash, full);
+	if (!gtk_tree_row_reference_valid (reference)) {
+		FolderUnreadInfo *fu_info;
+
+		fu_info = g_new0 (FolderUnreadInfo, 1);
+		fu_info->unread = unread;
+		fu_info->unread_last_sel = unread;
+		fu_info->is_drafts = FALSE;
+
+		if (g_hash_table_contains (si->full_hash_unread, full)) {
+			FolderUnreadInfo *saved_fu_info;
+
+			saved_fu_info = g_hash_table_lookup (si->full_hash_unread, full);
+
+			unread_increased = unread > saved_fu_info->unread;
+
+			fu_info->unread_last_sel = MIN (saved_fu_info->unread_last_sel, unread);
+			fu_info->is_drafts = saved_fu_info->is_drafts;
+			fu_info->fi_flags = saved_fu_info->fi_flags;
+		} else {
+			CamelFolder *folder;
+			CamelFolderInfoFlags flags;
+
+			fu_info->unread_last_sel = unread;
+
+			folder = mail_folder_cache_ref_folder (folder_cache, store, full);
+			if (folder) {
+				fu_info->is_drafts = em_utils_folder_is_drafts (e_mail_session_get_registry (model->priv->session), folder);
+				g_object_unref (folder);
+			} else {
+				fu_info->is_drafts = em_utils_folder_name_is_drafts (e_mail_session_get_registry (model->priv->session), store, full);
+			}
+
+			if (!mail_folder_cache_get_folder_info_flags (folder_cache, store, full, &flags))
+				flags = 0;
+
+			fu_info->fi_flags = flags;
+		}
+
+		is_drafts = fu_info->is_drafts;
+
+		g_hash_table_insert (si->full_hash_unread, g_strdup (full), fu_info);
+
+		goto exit;
+	}
 
 	path = gtk_tree_row_reference_get_path (reference);
 	gtk_tree_model_get_iter (tree_model, &iter, path);
@@ -806,7 +866,11 @@ folder_tree_model_set_unread_count (EMFolderTreeModel *model,
 
 	gtk_tree_model_get (
 		tree_model, &iter,
-		COL_UINT_UNREAD_LAST_SEL, &old_unread, -1);
+		COL_UINT_UNREAD_LAST_SEL, &old_unread,
+		COL_BOOL_IS_DRAFT, &is_drafts,
+		-1);
+
+	unread_increased = unread > old_unread;
 
 	gtk_tree_store_set (
 		GTK_TREE_STORE (model), &iter,
@@ -824,6 +888,18 @@ folder_tree_model_set_unread_count (EMFolderTreeModel *model,
 	}
 
 exit:
+	if (unread_increased && !is_drafts && gtk_tree_row_reference_valid (si->row)) {
+		path = gtk_tree_row_reference_get_path (si->row);
+		gtk_tree_model_get_iter (tree_model, &iter, path);
+		gtk_tree_path_free (path);
+
+		gtk_tree_store_set (
+			GTK_TREE_STORE (model), &iter,
+			COL_UINT_UNREAD, 0,
+			COL_UINT_UNREAD_LAST_SEL, 1,
+			-1);
+	}
+
 	store_info_unref (si);
 }
 
@@ -1003,17 +1079,20 @@ em_folder_tree_model_set_session (EMFolderTreeModel *model,
 	g_object_notify (G_OBJECT (model), "session");
 }
 
-/* Helper for em_folder_tree_model_set_folder_info() */
 static void
-folder_tree_model_get_drafts_folder_uri (ESourceRegistry *registry,
-                                         CamelStore *store,
-                                         gchar **drafts_folder_uri)
+folder_tree_model_get_special_folders_uri (ESourceRegistry *registry,
+					   CamelStore *store,
+					   gchar **drafts_folder_uri,
+					   gchar **templates_folder_uri,
+					   gchar **sent_folder_uri)
 {
 	ESource *source;
 	const gchar *extension_name;
 
 	/* In case we fail... */
 	*drafts_folder_uri = NULL;
+	*templates_folder_uri = NULL;
+	*sent_folder_uri = NULL;
 
 	source = em_utils_ref_mail_identity_for_store (registry, store);
 	if (source == NULL)
@@ -1025,28 +1104,9 @@ folder_tree_model_get_drafts_folder_uri (ESourceRegistry *registry,
 
 		extension = e_source_get_extension (source, extension_name);
 
-		*drafts_folder_uri =
-			e_source_mail_composition_dup_drafts_folder (extension);
+		*drafts_folder_uri = e_source_mail_composition_dup_drafts_folder (extension);
+		*templates_folder_uri = e_source_mail_composition_dup_templates_folder (extension);
 	}
-
-	g_object_unref (source);
-}
-
-/* Helper for em_folder_tree_model_set_folder_info() */
-static void
-folder_tree_model_get_sent_folder_uri (ESourceRegistry *registry,
-                                       CamelStore *store,
-                                       gchar **sent_folder_uri)
-{
-	ESource *source;
-	const gchar *extension_name;
-
-	/* In case we fail... */
-	*sent_folder_uri = NULL;
-
-	source = em_utils_ref_mail_identity_for_store (registry, store);
-	if (source == NULL)
-		return;
 
 	extension_name = E_SOURCE_EXTENSION_MAIL_SUBMISSION;
 	if (e_source_has_extension (source, extension_name)) {
@@ -1054,8 +1114,7 @@ folder_tree_model_get_sent_folder_uri (ESourceRegistry *registry,
 
 		extension = e_source_get_extension (source, extension_name);
 
-		*sent_folder_uri =
-			e_source_mail_submission_dup_sent_folder (extension);
+		*sent_folder_uri = e_source_mail_submission_dup_sent_folder (extension);
 	}
 
 	g_object_unref (source);
@@ -1127,6 +1186,8 @@ em_folder_tree_model_set_folder_info (EMFolderTreeModel *model,
 	g_hash_table_insert (
 		si->full_hash, g_strdup (fi->full_name), path_row);
 
+	g_hash_table_remove (si->full_hash_unread, fi->full_name);
+
 	store_info_unref (si);
 	si = NULL;
 
@@ -1185,18 +1246,22 @@ em_folder_tree_model_set_folder_info (EMFolderTreeModel *model,
 
 	if ((flags & CAMEL_FOLDER_TYPE_MASK) == 0) {
 		gchar *drafts_folder_uri;
+		gchar *templates_folder_uri;
 		gchar *sent_folder_uri;
 
-		folder_tree_model_get_drafts_folder_uri (
-			registry, store, &drafts_folder_uri);
-
-		folder_tree_model_get_sent_folder_uri (
-			registry, store, &sent_folder_uri);
+		folder_tree_model_get_special_folders_uri (registry, store,
+			&drafts_folder_uri, &templates_folder_uri, &sent_folder_uri);
 
 		if (!folder_is_drafts && drafts_folder_uri != NULL) {
 			folder_is_drafts = e_mail_folder_uri_equal (
 				CAMEL_SESSION (session),
 				uri, drafts_folder_uri);
+		}
+
+		if (!folder_is_templates && templates_folder_uri != NULL) {
+			folder_is_templates = e_mail_folder_uri_equal (
+				CAMEL_SESSION (session),
+				uri, templates_folder_uri);
 		}
 
 		if (sent_folder_uri != NULL) {
@@ -1208,6 +1273,7 @@ em_folder_tree_model_set_folder_info (EMFolderTreeModel *model,
 		}
 
 		g_free (drafts_folder_uri);
+		g_free (templates_folder_uri);
 		g_free (sent_folder_uri);
 	}
 
@@ -1480,7 +1546,7 @@ folder_tree_model_update_status_icon (StoreInfo *si)
 	GtkTreePath *path;
 	GtkTreeIter iter;
 	GIcon *icon = NULL;
-	const gchar *icon_name;
+	const gchar *icon_name = NULL;
 	gboolean was_connecting;
 	gboolean host_reachable;
 

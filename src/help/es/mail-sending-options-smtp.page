@@ -23,9 +23,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -49,11 +55,11 @@
 </item>
 <item><p>Si el servidor requiere autenticación debe proporcionar la siguiente información:</p>
 <list>
-  <item><p>Seleccione el tipo de autenticación en la lista de Autenticación o pulse <gui>Comprobar tipos soportados</gui> para que Evolution los compruebe. Algunos servidores no soportan esto, así que pulsar este botón no garantiza que los mecanismos disponibles actualmente funcionen.</p></item>
+  <item><p>Seleccione el tipo de autenticación en la lista de Autenticación o pulse <gui>Comprobar tipos soportados</gui> para que <app>Evolution</app> los compruebe. Algunos servidores no soportan esto, así que pulsar este botón no garantiza que los mecanismos disponibles actualmente funcionen.</p></item>
   <item><p>Introduzca su nombre de usuario.</p></item>
 </list>
 </item>
-<item><p>Elija <gui>Usar conexión segura</gui> si quiere conectar de forma segura.</p></item>
+<item><p>Elija <gui>Usar una conexión segura</gui> si se quiere conectar de forma segura.</p></item>
 </list>
 
 </page>

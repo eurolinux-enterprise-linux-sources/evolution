@@ -24,9 +24,9 @@
 #include "e-mail-shell-view.h"
 
 #include <glib/gi18n.h>
-#include <gtkhtml/gtkhtml.h>
 #include <camel/camel-search-private.h>  /* for camel_search_word */
 
+#include <mail/e-mail-folder-create-dialog.h>
 #include <mail/e-mail-label-action.h>
 #include <mail/e-mail-label-dialog.h>
 #include <mail/e-mail-label-list-store.h>
@@ -73,18 +73,19 @@ G_BEGIN_DECLS
 
 /* Filter items are displayed in ascending order.
  * Labels are numbered from zero, so subsequent items must have
- * sufficiently large values.  Unfortunately this introduces an
- * arbitrary upper bound on labels. */
+ * sufficiently large/small values. */
 enum {
-	MAIL_FILTER_ALL_MESSAGES = -3,
-	MAIL_FILTER_UNREAD_MESSAGES = -2,
-	MAIL_FILTER_NO_LABEL = -1,
+	MAIL_FILTER_ALL_MESSAGES = -20,
+	MAIL_FILTER_UNREAD_MESSAGES = -19,
+	MAIL_FILTER_READ_MESSAGES = -18,
+	MAIL_FILTER_MESSAGE_THREAD = -17,
+	MAIL_FILTER_LAST_5_DAYS_MESSAGES = -16,
+	MAIL_FILTER_MESSAGES_WITH_ATTACHMENTS = -15,
+	MAIL_FILTER_MESSAGES_WITH_NOTES = -14,
+	MAIL_FILTER_IMPORTANT_MESSAGES = -13,
+	MAIL_FILTER_MESSAGES_NOT_JUNK = -12,
+	MAIL_FILTER_NO_LABEL = -11
 	/* Labels go here */
-	MAIL_FILTER_READ_MESSAGES = 5000,
-	MAIL_FILTER_LAST_5_DAYS_MESSAGES = 5001,
-	MAIL_FILTER_MESSAGES_WITH_ATTACHMENTS = 5002,
-	MAIL_FILTER_IMPORTANT_MESSAGES = 5003,
-	MAIL_FILTER_MESSAGES_NOT_JUNK = 5004
 };
 
 /* Search items are displayed in ascending order. */
@@ -96,6 +97,7 @@ enum {
 	MAIL_SEARCH_SUBJECT_CONTAINS,
 	MAIL_SEARCH_SENDER_CONTAINS,
 	MAIL_SEARCH_BODY_CONTAINS,
+	MAIL_SEARCH_FREE_FORM_EXPR,
 	MAIL_NUM_SEARCH_RULES
 };
 
@@ -133,10 +135,13 @@ struct _EMailShellViewPrivate {
 	CamelVeeFolder *search_account_current;
 	GCancellable *search_account_cancel;
 
-	guint show_deleted : 1;
-
 	GtkToolItem *send_receive_tool_item;
 	GtkToolItem *send_receive_tool_separator;
+
+	gboolean vfolder_allow_expunge;
+
+	/* Selected UIDs for MAIL_FILTER_MESSAGE_THREAD filter */
+	GSList *selected_uids;
 };
 
 void		e_mail_shell_view_private_init
@@ -161,6 +166,8 @@ void		e_mail_shell_view_update_search_filter
 void		e_mail_shell_view_update_sidebar
 					(EMailShellView *mail_shell_view);
 void		e_mail_shell_view_update_send_receive_menus
+					(EMailShellView *mail_shell_view);
+GDBusProxy *	e_mail_shell_view_get_web_extension_proxy
 					(EMailShellView *mail_shell_view);
 
 G_END_DECLS

@@ -18,7 +18,7 @@
 #ifndef E_GOOGLE_CHOOSER_BUTTON_H
 #define E_GOOGLE_CHOOSER_BUTTON_H
 
-#include "e-google-chooser.h"
+#include <e-util/e-util.h>
 
 /* Standard GObject macros */
 #define E_TYPE_GOOGLE_CHOOSER_BUTTON \
@@ -57,9 +57,15 @@ struct _EGoogleChooserButtonClass {
 GType		e_google_chooser_button_get_type (void);
 void		e_google_chooser_button_type_register
 						(GTypeModule *type_module);
-GtkWidget *	e_google_chooser_button_new	(ESource *source);
+GtkWidget *	e_google_chooser_button_new	(ESource *source,
+						 ESourceConfig *config);
 ESource *	e_google_chooser_button_get_source
 						(EGoogleChooserButton *button);
+ESourceConfig *	e_google_chooser_button_get_config
+						(EGoogleChooserButton *button);
+void		e_google_chooser_button_construct_default_uri
+						(SoupURI *soup_uri,
+						 const gchar *username);
 
 G_END_DECLS
 

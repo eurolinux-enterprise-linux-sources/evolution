@@ -32,6 +32,7 @@
 #include <config.h>
 #endif
 
+#include <errno.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
@@ -571,7 +572,7 @@ ldif_getwidget (EImport *ei,
                 EImportImporter *im)
 {
 	EShell *shell;
-	GtkWidget *vbox, *selector;
+	GtkWidget *vbox, *selector, *scrolled_window;
 	ESourceRegistry *registry;
 	ESource *primary;
 	const gchar *extension_name;
@@ -581,10 +582,18 @@ ldif_getwidget (EImport *ei,
 	shell = e_shell_get_default ();
 	registry = e_shell_get_registry (shell);
 	extension_name = E_SOURCE_EXTENSION_ADDRESS_BOOK;
+
+	scrolled_window = gtk_scrolled_window_new (NULL, NULL);
+	g_object_set (G_OBJECT (scrolled_window),
+		"hscrollbar-policy", GTK_POLICY_AUTOMATIC,
+		"vscrollbar-policy", GTK_POLICY_AUTOMATIC,
+		NULL);
+	gtk_box_pack_start (GTK_BOX (vbox), scrolled_window, TRUE, TRUE, 6);
+
 	selector = e_source_selector_new (registry, extension_name);
 	e_source_selector_set_show_toggles (
 		E_SOURCE_SELECTOR (selector), FALSE);
-	gtk_box_pack_start (GTK_BOX (vbox), selector, FALSE, TRUE, 6);
+	gtk_container_add (GTK_CONTAINER (scrolled_window), selector);
 
 	primary = g_datalist_get_data (&target->data, "ldif-source");
 	if (primary == NULL) {
@@ -661,7 +670,7 @@ ldif_import_done (LDIFImporter *gci)
 	g_slist_free (gci->list_contacts);
 	g_hash_table_destroy (gci->dn_contact_hash);
 
-	e_import_complete (gci->import, gci->target);
+	e_import_complete (gci->import, gci->target, NULL);
 	g_object_unref (gci->import);
 
 	g_free (gci);
@@ -696,15 +705,21 @@ ldif_import (EImport *ei,
 	FILE *file = NULL;
 	EImportTargetURI *s = (EImportTargetURI *) target;
 	gchar *filename;
+	gint errn = 0;
 
 	filename = g_filename_from_uri (s->uri_src, NULL, NULL);
 	if (filename != NULL) {
 		file = g_fopen (filename, "r");
+		errn = errno;
 		g_free (filename);
 	}
 	if (file == NULL) {
-		g_message (G_STRLOC ":Can't open .ldif file");
-		e_import_complete (ei, target);
+		GError *error;
+
+		error = g_error_new_literal (G_IO_ERROR, g_io_error_from_errno (errn), _("Can't open .ldif file"));
+		e_import_complete (ei, target, error);
+		g_clear_error (&error);
+
 		return;
 	}
 
@@ -723,7 +738,7 @@ ldif_import (EImport *ei,
 
 	source = g_datalist_get_data (&target->data, "ldif-source");
 
-	e_book_client_connect (source, NULL, book_client_connect_cb, gci);
+	e_book_client_connect (source, 30, NULL, book_client_connect_cb, gci);
 }
 
 static void

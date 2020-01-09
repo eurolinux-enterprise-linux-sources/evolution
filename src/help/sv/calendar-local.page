@@ -13,40 +13,46 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Adding another local calendar.</desc>
+    <desc>Lägga till en annan lokal kalender.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Adding another local calendar</title>
+  <title>Lägga till en annan lokal kalender</title>
 
-  <p>To add another local calendar to <app>Evolution</app>, perform the
-  following steps:</p>
+  <p>För att lägga till en annan lokal kalender i <app>Evolution</app>, utför följande steg:</p>
 
   <steps>
     <item>
-      <p>Click
-      <guiseq><gui>File</gui><gui>New</gui><gui>Calendar</gui></guiseq>.</p>
+      <p>Klicka på <guiseq><gui>Arkiv</gui><gui>Nytt</gui><gui>Kalender</gui></guiseq>.</p>
     </item>
     <item>
-      <p>Select the type <gui>On This Computer</gui>.</p>
+      <p>Välj typen <gui>På denna dator</gui>.</p>
     </item>
     <item>
-      <p>Enter a name that you prefer.</p>
+      <p>Ange ett namn du föredrar.</p>
     </item>
     <item>
-      <p>Optionally choose a color that you prefer.</p>
+      <p>Du kan välja en valfri färg du gillar.</p>
     </item>
     <item>
-      <p>If you choose to use an existing calendar file which is already
-      located on your computer, you need to provide its location and whether
-      <app>Evolution</app> should only read from the file or if
-      <app>Evolution</app> can also add and alter items in that file.</p>
+      <p>Om du väljer att använda en existerande kalenderfil som redan finns på din dator måste du tillhandahålla dess plats och huruvida <app>Evolution</app> endast bör läsa från filen eller om <app>Evolution</app> också kan lägga till och förändra objekt i den filen.</p>
     </item>
     <item>
-      <p>Click <gui style="button">Apply</gui>.</p>
+      <p>Klicka på <gui style="button">Verkställ</gui>.</p>
     </item>
   </steps>
 
-  <p>The calendar will be added to the list of calendars in
-  <app>Evolution</app>.</p>
+  <p>Kalendern kommer att läggas till i listan över kalendrar i <app>Evolution</app>.</p>
 
 </page>

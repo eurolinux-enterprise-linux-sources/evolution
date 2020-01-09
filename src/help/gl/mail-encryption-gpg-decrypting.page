@@ -31,12 +31,12 @@
 <section id="decryption">
 <title>Descifrar un mensaxe recibido</title>
 <p>Se recibiu un mensaxe cifrado, debe descrifralo antes de poder lelo.</p>
-<p>Ao ver o mensaxe, Evolution preguntaralle o seu contrasinal PGP. Escríbao e aparecerá o mensaxe descifrado.</p>
+<p>When you view the message, <app>Evolution</app> prompts you for your PGP password. Enter it, and the unencrypted message is displayed.</p>
 <note style="tip"><p>Os remitentes deben ter a súa chave pública GPG antes de que poidan enviarlle un mensaxe cifrado.</p></note>
 </section>
 
 <section id="signature">
 <title>Comprobar a sinatura dun mensaxe recibido</title>
-<p>To check the sender's signature of a received message, scroll down to the bottom of the message and click the logo. Evolution will display <gui>Security Information</gui> for the message.</p>
+<p>To check the sender's signature of a received message, scroll down to the bottom of the message and click the logo. <app>Evolution</app> will display <gui>Security Information</gui> for the message.</p>
 </section>
 </page>

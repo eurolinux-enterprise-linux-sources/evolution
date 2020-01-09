@@ -15,6 +15,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "e-mail-parser.h"
 
 #include <string.h>
@@ -49,7 +53,6 @@ enum {
 
 /* internal parser extensions */
 GType e_mail_parser_application_mbox_get_type (void);
-GType e_mail_parser_attachment_bar_get_type (void);
 GType e_mail_parser_audio_get_type (void);
 GType e_mail_parser_headers_get_type (void);
 GType e_mail_parser_message_get_type (void);
@@ -74,8 +77,6 @@ GType e_mail_parser_text_plain_get_type (void);
 #ifdef ENABLE_SMIME
 GType e_mail_parser_application_smime_get_type (void);
 #endif
-
-void e_mail_parser_internal_extensions_load (EMailExtensionRegistry *ereg);
 
 static gpointer parent_class;
 
@@ -143,6 +144,17 @@ mail_parser_run (EMailParser *parser,
 }
 
 static void
+shell_gone_cb (gpointer user_data,
+	       GObject *gone_extension_registry)
+{
+	EMailParserClass *class = user_data;
+
+	g_return_if_fail (class != NULL);
+
+	g_clear_object (&class->extension_registry);
+}
+
+static void
 mail_parser_set_session (EMailParser *parser,
                          CamelSession *session)
 {
@@ -204,9 +216,10 @@ e_mail_parser_finalize (GObject *object)
 static void
 e_mail_parser_base_init (EMailParserClass *class)
 {
+	EShell *shell;
+
 	/* Register internal extensions. */
 	g_type_ensure (e_mail_parser_application_mbox_get_type ());
-	g_type_ensure (e_mail_parser_attachment_bar_get_type ());
 	g_type_ensure (e_mail_parser_audio_get_type ());
 	g_type_ensure (e_mail_parser_headers_get_type ());
 	g_type_ensure (e_mail_parser_message_get_type ());
@@ -238,12 +251,9 @@ e_mail_parser_base_init (EMailParserClass *class)
 	e_mail_parser_extension_registry_load (class->extension_registry);
 
 	e_extensible_load_extensions (E_EXTENSIBLE (class->extension_registry));
-}
 
-static void
-e_mail_parser_base_finalize (EMailParserClass *class)
-{
-	g_object_unref (class->extension_registry);
+	shell = e_shell_get_default ();
+	g_object_weak_ref (G_OBJECT (shell), shell_gone_cb, class);
 }
 
 static void
@@ -288,7 +298,7 @@ e_mail_parser_get_type (void)
 		static const GTypeInfo type_info = {
 			sizeof (EMailParserClass),
 			(GBaseInitFunc) e_mail_parser_base_init,
-			(GBaseFinalizeFunc) e_mail_parser_base_finalize,
+			(GBaseFinalizeFunc) NULL,
 			(GClassInitFunc) e_mail_parser_class_init,
 			(GClassFinalizeFunc) NULL,
 			NULL,  /* class_data */
@@ -493,7 +503,7 @@ e_mail_parser_parse_part (EMailParser *parser,
 {
 	CamelContentType *ct;
 	gchar *mime_type;
-	gint n_parts_queued = 0;
+	gint handled;
 
 	ct = camel_mime_part_get_content_type (part);
 	if (!ct) {
@@ -505,7 +515,7 @@ e_mail_parser_parse_part (EMailParser *parser,
 		g_free (tmp);
 	}
 
-	n_parts_queued = e_mail_parser_parse_part_as (
+	handled = e_mail_parser_parse_part_as (
 		parser, part, part_id, mime_type,
 		cancellable, out_mail_parts);
 
@@ -513,7 +523,7 @@ e_mail_parser_parse_part (EMailParser *parser,
 		g_free (mime_type);
 	}
 
-	return n_parts_queued;
+	return handled;
 }
 
 gboolean
@@ -702,13 +712,13 @@ e_mail_parser_wrap_as_attachment (EMailParser *parser,
 	first_part = g_queue_peek_head (parts_queue);
 	if (first_part != NULL) {
 		const gchar *id = e_mail_part_get_id (first_part);
-		empa->attachment_view_part_id = g_strdup (id);
+		empa->part_id_with_attachment = g_strdup (id);
 		first_part->is_hidden = TRUE;
 	}
 
 	attachment = e_mail_part_attachment_ref_attachment (empa);
 
-	e_attachment_set_shown (attachment, empa->shown);
+	e_attachment_set_initially_shown (attachment, empa->shown);
 	e_attachment_set_can_show (
 		attachment,
 		extensions && !g_queue_is_empty (extensions));

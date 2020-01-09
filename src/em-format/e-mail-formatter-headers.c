@@ -166,7 +166,7 @@ write_contact_picture (CamelMimePart *mime_part,
 			if (size >= 0) {
 				g_string_append_printf (
 					buffer,
-					"<img width=\"%d\" src=\"evo-file://%s\" />",
+					"<img width=\"%dpx\" src=\"evo-file://%s\" />",
 					size, filename);
 			} else {
 				g_string_append_printf (
@@ -186,7 +186,7 @@ write_contact_picture (CamelMimePart *mime_part,
 	if (size >= 0) {
 		g_string_append_printf (
 			buffer,
-			"<img width=\"%d\" src=\"data:%s;base64,%s\">",
+			"<img width=\"%dpx\" src=\"data:%s;base64,%s\">",
 			size, content_type, b64);
 	} else {
 		g_string_append_printf (
@@ -203,10 +203,11 @@ static void
 format_full_headers (EMailFormatter *formatter,
                      GString *buffer,
                      EMailPart *part,
-                     guint32 mode,
-                     guint32 flags,
+                     EMailFormatterContext *context,
                      GCancellable *cancellable)
 {
+	guint32 mode = context->mode;
+	guint32 flags = context->flags;
 	CamelMimePart *mime_part;
 	const gchar *charset;
 	CamelContentType *ct;
@@ -353,6 +354,7 @@ format_full_headers (EMailFormatter *formatter,
 				E_MAIL_FORMATTER_HEADER_FLAG_NOCOLUMNS, charset);
 			header = header->next;
 		}
+		e_mail_formatter_format_security_header (formatter, context, buffer, part, E_MAIL_FORMATTER_HEADER_FLAG_NOCOLUMNS);
 	} else {
 		CamelMedium *medium;
 		gchar **default_headers;
@@ -427,6 +429,7 @@ format_full_headers (EMailFormatter *formatter,
 		}
 
 		g_strfreev (default_headers);
+		e_mail_formatter_format_security_header (formatter, context, buffer, part, 0);
 	}
 
 	g_string_append (buffer, "</table></td>");
@@ -519,7 +522,7 @@ emfe_headers_format (EMailFormatterExtension *extension,
 	g_string_append_printf (
 		buffer,
 		"%s id=\"%s\"><table class=\"-e-mail-formatter-header-color\" border=\"0\" width=\"100%%\" "
-		"style=\"direction: %s\">"
+		"style=\"direction: %s; border-spacing: 0px\">"
 		"<tr>",
 		(context->mode != E_MAIL_FORMATTER_MODE_PRINTING) ?
 			"<div class=\"headers -e-mail-formatter-body-color\"" :
@@ -530,7 +533,7 @@ emfe_headers_format (EMailFormatterExtension *extension,
 	if (is_collapsable)
 		g_string_append_printf (
 			buffer,
-			"<td valign=\"top\" width=\"16\">"
+			"<td valign=\"top\" width=\"16\" style=\"padding-left: 0px\">"
 			"<img src=\"evo-file://%s/%s\" class=\"navigable\" "
 			"     id=\"__evo-collapse-headers-img\" />"
 			"</td>",
@@ -548,9 +551,9 @@ emfe_headers_format (EMailFormatterExtension *extension,
 
 	format_full_headers (
 		formatter,
-		buffer, part,
-		context->mode,
-		context->flags,
+		buffer,
+		part,
+		context,
 		cancellable);
 
 	g_string_append (buffer, "</td>");

@@ -14,7 +14,7 @@
     <link type="guide" xref="mail-account-manage-unix-mbox-spool-file#defaults"/>
     <link type="guide" xref="mail-account-manage-usenet-news#defaults"/>
 
-    <revision pkgversion="2.32.1" version="0.2" date="2011-01-06" status="candidate"/>
+    <revision pkgversion="3.13.90" version="0.3" date="2015-03-09" status="final"/>
     <credit type="author">
       <name its:translate="no">April Gonzales</name>
       <email its:translate="no">loonycookie@gmail.com</email>
@@ -37,19 +37,25 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
@@ -57,8 +63,8 @@
 
 <p>Lesebestätigungen sind eine Möglichkeit, dass Empfänger den Erhalt Ihrer Nachricht bestätigen. Der Empfänger hat normalerweise die Wahl, den Empfang entweder zu bestätigen oder auch nicht. Demnach ist es kein zuverlässiger Weg herauszufinden, ob Ihre E-Mails empfangen worden sind.</p>
 
-<p>Fordern Sie Lesebestätigungen an, indem Sie diese Option im E-Mail-Editor aktivieren. Wählen Sie dazu <guiseq><gui>Optionen</gui><gui>Lesebestätigung anfordern</gui></guiseq>.</p>
+<p>Fordern Sie Lesebestätigungen an, indem Sie im Menü des E-Mail-Editors <guiseq><gui>Optionen</gui><gui>Lesebestätigung anfordern</gui></guiseq> auswählen, oder indem Sie auf den entsprechenden Knopf in der Werkzeugleiste klicken.</p>
 
-<p>Wie Evolution mit Lesebestätigungsanforderungen, die Sie erhalten, umgehen soll, legen Sie fest unter <guiseq><gui>Bearbeiten</gui><gui>Einstellungen</gui><gui>E-Mail-Konten</gui><gui style="button">Bearbeiten</gui><gui>Vorgaben</gui><gui>Lesebestätigungen</gui></guiseq>.</p>
+<p>Wie <gui>Evolution</gui> mit Lesebestätigungsanforderungen umgeht, die Sie erhalten, legen Sie unter <gui>Lesebestätigungen</gui> in den <link xref="mail-default-folder-locations"><gui>Vorgaben</gui></link> des jeweiligen E-Mail-Kontos fest.</p>
 
 </page>

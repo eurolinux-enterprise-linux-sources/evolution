@@ -52,7 +52,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -63,7 +63,7 @@
 <item><p>Cliquez sur <gui style="button">Ajouter</gui>.</p></item>
 <item><p>Saisissez un nom dans le champ <gui>Nom de la règle</gui>.</p></item>
 <item><p>Définissez les conditions de la règle. Pour chaque condition, sélectionnez d'abord la partie du message qui sera contrôlée puis définissez la règle de comparaison.</p><p>Pour plus d'informations sur les conditions disponibles, consultez <link xref="mail-search-folders-conditions">Conditions disponibles pour les dossiers de recherche</link>.</p></item>
-<item><p>Si vous voulez définir plusieurs conditions, définissez sous <gui>Trouver les éléments</gui> si toutes ou une seule condition doit être remplie et cliquez sur <gui style="button">Ajouter une condition</gui> et répétez les étapes précédentes.</p></item>
+<item><p>Si vous voulez définir plusieurs conditions, définissez sous <gui>Trouver les éléments</gui> si une seule condition ou toutes doivent être remplies et cliquez sur <gui style="button">Ajouter une condition</gui> et répétez les étapes précédentes.</p></item>
 <item><p>Sélectionnez les dossiers qui seront utilisés comme dossier de recherche dans la section <gui>Sources de dossier de recherche</gui>. Les options sont :</p>
 <list>
   <item><p>Tous les dossiers locaux :</p>

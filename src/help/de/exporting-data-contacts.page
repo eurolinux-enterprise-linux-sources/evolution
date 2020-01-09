@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="exporting-data-contacts" xml:lang="de">
 
   <info>
-    <desc>Über den Export von Kontaktdaten aus <app>Evolution</app>.</desc>
+    <desc>Informationen über den Export von Kontaktdaten aus <app>Evolution</app>.</desc>
 
     <link type="guide" xref="exporting-data"/>
 
@@ -28,19 +28,25 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 

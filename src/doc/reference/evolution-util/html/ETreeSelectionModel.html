@@ -2,13 +2,13 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Evolution Utilities Reference Manual: ETreeSelectionModel</title>
-<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<title>ETreeSelectionModel: Evolution Utilities Reference Manual</title>
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
 <link rel="home" href="index.html" title="Evolution Utilities Reference Manual">
-<link rel="up" href="ch11.html" title="Tables and Trees">
+<link rel="up" href="ch12.html" title="Tables and Trees">
 <link rel="prev" href="ETreeModel.html" title="ETreeModel">
 <link rel="next" href="ETreeTableAdapter.html" title="ETreeTableAdapter">
-<meta name="generator" content="GTK-Doc V1.21 (XML mode)">
+<meta name="generator" content="GTK-Doc V1.25 (XML mode)">
 <link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
@@ -20,7 +20,7 @@
                   <a href="#ETreeSelectionModel.properties" class="shortcut">Properties</a></span>
 </td>
 <td><a accesskey="h" href="index.html"><img src="home.png" width="16" height="16" border="0" alt="Home"></a></td>
-<td><a accesskey="u" href="ch11.html"><img src="up.png" width="16" height="16" border="0" alt="Up"></a></td>
+<td><a accesskey="u" href="ch12.html"><img src="up.png" width="16" height="16" border="0" alt="Up"></a></td>
 <td><a accesskey="p" href="ETreeModel.html"><img src="left.png" width="16" height="16" border="0" alt="Prev"></a></td>
 <td><a accesskey="n" href="ETreeTableAdapter.html"><img src="right.png" width="16" height="16" border="0" alt="Next"></a></td>
 </tr></table>
@@ -35,7 +35,7 @@
 </tr></table></div>
 <div class="refsect1">
 <a name="ETreeSelectionModel.functions"></a><h2>Functions</h2>
-<div class="informaltable"><table width="100%" border="0">
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="functions_return">
 <col class="functions_name">
@@ -43,18 +43,18 @@
 <tbody>
 <tr>
 <td class="function_type">
-<a class="link" href="ESelectionModel.html" title="ESelectionModel"><span class="returnvalue">ESelectionModel</span></a> *
-</td>
-<td class="function_name">
-<a class="link" href="ETreeSelectionModel.html#e-tree-selection-model-new" title="e_tree_selection_model_new ()">e_tree_selection_model_new</a> <span class="c_punctuation">()</span>
-</td>
-</tr>
-<tr>
-<td class="function_type">
 <span class="returnvalue">void</span>
 </td>
 <td class="function_name">
 <span class="c_punctuation">(</span><a class="link" href="ETreeSelectionModel.html#ETreeForeachFunc" title="ETreeForeachFunc ()">*ETreeForeachFunc</a><span class="c_punctuation">)</span> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<a class="link" href="ESelectionModel.html" title="ESelectionModel"><span class="returnvalue">ESelectionModel</span></a> *
+</td>
+<td class="function_name">
+<a class="link" href="ETreeSelectionModel.html#e-tree-selection-model-new" title="e_tree_selection_model_new ()">e_tree_selection_model_new</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
 <tr>
@@ -110,7 +110,7 @@
 </div>
 <div class="refsect1">
 <a name="ETreeSelectionModel.properties"></a><h2>Properties</h2>
-<div class="informaltable"><table border="0">
+<div class="informaltable"><table class="informaltable" border="0">
 <colgroup>
 <col width="150px" class="properties_type">
 <col width="300px" class="properties_name">
@@ -118,12 +118,12 @@
 </colgroup>
 <tbody>
 <tr>
-<td class="property_type"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="type">gint</span></a></td>
+<td class="property_type"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="type">gint</span></a></td>
 <td class="property_name"><a class="link" href="ETreeSelectionModel.html#ETreeSelectionModel--cursor-col" title="The “cursor-col” property">cursor-col</a></td>
 <td class="property_flags">Read / Write</td>
 </tr>
 <tr>
-<td class="property_type"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="type">gint</span></a></td>
+<td class="property_type"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="type">gint</span></a></td>
 <td class="property_name"><a class="link" href="ETreeSelectionModel.html#ETreeSelectionModel--cursor-row" title="The “cursor-row” property">cursor-row</a></td>
 <td class="property_flags">Read / Write</td>
 </tr>
@@ -143,21 +143,8 @@
 </table></div>
 </div>
 <div class="refsect1">
-<a name="ETreeSelectionModel.other"></a><h2>Types and Values</h2>
-<div class="informaltable"><table width="100%" border="0">
-<colgroup>
-<col width="150px" class="name">
-<col class="description">
-</colgroup>
-<tbody><tr>
-<td class="datatype_keyword">struct</td>
-<td class="function_name"><a class="link" href="ETreeSelectionModel.html#ETreeSelectionModel-struct" title="struct ETreeSelectionModel">ETreeSelectionModel</a></td>
-</tr></tbody>
-</table></div>
-</div>
-<div class="refsect1">
 <a name="ETreeSelectionModel.object-hierarchy"></a><h2>Object Hierarchy</h2>
-<pre class="screen">    <a href="https://developer.gnome.org/gobject/unstable/gobject-The-Base-Object-Type.html#GObject">GObject</a>
+<pre class="screen">    <a href="/usr/share/gtk-doc/html/gobjectgobject-The-Base-Object-Type.html#GObject-struct">GObject</a>
     <span class="lineart">╰──</span> <a class="link" href="ESelectionModel.html" title="ESelectionModel">ESelectionModel</a>
         <span class="lineart">╰──</span> ETreeSelectionModel
 </pre>
@@ -168,16 +155,16 @@
 <div class="refsect1">
 <a name="ETreeSelectionModel.functions_details"></a><h2>Functions</h2>
 <div class="refsect2">
-<a name="e-tree-selection-model-new"></a><h3>e_tree_selection_model_new ()</h3>
-<pre class="programlisting"><a class="link" href="ESelectionModel.html" title="ESelectionModel"><span class="returnvalue">ESelectionModel</span></a> *
-e_tree_selection_model_new (<em class="parameter"><code><span class="type">void</span></code></em>);</pre>
-</div>
-<hr>
-<div class="refsect2">
 <a name="ETreeForeachFunc"></a><h3>ETreeForeachFunc ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 <span class="c_punctuation">(</span>*ETreeForeachFunc<span class="c_punctuation">)</span> (<em class="parameter"><code><a class="link" href="ETreeModel.html#ETreePath" title="ETreePath"><span class="type">ETreePath</span></a> path</code></em>,
-                     <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> closure</code></em>);</pre>
+                     <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> closure</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-tree-selection-model-new"></a><h3>e_tree_selection_model_new ()</h3>
+<pre class="programlisting"><a class="link" href="ESelectionModel.html" title="ESelectionModel"><span class="returnvalue">ESelectionModel</span></a> *
+e_tree_selection_model_new (<em class="parameter"><code><span class="type">void</span></code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">
@@ -185,7 +172,7 @@ e_tree_selection_model_new (<em class="parameter"><code><span class="type">void<
 <pre class="programlisting"><span class="returnvalue">void</span>
 e_tree_selection_model_foreach (<em class="parameter"><code><a class="link" href="ETreeSelectionModel.html" title="ETreeSelectionModel"><span class="type">ETreeSelectionModel</span></a> *etsm</code></em>,
                                 <em class="parameter"><code><a class="link" href="ETreeSelectionModel.html#ETreeForeachFunc" title="ETreeForeachFunc ()"><span class="type">ETreeForeachFunc</span></a> callback</code></em>,
-                                <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> closure</code></em>);</pre>
+                                <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> closure</code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">
@@ -200,7 +187,7 @@ e_tree_selection_model_select_single_path
 <a name="e-tree-selection-model-select-paths"></a><h3>e_tree_selection_model_select_paths ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 e_tree_selection_model_select_paths (<em class="parameter"><code><a class="link" href="ETreeSelectionModel.html" title="ETreeSelectionModel"><span class="type">ETreeSelectionModel</span></a> *etsm</code></em>,
-                                     <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Pointer-Arrays.html#GPtrArray"><span class="type">GPtrArray</span></a> *paths</code></em>);</pre>
+                                     <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Pointer-Arrays.html#GPtrArray"><span class="type">GPtrArray</span></a> *paths</code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">
@@ -226,17 +213,12 @@ e_tree_selection_model_get_cursor (<em class="parameter"><code><a class="link" h
 </div>
 <div class="refsect1">
 <a name="ETreeSelectionModel.other_details"></a><h2>Types and Values</h2>
-<div class="refsect2">
-<a name="ETreeSelectionModel-struct"></a><h3>struct ETreeSelectionModel</h3>
-<pre class="programlisting">struct ETreeSelectionModel;</pre>
-</div>
 </div>
 <div class="refsect1">
 <a name="ETreeSelectionModel.property-details"></a><h2>Property Details</h2>
 <div class="refsect2">
 <a name="ETreeSelectionModel--cursor-col"></a><h3>The <code class="literal">“cursor-col”</code> property</h3>
-<pre class="programlisting">  “cursor-col”               <a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="type">gint</span></a></pre>
-<p></p>
+<pre class="programlisting">  “cursor-col”               <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="type">gint</span></a></pre>
 <p>Flags: Read / Write</p>
 <p>Allowed values: &gt;= 0</p>
 <p>Default value: 0</p>
@@ -244,8 +226,7 @@ e_tree_selection_model_get_cursor (<em class="parameter"><code><a class="link" h
 <hr>
 <div class="refsect2">
 <a name="ETreeSelectionModel--cursor-row"></a><h3>The <code class="literal">“cursor-row”</code> property</h3>
-<pre class="programlisting">  “cursor-row”               <a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="type">gint</span></a></pre>
-<p></p>
+<pre class="programlisting">  “cursor-row”               <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="type">gint</span></a></pre>
 <p>Flags: Read / Write</p>
 <p>Allowed values: &gt;= 0</p>
 <p>Default value: 0</p>
@@ -254,20 +235,17 @@ e_tree_selection_model_get_cursor (<em class="parameter"><code><a class="link" h
 <div class="refsect2">
 <a name="ETreeSelectionModel--etta"></a><h3>The <code class="literal">“etta”</code> property</h3>
 <pre class="programlisting">  “etta”                     <a class="link" href="ETreeTableAdapter.html" title="ETreeTableAdapter"><span class="type">ETreeTableAdapter</span></a> *</pre>
-<p></p>
 <p>Flags: Read / Write</p>
 </div>
 <hr>
 <div class="refsect2">
 <a name="ETreeSelectionModel--model"></a><h3>The <code class="literal">“model”</code> property</h3>
 <pre class="programlisting">  “model”                    <a class="link" href="ETreeModel.html" title="ETreeModel"><span class="type">ETreeModel</span></a> *</pre>
-<p></p>
 <p>Flags: Read / Write</p>
 </div>
 </div>
 </div>
 <div class="footer">
-<hr>
-          Generated by GTK-Doc V1.21</div>
+<hr>Generated by GTK-Doc V1.25</div>
 </body>
 </html>

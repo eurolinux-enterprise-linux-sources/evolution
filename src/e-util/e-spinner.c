@@ -22,6 +22,8 @@
 
 #include <gtk/gtk.h>
 
+#include "e-util/e-util-private.h"
+
 #include "e-spinner.h"
 
 #define MAIN_IMAGE_FILENAME	"working.png"
@@ -63,6 +65,25 @@ e_spinner_update_frame_cb (gpointer user_data)
 	gtk_image_set_from_pixbuf (GTK_IMAGE (spinner), spinner->priv->current_frame->data);
 
 	return TRUE;
+}
+
+static void
+e_spinner_disable_spin (ESpinner *spinner)
+{
+	if (spinner->priv->timeout_id) {
+		g_source_remove (spinner->priv->timeout_id);
+		spinner->priv->timeout_id = 0;
+	}
+}
+
+static void
+e_spinner_enable_spin (ESpinner *spinner)
+{
+	e_spinner_disable_spin (spinner);
+
+	if (spinner->priv->pixbufs)
+		spinner->priv->timeout_id = g_timeout_add_full (
+			G_PRIORITY_LOW, FRAME_TIMEOUT_MS, e_spinner_update_frame_cb, spinner, NULL);
 }
 
 static void
@@ -112,7 +133,15 @@ e_spinner_constructed (GObject *object)
 
 	spinner = E_SPINNER (object);
 
+#ifdef G_OS_WIN32
+	{
+		gchar *filename = g_strconcat (EVOLUTION_IMAGESDIR, G_DIR_SEPARATOR_S, MAIN_IMAGE_FILENAME, NULL);
+		main_pixbuf = gdk_pixbuf_new_from_file (filename, &error);
+		g_free (filename);
+	}
+#else
 	main_pixbuf = gdk_pixbuf_new_from_file (EVOLUTION_IMAGESDIR G_DIR_SEPARATOR_S MAIN_IMAGE_FILENAME, &error);
+#endif
 	if (!main_pixbuf) {
 		g_warning ("%s: Failed to load image: %s", error ? error->message : "Unknown error", G_STRFUNC);
 		g_clear_error (&error);
@@ -167,9 +196,37 @@ e_spinner_finalize (GObject *object)
 }
 
 static void
+e_spinner_realize (GtkWidget *widget)
+{
+	ESpinner *spinner = E_SPINNER (widget);
+
+	/* Chain up to the parent class first, then enable the spinner
+	 * after the widget is realized
+	 */
+	GTK_WIDGET_CLASS (e_spinner_parent_class)->realize (widget);
+
+	if (spinner->priv->active)
+		e_spinner_enable_spin (spinner);
+}
+
+static void
+e_spinner_unrealize (GtkWidget *widget)
+{
+	ESpinner *spinner = E_SPINNER (widget);
+
+	/* Disable the spinner before chaining up to the parent class
+	 * to unrealize the widget
+	 */
+	e_spinner_disable_spin (spinner);
+
+	GTK_WIDGET_CLASS (e_spinner_parent_class)->unrealize (widget);
+}
+
+static void
 e_spinner_class_init (ESpinnerClass *klass)
 {
 	GObjectClass *object_class;
+	GtkWidgetClass *widget_class;
 
 	g_type_class_add_private (klass, sizeof (ESpinnerPrivate));
 
@@ -179,6 +236,10 @@ e_spinner_class_init (ESpinnerClass *klass)
 	object_class->dispose = e_spinner_dispose;
 	object_class->finalize = e_spinner_finalize;
 	object_class->constructed = e_spinner_constructed;
+
+	widget_class = GTK_WIDGET_CLASS (klass);
+	widget_class->realize = e_spinner_realize;
+	widget_class->unrealize = e_spinner_unrealize;
 
 	/**
 	 * ESpinner:active:
@@ -229,13 +290,12 @@ e_spinner_set_active (ESpinner *spinner,
 
 	spinner->priv->active = active;
 
-	if (spinner->priv->timeout_id) {
-		g_source_remove (spinner->priv->timeout_id);
-		spinner->priv->timeout_id = 0;
+	if (gtk_widget_get_realized (GTK_WIDGET (spinner))) {
+		if (active)
+			e_spinner_enable_spin (spinner);
+		else
+			e_spinner_disable_spin (spinner);
 	}
-
-	if (spinner->priv->active && spinner->priv->pixbufs)
-		spinner->priv->timeout_id = g_timeout_add_full (G_PRIORITY_LOW, FRAME_TIMEOUT_MS, e_spinner_update_frame_cb, spinner, NULL);
 
 	g_object_notify (G_OBJECT (spinner), "active");
 }

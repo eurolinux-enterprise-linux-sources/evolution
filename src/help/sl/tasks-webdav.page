@@ -27,7 +27,7 @@
 
 <p>Seznami te vrste so le za branje.</p>
 
-<p>Za dodajanje seznama opravil ali seznama zapiskov v Evolution izvedite naslednje korake:</p>
+<p>To add such a task list or memo list to <app>Evolution</app>, perform the following steps:</p>
 <steps>
 <item><p>Kliknite <guiseq><gui>Datoteka</gui><gui>Nov</gui><gui>Seznam opravil</gui></guiseq> ali <guiseq><gui>Datoteka</gui><gui>Novo</gui><gui>Seznam zapiskov</gui></guiseq>.</p></item>
 <item><p>Select the type <gui>On the Web</gui>.</p></item>
@@ -35,11 +35,11 @@
 <item><p>Po želji izberite barvo, ki jo imate raje.</p></item>
 <item><p>Choose if you want to be able to view the content also while offline.</p></item>
 <item><p>Enter the address in the <gui>URL</gui> field.</p></item>
-<item><p>Izberite <gui>Uporabi varno povezavo</gui>, če se želite varno povezati.</p></item>
+<item><p>Choose <gui>Use a secure connection</gui> if you want to connect securely.</p></item>
 <item><p>Vnesite svoje uporabniško ime:</p></item>
 <item><p>Kliknite <gui style="button">Uveljavi</gui>.</p></item>
 </steps>
 
-<p>Seznam bo dodan v Evolution.</p>
+<p>The list will be added in <app>Evolution</app>.</p>
 
 </page>

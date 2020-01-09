@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-filters-conditions" xml:lang="sv">
 
   <info>
-    <desc>Available conditions for setting up filtering.</desc>
+    <desc>Tillgängliga åtgärder för att ställa in filtrering.</desc>
 
     <link type="seealso" xref="mail-filters"/>
 
@@ -18,9 +18,21 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
     
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Available Filter conditions</title>
+  <title>Tillgängliga filtervillkor</title>
 
 <list>
 
@@ -28,17 +40,17 @@
 included by XInclude. See http://blogs.gnome.org/shaunm/2011/07/21/understanding-xinclude/ for how it works. -->
 <include xmlns="http://www.w3.org/2001/XInclude" href="xinclude-filter-vfolder-conditions.xml" xpointer="xmlns(mal=http://projectmallard.org/1.0/)xpointer(/mal:info/mal:item)"/>
 
-<item><p>Source Account:</p>
-<p>Filters messages according the server you got them from. This is most useful if you use multiple POP mail accounts.</p></item>
+<item><p>Källkonto:</p>
+<p>Filtrera meddelanden enligt servern du fick dem från. Detta är särskilt användbart om du använder flera POP-e-postkonton.</p></item>
 
-<item><p>Pipe to Program:</p>
-<p>Evolution can use an external command to process a message, then process it based on the return value. Commands used in this way must return an integer. This is most commonly used to add an external junk mail filter.</p></item>
+<item><p>Skicka till program:</p>
+<p><app>Evolution</app> kan använda ett externt kommando för att behandla ett meddelande, sedan hantera det baserat på returvärdet. Kommandon som används på detta sätt måste returnera ett heltal. Det används vanligen för att lägga till ett externt skräppostfilter.</p></item>
 
-<item><p>Junk Test:</p>
-<p>Filters based on the results of the <link xref="mail-spam">junk mail</link> test.</p></item>
+<item><p>Skräptest:</p>
+<p>Filtrerar baserat på resultatet från <link xref="mail-spam">skräppost</link>-testet.</p></item>
 
-<item><p>Match All:</p>
-<p>Applies an action always to any message, without further conditions. This could be useful at the end of the list of message filters to cover those emails that did not match any conditions for the preceding filters in the list.</p></item>
+<item><p>Matcha alla:</p>
+<p>Tillämpar alltid en åtgärd för vilket meddelande som helst, utan ytterligare villkor. Detta kan vara användbart i slutet på listan över meddelandefilter för att täcka de e-postmeddelanden som inte matchat villkoren för de föregående filtren i listan.</p></item>
 
 </list>
 </page>

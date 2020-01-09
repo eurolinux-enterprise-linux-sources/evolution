@@ -2,11 +2,11 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="guide" id="mail-composer-priority" xml:lang="sv">
 
   <info>
-    <desc>Setting a priority for messages to be sent.</desc>
+    <desc>Ställ in en prioritet för meddelanden som ska skickas.</desc>
 
     <link type="guide" xref="index#mail-composing-advanced"/>
 
-    <revision pkgversion="3.3.91" version="0.2" date="2012-02-19" status="draft"/>
+    <revision pkgversion="3.13.90" version="0.3" date="2015-03-09" status="draft"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -18,12 +18,24 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-<title>Prioritizing outgoing messages</title>
+<title>Prioritera utgående meddelanden</title>
 
-<p>You can prioritize a message to be sent, so that the recipient sees its relative importance. To prioritize a message, click <guiseq><gui>Options</gui><gui>Prioritize Message</gui></guiseq> in the composer window.</p>
+<p>Du kan prioritera ett meddelande som ska skickas, så att mottagaren ser dess relativa viktighet. För att prioritera ett meddelande, välj <guiseq><gui>Alternativ</gui><gui>Prioritera meddelande</gui></guiseq> i menyn i meddelanderedigerarfönstret eller klicka på motsvarande ikon i verktygsfältet.</p>
 
-<note style="tip"><p>Evolution will ignore the message priority of incoming messages because the recipient should decide whether the message is important or not. You can set the "Important" flag for any messages.</p></note>
-
+<note style="tip"><p><app>Evolution</app> kommer att ignorera meddelandeprioritet för inkommande meddelanden eftersom mottagaren bör avgöra huruvida meddelandet är viktigt eller ej. Du kan ställa in flaggan ”Viktigt” för vilket meddelande som helst.</p></note>
+<!-- TODO: Nowhere is explained how to set the Important flag. -->
 </page>

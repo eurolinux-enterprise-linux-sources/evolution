@@ -209,8 +209,6 @@ print_pressed_cb (GtkButton *button,
 	(* funcinfo->func) (ALARM_NOTIFY_PRINT, -1, funcinfo->func_data);
 }
 
-#define DEFAULT_SNOOZE_MINS 5
-
 static void
 snooze_pressed_cb (GtkButton *button,
                    gpointer user_data)
@@ -236,7 +234,7 @@ snooze_pressed_cb (GtkButton *button,
 	snooze_timeout += 60 * (gtk_spin_button_get_value_as_int (GTK_SPIN_BUTTON (an->snooze_time_hrs)));
 	snooze_timeout += 60 * 24 * (gtk_spin_button_get_value_as_int (GTK_SPIN_BUTTON (an->snooze_time_days)));
 	if (!snooze_timeout)
-		snooze_timeout = DEFAULT_SNOOZE_MINS;
+		snooze_timeout = config_data_get_default_snooze_minutes ();
 	(* funcinfo->func) (ALARM_NOTIFY_SNOOZE, snooze_timeout, funcinfo->func_data);
 }
 
@@ -288,6 +286,7 @@ notified_alarms_dialog_new (void)
 {
 	GtkWidget *container;
 	GtkWidget *image;
+	gint snooze_minutes;
 	GtkCellRenderer *renderer = gtk_cell_renderer_text_new ();
 	AlarmNotificationsDialog *na = NULL;
 	AlarmNotify *an = g_new0 (AlarmNotify, 1);
@@ -331,6 +330,22 @@ notified_alarms_dialog_new (void)
 		g_object_unref (an->builder);
 		g_free (an);
 		return NULL;
+	}
+
+	snooze_minutes = config_data_get_default_snooze_minutes ();
+	if (snooze_minutes > 0) {
+		gint value;
+
+		value = snooze_minutes / (60 * 24);
+		snooze_minutes -= 60 * 24 * value;
+
+		gtk_spin_button_set_value (GTK_SPIN_BUTTON (an->snooze_time_days), value);
+
+		value = snooze_minutes / 60;
+		snooze_minutes -= 60 * value;
+
+		gtk_spin_button_set_value (GTK_SPIN_BUTTON (an->snooze_time_hrs), value);
+		gtk_spin_button_set_value (GTK_SPIN_BUTTON (an->snooze_time_min), snooze_minutes);
 	}
 
 	e_buffer_tagger_connect (GTK_TEXT_VIEW (an->description));
@@ -421,7 +436,7 @@ notified_alarms_dialog_new (void)
  * @trigger: Trigger time for the alarm.
  * @occur_start: Start of occurrence time for the event.
  * @occur_end: End of occurrence time for the event.
- * @vtype: Type of the component which corresponds to the alarm.
+ * @comp: The #ECalComponent which corresponds to the alarm.
  * @summary: Short summary of the appointment
  * @description: Long description of the appointment
  * @location: Location of the appointment
@@ -439,7 +454,7 @@ add_alarm_to_notified_alarms_dialog (AlarmNotificationsDialog *na,
                                      time_t trigger,
                                      time_t occur_start,
                                      time_t occur_end,
-                                     ECalComponentVType vtype,
+                                     ECalComponent *comp,
                                      const gchar *summary,
                                      const gchar *description,
                                      const gchar *location,
@@ -449,11 +464,15 @@ add_alarm_to_notified_alarms_dialog (AlarmNotificationsDialog *na,
 	GtkTreeIter iter = { 0 };
 	GtkTreeModel *model = gtk_tree_view_get_model (GTK_TREE_VIEW (na->treeview));
 	AlarmFuncInfo *funcinfo = NULL;
-	gchar *to_display = NULL, *start, *end, *str_time;
+	ECalComponentVType vtype;
+	gchar *to_display = NULL, *start, *str_time;
 	icaltimezone *current_zone;
 
 	/* Iter is not yet defined but still we return it in all the g_return_val_if_fail() calls? */
 	g_return_val_if_fail (trigger != -1, iter);
+	g_return_val_if_fail (E_IS_CAL_COMPONENT (comp), iter);
+
+	vtype = e_cal_component_get_vtype (comp);
 
 	/* Only VEVENTs or VTODOs can have alarms */
 	g_return_val_if_fail (vtype == E_CAL_COMPONENT_EVENT || vtype == E_CAL_COMPONENT_TODO, iter);
@@ -469,14 +488,12 @@ add_alarm_to_notified_alarms_dialog (AlarmNotificationsDialog *na,
 	gtk_list_store_append (GTK_LIST_STORE (model), &iter);
 
 	current_zone = config_data_get_timezone ();
-	start = timet_to_str_with_zone (occur_start, current_zone);
-	end = timet_to_str_with_zone (occur_end, current_zone);
+	start = timet_to_str_with_zone (occur_start, current_zone, datetime_is_date_only (comp, DATETIME_CHECK_DTSTART));
 	str_time = calculate_time (occur_start, occur_end);
 	to_display = g_markup_printf_escaped (
 		"<big><b>%s</b></big>\n%s %s",
 		summary, start, str_time);
 	g_free (start);
-	g_free (end);
 	gtk_list_store_set (
 		GTK_LIST_STORE (model), &iter,
 		ALARM_DISPLAY_COLUMN, to_display, -1);

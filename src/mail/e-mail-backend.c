@@ -57,16 +57,17 @@ struct _EMailBackendPrivate {
 	EMailSession *session;
 	GHashTable *jobs;
 	EMailSendAccountOverride *send_account_override;
+	EMailRemoteContent *remote_content;
+	EMailProperties *mail_properties;
 };
 
 enum {
 	PROP_0,
 	PROP_SESSION,
-	PROP_SEND_ACCOUNT_OVERRIDE
+	PROP_SEND_ACCOUNT_OVERRIDE,
+	PROP_REMOTE_CONTENT,
+	PROP_MAIL_PROPERTIES
 };
-
-/* FIXME Kill this thing.  It's a horrible hack. */
-extern gint camel_application_is_exiting;
 
 G_DEFINE_ABSTRACT_TYPE (
 	EMailBackend,
@@ -214,8 +215,8 @@ mail_backend_prepare_for_offline_cb (EShell *shell,
 			mail_backend_any_store_requires_downsync (account_store);
 
 		if (ask_to_synchronize) {
-			synchronize = em_utils_prompt_user (
-				window, NULL, "mail:ask-quick-offline", NULL);
+			synchronize = e_util_prompt_user (
+				window, "org.gnome.evolution.mail", NULL, "mail:ask-quick-offline", NULL);
 		}
 
 		if (!synchronize) {
@@ -485,6 +486,7 @@ mail_backend_quit_requested_cb (EShell *shell,
 	EMailSession *session;
 	CamelFolder *folder;
 	GtkWindow *window;
+	GList *app_windows;
 	gint response;
 
 	window = e_shell_get_active_window (shell);
@@ -513,8 +515,21 @@ mail_backend_quit_requested_cb (EShell *shell,
 	if (camel_folder_summary_get_visible_count (folder->summary) == 0)
 		return;
 
+	app_windows = gtk_application_get_windows (GTK_APPLICATION (shell));
+	while (app_windows) {
+		if (E_IS_SHELL_WINDOW (app_windows->data))
+			break;
+
+		app_windows = g_list_next (app_windows);
+	}
+
+	/* Either there is any EShellWindow available, then the quit can be
+	   truly cancelled, or there is none and the question is useless. */
+	if (!app_windows)
+		return;
+
 	response = e_alert_run_dialog_for_args (
-		window, "mail:exit-unsaved", NULL);
+		window, "mail:exit-unsent-question", NULL);
 
 	if (response == GTK_RESPONSE_YES)
 		return;
@@ -848,12 +863,6 @@ mail_backend_job_started_cb (CamelSession *session,
 
 	priv = E_MAIL_BACKEND_GET_PRIVATE (shell_backend);
 
-	/* Make sure this operation shows up in the user interface.
-	 * This message should get overridden, if not it's a bug in
-	 * whatever CamelService submitted this. */
-	camel_operation_push_message (
-		cancellable, _("Unknown background operation"));
-
 	activity = e_activity_new ();
 	e_activity_set_cancellable (activity, cancellable);
 	e_shell_backend_add_activity (shell_backend, activity);
@@ -875,9 +884,6 @@ mail_backend_job_finished_cb (CamelSession *session,
 
 	priv = E_MAIL_BACKEND_GET_PRIVATE (shell_backend);
 	class = E_SHELL_BACKEND_GET_CLASS (shell_backend);
-
-	/* Pop the generic "background operation" message. */
-	camel_operation_pop_message (cancellable);
 
 	activity = g_hash_table_lookup (priv->jobs, cancellable);
 	description = e_activity_get_text (activity);
@@ -931,6 +937,17 @@ mail_backend_job_finished_cb (CamelSession *session,
 }
 
 static void
+mail_backend_allow_auth_prompt_cb (EMailSession *session,
+				   ESource *source,
+				   EShell *shell)
+{
+	g_return_if_fail (E_IS_SOURCE (source));
+	g_return_if_fail (E_IS_SHELL (shell));
+
+	e_shell_allow_auth_prompt_for (shell, source);
+}
+
+static void
 mail_backend_get_property (GObject *object,
                            guint property_id,
                            GValue *value,
@@ -948,6 +965,20 @@ mail_backend_get_property (GObject *object,
 			g_value_set_object (
 				value,
 				e_mail_backend_get_send_account_override (
+				E_MAIL_BACKEND (object)));
+			return;
+
+		case PROP_REMOTE_CONTENT:
+			g_value_set_object (
+				value,
+				e_mail_backend_get_remote_content (
+				E_MAIL_BACKEND (object)));
+			return;
+
+		case PROP_MAIL_PROPERTIES:
+			g_value_set_object (
+				value,
+				e_mail_backend_get_mail_properties (
 				E_MAIL_BACKEND (object)));
 			return;
 	}
@@ -990,6 +1021,8 @@ mail_backend_finalize (GObject *object)
 
 	g_hash_table_destroy (priv->jobs);
 	g_clear_object (&priv->send_account_override);
+	g_clear_object (&priv->remote_content);
+	g_clear_object (&priv->mail_properties);
 
 	/* Chain up to parent's finalize() method. */
 	G_OBJECT_CLASS (e_mail_backend_parent_class)->finalize (object);
@@ -1144,7 +1177,8 @@ mail_backend_constructed (GObject *object)
 	EShellBackend *shell_backend;
 	MailFolderCache *folder_cache;
 	ESourceRegistry *registry;
-	gchar *send_overrides_ini;
+	gchar *config_filename;
+	GList *providers;
 
 	priv = E_MAIL_BACKEND_GET_PRIVATE (object);
 
@@ -1154,8 +1188,20 @@ mail_backend_constructed (GObject *object)
 	if (camel_init (e_get_user_data_dir (), TRUE) != 0)
 		exit (0);
 
+	providers = camel_provider_list (TRUE);
+	if (!providers) {
+		g_warning ("%s: No camel providers loaded, exiting...", G_STRFUNC);
+		exit (1);
+	}
+
+	g_list_free (providers);
+
 	registry = e_shell_get_registry (shell);
 	priv->session = e_mail_ui_session_new (registry);
+
+	g_signal_connect (
+		priv->session, "allow-auth-prompt",
+		G_CALLBACK (mail_backend_allow_auth_prompt_cb), shell);
 
 	g_signal_connect (
 		priv->session, "flush-outbox",
@@ -1238,9 +1284,17 @@ mail_backend_constructed (GObject *object)
 	/* Chain up to parent's constructed() method. */
 	G_OBJECT_CLASS (e_mail_backend_parent_class)->constructed (object);
 
-	send_overrides_ini = g_build_filename (e_shell_backend_get_config_dir (shell_backend), "send-overrides.ini", NULL);
-	priv->send_account_override = e_mail_send_account_override_new (send_overrides_ini);
-	g_free (send_overrides_ini);
+	config_filename = g_build_filename (e_shell_backend_get_config_dir (shell_backend), "send-overrides.ini", NULL);
+	priv->send_account_override = e_mail_send_account_override_new (config_filename);
+	g_free (config_filename);
+
+	config_filename = g_build_filename (e_shell_backend_get_config_dir (shell_backend), "remote-content.db", NULL);
+	priv->remote_content = e_mail_remote_content_new (config_filename);
+	g_free (config_filename);
+
+	config_filename = g_build_filename (e_shell_backend_get_config_dir (shell_backend), "properties.db", NULL);
+	priv->mail_properties = e_mail_properties_new (config_filename);
+	g_free (config_filename);
 }
 
 static void
@@ -1280,6 +1334,26 @@ e_mail_backend_class_init (EMailBackendClass *class)
 			NULL,
 			NULL,
 			E_TYPE_MAIL_SEND_ACCOUNT_OVERRIDE,
+			G_PARAM_READABLE));
+
+	g_object_class_install_property (
+		object_class,
+		PROP_REMOTE_CONTENT,
+		g_param_spec_object (
+			"remote-content",
+			NULL,
+			NULL,
+			E_TYPE_MAIL_REMOTE_CONTENT,
+			G_PARAM_READABLE));
+
+	g_object_class_install_property (
+		object_class,
+		PROP_MAIL_PROPERTIES,
+		g_param_spec_object (
+			"mail-properties",
+			NULL,
+			NULL,
+			E_TYPE_MAIL_PROPERTIES,
 			G_PARAM_READABLE));
 }
 
@@ -1378,4 +1452,20 @@ e_mail_backend_get_send_account_override (EMailBackend *backend)
 	g_return_val_if_fail (E_IS_MAIL_BACKEND (backend), NULL);
 
 	return backend->priv->send_account_override;
+}
+
+EMailRemoteContent *
+e_mail_backend_get_remote_content (EMailBackend *backend)
+{
+	g_return_val_if_fail (E_IS_MAIL_BACKEND (backend), NULL);
+
+	return backend->priv->remote_content;
+}
+
+EMailProperties *
+e_mail_backend_get_mail_properties (EMailBackend *backend)
+{
+	g_return_val_if_fail (E_IS_MAIL_BACKEND (backend), NULL);
+
+	return backend->priv->mail_properties;
 }

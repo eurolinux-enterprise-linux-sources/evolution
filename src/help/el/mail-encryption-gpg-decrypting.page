@@ -20,9 +20,27 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
@@ -31,12 +49,12 @@
 <section id="decryption">
 <title>Αποκρυπτογράφηση ενός λαμβανόμενου μηνύματος</title>
 <p>Αν πάρετε ένα κρυπτογραφημένο μήνυμα, πρέπει να το αποκρυπτογραφήσετε πριν μπορέσετε να το διαβάσετε.</p>
-<p>Όταν εμφανίζετε το μήνυμα, το Evolution σας ζητά τον κωδικό πρόσβασης σας PGP. Εισάγετέ τον και το αποκρυπτογραφημένο μήνυμα θα εμφανιστεί.</p>
+<p>When you view the message, <app>Evolution</app> prompts you for your PGP password. Enter it, and the unencrypted message is displayed.</p>
 <note style="tip"><p>Οι αποστολείς πρέπει να έχουν το δημόσιο κλειδί σας GPG πριν να μπορέσουν να σας στείλουν κρυπτογραφημένο μήνυμα.</p></note>
 </section>
 
 <section id="signature">
 <title>Έλεγχος της υπογραφής λαμβανόμενου μηνύματος</title>
-<p>Για έλεγχο της υπογραφής αποστολέα λαμβανόμενου μηνύματος, κατεβείτε στον πάτο του μηνύματος και κλικ στον λογότυπο. Το Evolution θα εμφανίσει τις <gui>πληροφορίες ασφάλειας</gui> για το μήνυμα.</p>
+<p>To check the sender's signature of a received message, scroll down to the bottom of the message and click the logo. <app>Evolution</app> will display <gui>Security Information</gui> for the message.</p>
 </section>
 </page>

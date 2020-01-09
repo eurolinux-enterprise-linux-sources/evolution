@@ -86,6 +86,7 @@ GtkWidget *	e_shell_window_new		(EShell *shell,
 						 gboolean safe_mode,
 						 const gchar *geometry);
 EShell *	e_shell_window_get_shell	(EShellWindow *shell_window);
+gboolean	e_shell_window_is_main_instance	(EShellWindow *shell_window);
 struct _EShellView *
 		e_shell_window_get_shell_view	(EShellWindow *shell_window,
 						 const gchar *view_name);
@@ -134,6 +135,20 @@ gboolean	e_shell_window_get_toolbar_visible
 void		e_shell_window_set_toolbar_visible
 						(EShellWindow *shell_window,
 						 gboolean toolbar_visible);
+
+/* Helper function to open clients from shell's client cache in a dedicated
+   thread with a callback being called in the main thread */
+
+typedef void (* EShellWindowConnetClientFunc)	(EShellWindow *shell_window,
+						 EClient *client,
+						 gpointer user_data);
+
+void		e_shell_window_connect_client	(EShellWindow *shell_window,
+						 ESource *source,
+						 const gchar *extension_name,
+						 EShellWindowConnetClientFunc connected_cb,
+						 gpointer user_data,
+						 GDestroyNotify destroy_user_data);
 
 /* These should be called from the shell backend's window_created() handler. */
 

@@ -34,6 +34,7 @@
 #include <glib/gi18n.h>
 #include <glib/gstdio.h>
 #include <libebackend/libebackend.h>
+#include <libedataserver/libedataserver.h>
 
 #include "e-util/e-util-private.h"
 
@@ -51,14 +52,17 @@
 struct _EShellPrivate {
 	GQueue alerts;
 	ESourceRegistry *registry;
+	ECredentialsPrompter *credentials_prompter;
 	EClientCache *client_cache;
 	GtkWidget *preferences_window;
+	GCancellable *cancellable;
 
 	/* Shell Backends */
 	GList *loaded_backends;              /* not referenced */
 	GHashTable *backends_by_name;
 	GHashTable *backends_by_scheme;
 
+	gboolean preparing_for_online;
 	gpointer preparing_for_line_change;  /* weak pointer */
 	gpointer preparing_for_quit;         /* weak pointer */
 
@@ -67,8 +71,12 @@ struct _EShellPrivate {
 
 	guint inhibit_cookie;
 	guint set_online_timeout_id;
+	guint prepare_quit_timeout_id;
 
 	gulong backend_died_handler_id;
+	gulong allow_auth_prompt_handler_id;
+	gulong get_dialog_parent_handler_id;
+	gulong credentials_required_handler_id;
 
 	guint auto_reconnect : 1;
 	guint express_mode : 1;
@@ -78,7 +86,9 @@ struct _EShellPrivate {
 	guint network_available_locked : 1;
 	guint online : 1;
 	guint quit_cancelled : 1;
+	guint ready_to_quit : 1;
 	guint safe_mode : 1;
+	guint requires_shutdown : 1;
 };
 
 enum {
@@ -89,7 +99,8 @@ enum {
 	PROP_MODULE_DIRECTORY,
 	PROP_NETWORK_AVAILABLE,
 	PROP_ONLINE,
-	PROP_REGISTRY
+	PROP_REGISTRY,
+	PROP_CREDENTIALS_PROMPTER
 };
 
 enum {
@@ -139,6 +150,16 @@ shell_notify_online_cb (EShell *shell)
 	e_passwords_set_online (online);
 }
 
+static void
+shell_window_removed_cb (EShell *shell)
+{
+	g_return_if_fail (E_IS_SHELL (shell));
+
+	if (!gtk_application_get_windows (GTK_APPLICATION (shell)) &&
+	    !shell->priv->ready_to_quit)
+		e_shell_quit (shell, E_SHELL_QUIT_LAST_WINDOW);
+}
+
 static gboolean
 shell_window_delete_event_cb (GtkWindow *window,
                               GdkEvent *event,
@@ -160,30 +181,47 @@ shell_action_new_window_cb (GSimpleAction *action,
                             EShell *shell)
 {
 	GtkApplication *application;
-	GList *list;
 	const gchar *view_name;
 
 	application = GTK_APPLICATION (shell);
-	list = gtk_application_get_windows (application);
 
-	view_name = g_variant_get_string (parameter, NULL);
+	view_name = parameter ? g_variant_get_string (parameter, NULL) : NULL;
+	if (view_name && !*view_name)
+		view_name = NULL;
 
-	/* Present the first EShellWindow showing 'view_name'. */
-	while (list != NULL) {
-		GtkWindow *window = GTK_WINDOW (list->data);
+	if (view_name) {
+		GList *list;
+		gboolean get_current = g_strcmp0 (view_name, "current") == 0;
 
-		if (E_IS_SHELL_WINDOW (window)) {
-			const gchar *active_view;
+		list = gtk_application_get_windows (application);
 
-			active_view = e_shell_window_get_active_view (
-				E_SHELL_WINDOW (window));
-			if (g_strcmp0 (active_view, view_name) == 0) {
-				gtk_window_present (window);
-				return;
+		/* Present the first EShellWindow showing 'view_name'. */
+		while (list != NULL) {
+			GtkWindow *window = GTK_WINDOW (list->data);
+
+			if (E_IS_SHELL_WINDOW (window)) {
+				const gchar *active_view;
+
+				active_view = e_shell_window_get_active_view (
+					E_SHELL_WINDOW (window));
+				if (g_strcmp0 (active_view, view_name) == 0) {
+					gtk_window_present (window);
+					return;
+				} else if (get_current && active_view) {
+					view_name = active_view;
+					break;
+				}
 			}
-		}
 
-		list = g_list_next (list);
+			list = g_list_next (list);
+		}
+	} else {
+		GtkWindow *window;
+
+		window = e_shell_get_active_window (shell);
+
+		if (E_IS_SHELL_WINDOW (window))
+			view_name = e_shell_window_get_active_view (E_SHELL_WINDOW (window));
 	}
 
 	/* No suitable EShellWindow found, so create one. */
@@ -243,7 +281,7 @@ shell_add_actions (GApplication *application)
 
 	/* Add actions that remote instances can invoke. */
 
-	action = g_simple_action_new ("new-window", G_VARIANT_TYPE_STRING);
+	action = g_simple_action_new ("create-from-remote", G_VARIANT_TYPE_STRING);
 	g_signal_connect (
 		action, "activate",
 		G_CALLBACK (shell_action_new_window_cb), application);
@@ -281,10 +319,12 @@ e_shell_set_online_cb (gpointer user_data)
 }
 
 static void
-shell_ready_for_offline (EShell *shell,
-                         EActivity *activity,
-                         gboolean is_last_ref)
+shell_ready_for_online_change (EShell *shell,
+			       EActivity *activity,
+			       gboolean is_last_ref)
 {
+	gboolean is_cancelled;
+
 	if (!is_last_ref)
 		return;
 
@@ -292,17 +332,38 @@ shell_ready_for_offline (EShell *shell,
 	 * a signal without triggering the toggle reference. */
 	g_object_ref (activity);
 
-	e_activity_set_state (activity, E_ACTIVITY_COMPLETED);
+	is_cancelled = e_activity_get_state (activity) == E_ACTIVITY_CANCELLED ||
+		g_cancellable_is_cancelled (e_activity_get_cancellable (activity));
+	e_activity_set_state (activity, is_cancelled ? E_ACTIVITY_CANCELLED : E_ACTIVITY_COMPLETED);
 
 	g_object_remove_toggle_ref (
 		G_OBJECT (activity), (GToggleNotify)
-		shell_ready_for_offline, shell);
+		shell_ready_for_online_change, shell);
 
 	/* Finalize the activity. */
 	g_object_unref (activity);
 
-	shell->priv->online = FALSE;
+	if (!is_cancelled)
+		shell->priv->online = shell->priv->preparing_for_online;
+
 	g_object_notify (G_OBJECT (shell), "online");
+}
+
+static void
+shell_cancel_ongoing_preparing_line_change (EShell *shell)
+{
+	EActivity *activity;
+
+	activity = g_object_ref (shell->priv->preparing_for_line_change);
+	shell->priv->preparing_for_line_change = NULL;
+
+	g_object_remove_toggle_ref (G_OBJECT (activity), (GToggleNotify) shell_ready_for_online_change, shell);
+
+	g_object_remove_weak_pointer (G_OBJECT (activity), &shell->priv->preparing_for_line_change);
+
+	e_activity_cancel (activity);
+
+	g_clear_object (&activity);
 }
 
 static void
@@ -310,9 +371,10 @@ shell_prepare_for_offline (EShell *shell)
 {
 	/* Are preparations already in progress? */
 	if (shell->priv->preparing_for_line_change != NULL)
-		return;
+		shell_cancel_ongoing_preparing_line_change (shell);
 
 	shell->priv->preparing_for_line_change = e_activity_new ();
+	shell->priv->preparing_for_online = FALSE;
 
 	e_activity_set_text (
 		shell->priv->preparing_for_line_change,
@@ -320,7 +382,7 @@ shell_prepare_for_offline (EShell *shell)
 
 	g_object_add_toggle_ref (
 		G_OBJECT (shell->priv->preparing_for_line_change),
-		(GToggleNotify) shell_ready_for_offline, shell);
+		(GToggleNotify) shell_ready_for_online_change, shell);
 
 	g_object_add_weak_pointer (
 		G_OBJECT (shell->priv->preparing_for_line_change),
@@ -334,38 +396,14 @@ shell_prepare_for_offline (EShell *shell)
 }
 
 static void
-shell_ready_for_online (EShell *shell,
-                        EActivity *activity,
-                        gboolean is_last_ref)
-{
-	if (!is_last_ref)
-		return;
-
-	/* Increment the reference count so we can safely emit
-	 * a signal without triggering the toggle reference. */
-	g_object_ref (activity);
-
-	e_activity_set_state (activity, E_ACTIVITY_COMPLETED);
-
-	g_object_remove_toggle_ref (
-		G_OBJECT (activity), (GToggleNotify)
-		shell_ready_for_online, shell);
-
-	/* Finalize the activity. */
-	g_object_unref (activity);
-
-	shell->priv->online = TRUE;
-	g_object_notify (G_OBJECT (shell), "online");
-}
-
-static void
 shell_prepare_for_online (EShell *shell)
 {
 	/* Are preparations already in progress? */
 	if (shell->priv->preparing_for_line_change != NULL)
-		return;
+		shell_cancel_ongoing_preparing_line_change (shell);
 
 	shell->priv->preparing_for_line_change = e_activity_new ();
+	shell->priv->preparing_for_online = TRUE;
 
 	e_activity_set_text (
 		shell->priv->preparing_for_line_change,
@@ -373,7 +411,7 @@ shell_prepare_for_online (EShell *shell)
 
 	g_object_add_toggle_ref (
 		G_OBJECT (shell->priv->preparing_for_line_change),
-		(GToggleNotify) shell_ready_for_online, shell);
+		(GToggleNotify) shell_ready_for_online_change, shell);
 
 	g_object_add_weak_pointer (
 		G_OBJECT (shell->priv->preparing_for_line_change),
@@ -394,8 +432,12 @@ shell_ready_for_quit (EShell *shell,
 	GtkApplication *application;
 	GList *list;
 
+	g_return_if_fail (E_IS_SHELL (shell));
+
 	if (!is_last_ref)
 		return;
+
+	shell->priv->ready_to_quit = TRUE;
 
 	application = GTK_APPLICATION (shell);
 
@@ -421,6 +463,11 @@ shell_ready_for_quit (EShell *shell,
 		shell->priv->inhibit_cookie = 0;
 	}
 
+	if (shell->priv->prepare_quit_timeout_id) {
+		g_source_remove (shell->priv->prepare_quit_timeout_id);
+		shell->priv->prepare_quit_timeout_id = 0;
+	}
+
 	/* Destroy all watched windows.  Note, we iterate over a -copy-
 	 * of the watched windows list because the act of destroying a
 	 * watched window will modify the watched windows list, which
@@ -433,6 +480,20 @@ shell_ready_for_quit (EShell *shell,
 		gtk_main_quit ();
 }
 
+static gboolean
+shell_ask_quit_with_pending_activities (EShell *shell)
+{
+	GList *windows;
+
+	windows = gtk_application_get_windows (GTK_APPLICATION (shell));
+
+	return e_alert_run_dialog_for_args (windows ? windows->data : NULL,
+		"shell:ask-quit-with-pending", NULL) == GTK_RESPONSE_OK;
+}
+
+static gboolean
+shell_prepare_for_quit_timeout_cb (gpointer user_data);
+
 static void
 shell_prepare_for_quit (EShell *shell)
 {
@@ -440,8 +501,15 @@ shell_prepare_for_quit (EShell *shell)
 	GList *list, *iter;
 
 	/* Are preparations already in progress? */
-	if (shell->priv->preparing_for_quit != NULL)
+	if (shell->priv->preparing_for_quit != NULL) {
+		if (shell_ask_quit_with_pending_activities (shell)) {
+			e_activity_cancel (shell->priv->preparing_for_quit);
+			camel_operation_cancel_all ();
+
+			shell_ready_for_quit (shell, shell->priv->preparing_for_quit, TRUE);
+		}
 		return;
+	}
 
 	application = GTK_APPLICATION (shell);
 
@@ -470,12 +538,31 @@ shell_prepare_for_quit (EShell *shell)
 		shell, signals[PREPARE_FOR_QUIT], 0,
 		shell->priv->preparing_for_quit);
 
+	shell->priv->prepare_quit_timeout_id =
+		e_named_timeout_add_seconds (60, shell_prepare_for_quit_timeout_cb, shell);
+
 	g_object_unref (shell->priv->preparing_for_quit);
 
 	/* Desensitize all watched windows to prevent user action. */
 	list = gtk_application_get_windows (application);
 	for (iter = list; iter != NULL; iter = iter->next)
 		gtk_widget_set_sensitive (GTK_WIDGET (iter->data), FALSE);
+}
+
+static gboolean
+shell_prepare_for_quit_timeout_cb (gpointer user_data)
+{
+	EShell *shell = user_data;
+
+	g_return_val_if_fail (E_IS_SHELL (shell), FALSE);
+	g_return_val_if_fail (shell->priv->preparing_for_quit != 0, FALSE);
+
+	shell->priv->prepare_quit_timeout_id = 0;
+
+	/* This asks whether to quit or wait and does all the work */
+	shell_prepare_for_quit (shell);
+
+	return FALSE;
 }
 
 static gboolean
@@ -552,10 +639,606 @@ shell_backend_died_cb (EClientCache *client_cache,
 }
 
 static void
+shell_allow_auth_prompt_cb (EClientCache *client_cache,
+			    ESource *source,
+			    EShell *shell)
+{
+	g_return_if_fail (E_IS_SOURCE (source));
+	g_return_if_fail (E_IS_SHELL (shell));
+
+	e_shell_allow_auth_prompt_for (shell, source);
+}
+
+static void
+shell_source_connection_status_notify_cb (ESource *source,
+					  GParamSpec *param,
+					  EAlert *alert)
+{
+	g_return_if_fail (E_IS_ALERT (alert));
+
+	if (e_source_get_connection_status (source) == E_SOURCE_CONNECTION_STATUS_DISCONNECTED ||
+	    e_source_get_connection_status (source) == E_SOURCE_CONNECTION_STATUS_CONNECTING ||
+	    e_source_get_connection_status (source) == E_SOURCE_CONNECTION_STATUS_CONNECTED)
+		e_alert_response (alert, GTK_RESPONSE_CLOSE);
+}
+
+static void
+shell_submit_source_connection_alert (EShell *shell,
+				      ESource *source,
+				      EAlert *alert)
+{
+	g_return_if_fail (E_IS_SHELL (shell));
+	g_return_if_fail (E_IS_SOURCE (source));
+	g_return_if_fail (E_IS_ALERT (alert));
+
+	e_signal_connect_notify_object (source, "notify::connection-status",
+		G_CALLBACK (shell_source_connection_status_notify_cb), alert, 0);
+
+	e_shell_submit_alert (shell, alert);
+}
+
+static void
+shell_source_invoke_authenticate_cb (GObject *source_object,
+				     GAsyncResult *result,
+				     gpointer user_data)
+{
+	ESource *source;
+	EShell *shell = user_data;
+	GError *error = NULL;
+
+	g_return_if_fail (E_IS_SOURCE (source_object));
+
+	source = E_SOURCE (source_object);
+
+	if (!e_source_invoke_authenticate_finish (source, result, &error)) {
+		/* Can be cancelled only if the shell is disposing/disposed */
+		if (error && !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED)) {
+			EAlert *alert;
+			gchar *display_name;
+
+			g_return_if_fail (E_IS_SHELL (shell));
+
+			display_name = e_util_get_source_full_name (shell->priv->registry, source);
+			alert = e_alert_new ("shell:source-invoke-authenticate-failed",
+				display_name,
+				error->message,
+				NULL);
+			e_shell_submit_alert (shell, alert);
+			g_object_unref (alert);
+			g_free (display_name);
+		}
+
+		g_clear_error (&error);
+	}
+}
+
+#define SOURCE_ALERT_KEY_SOURCE			"source-alert-key-source"
+#define SOURCE_ALERT_KEY_CERTIFICATE_PEM	"source-alert-key-certificate-pem"
+#define SOURCE_ALERT_KEY_CERTIFICATE_ERRORS	"source-alert-key-certificate-errors"
+#define SOURCE_ALERT_KEY_ERROR_TEXT		"source-alert-key-error-text"
+
+static void
+shell_trust_prompt_done_cb (GObject *source_object,
+			    GAsyncResult *result,
+			    gpointer user_data)
+{
+	ESource *source;
+	EShell *shell = user_data;
+	ETrustPromptResponse response = E_TRUST_PROMPT_RESPONSE_UNKNOWN;
+	GError *error = NULL;
+
+	g_return_if_fail (E_IS_SOURCE (source_object));
+
+	source = E_SOURCE (source_object);
+
+	if (!e_trust_prompt_run_for_source_finish (source, result, &response, &error)) {
+		/* Can be cancelled only if the shell is disposing/disposed */
+		if (error && !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED)) {
+			EAlert *alert;
+			gchar *display_name;
+
+			g_return_if_fail (E_IS_SHELL (shell));
+
+			display_name = e_util_get_source_full_name (shell->priv->registry, source);
+			alert = e_alert_new ("shell:source-trust-prompt-failed",
+				display_name,
+				error->message,
+				NULL);
+			e_shell_submit_alert (shell, alert);
+			g_object_unref (alert);
+			g_free (display_name);
+		}
+
+		g_clear_error (&error);
+		return;
+	}
+
+	g_return_if_fail (E_IS_SHELL (shell));
+
+	if (response == E_TRUST_PROMPT_RESPONSE_UNKNOWN) {
+		e_credentials_prompter_set_auto_prompt_disabled_for (shell->priv->credentials_prompter, source, TRUE);
+		return;
+	}
+
+	/* If a credentials prompt is required, then it'll be shown immediately. */
+	e_credentials_prompter_set_auto_prompt_disabled_for (shell->priv->credentials_prompter, source, FALSE);
+
+	/* NULL credentials to retry with those used the last time */
+	e_source_invoke_authenticate (source, NULL, shell->priv->cancellable,
+		shell_source_invoke_authenticate_cb, shell);
+}
+
+static void
+shell_credentials_prompt_done_cb (GObject *source_object,
+				  GAsyncResult *result,
+				  gpointer user_data)
+{
+	EShell *shell = user_data;
+	ESource *source = NULL;
+	ENamedParameters *credentials = NULL;
+	GError *error = NULL;
+
+	g_return_if_fail (E_IS_SHELL (shell));
+
+	if (e_credentials_prompter_prompt_finish (E_CREDENTIALS_PROMPTER (source_object), result, &source, &credentials, &error)) {
+		e_source_invoke_authenticate (source, credentials, shell->priv->cancellable,
+			shell_source_invoke_authenticate_cb, shell);
+	} else if (error && !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED)) {
+		EAlert *alert;
+		gchar *display_name;
+
+		g_return_if_fail (E_IS_SHELL (shell));
+
+		display_name = e_util_get_source_full_name (shell->priv->registry, source);
+		alert = e_alert_new ("shell:source-credentials-prompt-failed",
+			display_name,
+			error->message,
+			NULL);
+		e_shell_submit_alert (shell, alert);
+		g_object_unref (alert);
+		g_free (display_name);
+	}
+
+	e_named_parameters_free (credentials);
+	g_clear_object (&source);
+	g_clear_object (&shell);
+	g_clear_error (&error);
+}
+
+static void
+shell_connection_error_alert_response_cb (EAlert *alert,
+					  gint response_id,
+					  EShell *shell)
+{
+	ESource *source;
+
+	g_return_if_fail (E_IS_SHELL (shell));
+
+	if (response_id != GTK_RESPONSE_APPLY)
+		return;
+
+	source = g_object_get_data (G_OBJECT (alert), SOURCE_ALERT_KEY_SOURCE);
+	g_return_if_fail (E_IS_SOURCE (source));
+
+	e_credentials_prompter_set_auto_prompt_disabled_for (shell->priv->credentials_prompter, source, FALSE);
+
+	e_credentials_prompter_prompt (shell->priv->credentials_prompter, source, NULL,
+		E_CREDENTIALS_PROMPTER_PROMPT_FLAG_ALLOW_STORED_CREDENTIALS,
+		shell_credentials_prompt_done_cb, g_object_ref (shell));
+}
+
+static void
+shell_connect_trust_error_alert_response_cb (EAlert *alert,
+					     gint response_id,
+					     EShell *shell)
+{
+	ESource *source;
+	const gchar *certificate_pem;
+	GTlsCertificateFlags certificate_errors;
+	const gchar *error_text;
+
+	g_return_if_fail (E_IS_SHELL (shell));
+
+	if (response_id != GTK_RESPONSE_APPLY)
+		return;
+
+	source = g_object_get_data (G_OBJECT (alert), SOURCE_ALERT_KEY_SOURCE);
+	certificate_pem = g_object_get_data (G_OBJECT (alert), SOURCE_ALERT_KEY_CERTIFICATE_PEM);
+	certificate_errors = GPOINTER_TO_UINT (g_object_get_data (G_OBJECT (alert), SOURCE_ALERT_KEY_CERTIFICATE_ERRORS));
+	error_text = g_object_get_data (G_OBJECT (alert), SOURCE_ALERT_KEY_ERROR_TEXT);
+
+	g_return_if_fail (E_IS_SOURCE (source));
+
+	g_object_set_data_full (G_OBJECT (source), SOURCE_ALERT_KEY_CERTIFICATE_PEM, g_strdup (certificate_pem), g_free);
+
+	e_trust_prompt_run_for_source (gtk_application_get_active_window (GTK_APPLICATION (shell)),
+		source, certificate_pem, certificate_errors, error_text, TRUE,
+		shell->priv->cancellable, shell_trust_prompt_done_cb, shell);
+}
+
+static const gchar *
+shell_get_connection_error_tag_for_source (ESource *source)
+{
+	const gchar *tag = "shell:source-connection-error";
+	const gchar *override_tag = NULL;
+
+	g_return_val_if_fail (E_IS_SOURCE (source), tag);
+
+	if (e_source_has_extension (source, E_SOURCE_EXTENSION_ADDRESS_BOOK)) {
+		override_tag = "shell:addressbook-connection-error";
+	}
+
+	if (e_source_has_extension (source, E_SOURCE_EXTENSION_CALENDAR)) {
+		if (!override_tag)
+			override_tag = "shell:calendar-connection-error";
+		else
+			override_tag = "";
+	}
+
+	if (e_source_has_extension (source, E_SOURCE_EXTENSION_MAIL_ACCOUNT) ||
+	    e_source_has_extension (source, E_SOURCE_EXTENSION_MAIL_TRANSPORT)) {
+		if (!override_tag)
+			override_tag = "shell:mail-connection-error";
+		else
+			override_tag = "";
+	}
+
+	if (e_source_has_extension (source, E_SOURCE_EXTENSION_MEMO_LIST)) {
+		if (!override_tag)
+			override_tag = "shell:memo-list-connection-error";
+		else
+			override_tag = "";
+	}
+
+	if (e_source_has_extension (source, E_SOURCE_EXTENSION_TASK_LIST)) {
+		if (!override_tag)
+			override_tag = "shell:task-list-connection-error";
+		else
+			override_tag = "";
+	}
+
+	if (override_tag && *override_tag)
+		return override_tag;
+
+	return tag;
+}
+
+static const gchar *
+shell_get_connection_trust_error_tag_for_source (ESource *source)
+{
+	const gchar *tag = "shell:source-connection-trust-error";
+	const gchar *override_tag = NULL;
+
+	g_return_val_if_fail (E_IS_SOURCE (source), tag);
+
+	if (e_source_has_extension (source, E_SOURCE_EXTENSION_ADDRESS_BOOK)) {
+		override_tag = "shell:addressbook-connection-trust-error";
+	}
+
+	if (e_source_has_extension (source, E_SOURCE_EXTENSION_CALENDAR)) {
+		if (!override_tag)
+			override_tag = "shell:calendar-connection-trust-error";
+		else
+			override_tag = "";
+	}
+
+	if (e_source_has_extension (source, E_SOURCE_EXTENSION_MAIL_ACCOUNT) ||
+	    e_source_has_extension (source, E_SOURCE_EXTENSION_MAIL_TRANSPORT)) {
+		if (!override_tag)
+			override_tag = "shell:mail-connection-trust-error";
+		else
+			override_tag = "";
+	}
+
+	if (e_source_has_extension (source, E_SOURCE_EXTENSION_MEMO_LIST)) {
+		if (!override_tag)
+			override_tag = "shell:memo-list-connection-trust-error";
+		else
+			override_tag = "";
+	}
+
+	if (e_source_has_extension (source, E_SOURCE_EXTENSION_TASK_LIST)) {
+		if (!override_tag)
+			override_tag = "shell:task-list-connection-trust-error";
+		else
+			override_tag = "";
+	}
+
+	if (override_tag && *override_tag)
+		return override_tag;
+
+	return tag;
+}
+
+static void
+shell_process_credentials_required_errors (EShell *shell,
+					   ESource *source,
+					   ESourceCredentialsReason reason,
+					   const gchar *certificate_pem,
+					   GTlsCertificateFlags certificate_errors,
+					   const GError *op_error)
+{
+	g_return_if_fail (E_IS_SHELL (shell));
+	g_return_if_fail (E_IS_SOURCE (source));
+
+	/* Skip disabled sources */
+	if (!e_source_registry_check_enabled (shell->priv->registry, source))
+		return;
+
+	switch (reason) {
+	case E_SOURCE_CREDENTIALS_REASON_UNKNOWN:
+		/* This should not be here */
+		g_warn_if_reached ();
+		return;
+	case E_SOURCE_CREDENTIALS_REASON_REQUIRED:
+	case E_SOURCE_CREDENTIALS_REASON_REJECTED:
+		/* These are handled by the credentials prompter, if not disabled */
+		if (e_credentials_prompter_get_auto_prompt_disabled_for (shell->priv->credentials_prompter, source))
+			break;
+
+		return;
+	case E_SOURCE_CREDENTIALS_REASON_SSL_FAILED:
+	case E_SOURCE_CREDENTIALS_REASON_ERROR:
+		break;
+	}
+
+	if (reason == E_SOURCE_CREDENTIALS_REASON_ERROR) {
+		EAlert *alert;
+		gchar *display_name;
+
+		display_name = e_util_get_source_full_name (shell->priv->registry, source);
+		alert = e_alert_new (shell_get_connection_error_tag_for_source (source),
+				display_name,
+				op_error && *(op_error->message) ? op_error->message : _("Unknown error"),
+				NULL);
+		g_free (display_name);
+
+		g_signal_connect (alert, "response", G_CALLBACK (shell_connection_error_alert_response_cb), shell);
+		g_object_set_data_full (G_OBJECT (alert), SOURCE_ALERT_KEY_SOURCE, g_object_ref (source), g_object_unref);
+
+		shell_submit_source_connection_alert (shell, source, alert);
+		g_object_unref (alert);
+	} else if (reason == E_SOURCE_CREDENTIALS_REASON_SSL_FAILED) {
+		if (e_credentials_prompter_get_auto_prompt_disabled_for (shell->priv->credentials_prompter, source)) {
+			/* Only show an alert */
+			EAlert *alert;
+			gchar *cert_errors_str;
+			gchar *display_name;
+
+			cert_errors_str = e_trust_prompt_describe_certificate_errors (certificate_errors);
+
+			display_name = e_util_get_source_full_name (shell->priv->registry, source);
+			alert = e_alert_new (shell_get_connection_trust_error_tag_for_source (source),
+					display_name,
+					(cert_errors_str && *cert_errors_str) ? cert_errors_str :
+					op_error && *(op_error->message) ? op_error->message : _("Unknown error"),
+					NULL);
+			g_free (display_name);
+
+			g_signal_connect (alert, "response", G_CALLBACK (shell_connect_trust_error_alert_response_cb), shell);
+
+			g_object_set_data_full (G_OBJECT (alert), SOURCE_ALERT_KEY_SOURCE, g_object_ref (source), g_object_unref);
+			g_object_set_data_full (G_OBJECT (alert), SOURCE_ALERT_KEY_CERTIFICATE_PEM, g_strdup (certificate_pem), g_free);
+			g_object_set_data (G_OBJECT (alert), SOURCE_ALERT_KEY_CERTIFICATE_ERRORS, GUINT_TO_POINTER (certificate_errors));
+			g_object_set_data_full (G_OBJECT (alert), SOURCE_ALERT_KEY_ERROR_TEXT, op_error ? g_strdup (op_error->message) : NULL, g_free);
+
+			shell_submit_source_connection_alert (shell, source, alert);
+
+			g_free (cert_errors_str);
+			g_object_unref (alert);
+		} else {
+			g_object_set_data_full (G_OBJECT (source), SOURCE_ALERT_KEY_CERTIFICATE_PEM, g_strdup (certificate_pem), g_free);
+
+			e_trust_prompt_run_for_source (gtk_application_get_active_window (GTK_APPLICATION (shell)),
+				source, certificate_pem, certificate_errors, op_error ? op_error->message : NULL, TRUE,
+				shell->priv->cancellable, shell_trust_prompt_done_cb, shell);
+		}
+	} else if (reason == E_SOURCE_CREDENTIALS_REASON_REQUIRED ||
+		   reason == E_SOURCE_CREDENTIALS_REASON_REJECTED) {
+		EAlert *alert;
+		gchar *display_name;
+
+		display_name = e_util_get_source_full_name (shell->priv->registry, source);
+		alert = e_alert_new (shell_get_connection_error_tag_for_source (source),
+				display_name,
+				op_error && *(op_error->message) ? op_error->message : _("Credentials are required to connect to the destination host."),
+				NULL);
+		g_free (display_name);
+
+		g_signal_connect (alert, "response", G_CALLBACK (shell_connection_error_alert_response_cb), shell);
+		g_object_set_data_full (G_OBJECT (alert), SOURCE_ALERT_KEY_SOURCE, g_object_ref (source), g_object_unref);
+
+		shell_submit_source_connection_alert (shell, source, alert);
+		g_object_unref (alert);
+	} else {
+		g_warn_if_reached ();
+	}
+}
+
+static void
+shell_get_last_credentials_required_arguments_cb (GObject *source_object,
+						  GAsyncResult *result,
+						  gpointer user_data)
+{
+	EShell *shell = user_data;
+	ESource *source;
+	ESourceCredentialsReason reason = E_SOURCE_CREDENTIALS_REASON_UNKNOWN;
+	gchar *certificate_pem = NULL;
+	GTlsCertificateFlags certificate_errors = 0;
+	GError *op_error = NULL;
+	GError *error = NULL;
+
+	g_return_if_fail (E_IS_SOURCE (source_object));
+
+	source = E_SOURCE (source_object);
+
+	if (!e_source_get_last_credentials_required_arguments_finish (source, result, &reason,
+		&certificate_pem, &certificate_errors, &op_error, &error)) {
+		/* Can be cancelled only if the shell is disposing/disposed */
+		if (error && !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED)) {
+			EAlert *alert;
+			gchar *display_name;
+
+			g_return_if_fail (E_IS_SHELL (shell));
+
+			display_name = e_util_get_source_full_name (shell->priv->registry, source);
+			alert = e_alert_new ("shell:source-get-values-failed",
+				display_name,
+				error->message,
+				NULL);
+			e_shell_submit_alert (shell, alert);
+			g_object_unref (alert);
+			g_free (display_name);
+		}
+
+		g_clear_error (&error);
+		return;
+	}
+
+	g_return_if_fail (E_IS_SHELL (shell));
+
+	if (reason != E_SOURCE_CREDENTIALS_REASON_UNKNOWN)
+		shell_process_credentials_required_errors (shell, source, reason, certificate_pem, certificate_errors, op_error);
+
+	g_free (certificate_pem);
+	g_clear_error (&op_error);
+}
+
+static void
+shell_process_failed_authentications (EShell *shell)
+{
+	GList *sources, *link;
+
+	g_return_if_fail (E_IS_SHELL (shell));
+
+	sources = e_source_registry_list_enabled (shell->priv->registry, NULL);
+
+	for (link = sources; link; link = g_list_next (link)) {
+		ESource *source = link->data;
+
+		if (source && (
+		    e_source_get_connection_status (source) == E_SOURCE_CONNECTION_STATUS_DISCONNECTED ||
+		    e_source_get_connection_status (source) == E_SOURCE_CONNECTION_STATUS_SSL_FAILED)) {
+			/* Only show alerts, do not open windows */
+			e_credentials_prompter_set_auto_prompt_disabled_for (shell->priv->credentials_prompter, source, TRUE);
+
+			e_source_get_last_credentials_required_arguments (source, shell->priv->cancellable,
+				shell_get_last_credentials_required_arguments_cb, shell);
+		}
+	}
+
+	g_list_free_full (sources, g_object_unref);
+}
+
+static void
+shell_credentials_required_cb (ESourceRegistry *registry,
+			       ESource *source,
+			       ESourceCredentialsReason reason,
+			       const gchar *certificate_pem,
+			       GTlsCertificateFlags certificate_errors,
+			       const GError *op_error,
+			       EShell *shell)
+{
+	g_return_if_fail (E_IS_SHELL (shell));
+
+	shell_process_credentials_required_errors (shell, source, reason, certificate_pem, certificate_errors, op_error);
+}
+
+static GtkWindow *
+shell_get_dialog_parent_cb (ECredentialsPrompter *prompter,
+			    EShell *shell)
+{
+	GList *windows, *link;
+
+	g_return_val_if_fail (E_IS_SHELL (shell), NULL);
+
+	windows = gtk_application_get_windows (GTK_APPLICATION (shell));
+	for (link = windows; link; link = g_list_next (link)) {
+		GtkWindow *window = link->data;
+
+		if (E_IS_SHELL_WINDOW (window))
+			return window;
+	}
+
+	return NULL;
+}
+
+static void
+shell_app_menu_activate_cb (GSimpleAction *action,
+			    GVariant *parameter,
+			    gpointer user_data)
+{
+	EShell *shell = user_data;
+	const gchar *name;
+
+	g_return_if_fail (G_IS_ACTION (action));
+	g_return_if_fail (E_IS_SHELL (shell));
+
+	name = g_action_get_name (G_ACTION (action));
+	g_return_if_fail (name != NULL);
+
+	if (g_str_equal (name, "new-window")) {
+		shell_action_new_window_cb (action, parameter, shell);
+	} else if (g_str_equal (name, "preferences")) {
+		e_shell_utils_run_preferences (shell);
+	} else if (g_str_equal (name, "quick-reference")) {
+		e_shell_utils_run_quick_reference (shell);
+	} else if (g_str_equal (name, "help")) {
+		e_shell_utils_run_help_contents (shell);
+	} else if (g_str_equal (name, "about")) {
+		e_shell_utils_run_help_about (shell);
+	} else {
+		g_warning ("%s: Unknown app-menu action '%s'", G_STRFUNC, name);
+	}
+}
+
+static void
+shell_create_app_menu (GtkApplication *application)
+{
+	const GActionEntry actions[] = {
+		{ "new-window", shell_app_menu_activate_cb, NULL, NULL, NULL },
+		{ "preferences", shell_app_menu_activate_cb, NULL, NULL, NULL },
+		{ "quick-reference", shell_app_menu_activate_cb, NULL, NULL, NULL },
+		{ "help", shell_app_menu_activate_cb, NULL, NULL, NULL },
+		{ "about", shell_app_menu_activate_cb, NULL, NULL, NULL }
+	};
+	GMenu *app_menu, *section;
+
+	g_return_if_fail (GTK_IS_APPLICATION (application));
+
+	app_menu = g_menu_new ();
+
+	section = g_menu_new ();
+	g_menu_append (section, _("New _Window"), "app.new-window");
+	g_menu_append_section (app_menu, NULL, G_MENU_MODEL (section));
+	g_object_unref (section);
+
+	section = g_menu_new ();
+	g_menu_append (section, _("_Preferences"), "app.preferences");
+	g_menu_append_section (app_menu, NULL, G_MENU_MODEL (section));
+	g_object_unref (section);
+
+	section = g_menu_new ();
+	if (e_shell_utils_is_quick_reference_available (E_SHELL (application)))
+		g_menu_append (section, _("Quick _Reference"), "app.quick-reference");
+	g_menu_append (section, _("_Help"), "app.help");
+	g_menu_append (section, _("_About"), "app.about");
+	g_menu_append (section, _("_Quit"), "app.quit");
+	g_menu_append_section (app_menu, NULL, G_MENU_MODEL (section));
+	g_object_unref (section);
+
+	gtk_application_set_app_menu (application, G_MENU_MODEL (app_menu));
+	g_action_map_add_action_entries (G_ACTION_MAP (application), actions, G_N_ELEMENTS (actions), application);
+
+	g_object_unref (app_menu);
+}
+
+static void
 shell_sm_quit_cb (EShell *shell,
                   gpointer user_data)
 {
-	shell_prepare_for_quit (shell);
+	if (!shell->priv->ready_to_quit)
+		shell_prepare_for_quit (shell);
 }
 
 static void
@@ -666,6 +1349,12 @@ shell_get_property (GObject *object,
 				value, e_shell_get_registry (
 				E_SHELL (object)));
 			return;
+
+		case PROP_CREDENTIALS_PROMPTER:
+			g_value_set_object (
+				value, e_shell_get_credentials_prompter (
+				E_SHELL (object)));
+			return;
 	}
 
 	G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -682,6 +1371,16 @@ shell_dispose (GObject *object)
 	if (priv->set_online_timeout_id > 0) {
 		g_source_remove (priv->set_online_timeout_id);
 		priv->set_online_timeout_id = 0;
+	}
+
+	if (priv->prepare_quit_timeout_id) {
+		g_source_remove (priv->prepare_quit_timeout_id);
+		priv->prepare_quit_timeout_id = 0;
+	}
+
+	if (priv->cancellable) {
+		g_cancellable_cancel (priv->cancellable);
+		g_clear_object (&priv->cancellable);
 	}
 
 	while ((alert = g_queue_pop_head (&priv->alerts)) != NULL) {
@@ -703,9 +1402,35 @@ shell_dispose (GObject *object)
 		priv->backend_died_handler_id = 0;
 	}
 
+	if (priv->allow_auth_prompt_handler_id > 0) {
+		g_signal_handler_disconnect (
+			priv->client_cache,
+			priv->allow_auth_prompt_handler_id);
+		priv->allow_auth_prompt_handler_id = 0;
+	}
+
+	if (priv->credentials_required_handler_id > 0) {
+		g_signal_handler_disconnect (
+			priv->registry,
+			priv->credentials_required_handler_id);
+		priv->credentials_required_handler_id = 0;
+	}
+
+	if (priv->get_dialog_parent_handler_id > 0) {
+		g_signal_handler_disconnect (
+			priv->credentials_prompter,
+			priv->get_dialog_parent_handler_id);
+		priv->get_dialog_parent_handler_id = 0;
+	}
+
 	g_clear_object (&priv->registry);
+	g_clear_object (&priv->credentials_prompter);
 	g_clear_object (&priv->client_cache);
-	g_clear_object (&priv->preferences_window);
+
+	if (priv->preferences_window) {
+		gtk_widget_destroy (priv->preferences_window);
+		priv->preferences_window = NULL;
+	}
 
 	if (priv->preparing_for_line_change != NULL) {
 		g_object_remove_weak_pointer (
@@ -750,20 +1475,33 @@ shell_constructed (GObject *object)
 
 	/* Synchronize network monitoring. */
 
-	monitor = g_network_monitor_get_default ();
+	monitor = e_network_monitor_get_default ();
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		monitor, "network-available",
 		object, "network-available",
 		G_BINDING_SYNC_CREATE);
 
 	/* Chain up to parent's constructed() method. */
 	G_OBJECT_CLASS (e_shell_parent_class)->constructed (object);
+
+	g_signal_connect (
+		object, "window-removed",
+		G_CALLBACK (shell_window_removed_cb), NULL);
 }
 
 static void
 shell_startup (GApplication *application)
 {
+	EShell *shell;
+
+	g_return_if_fail (E_IS_SHELL (application));
+
+	shell = E_SHELL (application);
+	g_warn_if_fail (!shell->priv->requires_shutdown);
+
+	shell->priv->requires_shutdown = TRUE;
+
 	e_file_lock_create ();
 
 	/* Destroy the lock file when the EShell is finalized
@@ -774,6 +1512,26 @@ shell_startup (GApplication *application)
 
 	/* Chain up to parent's startup() method. */
 	G_APPLICATION_CLASS (e_shell_parent_class)->startup (application);
+
+	if (e_util_is_running_gnome ())
+		shell_create_app_menu (GTK_APPLICATION (application));
+}
+
+static void
+shell_shutdown (GApplication *application)
+{
+	EShell *shell;
+
+	g_return_if_fail (E_IS_SHELL (application));
+
+	shell = E_SHELL (application);
+
+	g_warn_if_fail (shell->priv->requires_shutdown);
+
+	shell->priv->requires_shutdown = FALSE;
+
+	/* Chain up to parent's method. */
+	G_APPLICATION_CLASS (e_shell_parent_class)->shutdown (application);
 }
 
 static void
@@ -823,14 +1581,6 @@ shell_window_added (GtkApplication *application,
 		(gintptr) window);
 	gtk_window_set_role (window, role);
 	g_free (role);
-
-#if GTK_CHECK_VERSION(3,11,5)
-	/* Forbid header bars in stock GTK+ dialogs.
-	 * They look very out of place in Evolution. */
-	g_object_set (
-		gtk_widget_get_settings (GTK_WIDGET (window)),
-		"gtk-dialogs-use-header", FALSE, NULL);
-#endif
 }
 
 static gboolean
@@ -854,25 +1604,47 @@ shell_initable_init (GInitable *initable,
 		return FALSE;
 
 	shell->priv->registry = g_object_ref (registry);
+	shell->priv->credentials_prompter = e_credentials_prompter_new (registry);
 	shell->priv->client_cache = e_client_cache_new (registry);
+
+	shell->priv->credentials_required_handler_id = g_signal_connect (
+		shell->priv->registry, "credentials-required",
+		G_CALLBACK (shell_credentials_required_cb), shell);
+
+	shell->priv->get_dialog_parent_handler_id = g_signal_connect (
+		shell->priv->credentials_prompter, "get-dialog-parent",
+		G_CALLBACK (shell_get_dialog_parent_cb), shell);
 
 	handler_id = g_signal_connect (
 		shell->priv->client_cache, "backend-died",
 		G_CALLBACK (shell_backend_died_cb), shell);
 	shell->priv->backend_died_handler_id = handler_id;
 
+	handler_id = g_signal_connect (
+		shell->priv->client_cache, "allow-auth-prompt",
+		G_CALLBACK (shell_allow_auth_prompt_cb), shell);
+	shell->priv->allow_auth_prompt_handler_id = handler_id;
+
 	/* Configure WebKit's default SoupSession. */
 
 	proxy_source = e_source_registry_ref_builtin_proxy (registry);
-
+/* FIXME WK2
 	g_object_set (
 		webkit_get_default_session (),
 		SOUP_SESSION_PROXY_RESOLVER,
 		G_PROXY_RESOLVER (proxy_source),
 		NULL);
-
+*/
 	g_object_unref (proxy_source);
 	g_object_unref (registry);
+
+#if GTK_CHECK_VERSION(3,11,5)
+	/* Forbid header bars in stock GTK+ dialogs.
+	 * They look very out of place in Evolution. */
+	g_object_set (
+		gtk_settings_get_default (),
+		"gtk-dialogs-use-header", FALSE, NULL);
+#endif
 
 	return TRUE;
 }
@@ -895,6 +1667,7 @@ e_shell_class_init (EShellClass *class)
 
 	application_class = G_APPLICATION_CLASS (class);
 	application_class->startup = shell_startup;
+	application_class->shutdown = shell_shutdown;
 	application_class->activate = shell_activate;
 
 	gtk_application_class = GTK_APPLICATION_CLASS (class);
@@ -1015,6 +1788,24 @@ e_shell_class_init (EShellClass *class)
 			"Registry",
 			"Data source registry",
 			E_TYPE_SOURCE_REGISTRY,
+			G_PARAM_READABLE |
+			G_PARAM_STATIC_STRINGS));
+
+	/**
+	 * EShell:credentials-prompter
+	 *
+	 * The #ECredentialsPrompter managing #ESource credential requests.
+	 *
+	 * Since: 3.16
+	 **/
+	g_object_class_install_property (
+		object_class,
+		PROP_CREDENTIALS_PROMPTER,
+		g_param_spec_object (
+			"credentials-prompter",
+			"Credentials Prompter",
+			"Credentials Prompter",
+			E_TYPE_CREDENTIALS_PROMPTER,
 			G_PARAM_READABLE |
 			G_PARAM_STATIC_STRINGS));
 
@@ -1181,12 +1972,12 @@ e_shell_init (EShell *shell)
 
 	g_queue_init (&shell->priv->alerts);
 
+	shell->priv->cancellable = g_cancellable_new ();
 	shell->priv->preferences_window = e_preferences_window_new (shell);
 	shell->priv->backends_by_name = backends_by_name;
 	shell->priv->backends_by_scheme = backends_by_scheme;
 	shell->priv->safe_mode = e_file_lock_exists ();
-
-	g_object_ref_sink (shell->priv->preferences_window);
+	shell->priv->requires_shutdown = FALSE;
 
 	/* Add our icon directory to the theme's search path
 	 * here instead of in main() so Anjal picks it up. */
@@ -1392,6 +2183,54 @@ e_shell_get_registry (EShell *shell)
 }
 
 /**
+ * e_shell_get_credentials_prompter:
+ * @shell: an #EShell
+ *
+ * Returns the shell's #ECredentialsPrompter which responds
+ * to #ESource instances credential requests.
+ *
+ * Returns: the #ECredentialsPrompter
+ *
+ * Since: 3.16
+ **/
+ECredentialsPrompter *
+e_shell_get_credentials_prompter (EShell *shell)
+{
+	g_return_val_if_fail (E_IS_SHELL (shell), NULL);
+
+	return shell->priv->credentials_prompter;
+}
+
+/**
+ * e_shell_allow_auth_prompt_for:
+ * @shell: an #EShell
+ * @source: an #ESource
+ *
+ * Allows direct credentials prompt for @source. That means,
+ * when the @source will emit 'credentials-required' signal,
+ * then a user will be asked accordingly. When the auth prompt
+ * is disabled, aonly an #EAlert is shown.
+ *
+ * Since: 3.16
+ **/
+void
+e_shell_allow_auth_prompt_for (EShell *shell,
+			       ESource *source)
+{
+	g_return_if_fail (E_IS_SHELL (shell));
+	g_return_if_fail (E_IS_SOURCE (source));
+
+	e_credentials_prompter_set_auto_prompt_disabled_for (shell->priv->credentials_prompter, source, FALSE);
+
+	if (e_source_get_connection_status (source) == E_SOURCE_CONNECTION_STATUS_AWAITING_CREDENTIALS) {
+		e_credentials_prompter_process_source (shell->priv->credentials_prompter, source);
+	} else if (e_source_get_connection_status (source) == E_SOURCE_CONNECTION_STATUS_SSL_FAILED) {
+		e_source_get_last_credentials_required_arguments (source, shell->priv->cancellable,
+			shell_get_last_credentials_required_arguments_cb, shell);
+	}
+}
+
+/**
  * e_shell_create_shell_window:
  * @shell: an #EShell
  * @view_name: name of the initial shell view, or %NULL
@@ -1421,7 +2260,7 @@ e_shell_create_shell_window (EShell *shell,
 	if (view_name != NULL) {
 		GSettings *settings;
 
-		settings = g_settings_new ("org.gnome.evolution.shell");
+		settings = e_util_ref_settings ("org.gnome.evolution.shell");
 		g_settings_set_string (
 			settings, "default-component-id", view_name);
 		g_object_unref (settings);
@@ -1448,13 +2287,21 @@ e_shell_create_shell_window (EShell *shell,
 
 	gtk_widget_show (shell_window);
 
+	if (g_list_length (gtk_application_get_windows (GTK_APPLICATION (shell))) == 1) {
+		/* It's the first window, process outstanding credential requests now */
+		e_credentials_prompter_process_awaiting_credentials (shell->priv->credentials_prompter);
+
+		/* Also check alerts for failed authentications */
+		shell_process_failed_authentications (shell);
+	}
+
 	return shell_window;
 
 remote:  /* Send a message to the other Evolution process. */
 
 	if (view_name != NULL) {
 		g_action_group_activate_action (
-			G_ACTION_GROUP (shell), "new-window",
+			G_ACTION_GROUP (shell), "create-from-remote",
 			g_variant_new_string (view_name));
 	} else
 		g_application_activate (G_APPLICATION (shell));
@@ -1682,8 +2529,14 @@ e_shell_set_network_available (EShell *shell,
 
 	/* If we're being forced offline, perhaps due to a network outage,
 	 * reconnect automatically when the network becomes available. */
-	if (!network_available && shell->priv->online) {
+	if (!network_available && (shell->priv->online || shell->priv->preparing_for_line_change)) {
 		g_message ("Network disconnected.  Forced offline.");
+
+		if (shell->priv->set_online_timeout_id > 0) {
+			g_source_remove (shell->priv->set_online_timeout_id);
+			shell->priv->set_online_timeout_id = 0;
+		}
+
 		e_shell_set_online (shell, FALSE);
 		shell->priv->auto_reconnect = TRUE;
 	} else if (network_available && shell->priv->auto_reconnect) {
@@ -1722,6 +2575,14 @@ e_shell_lock_network_available (EShell *shell)
 
 	e_shell_set_network_available (shell, TRUE);
 	shell->priv->network_available_locked = TRUE;
+
+	/* As this is a user choice to go online, do not wait and switch online immediately */
+	if (shell->priv->set_online_timeout_id > 0) {
+		g_source_remove (shell->priv->set_online_timeout_id);
+		shell->priv->set_online_timeout_id = 0;
+
+		e_shell_set_online (shell, TRUE);
+	}
 }
 
 /**
@@ -1755,7 +2616,7 @@ e_shell_set_online (EShell *shell,
 {
 	g_return_if_fail (E_IS_SHELL (shell));
 
-	if (online == shell->priv->online)
+	if (online == shell->priv->online && !shell->priv->preparing_for_line_change)
 		return;
 
 	if (online)
@@ -1837,6 +2698,13 @@ e_shell_quit (EShell *shell,
 	if (g_application_get_is_remote (G_APPLICATION (shell)))
 		goto remote;
 
+	/* Last Window reason can be used multiple times;
+	   this is to ask for a forced quit before the timeout is reached. */
+	if (reason == E_SHELL_QUIT_LAST_WINDOW && shell->priv->preparing_for_quit != NULL) {
+		shell_prepare_for_quit (shell);
+		return TRUE;
+	}
+
 	if (!shell_request_quit (shell, reason))
 		return FALSE;
 
@@ -1873,3 +2741,10 @@ e_shell_cancel_quit (EShell *shell)
 	g_signal_stop_emission (shell, signals[QUIT_REQUESTED], 0);
 }
 
+gboolean
+e_shell_requires_shutdown (EShell *shell)
+{
+	g_return_val_if_fail (E_IS_SHELL (shell), FALSE);
+
+	return shell->priv->requires_shutdown;
+}

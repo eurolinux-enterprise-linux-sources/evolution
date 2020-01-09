@@ -26,25 +26,31 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
   <title>Beschriftungen verwenden</title>
 
-<p>Sie können farbige Beschriftungen E-Mails hinzufügen, um diese in Kategorien einzuteilen. Dies ist ähnlich den <link xref="using-categories">Kategorien</link> in anderen Evolution-Fenstern.</p>
+<p>Sie können farbige Beschriftungen E-Mails hinzufügen, um diese in Kategorien einzuteilen. Dies ist ähnlich den <link xref="using-categories">Kategorien</link> in anderen <gui>Evolution</gui>-Fenstern.</p>
 
 <p>Suchen Sie nach Nachrichten mit bestimmten Beschriftungen mit Hilfe der <link xref="mail-searching">Schnellsuche?</link>. Sie können auch <link xref="mail-search-folders">Suchordner</link> mit Hilfe von Beschriftungen erstellen.</p>
 

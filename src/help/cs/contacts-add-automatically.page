@@ -17,24 +17,26 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Automatically add senders of mail that you have received to your
-    contacts.</desc>
+    <desc>Jak do svých kontaktů automaticky přidávat odesilatele pošty, kterou jste obdrželi.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Adding people automatically to my contacts</title>
+  <title>Automatické přidávání lidí do kontaktů</title>
 
-  <p>You can add people automatically to your contacts when you reply to
-  received email. Enable the plugin <gui>Automatic Contacts</gui> by going to
-  <guiseq><gui>Edit</gui><gui>Plugins</gui></guiseq>; click on
-  <gui>Automatic Contacts</gui> so that it shows a check mark. Then go to
-  <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Contacts</gui>
-  <gui>Automatic Contacts</gui></guiseq> and enable the
-  <gui>Create address book entries when sending emails</gui> option and select
-  an address book in the drop-down field below that will receive the new
-  contacts.</p>
+  <p>Můžete nechat automaticky přidávat kontakty ve chvíli, kdy odpovíte na zprávu. K tomu povolte zásuvný modul <gui>Automatické kontakty</gui> pomocí <guiseq><gui>Upravit</gui> <gui>Zásuvné moduly</gui></guiseq>. Klikněte na <gui>Automatické kontakty</gui>, aby se zaškrtly. Pak přejděte do <guiseq><gui>Upravit</gui> <gui>Předvolby</gui> <gui>Kontakty</gui> <gui>Automatické kontakty</gui></guiseq> a zapněte volbu <gui>Vytvářet položky v adresáři při odesílání pošty</gui> a v rozbalovacím seznamu pod tím vyberte adresář, ve kterém se nové kontakty mají vytvářet.</p>
 
-  <p>From now on, contacts will be automatically created for senders of
-  received mail when you reply to that mail.</p>
+  <p>Od této chvíle se budou automaticky vytvářet kontakty pro odesilate pošty ve chvíli, kdy odpovíte na zprávu, kterou jste od něj obdrželi.</p>
   <!-- Location in Preferences is correct only since 3.1.5, as
      https://bugzilla.gnome.org/show_bug.cgi?id=655492 was fixed -->
 

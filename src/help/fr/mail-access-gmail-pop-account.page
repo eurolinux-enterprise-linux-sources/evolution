@@ -8,10 +8,14 @@
     <link type="guide" xref="google-services"/>
     <link type="seealso" xref="mail-account-manage-pop"/>
 
-    <revision pkgversion="2.28.3" version="0.1" date="2010-10-16" status="review"/>
+    <revision pkgversion="3.11.92" version="0.2" date="2014-03-23" status="review"/>
     <credit type="author">
       <name its:translate="no">April Gonzales</name>
       <email its:translate="no">loonycookie@gmail.com</email>
+    </credit>
+    <credit type="author">
+      <name its:translate="no">Andre Klapper</name>
+      <email its:translate="no">ak-47@gmx.net</email>
     </credit>
     
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
@@ -51,15 +55,15 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
 
 
-<title>Accès à un compte POP Gmail via Evolution</title>
+<title>Access a Gmail POP Account via <app>Evolution</app></title>
 
-<p>Suivez ces étapes pour configurer votre compte POP Gmail dans Evolution :</p>
+<p>Follow these steps to set up your Gmail POP Account in <app>Evolution</app>:</p>
 
 <steps>
 <item><p>Connectez-vous à votre compte Gmail.</p></item>
@@ -71,8 +75,8 @@
     </list>
 </item>
 <item><p>Spécifiez les autres paramètres nécessaires pour cette fonctionnalité de Gmail.</p></item>
-<item><p>Pour connaître la configuration de comptes Gmail, cliquez sur <guiseq><gui>Instructions de configuration</gui><gui>Autres</gui><gui>Instructions standard</gui></guiseq>.</p></item>
-<item><p>Sur votre client Evolution, allez dans <guiseq><gui>Édition</gui><gui>Préférences</gui><gui>Comptes de messagerie</gui></guiseq>. Cliquez sur <gui style="button">Ajouter</gui>.</p></item>
+<item><p>Pour connaître la configuration du compte Gmail, cliquez sur <gui>Instructions de configuration</gui>. Choisissez <gui>Je désire activer POP</gui> et sélectionnez <gui>Autres</gui>dans la liste des clients.</p></item>
+<item><p>On your <app>Evolution</app> client, go to <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Mail Accounts</gui></guiseq>. Click <gui style="button">Add</gui>. </p></item>
 <item><p>Fournissez les informations nécessaires. Pour les paramètres du compte, référez-vous à l'étape 5.</p></item>
 </steps>
 </page>

@@ -53,7 +53,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -70,7 +70,7 @@
 <p>Le téléchargement de courriels en double peut être dû à l'une des raisons suivantes :</p>
 <list>
 <item><p>Il y a plusieurs copies du même message dans la boîte aux lettres.</p></item>
-<item><p>Evolution a un problème avec l'extension UIDL.</p></item>
+<item><p><app>Evolution</app> is having a problem with the UIDL extension.</p></item>
 <item><p>Les fichiers en cache situés dans <file>$HOME/.local/share/evolution/mail/local/</file> ne sont pas modifiables.</p></item>
 </list>
 </section>

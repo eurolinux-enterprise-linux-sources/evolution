@@ -25,19 +25,25 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
@@ -55,8 +61,8 @@
 
 <section id="translators">
 <title>Die Übersetzer des Benutzerhandbuchs von <app>Evolution</app></title>
-<!-- TO TRANSLATORS: This is shown in the 'Translators of the User Documentation' section. Please REPLACE this string by adding your own names here so you get some well-deserved fame on the interwebs! Do NOT use "\n" for linebreaks or square brakets (<>) for potential email addresses here as this will not work. Thanks for all your hard work! andre -->
-<p its:locNote="TO TRANSLATORS: This is shown in the 'Translators of the User Documentation' section. Please REPLACE this string by adding your own names here so you get some well-deserved fame on the interwebs! Do NOT use '\n' for linebreaks or square brakets for potential email addresses here as this will not work. Thanks for all your hard work! andre">Christian Kirbach, Gabor Karsay, Mario Blättermann</p>
+<!-- TO TRANSLATORS: This is shown in the 'Translators of the User Documentation' section. Please REPLACE this string by adding your own names here so you get some well-deserved fame on the interwebs! Do NOT use "\n" for linebreaks or square brackets (<>) for potential email addresses here as this will not work. Thanks for all your hard work! andre -->
+<p its:locNote="TO TRANSLATORS: This is shown in the 'Translators of the User Documentation' section. Please REPLACE this string by adding your own names here so you get some well-deserved fame on the interwebs! Do NOT use '\n' for linebreaks or square brackets for potential email addresses here as this will not work. Thanks for all your hard work! andre">Christian Kirbach, Gabor Karsay, Mario Blättermann</p>
 </section>
 
 <section id="previous">
@@ -103,8 +109,8 @@ Srinivasa Ragavan
 <title>Kontaktinformationen</title>
 <p>Das GNOME-Dokumentationsprojekt:</p>
 <list>
-<item><p><link href="http://live.gnome.org/DocumentationProject">Webseite</link></p></item>
-<item><p><link href="http://mail.gnome.org/mailman/listinfo/gnome-doc-list">Mailingliste</link></p></item>
+<item><p><link href="https://wiki.gnome.org/DocumentationProject">Internetseite</link></p></item>
+<item><p><link href="https://mail.gnome.org/mailman/listinfo/gnome-doc-list">Mailingliste</link></p></item>
 </list>
 </section>
 

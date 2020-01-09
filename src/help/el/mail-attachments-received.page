@@ -21,16 +21,34 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
 <title>Χειρισμός συνημμένων σε λαμβανόμενα μηνύματα</title>
 
-<p>Εάν δεχθείτε ένα μήνυμα αλληλογραφίας με ένα ή περισσότερα συνημμένα αρχεία, το Evolution εμφανίζει τον αριθμό των συνημμένων και ένα κουμπί <gui style="button">αποθήκευση</gui> ή <gui style="button">αποθήκευση όλων</gui> μεταξύ της κεφαλίδας μηνύματος και του περιεχομένου του μηνύματος.</p>
-<note style="tip"><p>Το Evolution δεν υποστηρίζει αποθήκευση όλων των συνημμένων όλων των μηνυμάτων σε έναν φάκελο μονομιάς.</p></note>
+<p>If you receive an email message with one or more file attachments, <app>Evolution</app> displays the number of attachments and a <gui style="button">Save</gui> or <gui style="button">Save All</gui> button between the email header and the content of the email.</p>
+<note style="tip"><p><app>Evolution</app> does not support saving all attachments of all messages in one folder at once.</p></note>
 
 <p>Ένας κατάλογος συνημμένων είναι επίσης διαθέσιμος στο τέλος του μηνύματος.</p>
 <p>Για αποθήκευση ενός συνημμένου στον δίσκο, κλικ στο κάτω βέλος δίπλα στο εικονίδιο προσάρτησης και κλικ <gui>αποθήκευση ως</gui>.</p>

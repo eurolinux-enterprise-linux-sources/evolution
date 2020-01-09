@@ -52,7 +52,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -60,7 +60,7 @@
 
 <p>Les filtres de message appliquent des actions sur les messages basées sur des conditions que vous avez définies. Vous pouvez définir des filtres pour les courriels entrants et sortants.</p>
 
-<p>Les filtres s'appliquent automatiquement aux messages entrants pour les comptes locaux (tels que POP). Les serveurs de courriels pour les comptes à distance (tel que IMAP) filtrent souvent les courriels directement sur le serveur car c'est plus rapide. Si vous voulez appliquer vos filtres Evolution aux comptes à distance, vous pouvez activer sous <guiseq><gui>Édition</gui><gui>Préférences</gui><gui>Compte de messagerie</gui><gui style="button">Modifier</gui><gui>Options de réception</gui><gui>Options</gui><gui>Appliquer les filtres aux nouveaux messages dans la boîte de réception sur ce serveur</gui></guiseq>.</p>
+<p>Filters will be automatically applied to incoming messages for local accounts (such as POP). Mail servers for remote accounts (such as IMAP) often already filter mail directly on the server as this is faster. If you want to apply your <app>Evolution</app> filters to remote accounts, you can enable this under <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Mail Accounts</gui><gui style="button">Edit</gui><gui>Receiving Options</gui><gui>Options</gui><gui>Apply filters to new messages in Inbox on this server</gui></guiseq>.</p>
 
 <p>Pour appliquer manuellement les filtres sur les messages d'un dossier, sélectionnez les messages et cliquez sur <guiseq><gui>Message</gui><gui>Appliquer les filtres</gui></guiseq> ou pressez <keyseq><key>Ctrl</key><key>Y</key></keyseq>.</p>
 <p>Pour sélectionner tous les messages d'un dossier, cliquez sur <guiseq><gui>Édition</gui><gui>Tout sélectionner</gui></guiseq> ou pressez <keyseq><key>Ctrl</key><key>A</key></keyseq>.</p>
@@ -69,11 +69,11 @@
 <title>Création d'un filtre</title>
 
 <steps>
-<item><p>Cliquez sur <guiseq><gui>Édition</gui><gui>Filtres de message</gui></guiseq> ou cliquez sur <guiseq><gui>Message</gui><gui>Créer une règle</gui></guiseq> et sélectionnez le critère sur lequel se base le filtre.</p></item>
+<item><p>Click <guiseq><gui>Edit</gui><gui>Message Filters</gui></guiseq>, or click <guiseq><gui>Message</gui><gui>Create</gui></guiseq> and select the criterion the filter will be based on.</p></item>
 <item><p>Cliquez sur <gui style="button">Ajouter</gui>.</p></item>
 <item><p>Saisissez un nom dans le champ <gui>Nom de la règle</gui>.</p></item>
 <item><p>Définissez les conditions de la règle. Pour chaque condition, sélectionnez d'abord la partie du message qui sera contrôlée puis définissez la règle de comparaison.</p><p>Pour plus d'informations sur les conditions disponibles, consultez <link xref="mail-filters-actions">Conditions de filtre disponibles</link>.</p></item>
-<item><p>Si vous voulez définir plusieurs conditions, définissez sous <gui>Trouver les éléments</gui> si toutes ou une seule condition doit être remplie et cliquez sur <gui style="button">Ajouter une condition</gui> et répétez les étapes précédentes.</p></item>
+<item><p>Si vous voulez définir plusieurs conditions, définissez sous <gui>Trouver les éléments</gui> si une seule condition ou toutes doivent être remplies et cliquez sur <gui style="button">Ajouter une condition</gui> et répétez les étapes précédentes.</p></item>
 <item>
 <p>Sélectionnez les actions du filtre dans la section <gui>Alors</gui>.</p><p>Pour plus d'informations sur les actions disponibles, consultez <link xref="mail-filters-actions">Actions de filtre disponibles</link>.</p>
 

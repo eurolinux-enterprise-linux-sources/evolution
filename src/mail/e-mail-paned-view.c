@@ -62,7 +62,8 @@ enum {
 	PROP_0,
 	PROP_FORWARD_STYLE,
 	PROP_GROUP_BY_THREADS,
-	PROP_REPLY_STYLE
+	PROP_REPLY_STYLE,
+	PROP_MARK_SEEN_ALWAYS
 };
 
 #define STATE_KEY_GROUP_BY_THREADS	"GroupByThreads"
@@ -162,6 +163,10 @@ mail_paned_view_message_list_built_cb (EMailView *view,
 
 		g_free (folder_uri);
 
+		if (!message_list_contains_uid (message_list, uid) &&
+		    e_mail_reader_get_mark_seen_always (E_MAIL_READER (view)))
+			e_mail_reader_unset_folder_just_selected (E_MAIL_READER (view));
+
 		/* Use selection fallbacks if UID is not found. */
 		message_list_select_uid (message_list, uid, TRUE);
 
@@ -221,19 +226,31 @@ mail_paned_view_restore_state_cb (EShellWindow *shell_window,
 
 	priv = E_MAIL_PANED_VIEW (view)->priv;
 
-	/* Bind GObject properties to GSettings keys. */
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	if (e_shell_window_is_main_instance (shell_window)) {
+		g_settings_bind (
+			settings, "hpaned-size",
+			priv->paned, "hposition",
+			G_SETTINGS_BIND_DEFAULT);
 
-	g_settings_bind (
-		settings, "hpaned-size",
-		priv->paned, "hposition",
-		G_SETTINGS_BIND_DEFAULT);
+		g_settings_bind (
+			settings, "paned-size",
+			priv->paned, "vposition",
+			G_SETTINGS_BIND_DEFAULT);
+	} else {
+		g_settings_bind (
+			settings, "hpaned-size-sub",
+			priv->paned, "hposition",
+			G_SETTINGS_BIND_DEFAULT |
+			G_SETTINGS_BIND_GET_NO_CHANGES);
 
-	g_settings_bind (
-		settings, "paned-size",
-		priv->paned, "vposition",
-		G_SETTINGS_BIND_DEFAULT);
+		g_settings_bind (
+			settings, "paned-size-sub",
+			priv->paned, "vposition",
+			G_SETTINGS_BIND_DEFAULT |
+			G_SETTINGS_BIND_GET_NO_CHANGES);
+	}
 
 	g_object_unref (settings);
 }
@@ -295,6 +312,12 @@ mail_paned_view_set_property (GObject *object,
 				E_MAIL_READER (object),
 				g_value_get_enum (value));
 			return;
+
+		case PROP_MARK_SEEN_ALWAYS:
+			e_mail_reader_set_mark_seen_always (
+				E_MAIL_READER (object),
+				g_value_get_boolean (value));
+			return;
 	}
 
 	G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -325,6 +348,13 @@ mail_paned_view_get_property (GObject *object,
 			g_value_set_enum (
 				value,
 				e_mail_reader_get_reply_style (
+				E_MAIL_READER (object)));
+			return;
+
+		case PROP_MARK_SEEN_ALWAYS:
+			g_value_set_boolean (
+				value,
+				e_mail_reader_get_mark_seen_always (
 				E_MAIL_READER (object)));
 			return;
 	}
@@ -505,6 +535,7 @@ mail_paned_view_set_folder (EMailReader *reader,
 	EMailReaderInterface *default_interface;
 	GtkWidget *message_list;
 	GKeyFile *key_file;
+	CamelFolder *previous_folder;
 	gchar *folder_uri;
 	gchar *group_name;
 	const gchar *key;
@@ -520,11 +551,19 @@ mail_paned_view_set_folder (EMailReader *reader,
 	if (!shell_view)
 		return;
 
+	previous_folder = e_mail_reader_ref_folder (reader);
+	if (previous_folder == folder) {
+		g_clear_object (&previous_folder);
+		return;
+	}
+
+	g_clear_object (&previous_folder);
+
 	shell_window = e_shell_view_get_shell_window (shell_view);
 
 	shell = e_shell_window_get_shell (shell_window);
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 	/* FIXME This should be an EMailReader property. */
 	global_view_setting = g_settings_get_boolean (
@@ -636,13 +675,9 @@ mail_paned_view_constructed (GObject *object)
 	EMailView *view;
 	GtkWidget *message_list;
 	GtkWidget *container;
-	GtkWidget *widget;
+	GtkWidget *widget, *vbox;
 
 	priv = E_MAIL_PANED_VIEW_GET_PRIVATE (object);
-
-	priv->display = g_object_new (
-		E_TYPE_MAIL_DISPLAY,
-		"headers-collapsable", TRUE, NULL);
 
 	view = E_MAIL_VIEW (object);
 	shell_view = e_mail_view_get_shell_view (view);
@@ -652,10 +687,15 @@ mail_paned_view_constructed (GObject *object)
 	backend = E_MAIL_BACKEND (shell_backend);
 	session = e_mail_backend_get_session (backend);
 
+	priv->display = g_object_new (E_TYPE_MAIL_DISPLAY,
+		"headers-collapsable", TRUE,
+		"remote-content", e_mail_backend_get_remote_content (backend),
+		NULL);
+
 	/* FIXME This should be an EMailPanedView property, so
 	 *       it can be configured from the settings module. */
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 	g_settings_bind (
 		settings, "headers-collapsed",
@@ -669,11 +709,11 @@ mail_paned_view_constructed (GObject *object)
 	container = GTK_WIDGET (object);
 
 	widget = e_paned_new (GTK_ORIENTATION_VERTICAL);
-	gtk_container_add (GTK_CONTAINER (container), widget);
+	gtk_box_pack_start (GTK_BOX (container), widget, TRUE, TRUE, 0);
 	priv->paned = g_object_ref (widget);
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "orientation",
 		widget, "orientation",
 		G_BINDING_SYNC_CREATE);
@@ -684,10 +724,8 @@ mail_paned_view_constructed (GObject *object)
 	gtk_scrolled_window_set_policy (
 		GTK_SCROLLED_WINDOW (widget),
 		GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
-	gtk_scrolled_window_set_shadow_type (
-		GTK_SCROLLED_WINDOW (widget), GTK_SHADOW_IN);
-	priv->scrolled_window = g_object_ref (widget);
 	gtk_paned_pack1 (GTK_PANED (container), widget, TRUE, FALSE);
+	priv->scrolled_window = g_object_ref (widget);
 	gtk_widget_show (widget);
 
 	container = widget;
@@ -699,15 +737,25 @@ mail_paned_view_constructed (GObject *object)
 
 	container = priv->paned;
 
+	vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 2);
 	widget = e_preview_pane_new (E_WEB_VIEW (priv->display));
-	gtk_paned_pack2 (GTK_PANED (container), widget, FALSE, FALSE);
+
+	gtk_box_pack_start (GTK_BOX (vbox), widget, TRUE, TRUE, 0);
+	gtk_box_pack_start (GTK_BOX (vbox), GTK_WIDGET (e_mail_display_get_attachment_view (priv->display)), FALSE, FALSE, 0);
+
+	gtk_paned_pack2 (GTK_PANED (container), vbox, FALSE, FALSE);
 	priv->preview_pane = g_object_ref (widget);
 	gtk_widget_show (GTK_WIDGET (priv->display));
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "preview-visible",
 		widget, "visible",
+		G_BINDING_SYNC_CREATE);
+
+	e_binding_bind_property (
+		object, "preview-visible",
+		vbox, "visible",
 		G_BINDING_SYNC_CREATE);
 
 	/* Load the view instance. */
@@ -736,6 +784,8 @@ mail_paned_view_constructed (GObject *object)
 	/* Do this after creating the message list.  Our
 	 * set_preview_visible() method relies on it. */
 	e_mail_view_set_preview_visible (view, TRUE);
+
+	e_mail_reader_connect_remote_content (reader);
 
 	e_extensible_load_extensions (E_EXTENSIBLE (object));
 
@@ -802,6 +852,54 @@ empv_create_view_id (CamelFolder *folder)
 	return res;
 }
 
+static gboolean
+empv_folder_or_parent_is_outgoing (MailFolderCache *folder_cache,
+				   CamelStore *store,
+				   const gchar *fullname)
+{
+	CamelFolderInfoFlags info_flags;
+	gchar *path, *dash;
+	gboolean res = FALSE;
+
+	g_return_val_if_fail (MAIL_IS_FOLDER_CACHE (folder_cache), FALSE);
+	g_return_val_if_fail (CAMEL_IS_STORE (store), FALSE);
+	g_return_val_if_fail (fullname != NULL, FALSE);
+
+	if (!mail_folder_cache_get_folder_info_flags (folder_cache, store, fullname, &info_flags))
+		info_flags = 0;
+
+	if ((info_flags & CAMEL_FOLDER_TYPE_MASK) == CAMEL_FOLDER_TYPE_OUTBOX ||
+	    (info_flags & CAMEL_FOLDER_TYPE_MASK) == CAMEL_FOLDER_TYPE_SENT)
+		return TRUE;
+
+	dash = strrchr (fullname, '/');
+	if (!dash)
+		return FALSE;
+
+	path = g_strdup (fullname);
+
+	while (path && *path) {
+		dash = strrchr (path, '/');
+		if (!dash)
+			break;
+
+		*dash = '\0';
+
+		if (!mail_folder_cache_get_folder_info_flags (folder_cache, store, path, &info_flags))
+			continue;
+
+		if ((info_flags & CAMEL_FOLDER_TYPE_MASK) == CAMEL_FOLDER_TYPE_OUTBOX ||
+		    (info_flags & CAMEL_FOLDER_TYPE_MASK) == CAMEL_FOLDER_TYPE_SENT) {
+			res = TRUE;
+			break;
+		}
+	}
+
+	g_free (path);
+
+	return res;
+}
+
 static void
 mail_paned_view_update_view_instance (EMailView *view)
 {
@@ -814,6 +912,7 @@ mail_paned_view_update_view_instance (EMailView *view)
 	ESourceRegistry *registry;
 	GalViewCollection *view_collection;
 	GalViewInstance *view_instance;
+	MailFolderCache *folder_cache;
 	CamelFolder *folder;
 	GtkOrientable *orientable;
 	GtkOrientation orientation;
@@ -848,12 +947,15 @@ mail_paned_view_update_view_instance (EMailView *view)
 	view_id = empv_create_view_id (folder);
 	e_filename_make_safe (view_id);
 
+	folder_cache = e_mail_session_get_folder_cache (e_mail_backend_get_session (e_mail_reader_get_backend (reader)));
+
 	outgoing_folder =
+		empv_folder_or_parent_is_outgoing (folder_cache, camel_folder_get_parent_store (folder), camel_folder_get_full_name (folder)) ||
 		em_utils_folder_is_drafts (registry, folder) ||
 		em_utils_folder_is_outbox (registry, folder) ||
 		em_utils_folder_is_sent (registry, folder);
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 	global_view_setting = g_settings_get_boolean (
 		settings, "global-view-setting");
 	g_object_unref (settings);
@@ -954,6 +1056,10 @@ mail_paned_view_update_view_instance (EMailView *view)
 		gal_view_instance_get_current_view (view_instance),
 		view);
 
+	view_id = gal_view_instance_get_current_view_id (view_instance);
+	e_shell_view_set_view_id (shell_view, view_id);
+	g_free (view_id);
+
 	g_object_unref (view_instance);
 
 	g_clear_object (&folder);
@@ -1036,6 +1142,12 @@ e_mail_paned_view_class_init (EMailPanedViewClass *class)
 		object_class,
 		PROP_REPLY_STYLE,
 		"reply-style");
+
+	/* Inherited from EMailReader */
+	g_object_class_override_property (
+		object_class,
+		PROP_MARK_SEEN_ALWAYS,
+		"mark-seen-always");
 }
 
 static void

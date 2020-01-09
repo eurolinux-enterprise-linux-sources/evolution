@@ -5,7 +5,7 @@
     <link type="guide" xref="index#data-migration-and-sync"/>
     <link type="seealso" xref="data-storage"/>
 
-    <revision pkgversion="3.1.5" version="0.3" date="2011-09-29" status="final"/>
+    <revision pkgversion="3.1.5" version="0.4" date="2014-03-23" status="final"/>
 
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
@@ -14,65 +14,63 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Back up and restore your <app>Evolution</app> data and
-    settings.</desc>
+    <desc>Säkerhetskopiera och återställ data och inställningar för <app>Evolution</app>.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Back up and restore</title>
+  <title>Säkerhetskopiera och återställ</title>
 
-  <p>You can back up your <app>Evolution</app> data. The backup saves your
-  settings, mail, contacts, tasks, memos and calendars. It will be stored in a
-  gzip-compressed tar archive file.</p>
+  <p>Du kan säkerhetskopiera dina <app>Evolution</app>-data. Säkerhetskopian sparar dina inställningar, e-postmeddelanden, kontakter, uppgifter, memon och kalendrar. Den kommer att sparas i en gzip-komprimerad tar-arkivfil.</p>
 
 <section id="backup">
-  <title>Backing up</title>
+  <title>Säkerhetskopiering</title>
 
   <list>
     <item>
-      <p>Select <guiseq><gui>File</gui>
-      <gui>Back up Evolution Data…</gui></guiseq>.</p>
+      <p>Välj <guiseq><gui>Arkiv</gui><gui>Säkerhetskopiera Evolution-data…</gui></guiseq>.</p>
     </item>
     <item>
-      <p>Choose a filename and the folder where you want to save the backup
-      file, and click <gui style="button">Save</gui>.</p>
+      <p>Välj ett filnamn och mappen där du vill spara filen med säkerhetskopian och klicka <gui style="button">Spara</gui>.</p>
     </item>
     <item>
-      <p>You will be asked to close <app>Evolution</app>. Answer with
-      <gui style="button">Yes</gui>.</p>
+      <p>Du kommer att ombes stänga <app>Evolution</app>. Svara med <gui style="button">Ja</gui>.</p>
     </item>
   </list>
 
   <note style="warning">
-    <p>Note that your <link xref="mail-spam">spam filtering</link> settings are
-    not included in the backup file, as these settings are not controlled by
-    <app>Evolution</app> and as developers of spam filtering tools might change
-    implementation details. If you use Bogofilter you will need to back up
-    <file>~/.bogofilter/</file>. If you use SpamAssassin you will need to back
-    up <file>~/.spamassassin/</file>.</p>
+    <p>Notera att dina inställningar för <link xref="mail-spam">skräppostsfiltrering</link> inte inkluderas i filen med säkerhetskopian då dessa inställningar inte styrs av <app>Evolution</app> och eftersom utvecklarna av skräppostfiltreringsverktygen kan komma att ändra implementationsdetaljer. Om du använder Bogofilter kommer du att behöva säkerhetskopiera den dolda mappen <file>~/.bogofilter/</file>. Om du använder SpamAssassin kommer du att behöva säkerhetskopiera den dolda mappen <file>~/.spamassassin/</file>.</p>
   </note>
 
 </section>
 
 <section id="restore">
-  <title>Restoring</title>
+  <title>Återställande</title>
 
   <list>
     <item>
-      <p>Select <guiseq><gui>File</gui>
-      <gui>Restore Evolution Data…</gui></guiseq>.</p>
+      <p>Välj <guiseq><gui>Arkiv</gui><gui>Återskapa Evolution-data…</gui></guiseq>.</p>
     </item>
     <item>
-      <p>Choose the file, and click <gui style="button">Open</gui>.</p>
+      <p>Välj filen, och klicka på <gui style="button">Öppna</gui>.</p>
     </item>
     <item>
-      <p>You will be asked to close <app>Evolution</app>. Answer with
-      <gui style="button">Yes</gui>.</p>
+      <p>Du kommer att ombes stänga <app>Evolution</app>. Svara med <gui style="button">Ja</gui>.</p>
     </item>
   </list>
 
   <note style="tip">
-    <p>In the <link xref="intro-first-run">first-run assistant</link>, you can
-    restore <app>Evolution</app> data from a backup file.</p>
+    <p>I <link xref="intro-first-run">assistenten som körs första gången</link> kan du återställa <app>Evolution</app>-data från en fil med en säkerhetskopia i.</p>
   </note>
 
 </section>

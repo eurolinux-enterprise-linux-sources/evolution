@@ -27,7 +27,9 @@
 
 #include <shell/e-shell-backend.h>
 #include <libemail-engine/libemail-engine.h>
+#include <mail/e-mail-remote-content.h>
 #include <mail/e-mail-send-account-override.h>
+#include <mail/e-mail-properties.h>
 
 /* Standard GObject macros */
 #define E_TYPE_MAIL_BACKEND \
@@ -78,6 +80,12 @@ gboolean	e_mail_backend_empty_trash_policy_decision
 						(EMailBackend *backend);
 EMailSendAccountOverride *
 		e_mail_backend_get_send_account_override
+						(EMailBackend *backend);
+EMailRemoteContent *
+		e_mail_backend_get_remote_content
+						(EMailBackend *backend);
+EMailProperties *
+		e_mail_backend_get_mail_properties
 						(EMailBackend *backend);
 
 G_END_DECLS

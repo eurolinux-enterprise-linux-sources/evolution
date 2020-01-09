@@ -50,7 +50,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -62,7 +62,7 @@
 <section id="headers-and-lists">
  <title>En-têtes et listes :</title>
  <p>À l'extrémité gauche de la barre d'outils, vous pouvez choisir le style de texte par défaut <gui>Normal</gui> ou de <gui>En-tête 1</gui> à <gui>En-tête 6</gui>, ce qui correspond à des tailles d'en-têtes des plus grandes (1) aux plus petites (6). Il existe aussi le style <gui>Préformaté</gui> qui correspond à la balise HTML utilisée pour les blocs de texte préformatés, et trois types de listes à puces.</p>
- <p>Par exemple, au lieu d'utiliser des astérisques pour représenter une liste à puces, vous pouvez utiliser le style <gui>Liste à puces</gui> dans le menu déroulant des styles. Evolution propose différents styles de puces et gère les retours de ligne et plusieurs niveaux d'indentation.</p>
+ <p>For instance, instead of using asterisks to mark a bulleted list, you can use the <gui>Bulleted List</gui> style from the style dropdown list. <app>Evolution</app> uses different bullet styles, and handles word wrap and multiple levels of indentation.</p>
 </section>
 
 <section id="alignment">

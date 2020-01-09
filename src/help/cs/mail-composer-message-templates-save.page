@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-composer-message-templates-save" xml:lang="cs">
 
   <info>
-   <desc>Store an existing or new message as a template</desc>
+   <desc>Jak uchovat stávající nebo novou zprávu jako šablonu</desc>
    
    <link type="guide" xref="mail-composer-message-templates#options"/>
 
@@ -18,33 +18,45 @@
  <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
      
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Saving Messages as Templates</title>
+<title>Uložení zprávy jako šablony</title>
 
 <section id="save-existing">
-<title>Saving an Existing Message as a Template</title>
+<title>Uložení stávající zprávy jako šablony</title>
 <steps>
   <item><p>Vyberete zprávu.</p></item>
-  <item><p>Right-click the message and choose <gui>Move to folder</gui> or <gui>Copy to folder</gui>.</p></item>
-  <item><p>Select the <gui>Templates</gui> folder under <gui>On This Computer</gui>.</p></item>
+  <item><p>Klikněte pravým tlačítkem na zprávu a vzolte <gui>Přesunout do složky</gui> nebo <gui>Kopírovat do složky</gui>.</p></item>
+  <item><p>Vyberte složku <gui>Šablony</gui> v <gui>Tento počítač</gui>.</p></item>
 </steps>
-<p>You can also edit an existing message and save it as a template:</p>
+<p>Můžete také upravit existující zprávu a uložit ji jako šablonu.</p>
 <steps>
-  <item><p>Open the message and click <gui>Reply</gui>.</p></item>
-  <item><p>Upravte tělo zprávy nebo adresy podle vašich požadavků.</p></item>
-  <item><p>Select <guiseq><gui>File</gui><gui>Save as Template</gui></guiseq>.</p></item>
+  <item><p>Otevřete zprávu a potom klikněte na <gui>Odpovědět</gui>.</p></item>
+  <item><p>Upravte tělo zprávy nebo adresy podle svých požadavků.</p></item>
+  <item><p>Vyberte <guiseq><gui>Soubor</gui> <gui>Uložit jako šablonu</gui></guiseq>.</p></item>
  </steps>
 </section>
 
 <section id="save-new">
- <title>Uložení nové zprávy jako šablonu</title>
+ <title>Uložení nové zprávy jako šablony</title>
  <steps>
   <item>
-<p>Click <gui>New</gui> and enter in the composer window what you need for the template.</p>
+<p>Klikněte na <gui>Nový</gui> a zadejte v okně editoru, co potřebujete do šablony.</p>
   </item>
   <item>
-<p>Select <guiseq><gui>File</gui><gui>Save as Template</gui></guiseq>.</p>
+<p>Vyberte <guiseq><gui>Soubor</gui> <gui>Uložit jako šablonu</gui></guiseq>.</p>
   </item>
  </steps>
 </section>

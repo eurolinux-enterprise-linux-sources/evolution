@@ -103,9 +103,6 @@ e_mail_formatter_mode_get_type (void)
 			{ E_MAIL_FORMATTER_MODE_RAW,
 			  "E_MAIL_FORMATTER_MODE_RAW",
 			  "raw" },
-			{ E_MAIL_FORMATTER_MODE_CID,
-			  "E_MAIL_FORMATTER_MODE_CID",
-			  "cid" },
 			{ E_MAIL_FORMATTER_MODE_PRINTING,
 			  "E_MAIL_FORMATTER_MODE_PRINTING",
 			  "printing" },
@@ -142,32 +139,6 @@ e_mail_formatter_quote_flags_get_type (void)
 		};
 		GType the_type = g_flags_register_static (
 			g_intern_static_string ("EMailFormatterQuoteFlags"),
-			values);
-		g_once_init_leave (&the_type__volatile, the_type);
-	}
-	return the_type__volatile;
-}
-
-GType
-e_mail_image_loading_policy_get_type (void)
-{
-	static volatile gsize the_type__volatile = 0;
-
-	if (g_once_init_enter (&the_type__volatile)) {
-		static const GEnumValue values[] = {
-			{ E_MAIL_IMAGE_LOADING_POLICY_NEVER,
-			  "E_MAIL_IMAGE_LOADING_POLICY_NEVER",
-			  "never" },
-			{ E_MAIL_IMAGE_LOADING_POLICY_SOMETIMES,
-			  "E_MAIL_IMAGE_LOADING_POLICY_SOMETIMES",
-			  "sometimes" },
-			{ E_MAIL_IMAGE_LOADING_POLICY_ALWAYS,
-			  "E_MAIL_IMAGE_LOADING_POLICY_ALWAYS",
-			  "always" },
-			{ 0, NULL, NULL }
-		};
-		GType the_type = g_enum_register_static (
-			g_intern_static_string ("EMailImageLoadingPolicy"),
 			values);
 		g_once_init_leave (&the_type__volatile, the_type);
 	}

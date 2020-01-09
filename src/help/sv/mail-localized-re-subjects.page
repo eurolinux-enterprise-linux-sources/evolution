@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-localized-re-subjects" xml:lang="sv">
 
   <info>
-    <desc>Avoid long subject lines due to translated "Re:" prefixes.</desc>
+    <desc>Undvik långa ämnesrader orsakade av översatta ”Re:”-prefix.</desc>
     
     <link type="guide" xref="index#common-mail-problems"/>
 
@@ -15,17 +15,28 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
-</info>
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  </info>
 
-<title>Handling localized "Re:" in subjects</title>
+<title>Hantera lokalanpassade ”Re:” i ämnesrader</title>
 
-<p>Traditionally a "Re:" prefix is added to a subject line when replying to an email. Some email applications use localized terms for this (like "SV:" in Danish or "AW: in German). <app>Evolution</app> can recognize these terms to avoid subject lines getting longer as the conversation continues.</p>
+<p>Traditionellt kommer ett ”Re:”-prefix att läggas till i en ämnesrad när du svarar på e-post. Vissa e-postprogram använder lokalanpassade termer för detta (som ”SV:” på danska eller ”AW:” på tyska). <app>Evolution</app> kan känna igen dessa termer för att undvika att ämnesrader blir längre allt eftersom konversationen fortskrider.</p>
 
 <list>
-<item><p>Open the <app>Terminal</app> application.</p></item>
-<item><p>Run the command <cmd>gsettings set org.gnome.evolution.mail.composer-localized-re 'AW:,SV:'</cmd> (in case that you want "AW:" and "SV:" to be recognized).</p></item>
+<item><p>Öppna <app>Terminal</app>-programmet.</p></item>
+<item><p>Kör kommandot <cmd>gsettings set org.gnome.evolution.mail composer-localized-re 'AW,SV'</cmd> (om du vill att ”AW:” och ”SV:” ska kännas igen).</p></item>
 </list>
-<p>You can also use the <app>dconf-editor</app> application to do this.</p>
+<p>Du kan också använda programmet <app>dconf-editor</app> för att göra detta.</p>
 
 <!-- As per https://bugzilla.gnome.org/show_bug.cgi?id=661087#c6 -->
 

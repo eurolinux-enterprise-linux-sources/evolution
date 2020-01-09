@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="guide" id="mail-account-manage-mh-format-directories" xml:lang="fr">
 
   <info>
-    <desc>Ajouter et modifier un compte utilisant les répertoires de courriel au format MH dans Evolution.</desc>
+    <desc>Add and edit a MH Format Mail Directories account in <app>Evolution</app>.</desc>
 
     <link type="guide" xref="mail-account-management#mail-local-account-types"/>
 
@@ -49,7 +49,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -67,28 +67,28 @@ via XInclude. See +http://blogs.gnome.org/shaunm/2011/07/21/understanding-xinclu
 
 <section id="receiving-email">
 <info>
-  <title type="link">Receiving Email and Receiving options (MH Format Mail Directories accounts)</title>
+  <title type="link">Réception et options de réception (comptes de répertoires de courriel au format MH)</title>
 </info>
 <title>Réception des courriels et options de réception</title>
 </section>
 
 <section id="sending-email">
 <info>
-  <title type="link">Sending Email (MH Format Mail Directories accounts)</title>
+  <title type="link">Envoi des courriels (comptes de répertoires de courriel au format MH)</title>
 </info>
 <title>Envoi du courriel</title>
 </section>
 
 <section id="defaults">
 <info>
-  <title type="link">Defaults (MH Format Mail Directories accounts)</title>
+  <title type="link">Par défaut (comptes de répertoires de courriel au format MH)</title>
 </info>
 <title>Valeurs par défaut</title>
 </section>
 
 <section id="security">
 <info>
-  <title type="link">Security (MH Format Mail Directories accounts)</title>
+  <title type="link">Sécurité (comptes de répertoires de courriel au format MH)</title>
 </info>
 <title>Sécurité</title>
 </section>

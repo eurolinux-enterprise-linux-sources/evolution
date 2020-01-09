@@ -60,6 +60,20 @@ struct _EAttachment {
 
 struct _EAttachmentClass {
 	GObjectClass parent_class;
+
+	/* Signals */
+	void	(*update_file_info)		(EAttachment *attachment,
+						 const gchar *caption,
+						 const gchar *content_type,
+						 const gchar *description,
+						 gint64 size);
+	void	(*update_icon)			(EAttachment *attachment,
+						 GIcon *icon);
+	void	(*update_progress)		(EAttachment *attachment,
+						 gboolean loading,
+						 gboolean saving,
+						 gint percent);
+	void	(*load_failed)			(EAttachment *attachment);
 };
 
 GType		e_attachment_get_type		(void) G_GNUC_CONST;
@@ -71,6 +85,7 @@ void		e_attachment_add_to_multipart	(EAttachment *attachment,
 						 CamelMultipart *multipart,
 						 const gchar *default_charset);
 void		e_attachment_cancel		(EAttachment *attachment);
+gboolean	e_attachment_is_mail_note	(EAttachment *attachment);
 gboolean	e_attachment_get_can_show	(EAttachment *attachment);
 void		e_attachment_set_can_show	(EAttachment *attachment,
 						 gboolean can_show);
@@ -91,26 +106,30 @@ CamelMimePart *	e_attachment_ref_mime_part	(EAttachment *attachment);
 void		e_attachment_set_mime_part	(EAttachment *attachment,
 						 CamelMimePart *mime_part);
 gint		e_attachment_get_percent	(EAttachment *attachment);
-GtkTreeRowReference *
-		e_attachment_get_reference	(EAttachment *attachment);
-void		e_attachment_set_reference	(EAttachment *attachment,
-						 GtkTreeRowReference *reference);
 gboolean	e_attachment_get_saving		(EAttachment *attachment);
-gboolean	e_attachment_get_shown		(EAttachment *attachment);
-void		e_attachment_set_shown		(EAttachment *attachment,
-						 gboolean shown);
-camel_cipher_validity_encrypt_t
+gboolean	e_attachment_get_initially_shown(EAttachment *attachment);
+void		e_attachment_set_initially_shown(EAttachment *attachment,
+						 gboolean initially_shown);
+gboolean	e_attachment_get_save_self	(EAttachment *attachment);
+void		e_attachment_set_save_self	(EAttachment *attachment,
+						 gboolean save_self);
+gboolean	e_attachment_get_save_extracted	(EAttachment *attachment);
+void		e_attachment_set_save_extracted	(EAttachment *attachment,
+						 gboolean save_extracted);
+CamelCipherValidityEncrypt
 		e_attachment_get_encrypted	(EAttachment *attachment);
 void		e_attachment_set_encrypted	(EAttachment *attachment,
-						 camel_cipher_validity_encrypt_t encrypted);
-camel_cipher_validity_sign_t
+						 CamelCipherValidityEncrypt encrypted);
+CamelCipherValiditySign
 		e_attachment_get_signed		(EAttachment *attachment);
 void		e_attachment_set_signed		(EAttachment *attachment,
-						 camel_cipher_validity_sign_t signed_);
+						 CamelCipherValiditySign signed_);
 gchar *		e_attachment_dup_description	(EAttachment *attachment);
 gchar *		e_attachment_dup_thumbnail_path	(EAttachment *attachment);
 gboolean	e_attachment_is_rfc822		(EAttachment *attachment);
 GList *		e_attachment_list_apps		(EAttachment *attachment);
+void		e_attachment_update_store_columns
+						(EAttachment *attachment);
 
 /* Asynchronous Operations */
 void		e_attachment_load_async		(EAttachment *attachment,

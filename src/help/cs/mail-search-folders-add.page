@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-search-folders-add" xml:lang="cs">
 
   <info>
-    <desc>Nastavení složky hledání.</desc>
+    <desc>Nastavení vyhledávací složky.</desc>
     
     <link type="guide" xref="mail-search-folders"/>
 
@@ -18,29 +18,41 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Vytvoření složky hledání</title>
+<title>Vytvoření vyhledávací složky</title>
 
 <steps>
-<item><p>Click <guiseq><gui>Edit</gui><gui>Search Folders</gui></guiseq>, or click <guiseq><gui>Message</gui><gui>Create Rule</gui></guiseq> and select the criterion the search folder will be based on, or if you have run a search, click <guiseq><gui>Search</gui><gui>Create Search Folder From Search...</gui></guiseq>.</p></item>
-<item><p>Click <gui style="button">Add</gui>.</p></item>
+<item><p>Klikněte na <guiseq><gui>Upravit</gui> <gui>Vyhledávací složky</gui></guiseq> nebo na <guiseq><gui>Zpráva</gui> <gui>Vytvořit pravidlo</gui></guiseq> a vyberte kritéria, na kterých bude složka hledání založena. Případně, pokud probíhá nějaké hledání, můžete kliknout na <guiseq><gui>Hledat</gui> <gui>Vytvořit vyhledávací složku z hledávání</gui></guiseq>.</p></item>
+<item><p>Klikněte na <gui style="button">Přidat</gui>.</p></item>
 <item><p>Zadejte název do pole <gui>Název pravidla</gui>.</p></item>
-<item><p>Define the conditions for the rule. For each condition, you first select which part of the message will be checked and then define the comparison.</p><p>Více informací o podmínkách, které jsou k dispozici, naleznete v <link xref="mail-search-folders-conditions">Dostupné podmínky pro složky hledání</link>.</p></item>
-<item><p>If you want to define multiple conditions, define under <gui>Find items</gui> if any or if all conditions have to apply, and click <gui style="button">Add Condition</gui> and repeat the previous step.</p></item>
-<item><p>Vyberte, které složky budou použity pro složku hledání v sekci <gui>Zdroje složek hledání</gui>. Možnosti jsou:</p>
+<item><p>Nadefinujte podmínky pro pravidlo. Pro každou podmínku nejprve vyberte, která část zprávy se má kontrolovat a pak zadejte porovnávání.</p><p>Více informací o podmínkách, které jsou k dispozici, naleznete v <link xref="mail-search-folders-conditions">Dostupné podmínky pro vyhledávací složky</link>.</p></item>
+<item><p>Pokud chcete definovat více podmínek, určete v <gui>Hledat položky</gui>, jestli se mohou použít jen některé podmínky nebo se musí použít všechny, a klikněte na <gui style="button">Přidat podmínku</gui> a zopakujte předchozí krok.</p></item>
+<item><p>Vyberte, které složky budou použity pro vyhledávací složku v části <gui>Zdroje vyhledávacích složek</gui>. Možnosti jsou:</p>
 <list>
   <item><p>Všechny místní složky:</p>
-  <p>Jako zdroj pro složku hledání používá všechny místní složky navíc k těm, které jste jednotlivě vybrali.</p></item>
+  <p>Jako zdroj pro vyhledávací složku používá všechny místní složky navíc k těm, které jste jednotlivě vybrali.</p></item>
 
   <item><p>Všechny aktivní, vzdálené složky:</p>
-  <p>Vzdálené složky jsou považovány za aktivní, pokud jste připojeni k serveru; pro složky hledání musíte být připojeni k vašemu poštovního serveru, chcete-li přidat jakékoliv zprávy z tohoto zdroje ke složkám, které jste vybrali jednotlivě.</p></item>
+  <p>Vzdálené složky jsou považovány za aktivní, pokud jste připojeni k serveru; pro vyhledávací složky musíte být připojeni ke svému poštovního serveru, chcete-li přidat jakékoliv zprávy z tohoto zdroje ke složkám, které jste vybrali jednotlivě.</p></item>
 
   <item><p>Všechny místní a aktivní, vzdálené složky:</p>
-  <p>Používá všechny místní a aktivní, vzdálené složky navíc ke složkám, které jste vybrali jednotlivě.</p></item>
+  <p>Používá všechny místní a aktivní vzdálené složky jako zdroje vyhledávací složky, navíc ke složkám, které jste vybrali jednotlivě.</p></item>
 
   <item><p>Pouze konkrétní složky:</p>
-  <p>Používá jednotlivé složky jako zdroj pro složky hledání. V tomto případě klikněte na tlačítko <gui style="button">Přidat</gui>, chcete-li vybrat složky.</p></item>
+  <p>Používá jednotlivé složky jako zdroj pro vyhledávací složku. V tomto případě klikněte na tlačítko <gui style="button">Přidat</gui>, chcete-li vybrat složky.</p></item>
 </list>
 </item>
 <item><p>Klikněte na <gui style="button">Budiž</gui>.</p></item>

@@ -154,7 +154,8 @@ book_shell_sidebar_constructed (GObject *object)
 		GTK_SCROLLED_WINDOW (widget),
 		GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	gtk_scrolled_window_set_shadow_type (
-		GTK_SCROLLED_WINDOW (widget), GTK_SHADOW_IN);
+		GTK_SCROLLED_WINDOW (widget),
+		GTK_SHADOW_IN);
 	gtk_container_add (container, widget);
 	gtk_widget_show (widget);
 
@@ -166,7 +167,10 @@ book_shell_sidebar_constructed (GObject *object)
 	priv->selector = g_object_ref (widget);
 	gtk_widget_show (widget);
 
-	settings = g_settings_new ("org.gnome.evolution.addressbook");
+	e_source_selector_load_groups_setup (E_SOURCE_SELECTOR (priv->selector),
+		e_shell_view_get_state_key_file (shell_view));
+
+	settings = e_util_ref_settings ("org.gnome.evolution.addressbook");
 
 	g_settings_bind_with_mapping (
 		settings, "primary-addressbook",
@@ -225,6 +229,9 @@ book_shell_sidebar_check_state (EShellSidebar *shell_sidebar)
 			refresh_supported =
 				e_client_check_refresh_supported (client);
 			g_object_unref (client);
+		} else {
+			/* It's also used to allow-auth-prompt for the source */
+			refresh_supported = TRUE;
 		}
 
 		g_object_unref (source);

@@ -34,14 +34,6 @@
 #ifdef DATADIR
 #undef DATADIR
 #endif
-#include <windows.h>
-#include <conio.h>
-#ifndef PROCESS_DEP_ENABLE
-#define PROCESS_DEP_ENABLE 0x00000001
-#endif
-#ifndef PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION
-#define PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION 0x00000002
-#endif
 #endif
 
 #include "e-util/e-util-private.h"
@@ -101,38 +93,6 @@ static GOptionEntry options[] = {
 
 static gboolean check (const gchar *filename, gboolean *is_new_format);
 
-static GString *
-replace_string (const gchar *text,
-                const gchar *find,
-                const gchar *replace)
-{
-	const gchar *p, *next;
-	GString *str;
-	gint find_len;
-
-	g_return_val_if_fail (text != NULL, NULL);
-	g_return_val_if_fail (find != NULL, NULL);
-	g_return_val_if_fail (*find, NULL);
-
-	find_len = strlen (find);
-	str = g_string_new ("");
-
-	p = text;
-	while (next = strstr (p, find), next) {
-		if (p < next)
-			g_string_append_len (str, p, next - p);
-
-		if (replace && *replace)
-			g_string_append (str, replace);
-
-		p = next + find_len;
-	}
-
-	g_string_append (str, p);
-
-	return str;
-}
-
 static const gchar *
 strip_home_dir (const gchar *dir)
 {
@@ -166,11 +126,11 @@ replace_variables (const gchar *str,
 	strip_datadir = strip_home_dir (e_get_user_data_dir ());
 	strip_configdir = strip_home_dir (e_get_user_config_dir ());
 
-	#define repl(_find, _replace) \
-		use = replace_string (res ? res->str : str, _find, _replace); \
-		g_return_val_if_fail (use != NULL, NULL); \
-		if (res) \
-			g_string_free (res, TRUE); \
+	#define repl(_find, _replace)							\
+		use = e_str_replace_string (res ? res->str : str, _find, _replace);	\
+		g_return_val_if_fail (use != NULL, NULL);				\
+		if (res)								\
+			g_string_free (res, TRUE);					\
 		res = use;
 
 	repl ("$HOME", g_get_home_dir ());
@@ -223,7 +183,7 @@ replace_in_file (const gchar *filename,
 	}
 
 	if (g_file_get_contents (filename, &content, NULL, &error)) {
-		GString *str = replace_string (content, find, replace);
+		GString *str = e_str_replace_string (content, find, replace);
 
 		if (str) {
 			if (!g_file_set_contents (filename, str->str, -1, &error) && error) {
@@ -305,15 +265,30 @@ write_dir_file (void)
 	g_string_free (content, TRUE);
 }
 
+static gboolean
+get_filename_is_xz (const gchar *filename)
+{
+	gint len;
+
+	if (!filename)
+		return FALSE;
+
+	len = strlen (filename);
+	if (len < 3)
+		return FALSE;
+
+	return g_ascii_strcasecmp (filename + len - 3, ".xz") == 0;
+}
+
 static void
 backup (const gchar *filename,
         GCancellable *cancellable)
 {
 	gchar *command;
 	gchar *quotedfname;
+	gboolean use_xz;
 
 	g_return_if_fail (filename && *filename);
-	quotedfname = g_shell_quote (filename);
 
 	if (g_cancellable_is_cancelled (cancellable))
 		return;
@@ -346,15 +321,15 @@ backup (const gchar *filename,
 
 	txt = _("Backing Evolution data (Mails, Contacts, Calendar, Tasks, Memos)");
 
-	/* FIXME stay on this file system ,other options?" */
-	/* FIXME compression type?" */
-	/* FIXME date/time stamp?" */
-	/* FIXME backup location?" */
+	quotedfname = g_shell_quote (filename);
+	use_xz = get_filename_is_xz (filename);
+
 	command = g_strdup_printf (
 		"cd $HOME && tar chf - $STRIPDATADIR "
 		"$STRIPCONFIGDIR " EVOLUTION_DIR_FILE " | "
-		"gzip > %s", quotedfname);
+		"%s > %s", use_xz ? "xz -z" : "gzip", quotedfname);
 	run_cmd (command);
+
 	g_free (command);
 	g_free (quotedfname);
 
@@ -492,6 +467,16 @@ get_source_manager_reload_command (void)
 }
 
 static void
+unset_eds_migrated_flag (void)
+{
+	GSettings *settings;
+
+	settings = g_settings_new ("org.gnome.evolution-data-server");
+	g_settings_set_boolean (settings, "migrated", FALSE);
+	g_object_unref (settings);
+}
+
+static void
 restore (const gchar *filename,
          GCancellable *cancellable)
 {
@@ -532,10 +517,16 @@ restore (const gchar *filename,
 		gchar *data_dir = NULL;
 		gchar *config_dir = NULL;
 		gchar *restored_version = NULL;
+		const gchar *tar_opts;
+
+		if (get_filename_is_xz (filename))
+			tar_opts = "-xJf";
+		else
+			tar_opts = "-xzf";
 
 		command = g_strdup_printf (
-			"cd $TMP && tar xzf %s "
-			EVOLUTION_DIR_FILE, quotedfname);
+			"cd $TMP && tar %s %s " EVOLUTION_DIR_FILE,
+			tar_opts, quotedfname);
 		run_cmd (command);
 		g_free (command);
 
@@ -568,14 +559,14 @@ restore (const gchar *filename,
 		g_mkdir_with_parents (e_get_user_config_dir (), 0700);
 
 		command = g_strdup_printf (
-			"cd $DATADIR && tar xzf %s %s --strip-components=%d",
-			quotedfname, data_dir, get_dir_level (data_dir));
+			"cd $DATADIR && tar --strip-components %d %s %s %s",
+			 get_dir_level (data_dir), tar_opts, quotedfname, data_dir);
 		run_cmd (command);
 		g_free (command);
 
 		command = g_strdup_printf (
-			"cd $CONFIGDIR && tar xzf %s %s --strip-components=%d",
-			quotedfname, config_dir, get_dir_level (config_dir));
+			"cd $CONFIGDIR && tar --strip-components %d %s %s %s",
+			get_dir_level (config_dir), tar_opts, quotedfname, config_dir);
 		run_cmd (command);
 		g_free (command);
 
@@ -584,7 +575,7 @@ restore (const gchar *filename,
 		if (restored_version != NULL && *restored_version != '\0') {
 			GSettings *settings;
 
-			settings = g_settings_new ("org.gnome.evolution");
+			settings = e_util_ref_settings ("org.gnome.evolution");
 			g_settings_set_string (
 				settings, "version", restored_version);
 			g_object_unref (settings);
@@ -594,10 +585,17 @@ restore (const gchar *filename,
 		g_free (config_dir);
 		g_free (restored_version);
 	} else {
+		const gchar *decr_opts;
+
+		if (get_filename_is_xz (filename))
+			decr_opts = "xz -cd";
+		else
+			decr_opts = "gzip -cd";
+
 		run_cmd ("mv $HOME/.evolution $HOME/.evolution_old");
 
 		command = g_strdup_printf (
-			"cd $HOME && gzip -cd %s | tar xf -", quotedfname);
+			"cd $HOME && %s %s | tar xf -", decr_opts, quotedfname);
 		run_cmd (command);
 		g_free (command);
 	}
@@ -613,6 +611,8 @@ restore (const gchar *filename,
 		/* new format has it in DATADIR... */
 		GString *file = replace_variables (EVOLUTION_DIR ANCIENT_GCONF_DUMP_FILE, TRUE);
 		if (file && g_file_test (file->str, G_FILE_TEST_EXISTS)) {
+			unset_eds_migrated_flag ();
+
 			/* ancient backup */
 			replace_in_file (
 				EVOLUTION_DIR ANCIENT_GCONF_DUMP_FILE,
@@ -642,6 +642,8 @@ restore (const gchar *filename,
 		g_string_free (file, TRUE);
 	} else {
 		gchar *gconf_dump_file;
+
+		unset_eds_migrated_flag ();
 
 		/* ... old format in ~/.evolution */
 		gconf_dump_file = g_build_filename (
@@ -718,15 +720,22 @@ check (const gchar *filename,
 {
 	gchar *command;
 	gchar *quotedfname;
+	const gchar *tar_opts;
 	gboolean is_new = TRUE;
 
 	g_return_val_if_fail (filename && *filename, FALSE);
+
+	if (get_filename_is_xz (filename))
+		tar_opts = "-tJf";
+	else
+		tar_opts = "-tzf";
+
 	quotedfname = g_shell_quote (filename);
 
 	if (is_new_format)
 		*is_new_format = FALSE;
 
-	command = g_strdup_printf ("tar ztf %s 1>/dev/null", quotedfname);
+	command = g_strdup_printf ("tar %s %s 1>/dev/null", tar_opts, quotedfname);
 	result = system (command);
 	g_free (command);
 
@@ -737,15 +746,15 @@ check (const gchar *filename,
 	}
 
 	command = g_strdup_printf (
-		"tar ztf %s | grep -e \"%s$\"",
-		quotedfname, EVOLUTION_DIR_FILE);
+		"tar %s %s | grep -e \"%s$\"",
+		tar_opts, quotedfname, EVOLUTION_DIR_FILE);
 	result = system (command);
 	g_free (command);
 
 	if (result) {
 		command = g_strdup_printf (
-			"tar ztf %s | grep -e \"^\\.evolution/$\"",
-			quotedfname);
+			"tar %s %s | grep -e \"^\\.evolution/$\"",
+			tar_opts, quotedfname);
 		result = system (command);
 		g_free (command);
 		is_new = FALSE;
@@ -765,16 +774,16 @@ check (const gchar *filename,
 	}
 
 	command = g_strdup_printf (
-		"tar ztf %s | grep -e \"^\\.evolution/%s$\"",
-		quotedfname, ANCIENT_GCONF_DUMP_FILE);
+		"tar %s %s | grep -e \"^\\.evolution/%s$\"",
+		tar_opts, quotedfname, ANCIENT_GCONF_DUMP_FILE);
 	result = system (command);
 	g_free (command);
 
 	if (result != 0) {
 		/* maybe it's an ancient backup */
 		command = g_strdup_printf (
-			"tar ztf %s | grep -e \"^\\.evolution/%s$\"",
-			quotedfname, ANCIENT_GCONF_DUMP_FILE);
+			"tar %s %s | grep -e \"^\\.evolution/%s$\"",
+			tar_opts, quotedfname, ANCIENT_GCONF_DUMP_FILE);
 		result = system (command);
 		g_free (command);
 	}
@@ -806,10 +815,11 @@ finish_job (gpointer user_data)
 	return FALSE;
 }
 
-static gboolean
-start_job (GIOSchedulerJob *job,
-           GCancellable *cancellable,
-           gpointer user_data)
+static void
+start_job (GTask *task,
+	   gpointer source_object,
+	   gpointer task_data,
+	   GCancellable *cancellable)
 {
 	if (backup_op)
 		backup (bk_file, cancellable);
@@ -818,10 +828,7 @@ start_job (GIOSchedulerJob *job,
 	else if (check_op)
 		check (chk_file, NULL);  /* not cancellable */
 
-	g_io_scheduler_job_send_to_mainloop_async (
-		job, finish_job, NULL, (GDestroyNotify) NULL);
-
-	return FALSE;
+	g_main_context_invoke (NULL, finish_job, NULL);
 }
 
 static void
@@ -842,11 +849,11 @@ dlg_response (GtkWidget *dlg,
 	run_cmd ("pkill tar");
 
 	if (bk_file && backup_op && response == GTK_RESPONSE_REJECT) {
-		/* Backup was canceled, delete the
+		/* Backup was cancelled, delete the
 		 * backup file as it is not needed now. */
 		gchar *cmd, *filename;
 
-		g_message ("Back up canceled, removing partial back up file.");
+		g_message ("Back up cancelled, removing partial back up file.");
 
 		filename = g_shell_quote (bk_file);
 		cmd = g_strconcat ("rm ", filename, NULL);
@@ -864,6 +871,7 @@ gint
 main (gint argc,
       gchar **argv)
 {
+	GTask *task;
 	GCancellable *cancellable;
 	gchar *file = NULL, *oper = NULL;
 	const gchar *title = NULL;
@@ -871,33 +879,7 @@ main (gint argc,
 	GError *error = NULL;
 
 #ifdef G_OS_WIN32
-	/* Reduce risks */
-	{
-		typedef BOOL (WINAPI *t_SetDllDirectoryA) (LPCSTR lpPathName);
-		t_SetDllDirectoryA p_SetDllDirectoryA;
-
-		p_SetDllDirectoryA = GetProcAddress (
-			GetModuleHandle ("kernel32.dll"),
-			"SetDllDirectoryA");
-
-		if (p_SetDllDirectoryA != NULL)
-			p_SetDllDirectoryA ("");
-	}
-#ifndef _WIN64
-	{
-		typedef BOOL (WINAPI *t_SetProcessDEPPolicy) (DWORD dwFlags);
-		t_SetProcessDEPPolicy p_SetProcessDEPPolicy;
-
-		p_SetProcessDEPPolicy = GetProcAddress (
-			GetModuleHandle ("kernel32.dll"),
-			"SetProcessDEPPolicy");
-
-		if (p_SetProcessDEPPolicy)
-			p_SetProcessDEPPolicy (
-				PROCESS_DEP_ENABLE |
-				PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION);
-	}
-#endif
+	e_util_win32_initialize ();
 #endif
 
 	bindtextdomain (GETTEXT_PACKAGE, EVOLUTION_LOCALEDIR);
@@ -1081,14 +1063,14 @@ main (gint argc,
 			(GDestroyNotify) g_object_unref);
 	}
 
-	g_io_scheduler_push_job (
-		start_job, NULL,
-		(GDestroyNotify) NULL,
-		G_PRIORITY_DEFAULT, cancellable);
+	task = g_task_new (cancellable, cancellable, NULL, NULL);
+	g_task_run_in_thread (task, start_job);
+	g_object_unref (task);
 
 	gtk_main ();
 
 	g_object_unref (cancellable);
+	e_util_cleanup_settings ();
 
 	return result;
 }

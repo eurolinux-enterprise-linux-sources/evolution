@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="intro-main-window" xml:lang="es">
 
   <info>
-    <desc>Una explicación de las áreas mostradas en la ventana de Evolution.</desc>
+    <desc>Una explicación de las áreas mostradas en la ventana de <app>Evolution</app>.</desc>
 
     <link type="guide" xref="index#getting-started"/>
     <link type="seealso" xref="calendar-layout"/>
@@ -26,9 +26,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -47,13 +53,13 @@
   <title>La ventana principal de <app>Evolution</app></title>
 
 <!-- This section fixes https://bugzilla.gnome.org/show_bug.cgi?id=657028 -->
-<p>Evolution proporciona funcionalidades para Correo-e, Calendario, Contactos, Tareas y Notas. Puede cambiar a otra funcionalidad usando los botones del «Selector» en la esquina inferior izquierda. Dependiendo de la funcionalidad mostrada los elementos en la ventana pueden ser diferentes.</p>
+<p><app>Evolution</app> proporciona funcionalidades para Correo-e, Calendario, Contactos, Tareas y Notas. Puede cambiar a otra funcionalidad usando los botones del «Selector» en la esquina inferior izquierda. Dependiendo de la funcionalidad mostrada los elementos en la ventana pueden ser diferentes.</p>
 
 <section id="e-mail">
-<title>Correo-e</title>
+<title>Correo</title>
 
 <media type="image" src="./figures/window-overview-layers.png" width="600">
-  <p>La ventana principal de correo de Evolution</p>
+  <p>La ventana principal de correo de <app>Evolution</app></p>
 </media>
 
 <p>Elementos correspondientes en la ventana principal de correo:</p>
@@ -92,7 +98,7 @@
 </item>
 <item>
 <title>Selector</title>
-<p>El selector en la parte inferior de la barra lateral le permite cambiar entre las herramientas de Evolution: correo, contactos, calendarios, notas y tareas.</p><p>Para obtener más información consulte <link xref="change-switcher-appearance">Cambiar la apariencia del selector</link>.</p>
+<p>El selector en la parte inferior de la barra lateral le permite cambiar entre las herramientas de <app>Evolution</app>: correo, contactos, calendarios, notas y tareas.</p><p>Para obtener más información consulte <link xref="change-switcher-appearance">Cambiar la apariencia del selector</link>.</p>
 <note style="tip"><p>Puede desactivar la lista de carpetas y la barra lateral del selector cambiando <guiseq><gui>Ver</gui><gui>Distribución</gui><gui>Mostrar barra lateral</gui></guiseq> o pulsando <key>F9</key>.</p></note>
 </item>
 <item>

@@ -1,4 +1,4 @@
-if ENABLE_BOGOFILTER
+if WITH_BOGOFILTER
 BOGOFILTER_DIR = bogofilter
 endif
 
@@ -10,7 +10,7 @@ if ENABLE_WEATHER
 CONFIG_WEATHER_DIR = cal-config-weather
 endif
 
-if ENABLE_SPAMASSASSIN
+if WITH_SPAMASSASSIN
 SPAMASSASSIN_DIR = spamassassin
 endif
 
@@ -51,7 +51,8 @@ SUBDIRS = \
 	settings \
 	startup-wizard \
 	vcard-inline \
-	web-inspector \
+	webkit-editor \
+	webkit-inspector \
 	$(BOGOFILTER_DIR) \
 	$(SPAMASSASSIN_DIR) \
 	$(TNEF_ATTACHMENT_DIR) \

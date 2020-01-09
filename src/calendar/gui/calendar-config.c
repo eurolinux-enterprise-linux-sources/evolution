@@ -52,7 +52,7 @@ calendar_config_init (void)
 	if (config)
 		return;
 
-	config = g_settings_new ("org.gnome.evolution.calendar");
+	config = e_util_ref_settings ("org.gnome.evolution.calendar");
 
 	/* will be freed together with EShell */
 	g_object_set_data_full (
@@ -102,7 +102,7 @@ calendar_config_get_timezone (void)
 	GSettings *settings;
 	gboolean use_system_timezone;
 
-	settings = g_settings_new ("org.gnome.evolution.calendar");
+	settings = e_util_ref_settings ("org.gnome.evolution.calendar");
 
 	use_system_timezone =
 		g_settings_get_boolean (settings, "use-system-timezone");
@@ -445,7 +445,7 @@ calendar_config_get_prefer_meeting (void)
 	gchar *prefer_new_item;
 	gboolean prefer_meeting;
 
-	settings = g_settings_new ("org.gnome.evolution.calendar");
+	settings = e_util_ref_settings ("org.gnome.evolution.calendar");
 
 	prefer_new_item = g_settings_get_string (settings, "prefer-new-item");
 	prefer_meeting = g_strcmp0 (prefer_new_item, "event-meeting-new") == 0;
@@ -454,4 +454,49 @@ calendar_config_get_prefer_meeting (void)
 	g_object_unref (settings);
 
 	return prefer_meeting;
+}
+
+GDateWeekday
+calendar_config_get_week_start_day (void)
+{
+	GSettings *settings;
+	GDateWeekday res;
+
+	settings = e_util_ref_settings ("org.gnome.evolution.calendar");
+
+	res = g_settings_get_enum (settings, "week-start-day-name");
+
+	g_object_unref (settings);
+
+	return res;
+}
+
+gint
+calendar_config_get_default_reminder_interval (void)
+{
+	GSettings *settings;
+	gint res;
+
+	settings = e_util_ref_settings ("org.gnome.evolution.calendar");
+
+	res = g_settings_get_int (settings, "default-reminder-interval");
+
+	g_object_unref (settings);
+
+	return res;
+}
+
+EDurationType
+calendar_config_get_default_reminder_units (void)
+{
+	GSettings *settings;
+	EDurationType res;
+
+	settings = e_util_ref_settings ("org.gnome.evolution.calendar");
+
+	res = g_settings_get_enum (settings, "default-reminder-units");
+
+	g_object_unref (settings);
+
+	return res;
 }

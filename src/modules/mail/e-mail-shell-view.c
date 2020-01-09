@@ -24,6 +24,11 @@
 
 #include "e-mail-shell-view-private.h"
 
+enum {
+	PROP_0,
+	PROP_VFOLDER_ALLOW_EXPUNGE
+};
+
 G_DEFINE_DYNAMIC_TYPE (
 	EMailShellView,
 	e_mail_shell_view,
@@ -221,6 +226,63 @@ mail_shell_view_show_search_results_folder (EMailShellView *mail_shell_view,
 }
 
 static void
+mail_shell_view_set_vfolder_allow_expunge (EMailShellView *mail_shell_view,
+					   gboolean value)
+{
+	g_return_if_fail (E_IS_MAIL_SHELL_VIEW (mail_shell_view));
+
+	if ((mail_shell_view->priv->vfolder_allow_expunge ? 1 : 0) == (value ? 1 : 0))
+		return;
+
+	mail_shell_view->priv->vfolder_allow_expunge = value;
+
+	g_object_notify (G_OBJECT (mail_shell_view), "vfolder-allow-expunge");
+}
+
+static gboolean
+mail_shell_view_get_vfolder_allow_expunge (EMailShellView *mail_shell_view)
+{
+	g_return_val_if_fail (E_IS_MAIL_SHELL_VIEW (mail_shell_view), FALSE);
+
+	return mail_shell_view->priv->vfolder_allow_expunge;
+}
+
+static void
+mail_shell_view_set_property (GObject *object,
+			      guint property_id,
+			      const GValue *value,
+			      GParamSpec *pspec)
+{
+	switch (property_id) {
+		case PROP_VFOLDER_ALLOW_EXPUNGE:
+			mail_shell_view_set_vfolder_allow_expunge (
+				E_MAIL_SHELL_VIEW (object),
+				g_value_get_boolean (value));
+			return;
+	}
+
+	G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+}
+
+static void
+mail_shell_view_get_property (GObject *object,
+			      guint property_id,
+			      GValue *value,
+			      GParamSpec *pspec)
+{
+	switch (property_id) {
+		case PROP_VFOLDER_ALLOW_EXPUNGE:
+			g_value_set_boolean (
+				value,
+				mail_shell_view_get_vfolder_allow_expunge (
+				E_MAIL_SHELL_VIEW (object)));
+			return;
+	}
+
+	G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+}
+
+static void
 mail_shell_view_dispose (GObject *object)
 {
 	e_mail_shell_view_private_dispose (E_MAIL_SHELL_VIEW (object));
@@ -282,6 +344,65 @@ mail_shell_view_toggled (EShellView *shell_view)
 	/* Chain up to parent's toggled() method. */
 	E_SHELL_VIEW_CLASS (e_mail_shell_view_parent_class)->
 		toggled (shell_view);
+}
+
+static gchar *
+mail_shell_view_construct_filter_message_thread (EMailShellView *mail_shell_view,
+						 const gchar *with_query)
+{
+	EMailShellViewPrivate *priv;
+	GString *query;
+	GSList *link;
+
+	g_return_val_if_fail (E_IS_MAIL_SHELL_VIEW (mail_shell_view), NULL);
+
+	priv = E_MAIL_SHELL_VIEW_GET_PRIVATE (mail_shell_view);
+
+	if (!priv->selected_uids) {
+		EShellContent *shell_content;
+		EMailView *mail_view;
+		GPtrArray *uids;
+
+		shell_content = e_shell_view_get_shell_content (E_SHELL_VIEW (mail_shell_view));
+		mail_view = e_mail_shell_content_get_mail_view (E_MAIL_SHELL_CONTENT (shell_content));
+		uids = e_mail_reader_get_selected_uids (E_MAIL_READER (mail_view));
+
+		if (uids) {
+			gint ii;
+
+			for (ii = 0; ii < uids->len; ii++) {
+				priv->selected_uids = g_slist_prepend (priv->selected_uids, (gpointer) camel_pstring_strdup (uids->pdata[ii]));
+			}
+
+			g_ptr_array_unref (uids);
+		}
+
+		if (!priv->selected_uids)
+			priv->selected_uids = g_slist_prepend (priv->selected_uids, (gpointer) camel_pstring_strdup (""));
+	}
+
+	query = g_string_new ("");
+
+	if (with_query)
+		g_string_append_printf (query, "(and %s ", with_query);
+
+	g_string_append (query, "(match-threads \"all\" (match-all (uid");
+
+	for (link = priv->selected_uids; link; link = g_slist_next (link)) {
+		const gchar *uid = link->data;
+
+		g_string_append_c (query, ' ');
+		g_string_append_c (query, '\"');
+		g_string_append (query, uid);
+		g_string_append_c (query, '\"');
+	}
+
+	g_string_append (query, ")))");
+
+	if (with_query)
+		g_string_append (query, ")");
+
+	return g_string_free (query, FALSE);
 }
 
 static void
@@ -386,6 +507,8 @@ mail_shell_view_execute_search (EShellView *shell_view)
 			element = e_filter_part_find_element (part, "sender");
 		else if (strcmp (part->name, "to") == 0)
 			element = e_filter_part_find_element (part, "recipient");
+		else if (strcmp (part->name, "mail-free-form-exp") == 0)
+			element = e_filter_part_find_element (part, "ffe");
 
 		if (strcmp (part->name, "body") == 0) {
 			struct _camel_search_words *words;
@@ -415,6 +538,12 @@ filter:
 
 	combo_box = e_shell_searchbar_get_filter_combo_box (searchbar);
 	value = e_action_combo_box_get_current_value (combo_box);
+
+	if (value != MAIL_FILTER_MESSAGE_THREAD) {
+		g_slist_free_full (priv->selected_uids, (GDestroyNotify) camel_pstring_free);
+		priv->selected_uids = NULL;
+	}
+
 	switch (value) {
 		case MAIL_FILTER_ALL_MESSAGES:
 			break;
@@ -489,6 +618,13 @@ filter:
 			query = temp;
 			break;
 
+		case MAIL_FILTER_MESSAGES_WITH_NOTES:
+			temp = g_strdup_printf (
+				"(and %s (match-all (user-flag \"$has_note\")))", query);
+			g_free (query);
+			query = temp;
+			break;
+
 		case MAIL_FILTER_IMPORTANT_MESSAGES:
 			temp = g_strdup_printf (
 				"(and %s (match-all "
@@ -501,6 +637,13 @@ filter:
 			temp = g_strdup_printf (
 				"(and %s (match-all (not "
 				"(system-flag \"junk\"))))", query);
+			g_free (query);
+			query = temp;
+			break;
+
+		case MAIL_FILTER_MESSAGE_THREAD:
+			temp = mail_shell_view_construct_filter_message_thread (
+				E_MAIL_SHELL_VIEW (shell_view), query);
 			g_free (query);
 			query = temp;
 			break;
@@ -559,7 +702,7 @@ all_accounts:
 	/* If the search text is empty, cancel any
 	 * account-wide searches still in progress. */
 	text = e_shell_searchbar_get_search_text (searchbar);
-	if (text == NULL || *text == '\0') {
+	if ((text == NULL || *text == '\0') && !e_shell_view_get_search_rule (shell_view)) {
 		CamelStore *selected_store = NULL;
 		gchar *selected_folder_name = NULL;
 
@@ -584,7 +727,7 @@ all_accounts:
 		if (selected_store != NULL && selected_folder_name != NULL) {
 			folder = camel_store_get_folder_sync (
 				selected_store, selected_folder_name,
-				CAMEL_STORE_FOLDER_INFO_FAST, NULL, NULL);
+				0, NULL, NULL);
 			e_mail_reader_set_folder (reader, folder);
 			g_object_unref (folder);
 		}
@@ -667,7 +810,7 @@ current_account:
 	/* If the search text is empty, cancel any
 	 * account-wide searches still in progress. */
 	text = e_shell_searchbar_get_search_text (searchbar);
-	if (text == NULL || *text == '\0') {
+	if ((text == NULL || *text == '\0') && !e_shell_view_get_search_rule (shell_view)) {
 		CamelStore *selected_store = NULL;
 		gchar *selected_folder_name = NULL;
 
@@ -692,7 +835,7 @@ current_account:
 		if (selected_store != NULL && selected_folder_name != NULL) {
 			folder = camel_store_get_folder_sync (
 				selected_store, selected_folder_name,
-				CAMEL_STORE_FOLDER_INFO_FAST, NULL, NULL);
+				0, NULL, NULL);
 			e_mail_reader_set_folder (reader, folder);
 			g_object_unref (folder);
 		}
@@ -1016,7 +1159,7 @@ mail_shell_view_update_actions (EShellView *shell_view)
 	gtk_action_set_sensitive (action, sensitive);
 
 	action = ACTION (MAIL_FOLDER_EXPUNGE);
-	sensitive = folder_is_selected && !folder_is_virtual;
+	sensitive = folder_is_selected && (!folder_is_virtual || mail_shell_view->priv->vfolder_allow_expunge);
 	gtk_action_set_sensitive (action, sensitive);
 
 	action = ACTION (MAIL_FOLDER_MOVE);
@@ -1089,6 +1232,8 @@ e_mail_shell_view_class_init (EMailShellViewClass *class)
 	g_type_class_add_private (class, sizeof (EMailShellViewPrivate));
 
 	object_class = G_OBJECT_CLASS (class);
+	object_class->set_property = mail_shell_view_set_property;
+	object_class->get_property = mail_shell_view_get_property;
 	object_class->dispose = mail_shell_view_dispose;
 	object_class->finalize = mail_shell_view_finalize;
 	object_class->constructed = mail_shell_view_constructed;
@@ -1109,6 +1254,17 @@ e_mail_shell_view_class_init (EMailShellViewClass *class)
 
 	/* Ensure the GalView types we need are registered. */
 	g_type_ensure (GAL_TYPE_VIEW_ETABLE);
+
+	g_object_class_install_property (
+		object_class,
+		PROP_VFOLDER_ALLOW_EXPUNGE,
+		g_param_spec_boolean (
+			"vfolder-allow-expunge",
+			"vFolder Allow Expunge",
+			"Allow expunge in virtual folders",
+			FALSE,
+			G_PARAM_READWRITE |
+			G_PARAM_STATIC_STRINGS));
 }
 
 static void

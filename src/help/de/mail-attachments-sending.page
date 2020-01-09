@@ -29,19 +29,25 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
@@ -51,7 +57,7 @@
 <title>Dateien beilegen</title>
 <p>So hängen Sie eine Datei an Ihre E-Mail im Editor an:</p>
 <steps>
-<item><p>Klicken Sie auf <gui>Anlage hinzufügen …</gui> oder klicken Sie <guiseq><gui>Einfügen</gui><gui>Anlage</gui></guiseq> oder drücken Sie <keyseq><key>Strg</key><key>M</key></keyseq>.</p></item>
+<item><p>Klicken Sie auf <gui>Anlage hinzufügen …</gui> oder klicken Sie <guiseq><gui>Einfügen</gui><gui>Anlage</gui></guiseq>, oder drücken Sie <keyseq><key>Strg</key><key>M</key></keyseq>.</p></item>
 <item><p>Wählen Sie die anzufügende Datei aus.</p></item>
 <item><p>Klicken Sie auf <gui style="button">OK</gui>.</p></item>
 </steps>
@@ -63,7 +69,7 @@
 <section id="reminders">
 <title>Anlagenerinnerung</title>
 
-<p>Das Anlagenerinnerung-Plugin erinnert Sie daran, eine Dateianlage zu einer E-Mail hinzuzufügen. Falls vermutet wird, dass Sie das Hinzufügen vergessen haben, so wird eine Erinnerungsnachricht vor dem Verschicken der E-Mail angezeigt.</p>
+<p>Das Anlagenerinnerung-Plugin von <app>Evolution</app> erinnert Sie daran, eine Dateianlage zu einer E-Mail hinzuzufügen. Falls vermutet wird, dass Sie das Hinzufügen vergessen haben, so wird eine Erinnerungsnachricht vor dem Verschicken der E-Mail angezeigt.</p>
 
 <p>Um die Anlagenerinnerung zu aktivieren:</p>
 <steps>
@@ -72,7 +78,7 @@
 <item><p>Klicken Sie auf den Reiter <gui>Konfiguration</gui>.</p></item>
 <item><p>Klicken Sie auf <gui style="button">Hinzufügen</gui> und geben Sie Schlüsselwörter in Ihrer Sprache ein, wie z.B. »anfügen« oder »beigelegt«.</p></item>
 </steps>
-<p>Evolution durchsucht nun jede E-Mail, die Sie verschicken wollen, nach den hier aufgelisteten Schlüsselwörtern. Falls ein Schlüsselwort gefunden wird und der E-Mail keine Datei beigelegt ist, so werden Sie nun vor vergessenen Dateianlagen gewarnt.</p>
+<p><app>Evolution</app> durchsucht nun jede E-Mail, die Sie verschicken wollen, nach den hier aufgelisteten Schlüsselwörtern. Falls ein Schlüsselwort gefunden wird und der E-Mail keine Datei beigelegt ist, so werden Sie nun vor vergessenen Dateianlagen gewarnt.</p>
 
 </section>
 

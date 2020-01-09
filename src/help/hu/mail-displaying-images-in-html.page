@@ -22,15 +22,39 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
 <title>Képek a HTML-levelekben</title>
 
-<p>Ha valaki olyan HTML-levelet küld, amely a törzsében képet tartalmaz (mint például az üdvözlő üzenet a Beérkezett üzenetek mappában), akkor az Evolution a képet az üzeneten belül jeleníti meg.</p>
+<p>Ha valaki olyan HTML-levelet küld, amely a törzsében képet tartalmaz (mint például az üdvözlő üzenet a Beérkezett üzenetek mappában), akkor az <app>Evolution</app> a képet az üzeneten belül jeleníti meg.</p>
 
 <section id="loading">
 <title>Képek betöltése</title>
-<p>Egyes képek az üzenetben hivatkozásként és nem az üzenet részeként szerepelnek. Az Evolution képes letölteni ezeket az üzeneteket az internetről, de ezt csak akkor teszi meg, ha Ön kéri. Ennek az az oka, hogy a távolról elérhető képek letöltése és megjelenítése lassú lehet, és a levélszemétküldők felhasználhatják a levélszemét olvasóinak követésére. A képek automatikus betöltésének kerülése segít megvédeni magánszféráját.</p>
+<p>Egyes képek az üzenetben hivatkozásként és nem az üzenet részeként szerepelnek. Az <app>Evolution</app> képes letölteni ezeket az üzeneteket az internetről, de ezt csak akkor teszi meg, ha Ön kéri. Ennek az az oka, hogy a távolról elérhető képek letöltése és megjelenítése lassú lehet, és a levélszemétküldők felhasználhatják a levélszemét olvasóinak követésére. A képek automatikus betöltésének kerülése segít megvédeni magánszféráját.</p>
 
 <p>Egy üzenet képeinek betöltéséhez válassza a <guiseq><gui>Nézet</gui><gui>Képek betöltése</gui></guiseq> menüpontot, vagy nyomja meg a <keyseq><key>Ctrl</key><key>I</key></keyseq> kombinációt.</p>
 
@@ -47,7 +71,7 @@
 
 <section id="saving">
 <title>Képek mentése</title>
-<p>Egy HTML-levélbe ágyazott kép mentéséhez kattintson a jobb egérgombbal a képre, és válassza a <gui>Kép mentése</gui> menüpontot.</p>
+<p>Egy HTML-levélbe ágyazott kép mentéséhez kattintson a jobb egérgombbal a képre, és válassza a <gui>Kép mentése…</gui> menüpontot.</p>
 <!-- This is available only since version 3.1.5, see https://bugzilla.gnome.org/show_bug.cgi?id=655669 -->
 </section>
 

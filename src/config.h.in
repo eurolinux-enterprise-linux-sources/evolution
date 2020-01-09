@@ -21,14 +21,14 @@
 /* Define if libc defines an altzone variable */
 #undef HAVE_ALTZONE
 
+/* Define if gnome-autoar is enabled */
+#undef HAVE_AUTOAR
+
 /* Define if using Canberra and Canberra-GTK for sound */
 #undef HAVE_CANBERRA
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
-
-/* Define to 1 if you have the libgdata package >= 0.15.1 */
-#undef HAVE_GDATA_0_15_1
 
 /* gnome-desktop */
 #undef HAVE_GNOME_DESKTOP
@@ -36,17 +36,26 @@
 /* Define to 1 if you have the `gnu_get_libc_version' function. */
 #undef HAVE_GNU_GET_LIBC_VERSION
 
+/* libical provides icaltzutil_set_exact_vtimezones_support function */
+#undef HAVE_ICALTZUTIL_SET_EXACT_VTIMEZONES_SUPPORT
+
 /* libical provides ical_set_unknown_token_handling_setting function */
 #undef HAVE_ICAL_UNKNOWN_TOKEN_HANDLING
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define if you have the iso-codes package */
+#undef HAVE_ISO_CODES
+
 /* Define if you have LDAP support */
 #undef HAVE_LDAP
 
 /* Define to 1 if you have the `ldap_ntlm_bind' function. */
 #undef HAVE_LDAP_NTLM_BIND
+
+/* Define if using libcryptui */
+#undef HAVE_LIBCRYPTUI
 
 /* Define if you have libnotify */
 #undef HAVE_LIBNOTIFY
@@ -99,7 +108,7 @@
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
 
-/* Define to 1 if you have the <sys/wait.h> header file. */
+/* Define to 1 if you have <sys/wait.h> that is POSIX.1 compatible. */
 #undef HAVE_SYS_WAIT_H
 
 /* Define if libc defines a timezone variable */
@@ -120,11 +129,13 @@
 /* Source code highlighting utility */
 #undef HIGHLIGHT_COMMAND
 
+/* ISO codes prefix */
+#undef ISO_CODES_PREFIX
+
 /* Command to kill processes by name */
 #undef KILL_PROCESS_CMD
 
-/* Define to the sub-directory in which libtool stores uninstalled libraries.
-   */
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
 
 /* Define to the full path of mozilla nss library */

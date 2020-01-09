@@ -31,23 +31,6 @@
 
 #include "publish-format-fb.h"
 
-static void
-free_busy_data_cb (ECalClient *client,
-                   const GSList *free_busy_ecalcomps,
-                   GSList **pobjects)
-{
-	const GSList *iter;
-
-	g_return_if_fail (pobjects != NULL);
-
-	for (iter = free_busy_ecalcomps; iter != NULL; iter = iter->next) {
-		ECalComponent *comp = iter->data;
-
-		if (comp)
-			*pobjects = g_slist_prepend (*pobjects, g_object_ref (comp));
-	}
-}
-
 static gboolean
 write_calendar (const gchar *uid,
                 GOutputStream *stream,
@@ -91,7 +74,7 @@ write_calendar (const gchar *uid,
 		EClientCache *client_cache;
 
 		client_cache = e_shell_get_client_cache (shell);
-		client = e_client_cache_get_client_sync (client_cache, source, E_SOURCE_EXTENSION_CALENDAR, NULL, error);
+		client = e_client_cache_get_client_sync (client_cache, source, E_SOURCE_EXTENSION_CALENDAR, 30, NULL, error);
 
 		g_object_unref (source);
 	} else {
@@ -111,25 +94,12 @@ write_calendar (const gchar *uid,
 
 	top_level = e_cal_util_new_top_level ();
 
-	g_signal_connect (
-		client, "free-busy-data",
-		G_CALLBACK (free_busy_data_cb), &objects);
-
 	success = e_cal_client_get_free_busy_sync (
-		E_CAL_CLIENT (client), start, end, users, NULL, error);
+		E_CAL_CLIENT (client), start, end, users, &objects, NULL, error);
+
 	if (success) {
 		gchar *ical_string;
 		GSList *iter;
-		gboolean done = FALSE;
-
-		/* This is to workaround broken dispatch of "free-busy-data" signal,
-		 * introduced in 3.8.0. This code can be removed once the below bug is
-		 * properly fixed: https://bugzilla.gnome.org/show_bug.cgi?id=692361
-		*/
-		while (!done) {
-			g_usleep (G_USEC_PER_SEC / 10);
-			done = !g_main_context_iteration (NULL, FALSE);
-		}
 
 		for (iter = objects; iter; iter = iter->next) {
 			ECalComponent *comp = iter->data;

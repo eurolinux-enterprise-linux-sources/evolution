@@ -20,42 +20,52 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Using the online calendar of your Google account.</desc>
+    <desc>Användning av nätkalendern från ditt Google-konto.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Using a Google calendar</title>
+  <title>Användning av en Google-kalender</title>
 
-  <p>To add such a calendar to <app>Evolution</app>, perform the following
-  steps:</p>
+  <p>För att lägga till en sådan kalender i <app>Evolution</app>, utför följande steg:</p>
 
   <steps>
     <item>
-      <p>Click <guiseq><gui>File</gui><gui>New</gui><gui>Calendar</gui></guiseq>.</p>
+      <p>Klicka på <guiseq><gui>Arkiv</gui><gui>Nytt</gui><gui>Kalender</gui></guiseq>.</p>
     </item>
     <item>
-      <p>Select the type <gui>Google</gui>.</p>
+      <p>Välj typen <gui>Google</gui>.</p>
     </item>
     <item>
-      <p>Enter a name that you prefer.</p>
+      <p>Ange ett namn du föredrar.</p>
     </item>
     <item>
-      <p>Optionally choose a color that you prefer.</p>
+      <p>Du kan välja en valfri färg du gillar.</p>
     </item>
     <item>
-      <p>Choose if you want to be able to view the content also when being offline.</p>
+      <p>Välj om du vill kunna visa innehåll även när du är frånkopplad.</p>
     </item>
     <item>
-      <p>Enter your Google username.</p>
+      <p>Ange ditt Google-användarnamn.</p>
     </item>
     <item>
-      <p>If you have more than one Google calendar, define which of them to use.</p>
+      <p>Om du har mer än en Google-kalender, definiera vilken av dem som ska användas.</p>
     </item>
     <item>
-      <p>Click <gui style="button">Apply</gui>.</p>
+      <p>Klicka på <gui style="button">Verkställ</gui>.</p>
     </item>
   </steps>
 
-  <p>The calendar will be added to the list of calendars in
-  <app>Evolution</app>.</p>
+  <p>Kalendern kommer att läggas till i listan över kalendrar i <app>Evolution</app>.</p>
 
 </page>

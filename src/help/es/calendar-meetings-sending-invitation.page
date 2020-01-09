@@ -22,9 +22,15 @@
     <desc>Enviar una invitación para reunión.</desc>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -44,7 +50,7 @@
 
   <p>Al crear una reunión o una cita en grupo puede especificar a los asistentes en varias categorías como «presidencia» o «participante requerido». Cuando guarde su lista, cada invitado recibirá un mensaje con los datos de la cita y tendrán la opción de responder.</p>
 
-  <p>Si no necesita recibir confirmaciones de asistencia al planificar un acontecimiento y sólo necesita anunciarlo, pulse con el botón derecho sobre la reunión y seleccione <gui>Reenviar como iCalendar</gui>. Esto abrirá un nuevo mensaje de correo con una notificación del acontecimiento adjunta. Los destinatarios podrán incluir el acontecimiento en sus calendarios con una pulsación, pero no le enviarán una respuesta automática acerca de si asistirán o no.</p>
+  <p>Si no necesita recibir confirmaciones de asistencia al planificar un acontecimiento y sólo necesita anunciarlo, pulse con el botón derecho sobre la reunión y seleccione <gui>Reenviar como iCalendar…</gui>. Esto abrirá un nuevo mensaje de correo con una notificación del acontecimiento adjunta. Los destinatarios podrán incluir el acontecimiento en sus calendarios con una pulsación, pero no le enviarán una respuesta automática acerca de si asistirán o no.</p>
 
   <p>Para planificar una reunión:</p>
 

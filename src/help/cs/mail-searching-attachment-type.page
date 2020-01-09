@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-searching-attachment-type" xml:lang="cs">
 
   <info>
-    <desc>Unfortunately this is not possible.</desc>
+    <desc>To bohužel není možné.</desc>
     
     <link type="guide" xref="index#common-mail-problems"/>
     <link type="seealso" xref="mail-searching"/>
@@ -16,10 +16,22 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Searching for emails with a specific attachment type</title>
+<title>Vyhledání pošty s konkrétním typem přílohy</title>
 
-<p>There currently is no way to do search for emails with a specific type of attachment (for example searching for all emails that have a PDF attachment).</p>
+<p>V současnosti neexistuje žádný způsob, jak vyhledat poštu s konkrétním typem přílohy (například vyhledat všechny zprávy, které mají v příloze PDF).</p>
 
 </page>

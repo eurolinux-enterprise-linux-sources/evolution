@@ -115,7 +115,7 @@ struct _ETableItem {
 
 	guint maybe_in_drag : 1;
 	guint in_drag : 1;
-	guint grabbed : 1;
+	guint unused__grabbed : 1; /* this one is not used in the code */
 
 	guint maybe_did_something : 1;
 
@@ -257,6 +257,9 @@ gint		e_table_item_row_diff		(ETableItem *eti,
 gboolean	e_table_item_is_editing		(ETableItem *eti);
 
 void		e_table_item_cursor_scrolled	(ETableItem *eti);
+
+void		e_table_item_cancel_scroll_to_cursor
+						(ETableItem *eti);
 
 void		e_table_item_freeze		(ETableItem *eti);
 void		e_table_item_thaw		(ETableItem *eti);

@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="problems-reporting-bugs" xml:lang="sv">
 
   <info>
-    <desc>How to report mistakes in the application.</desc>
+    <desc>Hur du rapporterar misstag i programmet.</desc>
 
     <link type="guide" xref="index#tracking-down-problems"/>
     <link type="seealso" xref="problems-debug-how-to"/>
@@ -16,12 +16,24 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>How to report bugs</title>
+  <title>Hur man rapporterar fel</title>
 
-<p>If you do not need help for configuration but you are sure that you have found a mistake or wrong behavior in the Evolution software, or if you want to request a feature, you can file a report in the <link href="http://bugzilla.gnome.org">GNOME bug tracking system</link>. Note that this requires registration first. Please try to avoid filing duplicates and check the <link href="https://bugzilla.gnome.org/page.cgi?id=bug-writing.html">bug writing guidelines</link> first.</p><p>Also note that GNOME distributions sometimes introduce their own changes in Evolution that are not included in GNOME Evolution. This is hard to recognize for users but if you are aware of it please file a bug report in <link href="https://live.gnome.org/Bugsquad/TriageGuide/NonGnome#Bug_trackers_for_distributions">the bug tracker of your GNOME distribution</link> instead.</p>
+<p>Om du inte behöver hjälp med konfiguration men du är säker på att du hittat ett misstag eller felaktigt beteende i <app>Evolution</app>-programmet, eller om du vill begära en ny funktion kan du skicka in en rapport i <link href="http://bugzilla.gnome.org">GNOME:s felhanteringssystem</link>. Notera att detta kan kräva en registrering. Försök att undvika att rapportera duplikat och titta genom <link href="https://bugzilla.gnome.org/page.cgi?id=bug-writing.html">riktlinjerna för att felrapporter</link> först.</p><p>Notera också att GNOME-distributioner ibland introducerar sina egna ändringar i <app>Evolution</app> som inte finns med in GNOME <app>Evolution</app>. Det är svårt för användare att se, men om du är medveten om det, skicka in felrapporten i <link href="https://wiki.gnome.org/Bugsquad/TriageGuide/NonGnome#Bug_trackers_for_distributions">felhanteringssystemet för din GNOME-distribution</link> istället.</p>
 
-<p>When reporting bugs exact information is welcome as it makes it easier for others to reproduce and fix the issue. If possible please include information such as the Evolution version (under <guiseq><gui>Help</gui><gui>About</gui></guiseq>), your distribution, and exact steps to reproduce the problem, click by click. See the <link href="https://bugzilla.gnome.org/page.cgi?id=bug-writing.html">Bug Writing Guidelines</link> for more information.</p>
+<p>När du rapporterar fel är exakt information mycket välkommen då den gör det enklare för andra att återskapa och åtgärda felet. Om möjligt inkludera information så som versionen av <app>Evolution</app> (under <guiseq><gui>Hjälp</gui><gui>Om</gui></guiseq>), din distribution samt exakta steg för att återskapa problemet, klick för klick. Se vidare i <link href="https://bugzilla.gnome.org/page.cgi?id=bug-writing.html">Riktlinjer för felrapporter</link>.</p>
 
 </page>

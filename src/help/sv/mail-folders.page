@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-folders" xml:lang="sv">
 
   <info>
-    <desc>Use folders to organize your mail.</desc>
+    <desc>Använd mappar för att organisera din e-post.</desc>
 
     <link type="guide" xref="mail-organizing"/>
     <link type="seealso" xref="mail-filters"/>
@@ -23,41 +23,53 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
     
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Using Folders</title>
+  <title>Användning av mappar</title>
   
-<p>Evolution, like most mail systems, uses folders to store email messages. You start out with a few mail folders such as the Inbox, Outbox, and Drafts. You can, however, create more folders if required.</p>
+<p><app>Evolution</app>, som de flesta e-postsystem, använder mappar för att spara e-postmeddelanden. Du kan börja med ett fåtal e-postmappar så som inkorg, utkorg och utkast. Du kan dock skapa fler mappar om det behövs.</p>
 
 <section id="create-folder">
-<title>Creating A Folder</title>
-<p>To create a folder:</p>
+<title>Skapa en mapp</title>
+<p>För att skapa en mapp:</p>
 <steps>
-<item><p>Click on <gui>Folder</gui> and select <gui>New</gui>. You can also right-click anywhere on the folder list and select the <gui>New Folder</gui> option.</p></item>
-<item><p>Specify the name and the location of the folder.</p></item>
-<item><p>Click on the <gui>Create</gui> button.</p></item>
+<item><p>Klicka på <gui>Mappar</gui> och välj <gui>Nytt</gui>. Du kan också högerklicka var som helst i mapplistan och välja alternativet <gui>Ny mapp</gui>.</p></item>
+<item><p>Ange namnet och platsen för mappen.</p></item>
+<item><p>Klicka på <gui>Skapa</gui>-knappen.</p></item>
 </steps>
-<p>The new folder will be shown in the folder view. You can then move messages into the folder.</p>
+<p>Den nya mappen kommer att visas i mappvyn. Du kan sedan flytta meddelanden in i mappen.</p>
 
 <note style="warning">
-<p>The Inbox folders on most IMAP servers cannot contain both messages and subfolders. When creating additional folders on your IMAP mail server, branch the folders from the root of the IMAP account and not from the Inbox. Creating subfolders in your Inbox may prevent you from reading messages that exist in the Inbox. If this happens, move the folders to the IMAP account.</p>
+<p><gui>Inkorgs</gui>-mapparna på de flesta IMAP-servrar kan inte innehålla både meddelanden och undermappar. När du skapar ytterligare mappar på din IMAP-e-postserver så kommer mapparna att utgå från roten i IMAP-kontot och inte från Inkorgen. Att skapa undermappar i din inkorg kan förhindra dig från att läsa meddelanden som existerar i Inkorgen. Om det händer, flytta mapparna till IMAP-kontot.</p>
 </note>
 
 </section>
 
 <section id="use-folder">
-<title>Moving Messages to New Folders</title>
-<p>You can move messages into folders by using one of the following methods:</p>
+<title>Flytta meddelanden till nya mappar</title>
+<p>Du kan flytta meddelanden in i mappar genom att använda en av följande metoder:</p>
 <list>
-<item><p>Drag and drop the messages into the folder.</p></item>
-<item><p>Right-click on the message and select the <gui>Move to Folder</gui> option.</p></item>
-<item><p>Select a message and press <keyseq><key>Shift</key><key>Ctrl</key><key>V</key></keyseq>.</p></item>
-<item><p>Select a message and click on <guiseq><gui>Message</gui><gui>Move to Folder</gui></guiseq>.</p></item>
+<item><p>Dra och släpp meddelandena i mappen.</p></item>
+<item><p>Högerklicka på meddelandet och välj alternativet <gui>Flytta till mapp</gui>.</p></item>
+<item><p>Markera ett meddelande och tryck <keyseq><key>Skift</key><key>Ctrl</key><key>V</key></keyseq>.</p></item>
+<item><p>Markera ett meddelande och klicka på <guiseq><gui>Meddelande</gui><gui>Flytta till mapp</gui></guiseq>.</p></item>
 </list>
 
-<p>The steps for copying are similar.</p>
+<p>Stegen för att kopiera är liknande.</p>
 
-<note style="tip"><p>Moving files can be done automatically by setting up <link xref="mail-filters">filters</link>.</p></note>
+<note style="tip"><p>Att flytta filer kan göras automatiskt genom att ställa in <link xref="mail-filters">filter</link>.</p></note>
 
 </section>
 

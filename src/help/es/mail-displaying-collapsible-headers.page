@@ -20,9 +20,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -40,9 +46,9 @@
 
 <title>Cabeceras de mensajes contraíbles</title>
 
-<p>Evolution comprime las cabeceras Para, Cc, Cco recibidas en los correos y muestra sólo direcciones limitadas.</p>
+<p><app>Evolution</app> comprime las cabeceras Para, Cc, Cco recibidas en los correos y muestra sólo direcciones limitadas.</p>
 
-<p>Para ver todos los destinatarios pulse el icono <media type="image" its:translate="no" src="./figures/plus-icon.png"/> junto a las líneas <gui>Para:</gui> o <gui>CC:</gui> o pulse la elipsis (...) al final de las cinco direcciones de correo mostradas.</p>
+<p>Para ver todos los destinatarios pulse el icono <media type="image" its:translate="no" src="./figures/plus-icon.png"/> junto a las líneas <gui>Para:</gui> o <gui>CC:</gui> o pulse la elipsis (…) al final de las cinco direcciones de correo mostradas.</p>
 
 <p>Para contraer todos las cabeceras de correo y mostrar solo el asunto y el remitente en una línea pulse el icono <media type="image" its:translate="no" src="./figures/minus-icon.png"/> junto a la línea <gui>De:</gui>. Es útil en pantallas pequeñas.</p>
  

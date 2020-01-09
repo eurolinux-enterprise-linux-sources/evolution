@@ -75,13 +75,18 @@ static gint special_chars[] = {
 
 static gchar *
 url_extract (const guchar **text,
-             gboolean full_url)
+             gboolean full_url,
+	     gboolean use_whole_text)
 {
 	const guchar *end = *text, *p;
 	gchar *out;
 
-	while (*end && is_url_char (*end))
-		end++;
+	if (use_whole_text) {
+		end = (*text) + strlen ((const gchar *) (*text));
+	} else {
+		while (*end && is_url_char (*end))
+			end++;
+	}
 
 	/* Back up if we probably went too far. */
 	while (end > *text && is_trailing_garbage (*(end - 1)))
@@ -221,6 +226,13 @@ is_citation (const guchar *c,
  *   - E_TEXT_TO_HTML_CITE: quote the text with "> " at the start of each
  *     line.
  *
+ *   - E_TEXT_TO_HTML_HIDE_URL_SCHEME: hides scheme part of the URL in
+ *     the display part of the generated text (thus, instead of "http://www.example.com",
+ *     user will only see "www.example.com")
+ *
+ *   - E_TEXT_TO_HTML_URL_IS_WHOLE_TEXT: set when the whole @input text
+ *     represents a URL; any spaces are removed in the href part.
+ *
  * Returns: a newly-allocated string containing HTML
  **/
 gchar *
@@ -290,15 +302,32 @@ e_text_to_html_full (const gchar *input,
 			    !g_ascii_strncasecmp ((gchar *) cur, "callto:", 7) ||
 			    !g_ascii_strncasecmp ((gchar *) cur, "h323:", 5) ||
 			    !g_ascii_strncasecmp ((gchar *) cur, "sip:", 4) ||
+			    !g_ascii_strncasecmp ((gchar *) cur, "tel:", 4) ||
 			    !g_ascii_strncasecmp ((gchar *) cur, "webcal:", 7)) {
-				tmpurl = url_extract (&cur, TRUE);
+				tmpurl = url_extract (&cur, TRUE, (flags & E_TEXT_TO_HTML_URL_IS_WHOLE_TEXT) != 0);
 				if (tmpurl) {
 					refurl = e_text_to_html (tmpurl, 0);
-					dispurl = g_strdup (refurl);
+					if ((flags & E_TEXT_TO_HTML_HIDE_URL_SCHEME) != 0) {
+						const gchar *str;
+
+						str = strchr (refurl, ':');
+						if (str) {
+							str++;
+							if (g_ascii_strncasecmp (str, "//", 2) == 0) {
+								str += 2;
+							}
+
+							dispurl = g_strdup (str);
+						} else {
+							dispurl = g_strdup (refurl);
+						}
+					} else {
+						dispurl = g_strdup (refurl);
+					}
 				}
 			} else if (!g_ascii_strncasecmp ((gchar *) cur, "www.", 4) &&
 				   is_url_char (*(cur + 4))) {
-				tmpurl = url_extract (&cur, FALSE);
+				tmpurl = url_extract (&cur, FALSE, (flags & E_TEXT_TO_HTML_URL_IS_WHOLE_TEXT) != 0);
 				if (tmpurl) {
 					dispurl = e_text_to_html (tmpurl, 0);
 					refurl = g_strdup_printf (
@@ -307,6 +336,18 @@ e_text_to_html_full (const gchar *input,
 			}
 
 			if (tmpurl) {
+				if ((flags & E_TEXT_TO_HTML_URL_IS_WHOLE_TEXT) != 0) {
+					/* also remove any spaces in refurl */
+					gchar *replaced, **split_url;
+
+					split_url = g_strsplit (refurl, " ", 0);
+					replaced = g_strjoinv ("", split_url);
+					g_strfreev (split_url);
+
+					g_free (refurl);
+					refurl = replaced;
+				}
+
 				out = check_size (
 					&buffer, &buffer_size, out,
 					strlen (refurl) +

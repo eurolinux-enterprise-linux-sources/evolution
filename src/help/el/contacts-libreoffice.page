@@ -16,9 +16,27 @@
     <desc>Χρήση δεδομένων από βιβλία διευθύνσεων του <app>Evolution</app> σε έγγραφα LibreOffice.</desc>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
@@ -43,7 +61,7 @@
       <p>Καθώς το <app>Evolution</app> αποθηκεύει τα δεδομένα του σε έναν κρυφό κατάλογο, πατήστε <keyseq><key>Ctrl</key><key>L</key></keyseq> για να πάρετε την εμφανιζόμενη γραμμής θέσης.</p>
     </item>
     <item>
-      <p>Μετάβαση σε <file>/home/username/.local/share/evolution/addressbook/system/addressbook.db</file> και κλικ <gui style="button">άνοιγμα</gui>.</p>
+      <p>Μετάβαση στο <file>~/.local/share/evolution/addressbook/system/addressbook.db</file> και πάτημα του <gui style="button">Άνοιγμα</gui>.</p>
     </item>
   </steps>
 

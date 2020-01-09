@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-composer-message-templates-reply" xml:lang="sv">
 
   <info>
-   <desc>Use one of your templates for replying to a message</desc>
+   <desc>Använd en av dina mallar för att svara på ett meddelande</desc>
    
    <link type="guide" xref="mail-composer-message-templates#options"/>
 
@@ -18,21 +18,33 @@
  <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
      
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-<title>Using a Template as a Reply</title>
+<title>Användning av en mall som ett svar</title>
 
  <steps>
   <item>
-<p>Right-click the message you are replying to, then click <gui>Templates</gui>.</p>
-<p>This option lists all the message templates in the <gui>Templates</gui> folder.</p>
+<p>Högerklicka på meddelandet du svarar på och klicka sedan på <gui>Mallar</gui>.</p>
+<p>Detta alternativ listar alla meddelandemallar i <gui>Mallar</gui>-mappen.</p>
   </item>
   <item>
-<p>Select the message template of your choice. Make changes if required in the email composer window that will open.</p>
+<p>Välj meddelandemallen du önskar använda. Gör ändringar om det behövs i fönstret med meddelanderedigeraren som öppnas.</p>
   </item>
   <item>
-<p>Click <gui>Send</gui>.</p>
-<p>When you select a message template for replying, the subject of the reply is preserved.</p>
+<p>Klicka på <gui>Skicka</gui>.</p>
+<p>När du väljer en meddelandemall för att svara kommer ämnesraden för svaret att bibehållas.</p>
   </item>
  </steps>
 

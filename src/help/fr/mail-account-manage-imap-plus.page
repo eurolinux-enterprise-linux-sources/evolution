@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="guide" id="mail-account-manage-imap-plus" xml:lang="fr">
 
   <info>
-    <desc>Ajouter et modifier un compte de messagerie IMAP+ dans Evolution.</desc>
+    <desc>Add and edit an IMAP+ mail account in <app>Evolution</app>.</desc>
 
     <link type="guide" xref="mail-account-management#mail-common-account-types"/>
 
@@ -49,7 +49,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -67,28 +67,28 @@ via XInclude. See +http://blogs.gnome.org/shaunm/2011/07/21/understanding-xinclu
 
 <section id="receiving-email">
 <info>
-  <title type="link">Receiving Email and Receiving options (IMAP+ accounts)</title>
+  <title type="link">Réception des courriels et options de réception (comptes IMAP+)</title>
 </info>
 <title>Réception des courriels et options de réception</title>
 </section>
 
 <section id="sending-email">
 <info>
-  <title type="link">Sending Email (IMAP+ accounts)</title>
+  <title type="link">Envoi des courriels (comptes IMAP+)</title>
 </info>
 <title>Envoi du courriel</title>
 </section>
 
 <section id="defaults">
 <info>
-  <title type="link">Defaults (IMAP+ accounts)</title>
+  <title type="link">Par défaut (comptes IMAP+)</title>
 </info>
 <title>Valeurs par défaut</title>
 </section>
 
 <section id="security">
 <info>
-  <title type="link">Security (IMAP+ accounts)</title>
+  <title type="link">Sécurité (comptes IMAP+)</title>
 </info>
 <title>Sécurité</title>
 </section>
@@ -99,7 +99,7 @@ via XInclude. See +http://blogs.gnome.org/shaunm/2011/07/21/understanding-xinclu
 
 <section id="other-settings">
 <info>
-  <title type="link">Other settings (IMAP+ accounts)</title>
+  <title type="link">Autres paramétrages (comptes IMAP+)</title>
 </info>
 <title>Autres paramétrages</title>
 <p>Autres paramétrages liés aux comptes qui ne sont pas situés dans l'<gui>éditeur de comptes</gui> :</p>

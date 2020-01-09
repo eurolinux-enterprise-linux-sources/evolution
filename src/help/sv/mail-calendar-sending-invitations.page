@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-calendar-sending-invitations" xml:lang="sv">
 
   <info>
-    <desc>Sending invitations for appointments to contacts via email.</desc>
+    <desc>Skicka inbjudningar till möten via e-post till kontakter.</desc>
 
     <link type="guide" xref="index#mail-advanced"/>
     <link type="guide" xref="index#calendar"/>
@@ -16,25 +16,33 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-<title>Sending invitations by email</title>
+<title>Skicka inbjudningar via e-post</title>
 
-<p>If you create an event in the calendar component, you can then send invitations to the attendee list through the Evolution email tool. The invitation card is sent as an attachment in iCal format.</p>
+<p>Om du skapar ett evenemang i kalenderkomponenten kan du sedan skicka inbjudningar till deltagarlistan via <app>Evolution</app> e-postverktyg. Inbjudningskortet skickas som en bilaga i iCal-format.</p>
 
-<p>To send an invitation, right-click on the entry in the calendar and choose <gui>Forward as iCalendar</gui>.</p>
+<p>För att skicka en inbjudan, högerklicka på posten i kalendern och välj <gui>Vidarebefordra som iCalendar</gui>.</p>
 
-<p>When you receive an invitation, you have several options:</p>
+<p>När du tar emot en inbjudan har du flera alternativ:</p>
 
 <list>
-<item><p>Acceptera:</p><p>Indicates you will attend the meeting. When you click the OK button, the meeting is entered into your calendar.
-</p></item>
-<item><p>Acceptera preliminärt:</p><p>Indicates you will probably attend the meeting. When you click the OK button, the meeting is entered into your calendar, but is marked as tentative.
-</p></item>
-<item><p>Avslå:</p><p>Indicates you are unable to attend the meeting. The meeting is not entered into your calendar when you click OK, although your response is sent to the meeting host if you have selected the Send reply to sender option.
-</p></item>
-<item><p>Skicka svar till avsändare:</p><p>Select this option if you want your response sent to the meeting organizers.
-</p></item>
+<item><p>Acceptera:</p><p>Indikerar att du kommer att deltaga i sammanträdet. När du klickar på OK-knappen kommer mötet att läggas in i din kalender.</p></item>
+<item><p>Acceptera preliminärt:</p><p>Indikerar att du troligen kommer att deltaga i sammanträdet. När du klickar på OK-knappen kommer mötet att läggas in i din kalender, men det markeras som preliminärt.</p></item>
+<item><p>Avböj:</p><p>Indikerar att du är förhindrad från att deltaga i sammanträdet. Sammanträdet läggs inte in i din kalender när du klickar OK, men ditt svar skickas till sammanträdesvärden om du har valt alternativet ”Skicka svar till avsändare”.</p></item>
+<item><p>Skicka svar till avsändare:</p><p>Välj detta alternativ om du vill att ditt svar ska skickas till sammanträdesorganisatörerna.</p></item>
 </list>
  
 </page>

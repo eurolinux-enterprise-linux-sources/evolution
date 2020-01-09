@@ -22,9 +22,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -52,18 +58,18 @@
 
 <section id="several-clients">
 <title>Usar varios clientes de correo</title>
-<p>También debe tener en cuenta que los filtros dependen del estado de «nuevo» que se establece cuando un correo en particular se obtiene del servidor. Puede que sus filtros no funcionen correctamente si usa otro cliente de correo además de Evolution.</p>
+<p>También debe tener en cuenta que los filtros dependen del estado de «nuevo» que se establece cuando un correo en particular se obtiene del servidor. Puede que sus filtros no funcionen correctamente si usa otro cliente de correo además de <app>Evolution</app>.</p>
 </section>
 
 <section id="filter-log">
 <title>Registro de las acciones de los filtros</title>
 <p>Si todavía no tiene claro por qué los filtros no funcionan como esperaba, puede activar el registro de las acciones de los filtros.</p>
 <list>
-<item><p>Cerrar Evolution.</p></item>
+<item><p>Cerrar <app>Evolution</app>.</p></item>
 <item><p>Abra la aplicación <app>Terminal</app>.</p></item>
 <item><p>Ejecute el comando <cmd>gsettings set org.gnome.evolution.mail filters-log-actions true</cmd></p></item>
 <item><p>Ejecute el comando <cmd>gsettings set org.gnome.evolution.mail filters-log-file "/home/usuario/registro-filtro"</cmd> y reemplace <cmd>usuario</cmd> por su nombre de usuario. Esto creará un archivo de texto llamado <file>registro-filtro</file> en su carpeta personal. Tenga en cuenta que se debe introducir una ruta absoluta al nombre del archivo; la sintaxis tipo <sys>~</sys> o <sys>$HOME</sys> no funcionará.</p></item><!-- this is explained in https://bugzilla.gnome.org/show_bug.cgi?id=669471 -->
-<item><p>Inicie Evolution.</p></item>
+<item><p>Inicie <app>Evolution</app>.</p></item>
 <item><p>Reciba el correo para aplicar los filtros.</p></item>
 <item><p>Abra el archivo <file>registro-filtro</file> con un editor de texto para ver qué acciones de filtrado se han aplicado.</p></item>
 </list>

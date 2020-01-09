@@ -20,15 +20,39 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
-<title>Két Kuka vagy Levélszemét mappa ugyanahhoz a fiókhoz</title>
+<title>Két Kuka vagy <gui>Levélszemét</gui> mappa ugyanahhoz a fiókhoz</title>
 
-<p>Ha távoli postafiókot használ, amely a kiszolgálón lévő Levélszemét és/vagy Kuka mappával </p>
-<p>A két Kuka mappát egyszerűen megkülönböztetheti az ikonjaik alapján. Az Evolution <gui>Kuka</gui> mappája speciális ikonnal rendelkezik, míg a másik fizikailag létező Kuka mappa ikonja a többi mappáéval azonos.</p>
+<p>Ha távoli postafiókot használ, amely a kiszolgálón lévő <gui>Levélszemét</gui> és/vagy Kuka mappával rendelkezik, akkor a mappák többször is megjelenhetnek az <app>Evolutionben</app>.</p>
+<p>A két <gui>Kuka</gui> mappát egyszerűen megkülönböztetheti az ikonjaik alapján. Az <app>Evolution</app> <gui>Kuka</gui> mappája speciális ikonnal rendelkezik, míg a másik fizikailag létező <gui>Kuka</gui> mappa ikonja a többi mappáéval azonos.</p>
 
-<p>Az Evolution <gui>Kuka</gui> és <gui>Levélszemét</gui> mappái <link xref="mail-search-folders">keresőmappák</link>. Valójában nem léteznek, hanem csak megjelenítik az összes olyan üzenetet, amely az adott fiók bármely mappájában levélszemétként vagy törlésre van megjelölve.</p>
+<p>Az <app>Evolution</app> <gui>Kuka</gui> és <gui>Levélszemét</gui> mappái <link xref="mail-search-folders">keresőmappák</link>. Valójában nem léteznek, hanem csak megjelenítik az összes olyan üzenetet, amely az adott fiók bármely mappájában levélszemétként vagy törlésre van megjelölve.</p>
 
-<p>A levélkiszolgálón lévő Levélszemét és Kuka mappák kizárólagos használatához válassza ki a megfelelő <gui>Valódi mappa használata</gui> beállítást a <guiseq><gui>Szerkesztés</gui><gui>Beállítások</gui><gui>Postafiókok</gui><gui style="button">Szerkesztés</gui><gui>Alapértékek</gui></guiseq> alatt. Ebben az esetben az Evolution helyi virtuális mappái nem lesznek felhasználva.</p>
+<p>A levélkiszolgálón lévő Levélszemét és Kuka mappák kizárólagos használatához válassza ki a megfelelő <gui>Valódi mappa használata</gui> beállítást a <guiseq><gui>Szerkesztés</gui><gui>Beállítások</gui><gui>Postafiókok</gui><gui style="button">Szerkesztés</gui><gui>Alapértékek</gui></guiseq> alatt. Ebben az esetben az <app>Evolution</app> helyi virtuális mappái nem lesznek felhasználva.</p>
 
 </page>

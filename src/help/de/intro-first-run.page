@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" xmlns:e="http://projectmallard.org/experimental/" xmlns:if="http://projectmallard.org/experimental/if/" xmlns:ui="http://projectmallard.org/ui/1.0/" type="topic" id="intro-first-run" xml:lang="de">
 
   <info>
-    <desc>Evolution zum allerersten Mal starten.</desc>
+    <desc><app>Evolution</app> zum allerersten Mal starten.</desc>
 
     <link type="guide" xref="index#getting-started"/>
 
@@ -25,25 +25,31 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
   <title><app>Evolution</app> zum ersten Mal starten</title>
 
-<p>Wenn Sie das erste Mal Evolution starten, wird der Erste-Schritte-Assistent gestartet, der Ihnen dabei hilft, Ihre E-Mail-Konten einzutragen und gegebenenfalls <link xref="import-data">Daten aus anderen Programmen zu importieren</link>.</p>
+<p>Wenn Sie das erste Mal <app>Evolution</app> starten, wird der Erste-Schritte-Assistent gestartet, der Ihnen dabei hilft, Ihre E-Mail-Konten einzutragen und gegebenenfalls <link xref="import-data">Daten aus anderen Programmen zu importieren</link>.</p>
 
 <include xmlns="http://www.w3.org/2001/XInclude" href="xinclude-mail-account-identity.xml" xpointer="xmlns(mal=http://projectmallard.org/1.0/)xpointer(/mal:info/mal:section)"/>
 
@@ -116,7 +122,7 @@
   <p>Dazu muss das Paket <sys>evolution-ews</sys> installiert sein.</p>
   <if:choose xmlns:if="http://projectmallard.org/if/1.0/">
     <if:when test="action:install">
-      <p><link action="install:evolution-ews" href="http://projects.gnome.org/evolution/download" style="button">Evolution-ews installieren</link></p>
+      <p><link action="install:evolution-ews" href="https://wiki.gnome.org/Apps/Evolution#Get_the_Source_Code" style="button">Evolution-ews installieren</link></p>
     </if:when>
   </if:choose>
 </note>
@@ -138,7 +144,7 @@
   <p>Dazu muss das Paket <sys>evolution-mapi</sys> installiert sein.</p>
   <if:choose xmlns:if="http://projectmallard.org/if/1.0/">
     <if:when test="action:install">
-      <p><link action="install:evolution-mapi" href="http://projects.gnome.org/evolution/download" style="button">Evolution-mapi installieren</link></p>
+      <p><link action="install:evolution-mapi" href="https://wiki.gnome.org/Apps/Evolution#Get_the_Source_Code" style="button">Evolution-mapi installieren</link></p>
     </if:when>
   </if:choose>
 </note>
@@ -225,7 +231,7 @@
 
 <section id="server-type-none">
 <title>Nichts</title>
-<p>Wenn Sie mit Evolution keine E-Mails abrufen möchten.</p>
+<p>Wenn Sie mit <app>Evolution</app> keine E-Mails abrufen möchten.</p>
 </section>
 
 </section>

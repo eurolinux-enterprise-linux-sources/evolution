@@ -19,45 +19,49 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Using date ranges (day, week, month) to look at the calendar.</desc>
+    <desc>Användning av datumintervall (dag, vecka, månad) för att visa kalendern.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Available views</title>
+  <title>Tillgängliga vyer</title>
 
-  <p><app>Evolution</app> offers five different views of your calendar
-  data:</p>
+  <p><app>Evolution</app> erbjuder fem olika vyer för dina kalenderdata:</p>
 
   <list>
     <item>
-      <p>Day (<keyseq><key>Ctrl</key><key>Y</key></keyseq>)</p>
+      <p>Dag (<keyseq><key>Ctrl</key><key>Y</key></keyseq>)</p>
     </item>
     <item>
-      <p>Work Week (<keyseq><key>Ctrl</key><key>J</key></keyseq>)</p>
+      <p>Arbetsvecka (<keyseq><key>Ctrl</key><key>J</key></keyseq>)</p>
     </item>
     <item>
-      <p>Week (<keyseq><key>Ctrl</key><key>K</key></keyseq>)</p>
+      <p>Vecka (<keyseq><key>Ctrl</key><key>K</key></keyseq>)</p>
     </item>
     <item>
-      <p>Month (<keyseq><key>Ctrl</key><key>M</key></keyseq>)</p>
+      <p>Månad (<keyseq><key>Ctrl</key><key>M</key></keyseq>)</p>
     </item>
     <item>
-      <p>List (<keyseq><key>Ctrl</key><key>L</key></keyseq>)</p>
+      <p>Lista (<keyseq><key>Ctrl</key><key>L</key></keyseq>)</p>
     </item>
   </list>
 
-  <p>You can switch the view by either using the buttons in the toolbar, or by
-  clicking <guiseq><gui>View</gui><gui>Current View</gui></guiseq>.</p>
+  <p>Du kan växla vy antingen genom att använda knapparna i verktygsfältet, eller genom att klicka på <guiseq><gui>Visa</gui><gui>Aktuell vy</gui></guiseq>.</p>
 
-  <p>You can also select an arbitrary range of days in the small calendar in
-  the side bar. To do this, select the days that you want to view in your
-  calendar.</p>
+  <p>Du kan också välja ett valfritt intervall av dagar i den mindre kalendern i sidopanelen. För att göra detta, välj dagarna du vill visa i din kalender.</p>
 
-  <p>The Previous and Next buttons move you forward and back in your calendar
-  pages. If you are using a week or month view, you can move by week or month.
-  To return to today's listing, click the <gui>Select today</gui> button
-  between the two arrow buttons in the toolbar.</p>
+  <p>Knapparna Föregående och Nästa flyttar dig framåt och bakåt bland dina kalendersidor. Om du använder en vecko- eller månadsvy kan du flytta framåt en vecka eller månad i taget. För att återgå till dagens lista, klicka på knappen <gui>Välj idag</gui> mellan de två pilknapparna i verktygsfältet.</p>
 
-  <p>To visit calendar entries for a specific date, click the <gui>Select a
-  specific date</gui> button in the toolbar.</p>
+  <p>För att besöka kalenderposter för ett specifikt datum, klicka på knappen <gui>Välj ett specifikt datum</gui> i verktygsfältet.</p>
 
 </page>

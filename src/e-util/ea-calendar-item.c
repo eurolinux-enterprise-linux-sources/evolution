@@ -1136,7 +1136,7 @@ ea_calendar_item_get_row_label (EaCalendarItem *ea_calitem,
 
 	calitem = E_CALENDAR_ITEM (g_obj);
 
-	index = atk_table_get_index_at (ATK_TABLE (ea_calitem), row, 0);
+	index = table_interface_get_index_at (ATK_TABLE (ea_calitem), row, 0);
 	if (!e_calendar_item_get_date_for_offset (calitem, index,
 						  &year, &month, &day))
 		return FALSE;
@@ -1186,6 +1186,7 @@ e_calendar_item_get_day_extents (ECalendarItem *calitem,
 	GnomeCanvasItem *item;
 	GtkWidget *widget;
 	GtkBorder padding;
+	GtkStyleContext *style_context;
 	PangoContext *pango_context;
 	PangoFontMetrics *font_metrics;
 	gint char_height, xthickness, ythickness, text_y;
@@ -1199,7 +1200,8 @@ e_calendar_item_get_day_extents (ECalendarItem *calitem,
 
 	item = GNOME_CANVAS_ITEM (calitem);
 	widget = GTK_WIDGET (item->canvas);
-	gtk_style_context_get_padding (gtk_widget_get_style_context (widget), 0, &padding);
+	style_context = gtk_widget_get_style_context (widget);
+	gtk_style_context_get_padding (style_context, gtk_style_context_get_state (style_context), &padding);
 
 	/* Set up Pango prerequisites */
 	pango_context = gtk_widget_get_pango_context (widget);
@@ -1284,6 +1286,19 @@ e_calendar_item_get_date_for_offset (ECalendarItem *calitem,
 	*day = g_date_get_day (start_date);
 
 	return TRUE;
+}
+
+gboolean
+e_calendar_item_get_date_for_cell (ECalendarItem *calitem,
+                                     gint row,
+                                     gint column,
+                                     gint *year,
+                                     gint *month,
+                                     gint *day)
+{
+	gint index = table_interface_get_index_at (ATK_TABLE (calitem), row, column);
+
+	return e_calendar_item_get_date_for_offset (calitem, index, year, month, day);
 }
 
 /* the arg month is from 0 to 11 */

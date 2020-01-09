@@ -5,7 +5,7 @@
       type="topic" id="intro-first-run">
 
   <info>
-    <desc>Running Evolution for the very first time.</desc>
+    <desc>Running <app>Evolution</app> for the very first time.</desc>
 
     <link type="guide" xref="index#getting-started"/>
 
@@ -22,7 +22,7 @@
 
   <title>Starting <app>Evolution</app> for the first time</title>
 
-<p>The first time you run Evolution, it opens the First-Run Assistant to help you set up email accounts and <link xref="import-data">import data from other applications.</link></p>
+<p>The first time you run <app>Evolution</app>, it opens the First-Run Assistant to help you set up email accounts and <link xref="import-data">import data from other applications.</link></p>
 
 <include href="xinclude-mail-account-identity.xml"
  xpointer="xmlns(mal=http://projectmallard.org/1.0/)xpointer(/mal:info/mal:section)"
@@ -105,7 +105,7 @@
   <p>This requires having the <sys>evolution-ews</sys> package installed.</p>
   <if:choose xmlns:if="http://projectmallard.org/if/1.0/">
     <if:when test="action:install">
-      <p><link action="install:evolution-ews" href="http://projects.gnome.org/evolution/download" style="button">Install evolution-ews</link></p>
+      <p><link action="install:evolution-ews" href="https://wiki.gnome.org/Apps/Evolution#Get_the_Source_Code" style="button">Install evolution-ews</link></p>
     </if:when>
   </if:choose>
 </note>
@@ -129,7 +129,7 @@
   <p>This requires having the <sys>evolution-mapi</sys> package installed.</p>
   <if:choose xmlns:if="http://projectmallard.org/if/1.0/">
     <if:when test="action:install">
-      <p><link action="install:evolution-mapi" href="http://projects.gnome.org/evolution/download" style="button">Install evolution-mapi</link></p>
+      <p><link action="install:evolution-mapi" href="https://wiki.gnome.org/Apps/Evolution#Get_the_Source_Code" style="button">Install evolution-mapi</link></p>
     </if:when>
   </if:choose>
 </note>
@@ -228,7 +228,7 @@
 
 <section id="server-type-none">
 <title>None</title>
-<p>If you do not plan to use Evolution for receiving email.</p>
+<p>If you do not plan to use <app>Evolution</app> for receiving email.</p>
 </section>
 
 </section>

@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="guide" id="mail-account-manage-microsoft-exchange-evo-mapi" xml:lang="fr">
 
   <info>
-    <desc>Ajouter et modifier un compte Microsoft Exchange MAPI dans Evolution.</desc>
+    <desc>Add and edit a Microsoft Exchange MAPI account in <app>Evolution</app>.</desc>
 
     <link type="guide" xref="mail-account-manage-microsoft-exchange"/>
 
@@ -49,7 +49,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -67,14 +67,14 @@ via XInclude. See +http://blogs.gnome.org/shaunm/2011/07/21/understanding-xinclu
 
 <section id="receiving-email">
 <info>
-  <title type="link">Receiving Email and Receiving options (Exchange MAPI accounts)</title>
+  <title type="link">Réception des courriels et options de réception (comptes Exchange MAPI)</title>
 </info>
 <title>Réception des courriels et options de réception</title>
 </section>
 
 <section id="defaults">
 <info>
-  <title type="link">Defaults (Exchange MAPI accounts)</title>
+  <title type="link">Par défaut (comptes Exchange MAPI)</title>
 </info>
 <title>Valeurs par défaut</title>
 </section>
@@ -86,7 +86,7 @@ via XInclude. See +http://blogs.gnome.org/shaunm/2011/07/21/understanding-xinclu
 
 <section id="security">
 <info>
-  <title type="link">Security (Exchange MAPI accounts)</title>
+  <title type="link">Sécurité (comptes Exchange MAPI)</title>
 </info>
 <title>Sécurité</title>
 </section>

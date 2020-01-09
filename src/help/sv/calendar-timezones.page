@@ -18,40 +18,38 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Using time zones in the calendar.</desc>
+    <desc>Användning av tidszoner i kalendern.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Using time zones</title>
+  <title>Användning av tidszoner</title>
 
-  <p><app>Evolution</app> supports using multiple time zones.</p>
+  <p><app>Evolution</app> har stöd för flera tidszoner.</p>
 
 <section id="default-timezone">
-  <title>Setting your global timezone(s)</title>
+  <title>Att ställa in dina globala tidszon(er)</title>
 
-  <p>By default <app>Evolution</app> uses the system-wide time zone. This can
-  be changed under <guiseq><gui>Edit</gui><gui>Preferences</gui>
-  <gui>Calendar and Tasks</gui><gui>General</gui><gui>Time</gui>
-  <gui>Time zone</gui></guiseq>.</p>
+  <p>Som standard använder <app>Evolution</app> systemets tidszon. Detta kan ändras under <guiseq><gui>Redigera</gui><gui>Inställningar</gui> <gui>Kalender och uppgifter</gui><gui>Allmänt</gui><gui>Tid</gui> <gui>Tidszon</gui></guiseq>.</p>
 
-  <p>If you deal a lot with people in another specific time zone you can
-  display that second time zone in the day view of the calendar. You can set a
-  second time zone under <guiseq><gui>Edit</gui><gui>Preferences</gui>
-  <gui>Calendar and Tasks</gui><gui>General</gui><gui>Time</gui>
-  <gui>Second zone</gui></guiseq>.</p>
+  <p>Om du ofta har att göra med människor i en annan tidszon kan du visa den andra tidszonen i kalenderns dagsvy. Du kan ställa in en andra tidszon under <guiseq><gui>Redigera</gui><gui>Inställningar</gui> <gui>Kalender och uppgifter</gui><gui>Allmänt</gui><gui>Tid</gui> <gui>Sekundär tidszon</gui></guiseq>.</p>
 
 </section>
 
 <section id="appointment-timezone">
-  <title>Setting a timezone for an appointment</title>
+  <title>Ställa in en tidszon för ett möte</title>
 
-  <p>You can also configure time zone information specific to each appointment.
-  To do that,
-  <link xref="calendar-usage">add a new or edit an existing appointment</link>
-  and click the globe button to customize the time zone that the time exists
-  in. For example, if you live in New York but have a telephone meeting set for
-  noon with someone in California, you need to make sure that your schedules
-  are coordinated. Setting time zones on a per-appointment basis helps avoid
-  that potential confusion.</p>
+  <p>Du kan också konfigurera tidszonsinformation för varje specifikt möte. För att göra det <link xref="calendar-usage">lägg till ett nytt eller redigera ett existerande möte</link> och klicka på jordglobsknappen för att anpassa tidszonen som tiden anges i. Om du till exempel bor i New York men har ett telefonmöte bokat vid lunchtid med någon i Kalifornien måste du säkerställa att era scheman är koordinerade. Att ställa in tidszoner för varje möte hjälper till att undvika den möjliga förvirringen.</p>
 
 </section>
 

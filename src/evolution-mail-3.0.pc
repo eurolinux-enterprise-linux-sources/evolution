@@ -3,15 +3,15 @@ exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 includedir=${prefix}/include
 
-privlibdir=${libdir}/evolution/3.12
-privincludedir=${includedir}/evolution-3.12
+privlibdir=${libdir}/evolution
+privincludedir=${includedir}/evolution
 
 # The requirements list is kind of guesswork at
 # the moment.  Add more requirements as needed.
 
 Name: Evolution Mail
 Description: Mail utilities for Evolution
-Version: 3.12.11
+Version: 3.22.6
 Requires: evolution-shell-3.0 camel-1.2 libemail-engine
-Libs: -L${privlibdir} -levolution-mail -levolution-mail-composer
+Libs: -L${privlibdir} -levolution-mail -levolution-mail-composer -levolution-mail-formatter
 Cflags: -I${privincludedir}

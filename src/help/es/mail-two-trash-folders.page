@@ -22,9 +22,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -40,13 +46,13 @@
     </mal:credit>
   </info>
 
-<title>Dos carpetas de Papelera o Spam mostradas para la misma cuenta</title>
+<title>Dos carpetas de Papelera o <gui>Spam</gui> mostradas para la misma cuenta</title>
 
-<p>Si usa una cuenta de correo remota que también tiene carpetas de Spam y/o de Papelera en el servidor, puede tener carpetas duplicadas en Evolution.</p>
-<p>Puede comparar las dos carpetas de Papelera mirando los iconos. La carpeta de <gui>Papelera</gui> de Evolution tiene un icono especial mientras que la otra carpeta física de Papelera es igual a cualquier otra carpeta.</p>
+<p>Si usa una cuenta de correo remota que también tiene carpetas de Spam y/o de <gui>Papelera</gui> en el servidor, puede tener carpetas duplicadas en <app>Evolution</app>.</p>
+<p>Puede comparar las dos carpetas de <gui>Papelera</gui> mirando los iconos. La carpeta de <gui>Papelera</gui> de <app>Evolution</app> tiene un icono especial mientras que la otra carpeta física de <gui>Papelera</gui> es igual a cualquier otra carpeta.</p>
 
-<p>De manera predeterminada, las carpeta de <gui>Papelera</gui> y <gui>Spam</gui> son <link xref="mail-search-folders">Carpeta de búsqueda</link>. Realmente no existen pero muestran todos los mensajes marcados como spam o para seliminar en cualquier carpeta de la cuenta.</p>
+<p>De manera predeterminada, las carpetas de <gui>Papelera</gui> y <gui>Spam</gui> de <app>Evolution</app> son <link xref="mail-search-folders">Carpetas de búsqueda</link>. Realmente no existen pero muestran todos los mensajes marcados como spam o para seliminar en cualquier carpeta de la cuenta.</p>
 
-<p>Para usar las carpetas de Papelera y Spam del servidor de correo, seleccione la opción <gui>Usa una carpeta real</gui> correspondiente en <guiseq><gui>Editar</gui><gui>Preferencias</gui><gui>Cuentas de correo</gui><gui style="button">Editar</gui><gui>Predeterminados</gui></guiseq>. En este caso, no se usarán las carpetas virtuales de Evolution.</p>
+<p>Para usar las carpetas de Papelera y Spam del servidor de correo, seleccione la opción <gui>Usa una carpeta real</gui> correspondiente en <guiseq><gui>Editar</gui><gui>Preferencias</gui><gui>Cuentas de correo</gui><gui style="button">Editar</gui><gui>Predeterminados</gui></guiseq>. En este caso, no se usarán las carpetas virtuales de <app>Evolution</app>.</p>
 
 </page>

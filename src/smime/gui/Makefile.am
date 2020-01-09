@@ -17,8 +17,9 @@ libevolution_smime_la_CPPFLAGS =			\
 	-DPREFIX=\""$(prefix)"\"			\
 	$(EVOLUTION_DATA_SERVER_CFLAGS)			\
 	$(GNOME_PLATFORM_CFLAGS)			\
-	$(GTKHTML_CFLAGS)				\
-	$(CERT_UI_CFLAGS)
+	$(CERT_UI_CFLAGS)				\
+	$(CODE_COVERAGE_CFLAGS)				\
+	$(NULL)
 
 libevolution_smime_la_SOURCES = 	\
 	ca-trust-dialog.c		\
@@ -39,10 +40,10 @@ libevolution_smime_la_LIBADD =				\
 	$(top_builddir)/smime/lib/libessmime.la		\
 	$(EVOLUTION_DATA_SERVER_LIBS)			\
 	$(GNOME_PLATFORM_LIBS)				\
-	$(GTKHTML_LIBS)					\
-	$(CERT_UI_LIBS)
+	$(CERT_UI_LIBS)					\
+	$(NULL)
 
-libevolution_smime_la_LDFLAGS = -avoid-version $(NO_UNDEFINED)
+libevolution_smime_la_LDFLAGS = -avoid-version $(NO_UNDEFINED) $(CODE_COVERAGE_LDFLAGS)
 
 ui_DATA = smime-ui.ui
 

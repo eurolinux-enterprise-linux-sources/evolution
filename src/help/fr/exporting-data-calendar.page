@@ -49,12 +49,12 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
 <title>Exportation d'agendas</title>
 
 <p>Pour exporter un agenda complet, cliquez sur l'agenda dans la liste d'agendas et cliquez sur <gui>Enregistrer sous</gui>. Les formats disponibles sont le format iCalendar (ICS, recommandé), valeurs séparées par des virgules (CSV) et format RDF.</p>
-<p>If you want to export only one appointment (or task or memo), either select the appointment and select <guiseq><gui>File</gui><gui>Save as iCalendar...</gui></guiseq>, or right-click on the appointment and click <gui>Save as iCalendar...</gui>.</p>
+<p>Si vous voulez exporter seulement un rendez-vous (ou tâche ou mémo), sélectionnez le rendez-vous et choisissez <guiseq><gui>Fichier</gui><gui>Enregistrer en tant que iCalendar...</gui></guiseq>, ou sinon faites un clic droit sur le rendez-vous et choisissez <gui>Enregistrer en tant que iCalendar...</gui>.</p>
 </page>

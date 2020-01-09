@@ -17,9 +17,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -44,7 +50,7 @@
 
 <if:choose>
   <if:when test="!platform:gnome-shell !platform:gnome-classic !platform:unity">
-<p>En el caso de que use Evolution en un entorno que no sea GNOME,</p>
+<p>En el caso de que use <app>Evolution</app> en un entorno que no sea GNOME,</p>
  <steps>
    <item>
      <p>Abra la aplicación de la terminal.</p>
@@ -65,7 +71,7 @@
      </cmd></p>
    </item>
    <item>
-     <p>Es posible que deba reiniciar Evolution para que la configuración tenga efecto.</p>
+     <p>Es posible que deba reiniciar <app>Evolution</app> para que la configuración tenga efecto.</p>
    </item>
  </steps>
 <note style="tip">

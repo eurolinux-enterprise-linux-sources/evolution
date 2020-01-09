@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-usenet-subscriptions" xml:lang="sv">
 
   <info>
-    <desc>Subscribing to Usenet newsgroups.</desc>
+    <desc>Att prenumerera på diskussionsgrupper.</desc>
     
     <link type="guide" xref="mail-account-manage-usenet-news#other-settings"/>
     <link type="seealso" xref="mail-imap-subscriptions"/>
@@ -19,16 +19,28 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
 
-<title>Newsgroups Subscriptions</title>
+<title>Prenumerationer på diskussionsgrupper</title>
 
-<p>When you create a newsgroup account, you are not subscribed to any groups. To subscribe to a newsgroup:</p>
+<p>När du skapar ett nytt diskussionsgruppskonto kommer du inte att vara prenumerant på några diskussionsgrupper. För att prenumerera på en diskussionsgrupp:</p>
 <steps>
-<item><p>Select <guiseq><gui>Folder</gui><gui>Subscriptions</gui></guiseq>.</p></item>
-<item><p>If you have accounts on multiple servers, select the server where you want to manage your subscriptions.</p></item>
-<item><p>Click a group's checkbox to add a folder to your subscriptions.</p></item>
+<item><p>Välj <guiseq><gui>Mapp</gui><gui>Prenumerationer</gui></guiseq>.</p></item>
+<item><p>Om du har konton på flera servrar, välj servern där du vill hantera dina prenumerationer.</p></item>
+<item><p>Klicka på en grupps kryssruta för att lägga till en mapp bland dina prenumerationer.</p></item>
 </steps>
 
 </page>

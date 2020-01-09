@@ -31,8 +31,7 @@
 #include "e-cell-date-edit-text.h"
 #include "itip-utils.h"
 #include "misc.h"
-#include "dialogs/recur-comp.h"
-#include "dialogs/send-comp.h"
+#include "e-cal-dialogs.h"
 
 /* Forward Declarations */
 static void	e_cal_model_calendar_table_model_init
@@ -71,19 +70,46 @@ get_dtend (ECalModelCalendar *model,
 
 		model_zone = e_cal_model_get_timezone (E_CAL_MODEL (model));
 
-		if (e_cal_model_get_flags (E_CAL_MODEL (model)) & E_CAL_MODEL_FLAGS_EXPAND_RECURRENCES) {
-			if (got_zone) {
-				tt_end = icaltime_from_timet_with_zone (comp_data->instance_end, tt_end.is_date, zone);
-				if (model_zone)
-					icaltimezone_convert_time (&tt_end, zone, model_zone);
-			} else
-				tt_end = icaltime_from_timet_with_zone (
-					comp_data->instance_end,
-					tt_end.is_date, model_zone);
+		if (got_zone) {
+			tt_end = icaltime_from_timet_with_zone (comp_data->instance_end, tt_end.is_date, zone);
+			if (model_zone)
+				icaltimezone_convert_time (&tt_end, zone, model_zone);
+		} else {
+			tt_end = icaltime_from_timet_with_zone (
+				comp_data->instance_end,
+				tt_end.is_date, model_zone);
 		}
 
 		if (!icaltime_is_valid_time (tt_end) || icaltime_is_null_time (tt_end))
 			return NULL;
+
+		if (tt_end.is_date && icalcomponent_get_first_property (comp_data->icalcomp, ICAL_DTSTART_PROPERTY)) {
+			struct icaltimetype tt_start;
+			icaltimezone *start_zone = NULL;
+			gboolean got_start_zone = FALSE;
+
+			tt_start = icalproperty_get_dtstart (prop);
+
+			if (icaltime_get_tzid (tt_start)
+			    && e_cal_client_get_timezone_sync (comp_data->client, icaltime_get_tzid (tt_start), &start_zone, NULL, NULL))
+				got_start_zone = TRUE;
+
+			if (got_start_zone) {
+				tt_start = icaltime_from_timet_with_zone (comp_data->instance_start, tt_start.is_date, start_zone);
+				if (model_zone)
+					icaltimezone_convert_time (&tt_start, start_zone, model_zone);
+			} else {
+				tt_start = icaltime_from_timet_with_zone (
+					comp_data->instance_start,
+					tt_start.is_date, model_zone);
+			}
+
+			icaltime_adjust (&tt_start, 1, 0, 0, 0);
+
+			/* Decrease by a day only if the DTSTART will still be before, or the same as, DTEND */
+			if (icaltime_compare (tt_start, tt_end) <= 0)
+				icaltime_adjust (&tt_end, -1, 0, 0, 0);
+		}
 
 		comp_data->dtend = g_new0 (ECellDateEditValue, 1);
 		comp_data->dtend->tt = tt_end;
@@ -200,24 +226,32 @@ set_transparency (ECalModelComponent *comp_data,
 }
 
 static void
-cal_model_calendar_fill_component_from_model (ECalModel *model,
-                                              ECalModelComponent *comp_data,
-                                              ETableModel *source_model,
-                                              gint row)
+cal_model_calendar_store_values_from_model (ECalModel *model,
+					    ETableModel *source_model,
+					    gint row,
+					    GHashTable *values)
+{
+	g_return_if_fail (E_IS_CAL_MODEL_CALENDAR (model));
+	g_return_if_fail (E_IS_TABLE_MODEL (source_model));
+	g_return_if_fail (values != NULL);
+
+	e_cal_model_util_set_value (values, source_model, E_CAL_MODEL_CALENDAR_FIELD_DTEND, row);
+	e_cal_model_util_set_value (values, source_model, E_CAL_MODEL_CALENDAR_FIELD_LOCATION, row);
+	e_cal_model_util_set_value (values, source_model, E_CAL_MODEL_CALENDAR_FIELD_TRANSPARENCY, row);
+}
+
+static void
+cal_model_calendar_fill_component_from_values (ECalModel *model,
+					       ECalModelComponent *comp_data,
+					       GHashTable *values)
 {
 	g_return_if_fail (E_IS_CAL_MODEL_CALENDAR (model));
 	g_return_if_fail (comp_data != NULL);
-	g_return_if_fail (E_IS_TABLE_MODEL (source_model));
+	g_return_if_fail (values != NULL);
 
-	set_dtend (
-		model, comp_data,
-		e_table_model_value_at (source_model, E_CAL_MODEL_CALENDAR_FIELD_DTEND, row));
-	set_location (
-		comp_data,
-		e_table_model_value_at (source_model, E_CAL_MODEL_CALENDAR_FIELD_LOCATION, row));
-	set_transparency (
-		comp_data,
-		e_table_model_value_at (source_model, E_CAL_MODEL_CALENDAR_FIELD_TRANSPARENCY, row));
+	set_dtend (model, comp_data, e_cal_model_util_get_value (values, E_CAL_MODEL_CALENDAR_FIELD_DTEND));
+	set_location (comp_data, e_cal_model_util_get_value (values, E_CAL_MODEL_CALENDAR_FIELD_LOCATION));
+	set_transparency (comp_data, e_cal_model_util_get_value (values, E_CAL_MODEL_CALENDAR_FIELD_TRANSPARENCY));
 }
 
 static gint
@@ -265,17 +299,13 @@ cal_model_calendar_set_value_at (ETableModel *etm,
                                  gconstpointer value)
 {
 	ECalModelComponent *comp_data;
-	CalObjModType mod = CALOBJ_MOD_ALL;
+	ECalObjModType mod = E_CAL_OBJ_MOD_ALL;
 	ECalComponent *comp;
 	ECalModelCalendar *model = (ECalModelCalendar *) etm;
-	ESourceRegistry *registry;
-	GError *error = NULL;
 
 	g_return_if_fail (E_IS_CAL_MODEL_CALENDAR (model));
 	g_return_if_fail (col >= 0 && col < E_CAL_MODEL_CALENDAR_FIELD_LAST);
 	g_return_if_fail (row >= 0 && row < e_table_model_row_count (etm));
-
-	registry = e_cal_model_get_registry (E_CAL_MODEL (model));
 
 	if (col < E_CAL_MODEL_FIELD_LAST) {
 		table_model_parent_interface->set_value_at (etm, col, row, value);
@@ -286,15 +316,14 @@ cal_model_calendar_set_value_at (ETableModel *etm,
 	if (!comp_data)
 		return;
 
-	comp = e_cal_component_new ();
-	if (!e_cal_component_set_icalcomponent (comp, icalcomponent_new_clone (comp_data->icalcomp))) {
-		g_object_unref (comp);
+	comp = e_cal_component_new_from_icalcomponent (icalcomponent_new_clone (comp_data->icalcomp));
+	if (!comp) {
 		return;
 	}
 
 	/* ask about mod type */
 	if (e_cal_component_is_instance (comp)) {
-		if (!recur_component_dialog (comp_data->client, comp, &mod, NULL, FALSE)) {
+		if (!e_cal_dialogs_recur_component (comp_data->client, comp, &mod, NULL, FALSE)) {
 			g_object_unref (comp);
 			return;
 		}
@@ -312,51 +341,7 @@ cal_model_calendar_set_value_at (ETableModel *etm,
 		break;
 	}
 
-	e_cal_client_modify_object_sync (
-		comp_data->client, comp_data->icalcomp, mod, NULL, &error);
-
-	if (error == NULL) {
-		gboolean strip_alarms = TRUE;
-
-		if (itip_organizer_is_user (registry, comp, comp_data->client) &&
-		    send_component_dialog (NULL, comp_data->client, comp, FALSE, &strip_alarms, NULL)) {
-			ECalComponent *send_comp = NULL;
-
-			if (mod == CALOBJ_MOD_ALL && e_cal_component_is_instance (comp)) {
-				/* Ensure we send the master object, not the instance only */
-				icalcomponent *icalcomp = NULL;
-				const gchar *uid = NULL;
-
-				e_cal_component_get_uid (comp, &uid);
-				e_cal_client_get_object_sync (
-					comp_data->client, uid, NULL,
-					&icalcomp, NULL, NULL);
-				if (icalcomp != NULL) {
-					send_comp = e_cal_component_new ();
-					if (!e_cal_component_set_icalcomponent (send_comp, icalcomp)) {
-						icalcomponent_free (icalcomp);
-						g_object_unref (send_comp);
-						send_comp = NULL;
-					}
-				}
-			}
-
-			itip_send_comp (
-				registry, E_CAL_COMPONENT_METHOD_REQUEST,
-				send_comp ? send_comp : comp, comp_data->client,
-				NULL, NULL, NULL, strip_alarms, FALSE);
-
-			if (send_comp)
-				g_object_unref (send_comp);
-		}
-	} else {
-		g_warning (
-			G_STRLOC ": Could not modify the object! %s",
-			error->message);
-
-		/* FIXME Show error dialog */
-		g_error_free (error);
-	}
+	e_cal_model_modify_component (E_CAL_MODEL (model), comp_data, mod);
 
 	g_object_unref (comp);
 }
@@ -500,7 +485,8 @@ e_cal_model_calendar_class_init (ECalModelCalendarClass *class)
 	ECalModelClass *model_class;
 
 	model_class = E_CAL_MODEL_CLASS (class);
-	model_class->fill_component_from_model = cal_model_calendar_fill_component_from_model;
+	model_class->store_values_from_model = cal_model_calendar_store_values_from_model;
+	model_class->fill_component_from_values = cal_model_calendar_fill_component_from_values;
 }
 
 static void
@@ -528,12 +514,19 @@ e_cal_model_calendar_init (ECalModelCalendar *model)
 }
 
 ECalModel *
-e_cal_model_calendar_new (ESourceRegistry *registry)
+e_cal_model_calendar_new (ECalDataModel *data_model,
+			  ESourceRegistry *registry,
+			  EShell *shell)
 {
+	g_return_val_if_fail (E_IS_CAL_DATA_MODEL (data_model), NULL);
 	g_return_val_if_fail (E_IS_SOURCE_REGISTRY (registry), NULL);
+	g_return_val_if_fail (E_IS_SHELL (shell), NULL);
 
 	return g_object_new (
 		E_TYPE_CAL_MODEL_CALENDAR,
-		"registry", registry, NULL);
+		"data-model", data_model,
+		"registry", registry,
+		"shell", shell,
+		NULL);
 }
 

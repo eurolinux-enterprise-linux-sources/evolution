@@ -28,19 +28,25 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
@@ -56,7 +62,7 @@ included by XInclude. See http://blogs.gnome.org/shaunm/2011/07/21/understanding
 <p>Filtert Nachrichten gemäß dem Server, von dem sie stammen. Dies ist nützlich, falls Sie mehrere POP-Konten besitzen.</p></item>
 
 <item><p>An Programm weiterleiten:</p>
-<p>Evolution kann einen externen Befehl zum Verarbeiten einer Nachricht benutzen, und dann die Nachricht basierend auf dem Rückgabewert des Befehls weiterverarbeiten. Auf diese Weise genutzte Befehle müssen einen ganzzahligen Wert als Rückgabewert liefern. Dies kann zum Beispiel zum Filtern unerwünschter Nachrichten oder für einen Virusscanner genutzt werden.</p></item>
+<p><gui>Evolution</gui> kann einen externen Befehl zum Verarbeiten einer Nachricht benutzen, und dann die Nachricht basierend auf dem Rückgabewert des Befehls weiterverarbeiten. Auf diese Weise genutzte Befehle müssen einen ganzzahligen Wert als Rückgabewert liefern. Dies kann zum Beispiel zum Filtern unerwünschter Nachrichten oder für einen Virenscanner genutzt werden.</p></item>
 
 <item><p>Unerwünscht-Test:</p>
 <p>Filtert gemäß den Ergebnissen des <link xref="mail-spam">Unerwünscht</link>-Tests.</p></item>

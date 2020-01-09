@@ -2,13 +2,13 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Evolution Utilities Reference Manual: EBitArray</title>
-<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<title>EBitArray: Evolution Utilities Reference Manual</title>
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
 <link rel="home" href="index.html" title="Evolution Utilities Reference Manual">
-<link rel="up" href="ch16.html" title="(Unsorted Sections)">
+<link rel="up" href="ch17.html" title="(Unsorted Sections)">
 <link rel="prev" href="EAuthComboBox.html" title="EAuthComboBox">
-<link rel="next" href="evolution-util-GtkTextBuffer-Tagging.html" title="GtkTextBuffer Tagging">
-<meta name="generator" content="GTK-Doc V1.21 (XML mode)">
+<link rel="next" href="evolution-util-e-buffer-tagger.html" title="e-buffer-tagger">
+<meta name="generator" content="GTK-Doc V1.25 (XML mode)">
 <link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
@@ -19,9 +19,9 @@
                   <a href="#EBitArray.object-hierarchy" class="shortcut">Object Hierarchy</a></span>
 </td>
 <td><a accesskey="h" href="index.html"><img src="home.png" width="16" height="16" border="0" alt="Home"></a></td>
-<td><a accesskey="u" href="ch16.html"><img src="up.png" width="16" height="16" border="0" alt="Up"></a></td>
+<td><a accesskey="u" href="ch17.html"><img src="up.png" width="16" height="16" border="0" alt="Up"></a></td>
 <td><a accesskey="p" href="EAuthComboBox.html"><img src="left.png" width="16" height="16" border="0" alt="Prev"></a></td>
-<td><a accesskey="n" href="evolution-util-GtkTextBuffer-Tagging.html"><img src="right.png" width="16" height="16" border="0" alt="Next"></a></td>
+<td><a accesskey="n" href="evolution-util-e-buffer-tagger.html"><img src="right.png" width="16" height="16" border="0" alt="Next"></a></td>
 </tr></table>
 <div class="refentry">
 <a name="EBitArray"></a><div class="titlepage"></div>
@@ -34,7 +34,7 @@
 </tr></table></div>
 <div class="refsect1">
 <a name="EBitArray.functions"></a><h2>Functions</h2>
-<div class="informaltable"><table width="100%" border="0">
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="functions_return">
 <col class="functions_name">
@@ -50,7 +50,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
 </td>
 <td class="function_name">
 <a class="link" href="EBitArray.html#e-bit-array-value-at" title="e_bit_array_value_at ()">e_bit_array_value_at</a> <span class="c_punctuation">()</span>
@@ -66,7 +66,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="returnvalue">gint</span></a>
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="returnvalue">gint</span></a>
 </td>
 <td class="function_name">
 <a class="link" href="EBitArray.html#e-bit-array-selected-count" title="e_bit_array_selected_count ()">e_bit_array_selected_count</a> <span class="c_punctuation">()</span>
@@ -82,7 +82,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="returnvalue">gint</span></a>
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="returnvalue">gint</span></a>
 </td>
 <td class="function_name">
 <a class="link" href="EBitArray.html#e-bit-array-bit-count" title="e_bit_array_bit_count ()">e_bit_array_bit_count</a> <span class="c_punctuation">()</span>
@@ -156,21 +156,8 @@
 </table></div>
 </div>
 <div class="refsect1">
-<a name="EBitArray.other"></a><h2>Types and Values</h2>
-<div class="informaltable"><table width="100%" border="0">
-<colgroup>
-<col width="150px" class="name">
-<col class="description">
-</colgroup>
-<tbody><tr>
-<td class="datatype_keyword">struct</td>
-<td class="function_name"><a class="link" href="EBitArray.html#EBitArray-struct" title="struct EBitArray">EBitArray</a></td>
-</tr></tbody>
-</table></div>
-</div>
-<div class="refsect1">
 <a name="EBitArray.object-hierarchy"></a><h2>Object Hierarchy</h2>
-<pre class="screen">    <a href="https://developer.gnome.org/gobject/unstable/gobject-The-Base-Object-Type.html#GObject">GObject</a>
+<pre class="screen">    <a href="/usr/share/gtk-doc/html/gobjectgobject-The-Base-Object-Type.html#GObject-struct">GObject</a>
     <span class="lineart">╰──</span> EBitArray
 </pre>
 </div>
@@ -182,18 +169,18 @@
 <div class="refsect2">
 <a name="e-bit-array-new"></a><h3>e_bit_array_new ()</h3>
 <pre class="programlisting"><a class="link" href="EBitArray.html" title="EBitArray"><span class="returnvalue">EBitArray</span></a> *
-e_bit_array_new (<em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="type">gint</span></a> count</code></em>);</pre>
+e_bit_array_new (<em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="type">gint</span></a> count</code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">
 <a name="e-bit-array-value-at"></a><h3>e_bit_array_value_at ()</h3>
-<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
 e_bit_array_value_at (<em class="parameter"><code><a class="link" href="EBitArray.html" title="EBitArray"><span class="type">EBitArray</span></a> *bit_array</code></em>,
-                      <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="type">gint</span></a> n</code></em>);</pre>
+                      <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="type">gint</span></a> n</code></em>);</pre>
 <p>This routine calculates whether the given row is selected.</p>
 <div class="refsect3">
-<a name="id-1.17.4.7.3.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-bit-array-value-at.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -214,9 +201,8 @@ e_bit_array_value_at (<em class="parameter"><code><a class="link" href="EBitArra
 </table></div>
 </div>
 <div class="refsect3">
-<a name="id-1.17.4.7.3.6"></a><h4>Returns</h4>
-<p> <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#TRUE:CAPS"><code class="literal">TRUE</code></a> if the given row is selected</p>
-<p></p>
+<a name="e-bit-array-value-at.returns"></a><h4>Returns</h4>
+<p> <a href="/usr/share/gtk-doc/html/glibglib-Standard-Macros.html#TRUE:CAPS"><code class="literal">TRUE</code></a> if the given row is selected</p>
 </div>
 </div>
 <hr>
@@ -224,13 +210,13 @@ e_bit_array_value_at (<em class="parameter"><code><a class="link" href="EBitArra
 <a name="e-bit-array-foreach"></a><h3>e_bit_array_foreach ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 e_bit_array_foreach (<em class="parameter"><code><a class="link" href="EBitArray.html" title="EBitArray"><span class="type">EBitArray</span></a> *bit_array</code></em>,
-                     <em class="parameter"><code><a class="link" href="evolution-util-Miscellaneous-Utilities.html#EForeachFunc" title="EForeachFunc ()"><span class="type">EForeachFunc</span></a> callback</code></em>,
-                     <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> closure</code></em>);</pre>
+                     <em class="parameter"><code><a class="link" href="evolution-util-e-misc-utils.html#EForeachFunc" title="EForeachFunc ()"><span class="type">EForeachFunc</span></a> callback</code></em>,
+                     <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> closure</code></em>);</pre>
 <p>This routine calls the given callback function once for each
 selected row, passing closure as the closure.</p>
 <div class="refsect3">
-<a name="id-1.17.4.7.4.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-bit-array-foreach.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -259,12 +245,12 @@ selected row, passing closure as the closure.</p>
 <hr>
 <div class="refsect2">
 <a name="e-bit-array-selected-count"></a><h3>e_bit_array_selected_count ()</h3>
-<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="returnvalue">gint</span></a>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="returnvalue">gint</span></a>
 e_bit_array_selected_count (<em class="parameter"><code><a class="link" href="EBitArray.html" title="EBitArray"><span class="type">EBitArray</span></a> *bit_array</code></em>);</pre>
 <p>This routine calculates the number of rows selected.</p>
 <div class="refsect3">
-<a name="id-1.17.4.7.5.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-bit-array-selected-count.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -278,9 +264,8 @@ e_bit_array_selected_count (<em class="parameter"><code><a class="link" href="EB
 </table></div>
 </div>
 <div class="refsect3">
-<a name="id-1.17.4.7.5.6"></a><h4>Returns</h4>
+<a name="e-bit-array-selected-count.returns"></a><h4>Returns</h4>
 <p> The number of rows selected in the given model.</p>
-<p></p>
 </div>
 </div>
 <hr>
@@ -291,8 +276,8 @@ e_bit_array_select_all (<em class="parameter"><code><a class="link" href="EBitAr
 <p>This routine selects all the rows in the given
 <a class="link" href="EBitArray.html" title="EBitArray"><span class="type">EBitArray</span></a>.</p>
 <div class="refsect3">
-<a name="id-1.17.4.7.6.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-bit-array-select-all.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -309,7 +294,7 @@ e_bit_array_select_all (<em class="parameter"><code><a class="link" href="EBitAr
 <hr>
 <div class="refsect2">
 <a name="e-bit-array-bit-count"></a><h3>e_bit_array_bit_count ()</h3>
-<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="returnvalue">gint</span></a>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="returnvalue">gint</span></a>
 e_bit_array_bit_count (<em class="parameter"><code><a class="link" href="EBitArray.html" title="EBitArray"><span class="type">EBitArray</span></a> *bit_array</code></em>);</pre>
 </div>
 <hr>
@@ -317,75 +302,70 @@ e_bit_array_bit_count (<em class="parameter"><code><a class="link" href="EBitArr
 <a name="e-bit-array-change-one-row"></a><h3>e_bit_array_change_one_row ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 e_bit_array_change_one_row (<em class="parameter"><code><a class="link" href="EBitArray.html" title="EBitArray"><span class="type">EBitArray</span></a> *bit_array</code></em>,
-                            <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="type">gint</span></a> row</code></em>,
-                            <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="type">gboolean</span></a> grow</code></em>);</pre>
+                            <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="type">gint</span></a> row</code></em>,
+                            <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="type">gboolean</span></a> grow</code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">
 <a name="e-bit-array-change-range"></a><h3>e_bit_array_change_range ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 e_bit_array_change_range (<em class="parameter"><code><a class="link" href="EBitArray.html" title="EBitArray"><span class="type">EBitArray</span></a> *bit_array</code></em>,
-                          <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="type">gint</span></a> start</code></em>,
-                          <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="type">gint</span></a> end</code></em>,
-                          <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="type">gboolean</span></a> grow</code></em>);</pre>
+                          <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="type">gint</span></a> start</code></em>,
+                          <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="type">gint</span></a> end</code></em>,
+                          <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="type">gboolean</span></a> grow</code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">
 <a name="e-bit-array-select-single-row"></a><h3>e_bit_array_select_single_row ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 e_bit_array_select_single_row (<em class="parameter"><code><a class="link" href="EBitArray.html" title="EBitArray"><span class="type">EBitArray</span></a> *bit_array</code></em>,
-                               <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="type">gint</span></a> row</code></em>);</pre>
+                               <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="type">gint</span></a> row</code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">
 <a name="e-bit-array-toggle-single-row"></a><h3>e_bit_array_toggle_single_row ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 e_bit_array_toggle_single_row (<em class="parameter"><code><a class="link" href="EBitArray.html" title="EBitArray"><span class="type">EBitArray</span></a> *bit_array</code></em>,
-                               <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="type">gint</span></a> row</code></em>);</pre>
+                               <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="type">gint</span></a> row</code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">
 <a name="e-bit-array-insert"></a><h3>e_bit_array_insert ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 e_bit_array_insert (<em class="parameter"><code><a class="link" href="EBitArray.html" title="EBitArray"><span class="type">EBitArray</span></a> *bit_array</code></em>,
-                    <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="type">gint</span></a> row</code></em>,
-                    <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="type">gint</span></a> count</code></em>);</pre>
+                    <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="type">gint</span></a> row</code></em>,
+                    <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="type">gint</span></a> count</code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">
 <a name="e-bit-array-delete"></a><h3>e_bit_array_delete ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 e_bit_array_delete (<em class="parameter"><code><a class="link" href="EBitArray.html" title="EBitArray"><span class="type">EBitArray</span></a> *bit_array</code></em>,
-                    <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="type">gint</span></a> row</code></em>,
-                    <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="type">gint</span></a> count</code></em>);</pre>
+                    <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="type">gint</span></a> row</code></em>,
+                    <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="type">gint</span></a> count</code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">
 <a name="e-bit-array-delete-single-mode"></a><h3>e_bit_array_delete_single_mode ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 e_bit_array_delete_single_mode (<em class="parameter"><code><a class="link" href="EBitArray.html" title="EBitArray"><span class="type">EBitArray</span></a> *bit_array</code></em>,
-                                <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="type">gint</span></a> row</code></em>,
-                                <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="type">gint</span></a> count</code></em>);</pre>
+                                <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="type">gint</span></a> row</code></em>,
+                                <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="type">gint</span></a> count</code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">
 <a name="e-bit-array-move-row"></a><h3>e_bit_array_move_row ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 e_bit_array_move_row (<em class="parameter"><code><a class="link" href="EBitArray.html" title="EBitArray"><span class="type">EBitArray</span></a> *bit_array</code></em>,
-                      <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="type">gint</span></a> old_row</code></em>,
-                      <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="type">gint</span></a> new_row</code></em>);</pre>
+                      <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="type">gint</span></a> old_row</code></em>,
+                      <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="type">gint</span></a> new_row</code></em>);</pre>
 </div>
 </div>
 <div class="refsect1">
 <a name="EBitArray.other_details"></a><h2>Types and Values</h2>
-<div class="refsect2">
-<a name="EBitArray-struct"></a><h3>struct EBitArray</h3>
-<pre class="programlisting">struct EBitArray;</pre>
-</div>
 </div>
 </div>
 <div class="footer">
-<hr>
-          Generated by GTK-Doc V1.21</div>
+<hr>Generated by GTK-Doc V1.25</div>
 </body>
 </html>

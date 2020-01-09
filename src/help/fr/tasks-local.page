@@ -49,13 +49,13 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
 <title>Ajout d'une autre liste locale de tâches ou de mémos</title>
 
-<p>Pour ajouter une autre liste de tâches locale à Evolution, suivez les étapes suivantes :</p>
+<p>To add another local task list to <app>Evolution</app>, perform the following steps:</p>
 <steps>
 <item><p>Cliquez sur <guiseq><gui>Fichier</gui><gui>Nouveau</gui><gui>Liste de tâches</gui></guiseq> ou <guiseq><gui>Fichier</gui><gui>Nouveau</gui><gui>Liste de mémos</gui></guiseq>.</p></item>
 <item><p>Sélectionnez le type <gui>Sur cet ordinateur</gui>.</p></item>
@@ -64,6 +64,6 @@
 <item><p>Cliquez sur <gui style="button">Valider</gui>.</p></item>
 </steps>
 
-<p>La liste de tâche sera ajoutée à la liste des listes de tâches d'Evolution.</p>
+<p>The task list will be added to the list of task lists in <app>Evolution</app>.</p>
 
 </page>

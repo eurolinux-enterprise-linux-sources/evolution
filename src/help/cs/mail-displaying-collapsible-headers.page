@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-displaying-collapsible-headers" xml:lang="cs">
 
   <info>
-    <desc>Display less email recipients of a specific message.</desc>
+    <desc>Jak zobrazit méně e-mailových příjemců u konkrétní zprávy.</desc>
 
     <link type="guide" xref="mail-displaying-message"/>
 
@@ -18,14 +18,26 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Zasouvací hlavičky zprávy</title>
+<title>Skrývání hlaviček zpráv</title>
 
-<p>Evolution compresses the To, Cc and Bcc headers of received mail and shows only five addresses in the message preview.</p>
+<p><app>Evolution</app> zkracuje hlavičky Komu, Kopie a Skrytá kopie u přijatých e-mailů a v náhledu zprávy zobrazuje pouze pět adres.</p>
 
-<p>To see all recipients, click the <media type="image" its:translate="no" src="./figures/plus-icon.png"/> icon next to the <gui>To:</gui> or <gui>Cc:</gui> line, or click the ellipsis (...) at the end of the five displayed addresses.</p>
+<p>Když chcete vidět všechny příjemce, klikněte na ikonu <media type="image" its:translate="no" src="./figures/plus-icon.png"/> vedle řádku <gui>Komu:</gui> nebo <gui>Kopie:</gui> nebo klikněte na výpustek (…) na konci za pěti zobrazenými adresami.</p>
 
-<p>To collapse all of the message headers and just display the subject and sender in one line, click the icon <media type="image" its:translate="no" src="./figures/minus-icon.png"/> next to the <gui>From:</gui> line. This is helpful on small screens.</p>
+<p>Ke sbalení všech hlaviček zprávy a k zobrazení pouze předmětu a odesilatele, každé v jednom řádku, klikněte na ikonu <media type="image" its:translate="no" src="./figures/minus-icon.png"/> vedle řádku <gui>Od:</gui>. Hodí se to na malých obrazovkách.</p>
  
 </page>

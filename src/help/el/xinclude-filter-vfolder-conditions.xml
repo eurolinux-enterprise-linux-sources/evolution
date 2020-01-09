@@ -21,16 +21,19 @@
 
 <item><p>Συγκεκριμένη κεφαλίδα:</p>
 <p>Οποιαδήποτε κεφαλίδα που περιλαμβάνει <link xref="mail-composer-custom-header-lines">προσαρμοσμένες κεφαλίδες</link>.</p>
-<p>Αν ένα μήνυμα χρησιμοποιεί μια κεφαλίδα περισσότερο από μία φορά, το Evolution δίνει σημασία μόνο στην πρώτη φορά, ακόμα και αν τη δεύτερη φορά η κεφαλίδα ορίζεται διαφορετικά. Για παράδειγμα, αν ένα μήνυμα καθορίζει την κεφαλίδα επαναποστολή από: σε "engineering@example.com" και μετά την ξαναορίζει ως "marketing@example.com", τότε το Evolution φιλτράρει σαν να μην συνάντησε το δεύτερο ορισμό. Για να φιλτράρετε μηνύματα που περιέχουν κεφαλίδες πολλαπλές φορές, χρησιμοποιήστε μια κανονική έκφραση.</p></item>
+<p>If a message uses a header more than once, <app>Evolution</app> pays attention only to the first instance, even if the message defines the header differently the second time. For example, if a message declares the Resent-From: header as "engineering@example.com" and then restates it as "marketing@example.com", <app>Evolution</app> filters as though the second declaration did not occur. To filter on messages that use headers multiple times, use a regular expression.</p></item>
 
 <item><p>Σώμα μηνύματος:</p>
 <p>Αναζητά στο κείμενο του μηνύματος.</p></item>
 
 <item><p>Έκφραση:</p>
-<p>(Μόνο για προγραμματιστές) Ταίριασμα ενός μηνύματος σύμφωνα με μια έκφραση που γράφετε στη γλώσσα Scheme που χρησιμοποιείται για ορισμό του <link xref="mail-filters">φίλτρα</link> στο Evolution.</p></item>
+<p>(For programmers only) Match a message according to an expression you write in the Scheme language used to define <link xref="mail-filters">filters</link> in <app>Evolution</app>.</p></item>
+
+<item><p>Ελεύθερη μορφή έκφρασης:</p>
+<p>(Μόνο για προχωρημένους χρήστες) Συνδυασμός πολλών συνθηκών χρησιμοποιώντας έναν <link href="https://bugzilla.gnome.org/show_bug.cgi?id=550796#c10">ειδική σύνταξη</link>.</p></item>
 
 <item><p>Ημερομηνία αποστολής:</p>
-<p>Φιλτράρει τα μηνύματα σύμφωνα με την ημερομηνία κατά την οποία στάλθηκαν. Πρώτα, επιλέξτε τις συνθήκες τις οποίες θέλετε να πληρεί ένα μήνυμα, όπως πριν ή μετά μια συγκεκριμένη ώρα. Μετά επιλέξτε την ώρα. Το φίλτρο συγκρίνει την ώρα του μηνύματος με το ρολόι του συστήματος όταν τρέξει το φίλτρο, ή μια συγκεκριμένη ώρα και ημερομηνία που διαλέγετε από το ημερολόγιο. Μπορείτε επίσης να το κάνετε να ψάξει για ένα μήνυμα μέσα σε ένα χρονικό φάσμα σχετικό με το φίλτρο, όπως δύο ή τέσσερις μέρες πριν.</p></item>
+<p>Filters messages according to the date on which they were sent. First, choose the conditions you want a message to meet, such as before a given date or after a given date. Then choose the time. The filter compares the message's time stamp to the system clock when the filter is run, or to a specific time and date you choose from a calendar. You can also have it look for a message within a range of time relative to the filter, such as two to four days ago.</p></item>
 
 <item><p>Ημερομηνία παραλαβής:</p>
 <p>Αυτό δουλεύει παρόμοια με την επιλογή ημερομηνία αποστολής, με τη διαφορά ότι συγκρίνει την ώρα που λάβατε το μήνυμα με τις ημερομηνίες που ορίζετε.</p></item>
@@ -60,6 +63,6 @@
 <p>Φιλτράρει με βάση τον κατάλογο ταχυδρομείου από τον οποίο έφτασε το μήνυμα. Αυτό το φίλτρο μπορεί να χάσει μερικά μηνύματα από μερικούς διακομιστές καταλόγων, γιατί ελέγχει για την κεφαλίδα X-BeenThere, η οποία χρησιμοποιείται για να ταυτοποιεί καταλόγους ταχυδρομείου ή άλλους αναδιανομής αλληλογραφίας. Αλληλογραφία από διακομιστές καταλόγων οι οποίοι δεν ορίζουν την κεφαλίδα X-BeenThere σωστά δε θα φιλτραριστούν από τέτοια φίλτρα.</p></item>
 
 <item><p>Ταίριασμα με Regex:</p>
-<p>(Για προγραμματιστές μόνο) Αν γνωρίζετε το δρόμο σας με τις <link href="https://en.wikipedia.org/wiki/Regular_expression">κανονική έκφραση</link>, ή κανονικές εκφράσεις, αυτή η επιλογή σας επιτρέπει να αναζητάτε για πολύπλοκα μοτίβα γραμμάτων, ώστε να μπορείτε να βρείτε, για παράδειγμα, όλες τις λέξεις που ξεκινούν από α και τελειώνουν σε ο, και το μήκος τους είναι μεταξύ έξι και δεκαπέντε γραμμάτων, ή όλα τα μηνύματα που ορίζουν την συγκεκριμένη κεφαλίδα δύο φορές. Για πληροφορίες για τη χρήση των κανονικών εκφράσεων, ελέγξτε τη σελίδα man της εντολής <cmd>grep</cmd>.</p></item>
+<p>(For programmers only) If you know your way around a <link href="https://en.wikipedia.org/wiki/Regular_expression">regex</link>, or regular expression, this option allows you to search for complex patterns of letters, so that you can find, for example, all words that start with "a" and end with "m", and are between six and fifteen letters long, or all messages that declare a particular header twice. For information about how to use regular expressions, check <link href="man:grep">the man page for the <cmd>grep</cmd></link> command.</p></item>
 
 </info>

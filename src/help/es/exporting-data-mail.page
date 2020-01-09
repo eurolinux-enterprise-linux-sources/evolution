@@ -17,9 +17,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -37,7 +43,7 @@
 
 <title>Exportar datos de correos</title>
 
-<p>Para guardar un correo en un archivo en formato <link href="http://es.wikipedia.org/wiki/Mbox">mbox</link>, seleccione un correo y pulse <guiseq><gui>Archivo</gui><gui>Guardar como mbox...</gui></guiseq> o pulse con el botón derecho del ratón sobre el correo y pulse <gui>Guardar como mbox...</gui>.</p>
+<p>Para guardar un correo en un archivo en formato <link href="http://es.wikipedia.org/wiki/Mbox">mbox</link>, seleccione un correo y pulse <guiseq><gui>Archivo</gui><gui>Guardar como mbox…</gui></guiseq> o pulse con el botón derecho del ratón sobre el correo y pulse <gui>Guardar como mbox…</gui>.</p>
 
 <p>Los mismos pasos se aplican al guardar una carpeta de correo completa, pero antes debe marcar todos los correos en ella.</p>
 <p>Puede seleccionar todos los correos en su carpeta pulsando <guiseq><gui>Editar</gui><gui>Seleccionar todos</gui></guiseq> o pulsando <keyseq><key>Ctrl</key><key>A</key></keyseq>.</p>

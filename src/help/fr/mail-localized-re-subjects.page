@@ -15,7 +15,6 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
-
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Marc Lorber</mal:name>
       <mal:email>Linux-Lorber@club-internet.fr</mal:email>
@@ -49,7 +48,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -59,7 +58,7 @@
 
 <list>
 <item><p>Ouvrez l'application <app>Terminal</app>.</p></item>
-<item><p>Utilisez la commande <cmd>gsettings set org.gnome.evolution.mail.composer-localized-re 'AW:,SV:'</cmd> (au cas où vous désirez que « AW » et « SW » soient reconnus).</p></item>
+<item><p>Utilisez la commande <cmd>gsettings set org.gnome.evolution.mail.composer-localized-re 'AW:,SV:'</cmd> (au cas où vous désirez que « AW: » et « SV:» soient reconnus).</p></item>
 </list>
 <p>Vous pouvez aussi utiliser l'application <gui>dconf-editor</gui> pour faire cela.</p>
 

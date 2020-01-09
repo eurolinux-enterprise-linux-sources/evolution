@@ -205,7 +205,7 @@ epech_dialog_run (CustomHeaderOptionsDialog *mch,
 	g_return_val_if_fail (mch != NULL || EMAIL_CUSTOM_HEADER_OPTIONS_IS_DIALOG (mch), FALSE);
 	priv = mch->priv;
 
-	settings = g_settings_new (ECM_SETTINGS_ID);
+	settings = e_util_ref_settings (ECM_SETTINGS_ID);
 	epech_load_from_settings (settings, ECM_SETTINGS_KEY, mch);
 	g_object_unref (settings);
 
@@ -495,15 +495,16 @@ destroy_compo_data (gpointer data)
 static void
 action_email_custom_header_cb (GtkAction *action,
                                EMsgComposer *composer)
-
 {
 	GtkUIManager *ui_manager;
 	GtkWidget *menuitem;
 	GdkWindow *window;
 	CustomHeaderOptionsDialog *dialog = NULL;
 	EmailCustomHeaderWindow *new_email_custom_header_window = NULL;
+	EHTMLEditor *editor;
 
-	ui_manager = gtkhtml_editor_get_ui_manager (GTKHTML_EDITOR (composer));
+	editor = e_msg_composer_get_editor (composer);
+	ui_manager = e_html_editor_get_ui_manager (editor);
 	menuitem = gtk_ui_manager_get_widget (ui_manager, "/main-menu/insert-menu/insert-menu-top/Custom Header");
 
 	new_email_custom_header_window = g_object_get_data ((GObject *) composer, "compowindow");
@@ -545,13 +546,13 @@ gboolean
 e_plugin_ui_init (GtkUIManager *ui_manager,
                   EMsgComposer *composer)
 {
-	GtkhtmlEditor *editor;
+	EHTMLEditor *editor;
 
-	editor = GTKHTML_EDITOR (composer);
+	editor = e_msg_composer_get_editor (composer);
 
 	/* Add actions to the "composer" action group. */
 	gtk_action_group_add_actions (
-		gtkhtml_editor_get_action_group (editor, "composer"),
+		e_html_editor_get_action_group (editor, "composer"),
 		entries, G_N_ELEMENTS (entries), composer);
 
 	return TRUE;
@@ -599,7 +600,7 @@ commit_changes (ConfigData *cd)
 
 	g_ptr_array_add (headers, NULL);
 
-	settings = g_settings_new (ECM_SETTINGS_ID);
+	settings = e_util_ref_settings (ECM_SETTINGS_ID);
 	g_settings_set_strv (settings, ECM_SETTINGS_KEY, (const gchar * const *) headers->pdata);
 	g_object_unref (settings);
 
@@ -911,7 +912,7 @@ e_plugin_lib_get_configure_widget (EPlugin *epl)
 	gtk_widget_set_sensitive (cd->header_edit, FALSE);
 
 	/* Populate tree view with values from settings */
-	settings = g_settings_new (ECM_SETTINGS_ID);
+	settings = e_util_ref_settings (ECM_SETTINGS_ID);
 	headers = g_settings_get_strv (settings, ECM_SETTINGS_KEY);
 	g_object_unref (settings);
 

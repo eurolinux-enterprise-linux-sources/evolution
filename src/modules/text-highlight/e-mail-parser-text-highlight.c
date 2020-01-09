@@ -55,10 +55,11 @@ empe_text_highlight_parse (EMailParserExtension *extension,
                            GQueue *out_mail_parts)
 {
 	CamelContentType *ct;
+	gboolean handled;
 	gint len;
 
 	/* Prevent recursion */
-	if (strstr (part_id->str, ".text-highlight") != NULL)
+	if (g_str_has_suffix (part_id->str, ".text-highlight"))
 		return FALSE;
 
 	/* Don't parse text/html if it's not an attachment */
@@ -77,13 +78,13 @@ empe_text_highlight_parse (EMailParserExtension *extension,
 	/* All source codes and scripts are in general plain texts,
 	 * so let text/plain parser handle it. */
 
-	e_mail_parser_parse_part_as (
+	handled = e_mail_parser_parse_part_as (
 		parser, part, part_id, "text/plain",
 		cancellable, out_mail_parts);
 
 	g_string_truncate (part_id, len);
 
-	return TRUE;
+	return handled;
 }
 
 static void

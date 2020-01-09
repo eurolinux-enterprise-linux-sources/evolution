@@ -247,6 +247,22 @@ activity_bar_get_property (GObject *object,
 }
 
 static void
+activity_bar_constructed (GObject *object)
+{
+	GObject *revealer;
+
+	/* Chain up to parent's method. */
+	G_OBJECT_CLASS (e_activity_bar_parent_class)->constructed (object);
+
+	/* Disable animation of the revealer, until GtkInfoBar's bug #710888 is fixed */
+	revealer = gtk_widget_get_template_child (GTK_WIDGET (object), GTK_TYPE_INFO_BAR, "revealer");
+	if (revealer) {
+		gtk_revealer_set_transition_type (GTK_REVEALER (revealer), GTK_REVEALER_TRANSITION_TYPE_NONE);
+		gtk_revealer_set_transition_duration (GTK_REVEALER (revealer), 0);
+	}
+}
+
+static void
 activity_bar_dispose (GObject *object)
 {
 	EActivityBarPrivate *priv;
@@ -254,8 +270,10 @@ activity_bar_dispose (GObject *object)
 	priv = E_ACTIVITY_BAR_GET_PRIVATE (object);
 
 	if (priv->timeout_id > 0) {
-		g_source_remove (priv->timeout_id);
+		guint timeout_id = priv->timeout_id;
+
 		priv->timeout_id = 0;
+		g_source_remove (timeout_id);
 	}
 
 	if (priv->activity != NULL) {
@@ -282,6 +300,7 @@ e_activity_bar_class_init (EActivityBarClass *class)
 	object_class = G_OBJECT_CLASS (class);
 	object_class->set_property = activity_bar_set_property;
 	object_class->get_property = activity_bar_get_property;
+	object_class->constructed = activity_bar_constructed;
 	object_class->dispose = activity_bar_dispose;
 
 	g_object_class_install_property (
@@ -322,7 +341,7 @@ e_activity_bar_init (EActivityBar *bar)
 	bar->priv->spinner = widget;
 
 	/* The spinner is only visible when the image is not. */
-	g_object_bind_property (
+	e_binding_bind_property (
 		bar->priv->image, "visible",
 		bar->priv->spinner, "visible",
 		G_BINDING_BIDIRECTIONAL |

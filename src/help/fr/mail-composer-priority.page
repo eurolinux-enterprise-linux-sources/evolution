@@ -6,7 +6,7 @@
 
     <link type="guide" xref="index#mail-composing-advanced"/>
 
-    <revision pkgversion="3.3.91" version="0.2" date="2012-02-19" status="draft"/>
+    <revision pkgversion="3.13.90" version="0.3" date="2015-03-09" status="draft"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -52,14 +52,14 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
 <title>Priorité des messages sortants</title>
 
-<p>Vous pouvez définir la priorité d'un message que vous envoyez, afin que le destinataire perçoive son importance relative. Pour indiquer la priorité d'un message, choisissez <guiseq><gui>Options</gui><gui>Prioriser le message</gui></guiseq> dans la fenêtre de l'éditeur.</p>
+<p>Vous pouvez donner la priorité à un message que vous envoyez, afin que le destinataire perçoive son importance relative. Pour indiquer la priorité d'un message, choisissez <guiseq><gui>Options</gui><gui>Prioriser le message</gui></guiseq> dans la fenêtre de l'éditeur.</p>
 
-<note style="tip"><p>Evolution ignore la priorité d'un message entrant, parce qu'il estime que c'est au destinataire de décider si le message est important ou non. Vous pouvez mettre le marqueur « Important » pour tous les messages.</p></note>
-
+<note style="tip"><p><app>Evolution</app> will ignore the message priority of incoming messages because the recipient should decide whether the message is important or not. You can set the "Important" flag for any messages.</p></note>
+<!-- TODO: Nowhere is explained how to set the Important flag. -->
 </page>

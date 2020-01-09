@@ -20,25 +20,46 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
   <title>Υποστηριζόμενες μορφές αρχείων</title>
 
-<p>Το Evolution μπορεί να εισάγει τους παρακάτω τύπους αρχείων:</p>
+<p><app>Evolution</app> can import the following types of files:</p>
 
 <section id="mail">
 <title>Αλληλογραφία</title>
 <list>
 <item><p>Berkley Mailbox (.mbox ή χωρίς επέκταση):</p>
-<p>Η μορφή αλληλογραφίας που χρησιμοποιείται από το Mozilla, το Netscape, το Evolution (για τοπικούς φακέλους μέχρι την έκδοση 2.32), το Eudora και πολλούς άλλους πελάτες αλληλογραφίας.</p></item>
+<p>The email format used by <app>Mozilla</app>, <app>Netscape</app>, <app>Evolution</app> (for local folders until version 2.32), <app>Eudora</app>, and many other email clients.
+</p></item>
 <item><p>Maildir (χωρίς επέκταση):</p>
-<p>Η χρησιμοποιούμενη μορφή από το Evolution (για τοπικούς φακέλους από την έκδοση 3.0). Δεν υπάρχει ανάγκη εισαγωγής αρχείων Maildir καθώς μπορείτε να <link xref="mail-account-manage-maildir-format-directories">ρυθμίσετε έναν λογαριασμό Maildir</link> στο Evolution και να δείξετε τον φάκελο όπου αποθηκεύονται τα αρχεία Maildir.</p></item>
+<p>The format used by <app>Evolution</app> (for local folders since version 3.0). There is no need to import Maildir files as you can <link xref="mail-account-manage-maildir-format-directories">configure a Maildir account</link> in <app>Evolution</app> and point to the folder where the Maildir files are stored.
+</p></item>
 <item><p>Προσωπικοί φάκελοι Outlook Express 5/6 (.dbx):</p>
-<p>Η χρησιμοποιούμενη μορφή αρχείων αλληλογραφίας από το Microsoft Outlook Express 5/6. Για νεώτερες εκδόσεις συνιστάται η εισαγωγή PST.</p></item>
+<p>The email file format used by <app>Microsoft Outlook Express 5/6</app>. For newer versions PST import is recommended.
+</p></item>
 </list>
 </section>
 
@@ -46,9 +67,11 @@
 <title>Ημερολόγιο</title>
 <list>
 <item><p>vCalendar (.vcs):</p>
-<p>Ένας τύπος για την αποθήκευση αρχείων ημερολογίου, που χρησιμοποιείται γενικά από το Evolution, το Microsoft Outlook, το Sunbird, και το Korganizer.</p></item>
+<p>A format for storing calendar files, which is generally used by <app>Evolution</app>, <app>Microsoft Outlook</app>, <app>Sunbird</app>, and <app>Korganizer</app>.
+</p></item>
 <item><p>iCalendar ή iCal (.ics):</p>
-<p>Ένας τύπος για την αποθήκευση αρχείων ημερολογίου, που χρησιμοποιείται από το Evolution, το Microsoft Outlook, το Palm OS παλάμης, και άλλα.</p></item>
+<p>A format for storing calendar files. iCalendar is used by <app>Evolution</app>, <app>Microsoft Outlook</app>, Palm OS handhelds, and others.
+</p></item>
 </list>
 </section>
 
@@ -65,10 +88,13 @@
 <section id="misc">
 <title>Διάφορα</title>
 <list>
-<item><p>Evolution/Mozilla/Outlook CSV/Tab (.csv, .tab):</p>
-<p>Τα αρχεία CSV (τιμές χωριζόμενες με κόμμα) ή στηλοθέτη αποθηκεύονται χρησιμοποιώντας Evolution, Microsoft Outlook και Mozilla.</p></item>
+<item><p>
+<app>Evolution</app>/Mozilla/Outlook CSV/Tab (.csv, .tab):</p>
+<p>CSV (Comma-separated values) or Tabulator files saved by using <app>Evolution</app>, <app>Microsoft Outlook</app> and <app>Mozilla</app>.
+</p></item>
 <item><p>Προσωπικοί φάκελοι Outlook (.pst):</p>
-<p>Μια μορφή αρχείου που χρησιμοποιείται για την αποθήκευση τοπικών αντιγράφων των μηνυμάτων, των γεγονότων ημερολογίου και άλλων στοιχείων στο λογισμικό της Microsoft, όπως το Microsoft Exchange Client, το Windows Messaging και το Microsoft Outlook. Λέγεται επίσης "προσωπικός πίνακας αποθήκευσης".</p></item>
+<p>A file format used to store local copies of messages, calendar events, and other items within Microsoft software such as <app>Microsoft Exchange Client</app>, <app>Windows Messaging</app>, and <app>Microsoft Outlook</app>. It is also called "Personal Storage Table".
+</p></item>
 </list>
 </section>
 

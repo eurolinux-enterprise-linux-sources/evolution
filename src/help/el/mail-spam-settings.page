@@ -7,7 +7,7 @@
     <link type="guide" xref="mail-spam"/>
     <link type="seealso" xref="mail-spam-marking"/>
 
-    <revision pkgversion="3.8.1" version="0.9" date="2013-06-22" status="final"/>
+    <revision pkgversion="3.12.9" version="0.11" date="2015-03-15" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -31,9 +31,27 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
@@ -41,7 +59,7 @@
 
 <section id="junk-tools">
 <title>Εργαλεία</title>
-<p>Το <app>Evolution</app> επιτρέπει τον έλεγχο για ανεπιθύμητα ή μηνύματα όχλησης χρησιμοποιώντας τα εργαλεία <app>Bogofilter</app> ή <app>SpamAssassin</app>. Για να χρησιμοποιήσετε αυτά τα εργαλεία, χρειάζεται να βεβαιωθείτε ότι εγκαταστάθηκαν μέσα από τη εργαλεία διαχείρισης λογισμικού της διανομής σας.</p>
+<p>Το <app>Evolution</app> επιτρέπει τον έλεγχο για ανεπιθύμητα ή μηνύματα όχλησης χρησιμοποιώντας τα εργαλεία <app>Bogofilter</app> ή <app>SpamAssassin</app>. Για να χρησιμοποιήσετε αυτά τα εργαλεία, χρειάζεται να βεβαιωθείτε ότι εγκαταστάθηκαν μέσα από το εργαλείο διαχείρισης λογισμικού της διανομής σας.</p>
 
 <note style="info package">
   <p>Ίσως χρειαστεί να εγκαταστήσετε το <app>Bogofilter</app> ή το <app>SpamAssassin</app> για να εκτελέσετε αυτά τα βήματα.</p>
@@ -63,19 +81,17 @@
 
 <section id="preferences">
 <title>Προτιμήσεις ανεπιθύμητης αλληλογραφίας</title>
-<note style="tip"><p>Οι επιλογές ανεπιθύμητης αλληλογραφίας που συζητήθηκαν σε αυτήν τη σελίδα αναφέρονται μόνο σε POP και λογαριασμούς τοπικής διανομής. Για χειρισμό ανεπιθύμητων μηνυμάτων σε λογαριασμούς IMAP, δείτε τις ρυθμίσεις του Evolution στο <guiseq><gui>Επεξεργασία</gui><gui>Προτιμήσεις</gui><gui>Λογαριασμοί αλληλογραφίας</gui><gui style="button">Επεξεργασία</gui><gui>Λήψη επιλογών</gui></guiseq>.</p></note>
-<p>Μπορείτε να τροποποιήσετε πώς το Evolution χειρίζεται ανεπιθύμητα μηνύματα αλλάζοντας τις προτιμήσεις ανεπιθύμητης αλληλογραφίας:</p>
+<note style="tip"><p>The junk mail options discussed in this page refer only to POP and Local Delivery accounts. For handling junk mail on IMAP accounts, see the <app>Evolution</app> settings under <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Mail Accounts</gui><gui style="button">Edit</gui><gui>Receiving Options</gui></guiseq>.</p></note>
+<p>You can modify how <app>Evolution</app> handles junk mail by changing the Junk Mail Preferences:</p>
 <steps>
 <item><p>Κλικ στο <guiseq><gui>επεξεργασία</gui><gui>προτιμήσεις</gui></guiseq>, ή πατήστε <keyseq><key>Shift</key><key>Ctrl</key><key>S</key></keyseq>.</p></item>
 <item><p>Επιλέξτε <gui>προτιμήσεις αλληλογραφίας</gui>.</p></item>
 <item><p>Κλικ στην καρτέλα <gui>ανεπιθύμητα</gui>. Εδώ, μπορείτε να καθορίσετε τα παρακάτω:</p>
 <list>
-<item><p>Έλεγχος εισερχόμενης αλληλογραφίας για ανεπιθύμητα μηνύματα.</p></item>
+<item><p>Ελέγχονται τα εισερχόμενα μηνύματα για ανεπιθύμητα.</p></item>
 <item><p>Διαγραφή ανεπιθύμητων μηνυμάτων στην έξοδο και συχνότητα διαγραφής ανεπιθύμητων μηνυμάτων.</p></item>
-<item><p>Έλεγχος προσαρμοσμένων κεφαλίδων για ανεπιθύμητα μηνύματα.</p></item>
 <item><p>Να μην σημειώνονται τα μηνύματα ως ανεπιθύμητα αν ο αποστολέας βρίσκεται στο βιβλίο διευθύνσεών μου.</p></item>
-<item><p>Το προεπιλεγμένο φίλτρο ανεπιθύμητων.</p></item>
-<item><p>Επιλογές Bogofilter και SpamAssassin.</p></item>
+<item><p>Ελέγχονται οι προσαρμοσμένες κεφαλίδες (που προστέθηκαν από τον διακομιστή αλληλογραφίας) για ανεπιθύμητα μηνύματα.</p></item>
 </list>
 </item>
 </steps>

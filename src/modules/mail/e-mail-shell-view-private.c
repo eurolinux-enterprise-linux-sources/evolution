@@ -250,39 +250,6 @@ mail_shell_view_folder_tree_popup_event_cb (EShellView *shell_view,
 }
 
 static gboolean
-mail_shell_view_mail_display_needs_key (EMailDisplay *mail_display,
-                                        gboolean with_input)
-{
-	gboolean needs_key = FALSE;
-
-	if (gtk_widget_has_focus (GTK_WIDGET (mail_display))) {
-		WebKitWebFrame *frame;
-		WebKitDOMDocument *dom;
-		WebKitDOMElement *element;
-		gchar *name = NULL;
-
-		frame = webkit_web_view_get_focused_frame (WEBKIT_WEB_VIEW (mail_display));
-		if (!frame)
-			return FALSE;
-		dom = webkit_web_frame_get_dom_document (frame);
-		/* intentionally used "static_cast" */
-		element = webkit_dom_html_document_get_active_element ((WebKitDOMHTMLDocument *) dom);
-
-		if (element)
-			name = webkit_dom_node_get_node_name (WEBKIT_DOM_NODE (element));
-
-		/* if INPUT or TEXTAREA has focus, then any key press should go there */
-		if (name && ((with_input && g_ascii_strcasecmp (name, "INPUT") == 0) || g_ascii_strcasecmp (name, "TEXTAREA") == 0)) {
-			needs_key = TRUE;
-		}
-
-		g_free (name);
-	}
-
-	return needs_key;
-}
-
-static gboolean
 mail_shell_view_key_press_event_cb (EMailShellView *mail_shell_view,
                                     GdkEventKey *event)
 {
@@ -314,42 +281,12 @@ mail_shell_view_key_press_event_cb (EMailShellView *mail_shell_view,
 			action = ACTION (MAIL_SMART_BACKWARD);
 			break;
 
-		case GDK_KEY_Home:
-		case GDK_KEY_Left:
-		case GDK_KEY_Up:
-		case GDK_KEY_Right:
-		case GDK_KEY_Down:
-		case GDK_KEY_Next:
-		case GDK_KEY_End:
-		case GDK_KEY_Begin:
-			/* If Caret mode is enabled don't try to process these keys */
-			if (e_web_view_get_caret_mode (E_WEB_VIEW (mail_display)))
-				return FALSE;
-		case GDK_KEY_Prior:
-			if (!mail_shell_view_mail_display_needs_key (mail_display, FALSE) &&
-			    webkit_web_view_get_main_frame (WEBKIT_WEB_VIEW (mail_display)) !=
-			    webkit_web_view_get_focused_frame (WEBKIT_WEB_VIEW (mail_display))) {
-				WebKitDOMDocument *document;
-				WebKitDOMDOMWindow *window;
-
-				document = webkit_web_view_get_dom_document (WEBKIT_WEB_VIEW (mail_display));
-				window = webkit_dom_document_get_default_view (document);
-
-				/* Workaround WebKit bug for key navigation, when inner IFRAME is focused.
-				 * EMailView's inner IFRAMEs have disabled scrolling, but WebKit doesn't post
-				 * key navigation events to parent's frame, thus the view doesn't scroll.
-				 * This is a poor workaround for this issue, the main frame is focused,
-				 * which has scrolling enabled.
-				*/
-				webkit_dom_dom_window_focus (window);
-			}
-
-			return FALSE;
 		default:
 			return FALSE;
 	}
 
-	if (mail_shell_view_mail_display_needs_key (mail_display, TRUE))
+	if (e_web_view_get_need_input (E_WEB_VIEW (mail_display)) &&
+	    gtk_widget_has_focus (GTK_WIDGET (mail_display)))
 		return FALSE;
 
 	gtk_action_activate (action);
@@ -396,7 +333,8 @@ mail_shell_view_message_list_right_click_cb (EShellView *shell_view,
 
 static gboolean
 mail_shell_view_popup_event_cb (EMailShellView *mail_shell_view,
-                                const gchar *uri)
+                                const gchar *uri,
+                                GdkEvent *event)
 {
 	EMailShellContent *mail_shell_content;
 	EMailDisplay *display;
@@ -404,6 +342,7 @@ mail_shell_view_popup_event_cb (EMailShellView *mail_shell_view,
 	EMailReader *reader;
 	EMailView *mail_view;
 	GtkMenu *menu;
+	guint button;
 
 	if (uri != NULL)
 		return FALSE;
@@ -421,9 +360,12 @@ mail_shell_view_popup_event_cb (EMailShellView *mail_shell_view,
 	shell_view = E_SHELL_VIEW (mail_shell_view);
 	e_shell_view_update_actions (shell_view);
 
+	if (!event || !gdk_event_get_button (event, &button))
+		button = 0;
+
 	gtk_menu_popup (
 		menu, NULL, NULL, NULL, NULL,
-		0, gtk_get_current_event_time ());
+		button, event ? gdk_event_get_time (event) : gtk_get_current_event_time ());
 
 	return TRUE;
 }
@@ -593,6 +535,7 @@ e_mail_shell_view_private_constructed (EMailShellView *mail_shell_view)
 	GtkTreeSelection *selection;
 	GtkUIManager *ui_manager;
 	GtkWidget *message_list;
+	GSettings *settings;
 	EMailLabelListStore *label_store;
 	EMailBackend *backend;
 	EMailSession *session;
@@ -649,7 +592,7 @@ e_mail_shell_view_private_constructed (EMailShellView *mail_shell_view)
 
 	/* The folder tree and scope combo box are both insensitive
 	 * when searching beyond the currently selected folder. */
-	g_object_bind_property (
+	e_binding_bind_property (
 		folder_tree, "sensitive",
 		combo_box, "sensitive",
 		G_BINDING_BIDIRECTIONAL |
@@ -756,11 +699,18 @@ e_mail_shell_view_private_constructed (EMailShellView *mail_shell_view)
 	e_mail_shell_view_update_search_filter (mail_shell_view);
 
 	/* This binding must come after e_mail_reader_init(). */
-	g_object_bind_property (
+	e_binding_bind_property (
 		shell_content, "group-by-threads",
 		mail_view, "group-by-threads",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
+
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
+	g_settings_bind (
+		settings, "vfolder-allow-expunge",
+		mail_shell_view, "vfolder-allow-expunge",
+		G_SETTINGS_BIND_GET);
+	g_clear_object (&settings);
 
 	/* Populate built-in rules for search entry popup menu.
 	 * Keep the assertions, please.  If the conditions aren't
@@ -770,10 +720,10 @@ e_mail_shell_view_private_constructed (EMailShellView *mail_shell_view)
 	while ((rule = e_rule_context_next_rule (context, rule, source))) {
 		if (!rule->system)
 			continue;
-		g_assert (ii < MAIL_NUM_SEARCH_RULES);
+		g_return_if_fail (ii < MAIL_NUM_SEARCH_RULES);
 		priv->search_rules[ii++] = g_object_ref (rule);
 	}
-	g_assert (ii == MAIL_NUM_SEARCH_RULES);
+	g_return_if_fail (ii == MAIL_NUM_SEARCH_RULES);
 
 	/* Now that we're all set up, simulate selecting a folder. */
 	g_signal_emit_by_name (selection, "changed");
@@ -826,6 +776,9 @@ e_mail_shell_view_private_dispose (EMailShellView *mail_shell_view)
 		g_object_unref (priv->search_account_cancel);
 		priv->search_account_cancel = NULL;
 	}
+
+	g_slist_free_full (priv->selected_uids, (GDestroyNotify) camel_pstring_free);
+	priv->selected_uids = NULL;
 }
 
 void
@@ -912,7 +865,7 @@ e_mail_shell_view_update_sidebar (EMailShellView *mail_shell_view)
 	MailFolderCache *folder_cache;
 	MessageList *message_list;
 	guint selected_count;
-	GString *buffer;
+	GString *buffer, *title_short = NULL;
 	gboolean store_is_local, is_inbox;
 	const gchar *display_name;
 	const gchar *folder_name;
@@ -1046,10 +999,17 @@ e_mail_shell_view_update_sidebar (EMailShellView *mail_shell_view)
 				num_deleted - num_junked +
 				num_junked_not_deleted;
 
-		if (num_unread > 0 && selected_count <= 1)
+		if (num_unread > 0 && selected_count <= 1) {
 			g_string_append_printf (
 				buffer, ngettext ("%d unread, ",
 				"%d unread, ", num_unread), num_unread);
+
+			title_short = g_string_sized_new (64);
+			g_string_append_printf (
+				title_short, ngettext ("%d unread",
+				"%d unread", num_unread), num_unread);
+		}
+
 		g_string_append_printf (
 			buffer, ngettext ("%d total", "%d total",
 			num_visible), num_visible);
@@ -1077,12 +1037,17 @@ e_mail_shell_view_update_sidebar (EMailShellView *mail_shell_view)
 	if (strcmp (folder_name, "INBOX") == 0)
 		display_name = _("Inbox");
 
-	title = g_strdup_printf ("%s (%s)", display_name, buffer->str);
+	if (title_short && title_short->len > 0)
+		title = g_strdup_printf ("%s (%s)", display_name, title_short->str);
+	else
+		title = g_strdup (display_name);
 	e_shell_sidebar_set_secondary_text (shell_sidebar, buffer->str);
 	e_shell_view_set_title (shell_view, title);
 	g_free (title);
 
 	g_string_free (buffer, TRUE);
+	if (title_short)
+		g_string_free (title_short, TRUE);
 
 	g_clear_object (&folder);
 }
@@ -1248,7 +1213,7 @@ send_receive_add_to_menu (SendReceiveData *data,
 	menu_item = gtk_menu_item_new ();
 	gtk_widget_show (menu_item);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		service, "display-name",
 		menu_item, "label",
 		G_BINDING_SYNC_CREATE);
@@ -1565,7 +1530,7 @@ e_mail_shell_view_update_send_receive_menus (EMailShellView *mail_shell_view)
 		gtk_widget_show (GTK_WIDGET (tool_item));
 		priv->send_receive_tool_item = tool_item;
 
-		g_object_bind_property (
+		e_binding_bind_property (
 			ACTION (MAIL_SEND_RECEIVE), "sensitive",
 			tool_item, "sensitive",
 			G_BINDING_SYNC_CREATE);

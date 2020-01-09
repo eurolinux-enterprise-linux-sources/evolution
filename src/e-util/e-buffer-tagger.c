@@ -56,7 +56,7 @@ typedef struct _MagicInsertMatch MagicInsertMatch;
 static MagicInsertMatch mim[] = {
 	/* prefixed expressions */
 	{ "(news|telnet|nntp|file|http|ftp|sftp|https|webcal)://([-a-z0-9]+(:[-a-z0-9]+)?@)?[-a-z0-9.]+[-a-z0-9](:[0-9]*)?(([.])?/[-a-z0-9_$.+!*(),;:@%&=?/~#']*[^]'.}>\\) \n\r\t,?!;:\"]?)?", NULL, NULL },
-	{ "(sip|h323|callto):([-_a-z0-9.'\\+]+(:[0-9]{1,5})?(/[-_a-z0-9.']+)?)(@([-_a-z0-9.%=?]+|([0-9]{1,3}.){3}[0-9]{1,3})?)?(:[0-9]{1,5})?", NULL, NULL },
+	{ "(sip|h323|callto|tel):([-_a-z0-9.'\\+]+(:[0-9]{1,5})?(/[-_a-z0-9.']+)?)(@([-_a-z0-9.%=?]+|([0-9]{1,3}.){3}[0-9]{1,3})?)?(:[0-9]{1,5})?", NULL, NULL },
 	{ "mailto:[-_a-z0-9.'\\+]+@[-_a-z0-9.%=?]+", NULL, NULL },
 	/* not prefixed expression */
 	{ "www\\.[-a-z0-9.]+[-a-z0-9](:[0-9]*)?(([.])?/[-A-Za-z0-9_$.+!*(),;:@%&=?/~#]*[^]'.}>\\) \n\r\t,?!;:\"]?)?", NULL, "http://" },
@@ -109,13 +109,18 @@ markup_text (GtkTextBuffer *buffer)
 		any = FALSE;
 		for (i = 0; i < G_N_ELEMENTS (mim); i++) {
 			if (mim[i].preg && !regexec (mim[i].preg, str, 2, pmatch, 0)) {
-				gtk_text_buffer_get_iter_at_offset (buffer, &start, offset + pmatch[0].rm_so);
-				gtk_text_buffer_get_iter_at_offset (buffer, &end, offset + pmatch[0].rm_eo);
+				gint char_so, char_eo;
+
+				char_so = g_utf8_pointer_to_offset (str, str + pmatch[0].rm_so);
+				char_eo = g_utf8_pointer_to_offset (str, str + pmatch[0].rm_eo);
+
+				gtk_text_buffer_get_iter_at_offset (buffer, &start, offset + char_so);
+				gtk_text_buffer_get_iter_at_offset (buffer, &end, offset + char_eo);
 				gtk_text_buffer_apply_tag_by_name (buffer, E_BUFFER_TAGGER_LINK_TAG, &start, &end);
 
 				any = TRUE;
 				str += pmatch[0].rm_eo;
-				offset += pmatch[0].rm_eo;
+				offset += char_eo;
 				break;
 			}
 		}

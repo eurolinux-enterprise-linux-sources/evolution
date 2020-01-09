@@ -56,7 +56,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -68,11 +68,11 @@
 <p>Dans l'onglet <gui>Réception du courriel</gui> (accessible via <guiseq><gui>Édition</gui><gui>Préférences</gui><gui>Compte de messagerie</gui><gui style="button">Édition</gui><gui>Réception du courriel</gui></guiseq>) :</p>
 
 <list>
-<item><p>Saisissez l'adresse du serveur de courriel dans le champ <gui>Serveur</gui> et saisissez votre nom d'utilisateur sur ce serveur.</p></item>
+<item><p>Saisissez l'adresse du serveur de messagerie dans le champ <gui>Serveur</gui> et saisissez votre nom d'utilisateur sur ce serveur.</p></item>
 <item><p>Cochez si vous voulez utiliser une connexion sécurisée (SSL ou TLS).</p><p>Vous devriez activer cette option si votre serveur la prend en charge.</p>
-<note style="tip"><p>Les fournisseurs de messagerie Web gratuite fournissent en général des informations sur la possibilité d'utiliser ces options. Si vous êtes dans un environnement d'organisation, contactez votre administrateur système pour obtenir de plus amples informations.</p></note></item>
-<item><p>Sélectionnez le type d'authentification dans la liste Authentification ou cliquez sur <gui style="button">Vérifier les types pris en charge</gui> pour qu'Evolution vérifie les mécanismes d'authentification pris en charge. Certains serveurs ne signalent pas les mécanismes d'authentification qu'ils prennent en charge, ce qui signifie que cette fonction ne garantit pas que les mécanismes disponibles fonctionnent réellement.</p></item>
-<item><p>Cochez si vous souhaitez qu'Evolution se souvienne de votre mot de passe.</p></item>
+<note style="tip"><p>Les serveurs de messagerie Web gratuite fournissent en général des informations sur la possibilité d'utiliser ces options. Si vous êtes dans un environnement d'organisation, contactez votre administrateur système pour obtenir de plus amples informations.</p></note></item>
+<item><p>Select your authentication type in the Authentication list, or click <gui style="button">Check for Supported Types</gui> to have <app>Evolution</app> check for supported authentication mechanisms. Some servers do not announce the authentication mechanisms they support, so clicking this button is not a guarantee that available mechanisms actually work.</p></item>
+<item><p>Select if you want <app>Evolution</app> to remember your password.</p></item>
 </list>
 
 </section>
@@ -83,7 +83,7 @@
 <p>Dans l'onglet <gui>Options de réception</gui> (accessible via <guiseq><gui>Édition</gui><gui>Préférences</gui><gui>Compte de messagerie</gui><gui style="button">Édition</gui><gui>Options de réception</gui></guiseq>) :</p>
 
 <list>
-<item><p>Si vous voulez qu'Evolution vérifie automatiquement les nouveaux messages, activez l'option <gui>Vérifier les nouveaux messages toutes les ... minutes</gui> et sélectionnez la fréquence en minutes.</p></item>
+<item><p>If you want <app>Evolution</app> to check automatically for new messages, click the <gui>Check for new messages every … minutes</gui> option and select the frequency in minutes.</p></item>
 <item><p>Si vous voulez que les messages restent sur le serveur pendant un certain temps, cliquez sur les options <gui>Conserver les messages sur le serveur</gui> et <gui>Supprimer après ... jours</gui> et sélectionnez le nombre de jours pendant lesquels les messages restent sur le serveur.</p></item>
 <item><p>L'option <gui>Désactiver le support de toutes les extensions POP3</gui> n'est utile que lors d'accès à des serveurs de courriels anciens ou mal configurés. Les <link href="https://tools.ietf.org/html/rfc2449">extensions POP3</link> améliorent les fonctionnalités, cependant seuls quelques serveurs les prennent en charge. En cas de problèmes de réception de courriel, activer ce paramètre peut vous aider.</p></item>
 </list>

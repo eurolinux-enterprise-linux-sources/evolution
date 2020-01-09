@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="intro-main-window" xml:lang="el">
 
   <info>
-    <desc>Μια εξήγηση των εμφανιζόμενων περιοχών στο παράθυρο Evolution.</desc>
+    <desc>An explanation of the areas shown in the <app>Evolution</app> window.</desc>
 
     <link type="guide" xref="index#getting-started"/>
     <link type="seealso" xref="calendar-layout"/>
@@ -26,22 +26,40 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
   <title>Το κύριο παράθυρο του <app>Evolution</app></title>
 
 <!-- This section fixes https://bugzilla.gnome.org/show_bug.cgi?id=657028 -->
-<p>Το Evolution παρέχει λειτουργικότητα για αλληλογραφία, ημερολόγιο, επαφές, εργασίες και υπενθυμίσεις. Μπορείτε να μεταβείτε σε άλλη λειτουργία χρησιμοποιώντας τα κουμπιά "εναλλάκτες" στην κάτω αριστερή γωνία. Ανάλογα με την εμφανιζόμενη λειτουργικότητα επίσης τα εμφανιζόμενα στοιχεία στο παράθυρο διαφέρουν.</p>
+<p><app>Evolution</app> provides functionality for Email, Calendar, Contacts, Tasks, and Memos. You can switch to another functionality by using the "Switcher" buttons in the lower left corner. Depending on the displayed functionality also the displayed elements in the window differ.</p>
 
 <section id="e-mail">
 <title>Αλληλογραφία</title>
 
 <media type="image" src="./figures/window-overview-layers.png" width="600">
-  <p>Το κύριο παράθυρο αλληλογραφίας του Evolution</p>
+  <p>The <app>Evolution</app> mail main window</p>
 </media>
 
 <p>Αντίστοιχα στοιχεία στο κύριο παράθυρο αλληλογραφίας:</p>
@@ -80,7 +98,7 @@
 </item>
 <item>
 <title>Εναλλάκτης</title>
-<p>Ο εναλλάκτης στο κάτω μέρος της πλευρικής στήλης επιτρέπει την εναλλαγή μεταξύ των εργαλείων του Evolution: αλληλογραφία, επαφές, ημερολόγια, υπενθυμίσεις και εργασίες.</p><p>Για περισσότερες πληροφορίες δείτε το <link xref="change-switcher-appearance">αλλαγή της εμφάνισης του εναλλάκτη</link>.</p>
+<p>The switcher at the bottom of the side bar lets you switch between the <app>Evolution</app> tools:  Mail, Contacts, Calendars, Memos and Tasks.</p><p>Για περισσότερες πληροφορίες δείτε το <link xref="change-switcher-appearance">αλλαγή της εμφάνισης του εναλλάκτη</link>.</p>
 <note style="tip"><p>Μπορείτε να απενεργοποιήσετε τον κατάλογο φακέλων και τον εναλλάκτη πλευρικής στήλης εναλλάσσοντας <guiseq><gui>Προβολή</gui><gui>Διάταξη</gui><gui>Εμφάνιση πλευρικής στήλης</gui></guiseq> ή πατώντας <key>F9</key>.</p></note>
 </item>
 <item>

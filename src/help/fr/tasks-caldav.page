@@ -49,13 +49,13 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
 <title>Utilisation d'une liste de tâches ou de mémos CalDAV</title>
 
-<p>Pour ajouter ce type de liste de tâches ou de mémos à Evolution, suivez les étapes suivantes :</p>
+<p>To add such a task list or memo list to <app>Evolution</app>, perform the following steps:</p>
 <steps>
 <item><p>Cliquez sur <guiseq><gui>Fichier</gui><gui>Nouveau</gui><gui>Liste de tâches</gui></guiseq> ou <guiseq><gui>Fichier</gui><gui>Nouveau</gui><gui>Liste de mémos</gui></guiseq>.</p></item>
 <item><p>Choisissez le type <gui>Sur le Web</gui>.</p></item>
@@ -63,11 +63,11 @@
 <item><p>Choisissez éventuellement votre couleur préférée.</p></item>
 <item><p>Choisissez si vous souhaitez en voir le contenu quand vous êtes hors-ligne.</p></item>
 <item><p>Saisissez l'adresse dans le champ <gui>URL</gui>.</p></item>
-<item><p>Choisissez <gui>Utiliser une connexion sécurisée</gui> si vous souhaitez utiliser une connexion sécurisée.</p></item>
+<item><p>Choose <gui>Use a secure connection</gui> if you want to connect securely.</p></item>
 <item><p>Saisissez votre nom d'utilisateur et votre adresse électronique.</p></item>
 <item><p>Cliquez sur <gui style="button">Valider</gui>.</p></item>
 </steps>
 
-<p>La liste de tâche sera ajoutée à la liste des listes de tâches d'Evolution.</p>
+<p>The task list will be added to the list of task lists in <app>Evolution</app>.</p>
 
 </page>

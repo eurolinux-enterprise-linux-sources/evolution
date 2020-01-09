@@ -7,7 +7,7 @@
     <link type="guide" xref="mail-spam"/>
     <link type="seealso" xref="mail-spam-marking"/>
 
-    <revision pkgversion="3.8.1" version="0.9" date="2013-06-22" status="final"/>
+    <revision pkgversion="3.12.9" version="0.11" date="2015-03-15" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -63,7 +63,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -93,19 +93,17 @@
 
 <section id="preferences">
 <title>Préférences du pourriel</title>
-<note style="tip"><p>The junk mail options discussed in this page refer only to POP and Local Delivery accounts. For handling junk mails on IMAP accounts, see the Evolution settings under <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Mail Accounts</gui><gui style="button">Edit</gui><gui>Receiving Options</gui></guiseq>.</p></note>
-<p>Vous pouvez modifier la façon dont Evolution prend en charge le pourriel en modifiant les préférences des pourriels :</p>
+<note style="tip"><p>The junk mail options discussed in this page refer only to POP and Local Delivery accounts. For handling junk mail on IMAP accounts, see the <app>Evolution</app> settings under <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Mail Accounts</gui><gui style="button">Edit</gui><gui>Receiving Options</gui></guiseq>.</p></note>
+<p>You can modify how <app>Evolution</app> handles junk mail by changing the Junk Mail Preferences:</p>
 <steps>
 <item><p>Cliquez sur <guiseq><gui>Édition</gui><gui>Préférences</gui></guiseq>&gt; ou utilisez la combinaison <keyseq><key>Maj</key><key>Ctrl</key><key>S</key></keyseq>.</p></item>
 <item><p>Sélectionnez <gui>Préférences du courriel</gui>.</p></item>
 <item><p>Cliquez sur l'onglet <gui>Pourriel</gui>. Là, vous pouvez paramétrer les choses suivantes :</p>
 <list>
 <item><p>Détecter les pourriels dans les messages entrants.</p></item>
-<item><p>Supprimer les pourriels en quittant en indiquant la fréquence de leur suppression.</p></item>
-<item><p>Détecter les pourriels en utilisant des en-têtes personnalisés.</p></item>
+<item><p>Supprimer les pourriels quand vous quittez en indiquant la fréquence de leur suppression.</p></item>
 <item><p>Ne pas marquer les messages comme pourriel si l'expéditeur est présent dans mon carnet d'adresses.</p></item>
-<item><p>Le greffon par défaut pour le traitement des pourriels.</p></item>
-<item><p>Options de Bogofilter et SpamAssassin.</p></item>
+<item><p>Détecter les pourriels dans les en-têtes de courrier personnel (ajoutés par votre serveur de courrier).</p></item>
 </list>
 </item>
 </steps>

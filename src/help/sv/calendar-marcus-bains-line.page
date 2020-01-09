@@ -13,12 +13,23 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>The red "Marcus Bains" line displays the current time.</desc>
+    <desc>Den röda ”Marcus Bains”-linjen visar aktuell tid.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Time display in the Day view</title>
+  <title>Tidsvisning i dagsvyn</title>
 
-  <p>The red Marcus Bains Line in the Day view of the calendar is a marker to
-  show the current date and time.</p>
+  <p>Den röda Marcus Bains-linjen i dagsvyn för kalendrar är en markör för att visa aktuell dag och tid.</p>
 
 </page>

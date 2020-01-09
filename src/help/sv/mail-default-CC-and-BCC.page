@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-default-CC-and-BCC" xml:lang="sv">
 
   <info>
-    <desc>Make somebody always receive copies of your sent mail.</desc>
+    <desc>Se till att någon alltid får kopior av din skickade e-post.</desc>
 
     <link type="guide" xref="mail-account-manage-imap-plus#defaults"/>
     <link type="guide" xref="mail-account-manage-local-delivery#defaults"/>
@@ -24,11 +24,23 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Default CC and BCC</title>
+  <title>Standardkopia och blindkopia</title>
 
-<p>You can set email addresses that should always receive copies of your sent mail (either as CC visible for all recipients, or BCC not visible for other recipients) in the <gui>Defaults</gui> section of the mail account editor (<guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Mail Accounts</gui><gui style="button">Edit</gui><gui>Defaults</gui></guiseq>).</p>
+<p>Du kan ställa in e-postadresser som alltid ska erhålla kopior av din skickade e-post (antingen som Kopia, synlig för alla mottagare, eller Blindkopia, osynlig för andra mottagare) i avsnittet <gui>Standardvärden</gui> för e-postkontoredigeraren (<guiseq><gui>Redigera</gui><gui>Inställningar</gui><gui>E-postkonton</gui><gui style="button">Redigera</gui><gui>Standardvärden</gui></guiseq>).</p>
 
 
 </page>

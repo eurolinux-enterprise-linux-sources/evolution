@@ -34,6 +34,8 @@
 	E_SHELL_WINDOW_ACTION ((window), "mail-account-refresh")
 #define E_SHELL_WINDOW_ACTION_MAIL_ADD_SENDER(window) \
 	E_SHELL_WINDOW_ACTION ((window), "mail-add-sender")
+#define E_SHELL_WINDOW_ACTION_MAIL_ATTACHMENT_BAR(window) \
+	E_SHELL_WINDOW_ACTION ((window), "mail-attachment-bar")
 #define E_SHELL_WINDOW_ACTION_MAIL_CARET_MODE(window) \
 	E_SHELL_WINDOW_ACTION ((window), "mail-caret-mode")
 #define E_SHELL_WINDOW_ACTION_MAIL_CHECK_FOR_JUNK(window) \
@@ -184,6 +186,8 @@
 	E_SHELL_WINDOW_ACTION ((window), "mail-show-all-headers")
 #define E_SHELL_WINDOW_ACTION_MAIL_SHOW_DELETED(window) \
 	E_SHELL_WINDOW_ACTION ((window), "mail-show-deleted")
+#define E_SHELL_WINDOW_ACTION_MAIL_SHOW_JUNK(window) \
+	E_SHELL_WINDOW_ACTION ((window), "mail-show-junk")
 #define E_SHELL_WINDOW_ACTION_MAIL_SHOW_SOURCE(window) \
 	E_SHELL_WINDOW_ACTION ((window), "mail-show-source")
 #define E_SHELL_WINDOW_ACTION_MAIL_SMART_BACKWARD(window) \
@@ -226,10 +230,14 @@
 	E_SHELL_WINDOW_ACTION ((window), "mail-filter-important-messages")
 #define E_SHELL_WINDOW_ACTION_MAIL_FILTER_LAST_5_DAYS_MESSAGES(window) \
 	E_SHELL_WINDOW_ACTION ((window), "mail-filter-last-5-days-messages")
+#define E_SHELL_WINDOW_ACTION_MAIL_FILTER_MESSAGE_THREAD(window) \
+	E_SHELL_WINDOW_ACTION ((window), "mail-filter-message-thread")
 #define E_SHELL_WINDOW_ACTION_MAIL_FILTER_MESSAGES_NOT_JUNK(window) \
 	E_SHELL_WINDOW_ACTION ((window), "mail-filter-messages-not-junk")
 #define E_SHELL_WINDOW_ACTION_MAIL_FILTER_MESSAGES_WITH_ATTACHMENTS(window) \
 	E_SHELL_WINDOW_ACTION ((window), "mail-filter-messages-with-attachments")
+#define E_SHELL_WINDOW_ACTION_MAIL_FILTER_MESSAGES_WITH_NOTES(window) \
+	E_SHELL_WINDOW_ACTION ((window), "mail-filter-messages-with-notes")
 #define E_SHELL_WINDOW_ACTION_MAIL_FILTER_NO_LABEL(window) \
 	E_SHELL_WINDOW_ACTION ((window), "mail-filter-no-label")
 #define E_SHELL_WINDOW_ACTION_MAIL_FILTER_READ_MESSAGES(window) \
@@ -246,6 +254,8 @@
 	E_SHELL_WINDOW_ACTION ((window), "mail-scope-current-message")
 #define E_SHELL_WINDOW_ACTION_MAIL_SEARCH_BODY_CONTAINS(window) \
 	E_SHELL_WINDOW_ACTION ((window), "mail-search-body-contains")
+#define E_SHELL_WINDOW_ACTION_MAIL_SEARCH_FREE_FORM_EXPR(window) \
+	E_SHELL_WINDOW_ACTION ((window), "mail-search-free-form-expr")
 #define E_SHELL_WINDOW_ACTION_MAIL_SEARCH_MESSAGE_CONTAINS(window) \
 	E_SHELL_WINDOW_ACTION ((window), "mail-search-message-contains")
 #define E_SHELL_WINDOW_ACTION_MAIL_SEARCH_RECIPIENTS_CONTAIN(window) \

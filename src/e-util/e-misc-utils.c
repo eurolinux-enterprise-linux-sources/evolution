@@ -44,13 +44,22 @@
 
 #ifdef G_OS_WIN32
 #include <windows.h>
+#else
+#include <gio/gdesktopappinfo.h>
 #endif
 
 #include <camel/camel.h>
 #include <libedataserver/libedataserver.h>
 
+#include <webkit2/webkit2.h>
+
+#include "e-alert-dialog.h"
+#include "e-alert-sink.h"
+#include "e-client-cache.h"
 #include "e-filter-option.h"
+#include "e-mktemp.h"
 #include "e-util-private.h"
+#include "e-xml-utils.h"
 
 typedef struct _WindowData WindowData;
 
@@ -254,6 +263,33 @@ e_show_uri (GtkWindow *parent,
 	g_error_free (error);
 }
 
+static gboolean
+e_misc_utils_is_help_package_installed (void)
+{
+	gboolean is_installed;
+	gchar *path;
+
+	/* Viewing user documentation requires the evolution help
+	 * files. Look for one of the files it installs. */
+	path = g_build_filename (EVOLUTION_DATADIR, "help", "C", PACKAGE, "index.page", NULL);
+
+	is_installed = g_file_test (path, G_FILE_TEST_IS_REGULAR);
+
+	g_free (path);
+
+	if (is_installed) {
+		GAppInfo *help_handler;
+
+		help_handler = g_app_info_get_default_for_uri_scheme ("help");
+
+		is_installed = help_handler && g_app_info_get_commandline (help_handler);
+
+		g_clear_object (&help_handler);
+	}
+
+	return is_installed;
+}
+
 /**
  * e_display_help:
  * @parent: a parent #GtkWindow or %NULL
@@ -274,14 +310,23 @@ e_display_help (GtkWindow *parent,
 	GError *error = NULL;
 	guint32 timestamp;
 
-	uri = g_string_new ("help:" PACKAGE);
+	if (e_misc_utils_is_help_package_installed ()) {
+		uri = g_string_new ("help:" PACKAGE);
+	} else {
+		uri = g_string_new ("https://help.gnome.org/users/" PACKAGE "/");
+		g_string_append_printf (uri, "%d.%d", EDS_MAJOR_VERSION, EDS_MINOR_VERSION);
+	}
+
 	timestamp = gtk_get_current_event_time ();
 
 	if (parent != NULL)
 		screen = gtk_widget_get_screen (GTK_WIDGET (parent));
 
-	if (link_id != NULL)
-		g_string_append_printf (uri, "?%s", link_id);
+
+	if (link_id != NULL) {
+		g_string_append (uri, "/");
+		g_string_append (uri, link_id);
+	}
 
 	if (gtk_show_uri (screen, uri->str, timestamp, &error))
 		goto exit;
@@ -716,8 +761,68 @@ e_load_ui_builder_definition (GtkBuilder *builder,
 
 	if (error != NULL) {
 		g_error ("%s: %s", basename, error->message);
-		g_assert_not_reached ();
+		g_warn_if_reached ();
 	}
+}
+
+static gdouble
+e_get_ui_manager_definition_file_version (const gchar *filename)
+{
+	xmlDocPtr doc;
+	xmlNode *root;
+	gdouble version = -1.0;
+
+	g_return_val_if_fail (filename != NULL, version);
+
+	doc = e_xml_parse_file (filename);
+	if (!doc)
+		return version;
+
+	root = xmlDocGetRootElement (doc);
+	if (root && g_strcmp0 ((const gchar *) root->name, "ui") == 0) {
+		version = e_xml_get_double_prop_by_name_with_default (root, (const xmlChar *) "evolution-ui-version", -1.0);
+	}
+
+	xmlFreeDoc (doc);
+
+	return version;
+}
+
+static gchar *
+e_pick_ui_manager_definition_file (const gchar *basename)
+{
+	gchar *system_filename, *user_filename;
+	gdouble system_version, user_version;
+
+	g_return_val_if_fail (basename != NULL, NULL);
+
+	system_filename = g_build_filename (EVOLUTION_UIDIR, basename, NULL);
+	user_filename = g_build_filename (e_get_user_config_dir (), "ui", basename, NULL);
+
+	if (!g_file_test (user_filename, G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR)) {
+		g_free (user_filename);
+
+		return system_filename;
+	}
+
+	user_version = e_get_ui_manager_definition_file_version (user_filename);
+	system_version = e_get_ui_manager_definition_file_version (system_filename);
+
+	/* Versions are equal and the system version is a positive number */
+	if (user_version - system_version >= -1e-9 &&
+	    user_version - system_version <= 1e-9 &&
+	    system_version > 1e-9) {
+		g_free (system_filename);
+
+		return user_filename;
+	}
+
+	g_warning ("User's UI file '%s' version (%.1f) doesn't match expected version (%.1f), skipping it. Either correct the version or remove the file.",
+		user_filename, user_version, system_version);
+
+	g_free (user_filename);
+
+	return system_filename;
 }
 
 /**
@@ -743,14 +848,14 @@ e_load_ui_manager_definition (GtkUIManager *ui_manager,
 	g_return_val_if_fail (GTK_IS_UI_MANAGER (ui_manager), 0);
 	g_return_val_if_fail (basename != NULL, 0);
 
-	filename = g_build_filename (EVOLUTION_UIDIR, basename, NULL);
+	filename = e_pick_ui_manager_definition_file (basename);
 	merge_id = gtk_ui_manager_add_ui_from_file (
 		ui_manager, filename, &error);
 	g_free (filename);
 
 	if (error != NULL) {
 		g_error ("%s: %s", basename, error->message);
-		g_assert_not_reached ();
+		g_warn_if_reached ();
 	}
 
 	return merge_id;
@@ -1089,6 +1194,50 @@ e_str_without_underscores (const gchar *string)
 	return new_string;
 }
 
+/**
+ * e_str_replace_string
+ * @text: the string to replace
+ * @before: the string to be replaced
+ * @after: the string to replaced with
+ *
+ * Replaces every occurrence of the string @before with the string @after in
+ * the string @text and returns a #GString with result that should be freed
+ * with g_string_free().
+ *
+ * Returns: a newly-allocated #GString
+ */
+GString *
+e_str_replace_string (const gchar *text,
+                      const gchar *before,
+                      const gchar *after)
+{
+	const gchar *p, *next;
+	GString *str;
+	gint find_len;
+
+	g_return_val_if_fail (text != NULL, NULL);
+	g_return_val_if_fail (before != NULL, NULL);
+	g_return_val_if_fail (*before, NULL);
+
+	find_len = strlen (before);
+	str = g_string_new ("");
+
+	p = text;
+	while (next = strstr (p, before), next) {
+		if (p < next)
+			g_string_append_len (str, p, next - p);
+
+		if (after && *after)
+			g_string_append (str, after);
+
+		p = next + find_len;
+	}
+
+	g_string_append (str, p);
+
+	return str;
+}
+
 gint
 e_str_compare (gconstpointer x,
                gconstpointer y)
@@ -1207,7 +1356,7 @@ e_rgba_to_value (const GdkRGBA *rgba)
  * @rgba: a source #GdkRGBA
  * @color: a destination #GdkColor
  *
- * Converts @rgba into @color, but loses the alpha chnnel from @rgba.
+ * Converts @rgba into @color, but loses the alpha channel from @rgba.
  **/
 void
 e_rgba_to_color (const GdkRGBA *rgba,
@@ -1725,6 +1874,58 @@ e_utf8_strftime_fix_am_pm (gchar *str,
 }
 
 /**
+ * e_utf8_strftime_match_lc_messages:
+ * @string: The string to store the result in.
+ * @max: The size of the @string.
+ * @fmt: The formatting to use on @tm.
+ * @tm: The time value to format.
+ *
+ * The UTF-8 equivalent of e_strftime (), which also
+ * makes sure that the locale used for time and date
+ * formatting matches the locale used by the
+ * application so that, for example, the quoted
+ * message header produced by the mail composer in a
+ * reply uses only one locale (i.e. LC_MESSAGES, where
+ * available, overrides LC_TIME for consistency).
+ *
+ * Returns: The number of characters placed in @string.
+ *
+ * Since: 3.22
+ **/
+gsize
+e_utf8_strftime_match_lc_messages (gchar *string,
+				    gsize max,
+				    const gchar *fmt,
+				    const struct tm *tm)
+{
+	gsize ret;
+#if defined(LC_MESSAGES) && defined(LC_TIME)
+	gchar *ctime, *cmessages, *saved_locale;
+
+	/* Use LC_MESSAGES instead of LC_TIME for time
+	 * formatting (for consistency).
+	 */
+	ctime = setlocale (LC_TIME, NULL);
+	saved_locale = g_strdup (ctime);
+	g_return_val_if_fail (saved_locale != NULL, 0);
+	cmessages = setlocale (LC_MESSAGES, NULL);
+	setlocale (LC_TIME, cmessages);
+#endif
+
+	ret = e_utf8_strftime(string, max, fmt, tm);
+
+#if defined(LC_MESSAGES) && defined(LC_TIME)
+	/* Restore LC_TIME, if it has been changed to match
+	 * LC_MESSAGES.
+	 */
+	setlocale (LC_TIME, saved_locale);
+	g_free (saved_locale);
+#endif
+
+	return ret;
+}
+
+/**
  * e_get_month_name:
  * @month: month index
  * @abbreviated: if %TRUE, abbreviate the month name
@@ -2209,7 +2410,7 @@ e_util_get_category_filter_options (void)
 	GSList *res = NULL;
 	GList *clist, *l;
 
-	clist = e_categories_get_list ();
+	clist = e_categories_dup_list ();
 	for (l = clist; l; l = l->next) {
 		const gchar *cname = l->data;
 		struct _filter_option *fo;
@@ -2224,36 +2425,191 @@ e_util_get_category_filter_options (void)
 		res = g_slist_prepend (res, fo);
 	}
 
-	g_list_free (clist);
+	g_list_free_full (clist, g_free);
 
 	return g_slist_reverse (res);
 }
 
 /**
- * e_util_get_searchable_categories:
+ * e_util_dup_searchable_categories:
  *
- * Returns list of searchable categories only. The list should
- * be freed with g_list_free() when done with it, but the items
- * are internal strings, names of categories, which should not
- * be touched in other than read-only way, in other words the same
- * restrictions as for e_categories_get_list() applies here too.
- **/
+ * Returns a list of the searchable categories, with each item being a UTF-8
+ * category name. The list should be freed with g_list_free() when done with it,
+ * and the items should be freed with g_free(). Everything can be freed at once
+ * using g_list_free_full().
+ *
+ * Returns: (transfer full) (element-type utf8): a list of searchable category
+ * names; free with g_list_free_full()
+ */
 GList *
-e_util_get_searchable_categories (void)
+e_util_dup_searchable_categories (void)
 {
 	GList *res = NULL, *all_categories, *l;
 
-	all_categories = e_categories_get_list ();
+	all_categories = e_categories_dup_list ();
 	for (l = all_categories; l; l = l->next) {
-		const gchar *cname = l->data;
+		gchar *cname = l->data;
 
+		/* Steal the string from e_categories_dup_list(). */
 		if (e_categories_is_searchable (cname))
 			res = g_list_prepend (res, (gpointer) cname);
+		else
+			g_free (cname);
 	}
 
+	/* NOTE: Do *not* free the items. They have been freed or stolen
+	 * above. */
 	g_list_free (all_categories);
 
 	return g_list_reverse (res);
+}
+/**
+ * e_util_get_open_source_job_info:
+ * @extension_name: an extension name of the source
+ * @source_display_name: an ESource's display name
+ * @description: (out) (transfer-full): a description to use
+ * @alert_ident: (out) (transfer-full): an alert ident to use on failure
+ * @alert_arg_0: (out) (transfer-full): an alert argument 0 to use on failure
+ *
+ * Populates @desription, @alert_ident and @alert_arg_0 to be used
+ * to open an #ESource with extension @extension_name. The values
+ * can be used for functions like e_alert_sink_submit_thread_job().
+ *
+ * If #TRUE is returned, then the caller is responsible to free
+ * all @desription, @alert_ident and @alert_arg_0 with g_free(),
+ * when no longer needed.
+ *
+ * Returns: #TRUE, if the values for @desription, @alert_ident and @alert_arg_0
+ *     were set for the given @extension_name; when #FALSE is returned, then
+ *     none of these out variables are changed.
+ *
+ * Since: 3.16
+ **/
+gboolean
+e_util_get_open_source_job_info (const gchar *extension_name,
+				 const gchar *source_display_name,
+				 gchar **description,
+				 gchar **alert_ident,
+				 gchar **alert_arg_0)
+{
+	g_return_val_if_fail (extension_name != NULL, FALSE);
+	g_return_val_if_fail (source_display_name != NULL, FALSE);
+	g_return_val_if_fail (description != NULL, FALSE);
+	g_return_val_if_fail (alert_ident != NULL, FALSE);
+	g_return_val_if_fail (alert_arg_0 != NULL, FALSE);
+
+	if (g_ascii_strcasecmp (extension_name, E_SOURCE_EXTENSION_CALENDAR) == 0) {
+		*alert_ident = g_strdup ("calendar:failed-open-calendar");
+		*description = g_strdup_printf (_("Opening calendar '%s'"), source_display_name);
+	} else if (g_ascii_strcasecmp (extension_name, E_SOURCE_EXTENSION_MEMO_LIST) == 0) {
+		*alert_ident = g_strdup ("calendar:failed-open-memos");
+		*description = g_strdup_printf (_("Opening memo list '%s'"), source_display_name);
+	} else if (g_ascii_strcasecmp (extension_name, E_SOURCE_EXTENSION_TASK_LIST) == 0) {
+		*alert_ident = g_strdup ("calendar:failed-open-tasks");
+		*description = g_strdup_printf (_("Opening task list '%s'"), source_display_name);
+	} else if (g_ascii_strcasecmp (extension_name, E_SOURCE_EXTENSION_ADDRESS_BOOK) == 0) {
+		*alert_ident = g_strdup ("addressbook:load-error");
+		*description = g_strdup_printf (_("Opening address book '%s'"), source_display_name);
+	} else {
+		return FALSE;
+	}
+
+	*alert_arg_0 = g_strdup (source_display_name);
+
+	return TRUE;
+}
+
+/**
+ * e_util_propagate_open_source_job_error:
+ * @job_data: an #EAlertSinkThreadJobData instance
+ * @extension_name: what extension name had beeing opened
+ * @local_error: (allow none): a #GError as obtained in a thread job; can be NULL for success
+ * @error: (allow none): an output #GError, to which propagate the @local_error
+ *
+ * Propagates (and cosumes) the @local_error into the @error, eventually
+ * changes alert_ident for the @job_data for well-known error codes,
+ * where is available better error description.
+ *
+ * Since: 3.16
+ **/
+void
+e_util_propagate_open_source_job_error (EAlertSinkThreadJobData *job_data,
+					const gchar *extension_name,
+					GError *local_error,
+					GError **error)
+{
+	const gchar *alert_ident = NULL;
+
+	g_return_if_fail (job_data != NULL);
+	g_return_if_fail (extension_name != NULL);
+
+	if (!local_error)
+		return;
+
+	if (!error) {
+		g_error_free (local_error);
+		return;
+	}
+
+	if (g_error_matches (local_error, E_CLIENT_ERROR, E_CLIENT_ERROR_REPOSITORY_OFFLINE)) {
+		if (g_ascii_strcasecmp (extension_name, E_SOURCE_EXTENSION_CALENDAR) == 0) {
+			alert_ident = "calendar:prompt-no-contents-offline-calendar";
+		} else if (g_ascii_strcasecmp (extension_name, E_SOURCE_EXTENSION_MEMO_LIST) == 0) {
+			alert_ident = "calendar:prompt-no-contents-offline-memos";
+		} else if (g_ascii_strcasecmp (extension_name, E_SOURCE_EXTENSION_TASK_LIST) == 0) {
+			alert_ident = "calendar:prompt-no-contents-offline-tasks";
+		} else if (g_ascii_strcasecmp (extension_name, E_SOURCE_EXTENSION_ADDRESS_BOOK) == 0) {
+		}
+	}
+
+	if (alert_ident)
+		e_alert_sink_thread_job_set_alert_ident (job_data, alert_ident);
+
+	g_propagate_error (error, local_error);
+}
+
+EClient *
+e_util_open_client_sync (EAlertSinkThreadJobData *job_data,
+			 EClientCache *client_cache,
+			 const gchar *extension_name,
+			 ESource *source,
+			 guint32 wait_for_connected_seconds,
+			 GCancellable *cancellable,
+			 GError **error)
+{
+	gchar *description = NULL, *alert_ident = NULL, *alert_arg_0 = NULL;
+	EClient *client = NULL;
+	ESourceRegistry *registry;
+	gchar *display_name;
+	GError *local_error = NULL;
+
+	registry = e_client_cache_ref_registry (client_cache);
+	display_name = e_util_get_source_full_name (registry, source);
+	g_clear_object (&registry);
+
+	g_warn_if_fail (e_util_get_open_source_job_info (extension_name,
+		display_name, &description, &alert_ident, &alert_arg_0));
+
+	g_free (display_name);
+
+	camel_operation_push_message (cancellable, "%s", description);
+
+	client = e_client_cache_get_client_sync (client_cache, source, extension_name, wait_for_connected_seconds, cancellable, &local_error);
+
+	camel_operation_pop_message (cancellable);
+
+	if (!client) {
+		e_alert_sink_thread_job_set_alert_ident (job_data, alert_ident);
+		e_alert_sink_thread_job_set_alert_arg_0 (job_data, alert_arg_0);
+
+		e_util_propagate_open_source_job_error (job_data, extension_name, local_error, error);
+	}
+
+	g_free (description);
+	g_free (alert_ident);
+	g_free (alert_arg_0);
+
+	return client;
 }
 
 /**
@@ -2441,14 +2797,14 @@ e_binding_transform_text_non_null (GBinding *binding,
  * @source_property: the text property on the source to bind
  * @target: the target #GObject
  * @target_property: the text property on the target to bind
- * @flags: flags to pass to g_object_bind_property_full()
+ * @flags: flags to pass to e_binding_bind_property_full()
  *
- * Installs a new text property object binding, using g_object_bind_property_full(),
+ * Installs a new text property object binding, using e_binding_bind_property_full(),
  * with transform functions to make sure that a NULL pointer is not
  * passed in either way. Instead of NULL an empty string is used.
  *
  * Returns: the #GBinding instance representing the binding between the two #GObject instances;
- *    there applies the same rules to it as for the result of g_object_bind_property_full().
+ *    there applies the same rules to it as for the result of e_binding_bind_property_full().
  **/
 GBinding *
 e_binding_bind_object_text_property (gpointer source,
@@ -2475,12 +2831,12 @@ e_binding_bind_object_text_property (gpointer source,
 	g_return_val_if_fail (property != NULL, NULL);
 	g_return_val_if_fail (property->value_type == G_TYPE_STRING, NULL);
 
-	return g_object_bind_property_full (source, source_property,
-					    target, target_property,
-					    flags,
-					    e_binding_transform_text_non_null,
-					    e_binding_transform_text_non_null,
-					    NULL, NULL);
+	return e_binding_bind_property_full (source, source_property,
+					     target, target_property,
+					     flags,
+					     e_binding_transform_text_non_null,
+					     e_binding_transform_text_non_null,
+					     NULL, NULL);
 }
 
 typedef struct _EConnectNotifyData {
@@ -2782,4 +3138,773 @@ e_signal_disconnect_notify_handler (gpointer instance,
 
 	g_signal_handler_disconnect (instance, *handler_id);
 	*handler_id = 0;
+}
+
+static GMutex settings_hash_lock;
+static GHashTable *settings_hash = NULL;
+
+/**
+ * e_util_ref_settings:
+ * @schema_id: the id of the schema to reference settings for
+ *
+ * Either returns an existing referenced #GSettings object for the given @schema_id,
+ * or creates a new one and remembers it for later use, to avoid having too many
+ * #GSettings objects created for the same @schema_id.
+ *
+ * Returns: A #GSettings for the given @schema_id. The returned #GSettings object
+ *   is referenced, thus free it with g_object_unref() when done with it.
+ *
+ * Since: 3.16
+ **/
+GSettings *
+e_util_ref_settings (const gchar *schema_id)
+{
+	GSettings *settings;
+
+	g_return_val_if_fail (schema_id != NULL, NULL);
+	g_return_val_if_fail (*schema_id, NULL);
+
+	g_mutex_lock (&settings_hash_lock);
+
+	if (!settings_hash) {
+		settings_hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
+	}
+
+	settings = g_hash_table_lookup (settings_hash, schema_id);
+	if (!settings) {
+		settings = g_settings_new (schema_id);
+		g_hash_table_insert (settings_hash, g_strdup (schema_id), settings);
+	}
+
+	if (settings)
+		g_object_ref (settings);
+
+	g_mutex_unlock (&settings_hash_lock);
+
+	return settings;
+}
+
+/**
+ * e_util_cleanup_settings:
+ *
+ * Frees all the memory taken by e_util_ref_settings().
+ *
+ * Since: 3.16
+ **/
+void
+e_util_cleanup_settings (void)
+{
+	g_mutex_lock (&settings_hash_lock);
+
+	if (settings_hash) {
+		g_hash_table_destroy (settings_hash);
+		settings_hash = NULL;
+	}
+
+	g_mutex_unlock (&settings_hash_lock);
+}
+
+static gdouble
+get_screen_dpi (GdkScreen *screen)
+{
+	gdouble dpi;
+	gdouble dp, di;
+
+	dpi = gdk_screen_get_resolution (screen);
+	if (dpi != -1)
+		return dpi;
+
+	dp = hypot (gdk_screen_get_width (screen), gdk_screen_get_height (screen));
+	di = hypot (gdk_screen_get_width_mm (screen), gdk_screen_get_height_mm (screen)) / 25.4;
+
+	return dp / di;
+}
+
+guint
+e_util_normalize_font_size (GtkWidget *widget,
+                            gdouble font_size)
+{
+	/* WebKit2 uses font sizes in pixels. */
+	GdkScreen *screen;
+	gdouble dpi;
+
+	if (widget) {
+		screen = gtk_widget_has_screen (widget) ?
+			gtk_widget_get_screen (widget) : gdk_screen_get_default ();
+	} else {
+		screen = gdk_screen_get_default ();
+	}
+
+	dpi = screen ? get_screen_dpi (screen) : 96;
+
+	return font_size / 72.0 * dpi;
+}
+
+/**
+ * e_util_prompt_user:
+ * @parent: parent window
+ * @settings_schema: name of the settings schema where @promptkey belongs.
+ * @promptkey: settings key to check if we should prompt the user or not.
+ * @tag: e_alert tag.
+ *
+ * Convenience function to query the user with a Yes/No dialog and a
+ * "Do not show this dialog again" checkbox. If the user checks that
+ * checkbox, then @promptkey is set to %FALSE, otherwise it is set to
+ * %TRUE.
+ *
+ * Returns %TRUE if the user clicks Yes or %FALSE otherwise.
+ **/
+gboolean
+e_util_prompt_user (GtkWindow *parent,
+                    const gchar *settings_schema,
+                    const gchar *promptkey,
+                    const gchar *tag,
+                    ...)
+{
+	GtkWidget *dialog;
+	GtkWidget *check = NULL;
+	GtkWidget *container;
+	va_list ap;
+	gint button;
+	GSettings *settings;
+	EAlert *alert = NULL;
+
+	settings = e_util_ref_settings (settings_schema);
+
+	if (promptkey && !g_settings_get_boolean (settings, promptkey)) {
+		g_object_unref (settings);
+		return TRUE;
+	}
+
+	va_start (ap, tag);
+	alert = e_alert_new_valist (tag, ap);
+	va_end (ap);
+
+	dialog = e_alert_dialog_new (parent, alert);
+	g_object_unref (alert);
+
+	container = e_alert_dialog_get_content_area (E_ALERT_DIALOG (dialog));
+
+	if (promptkey) {
+		check = gtk_check_button_new_with_mnemonic (
+			_("_Do not show this message again"));
+		gtk_box_pack_start (
+			GTK_BOX (container), check, FALSE, FALSE, 0);
+		gtk_widget_show (check);
+	}
+
+	button = gtk_dialog_run (GTK_DIALOG (dialog));
+	if (promptkey)
+		g_settings_set_boolean (
+			settings, promptkey,
+			!gtk_toggle_button_get_active (
+				GTK_TOGGLE_BUTTON (check)));
+
+	gtk_widget_destroy (dialog);
+
+	g_object_unref (settings);
+
+	return button == GTK_RESPONSE_YES;
+}
+
+typedef struct _EUtilSimpleAsyncResultThreadData {
+	GSimpleAsyncResult *simple;
+	GSimpleAsyncThreadFunc func;
+	GCancellable *cancellable;
+} EUtilSimpleAsyncResultThreadData;
+
+static void
+e_util_simple_async_result_thread (gpointer data,
+				   gpointer user_data)
+{
+	EUtilSimpleAsyncResultThreadData *thread_data = data;
+	GError *error = NULL;
+
+	g_return_if_fail (thread_data != NULL);
+	g_return_if_fail (G_IS_SIMPLE_ASYNC_RESULT (thread_data->simple));
+	g_return_if_fail (thread_data->func != NULL);
+
+	if (g_cancellable_set_error_if_cancelled (thread_data->cancellable, &error)) {
+		g_simple_async_result_take_error (thread_data->simple, error);
+	} else {
+		thread_data->func (thread_data->simple,
+			g_async_result_get_source_object (G_ASYNC_RESULT (thread_data->simple)),
+			thread_data->cancellable);
+	}
+
+	g_simple_async_result_complete_in_idle (thread_data->simple);
+
+	g_clear_object (&thread_data->simple);
+	g_clear_object (&thread_data->cancellable);
+	g_free (thread_data);
+}
+
+/**
+ * e_util_run_simple_async_result_in_thread:
+ * @simple: a #GSimpleAsyncResult
+ * @func: a #GSimpleAsyncThreadFunc to execute in the thread
+ * @cancellable: an optional #GCancellable, or %NULL
+ *
+ * Similar to g_simple_async_result_run_in_thread(), except
+ * it doesn't use GTask internally, thus doesn't block the GTask
+ * thread pool with possibly long job.
+ *
+ * It doesn't behave exactly the same as the g_simple_async_result_run_in_thread(),
+ * the @cancellable checking is not done before the finish.
+ *
+ * Since: 3.18
+ **/
+void
+e_util_run_simple_async_result_in_thread (GSimpleAsyncResult *simple,
+					  GSimpleAsyncThreadFunc func,
+					  GCancellable *cancellable)
+{
+	static GThreadPool *thread_pool = NULL;
+	static GMutex thread_pool_mutex;
+	EUtilSimpleAsyncResultThreadData *thread_data;
+
+	g_return_if_fail (G_IS_SIMPLE_ASYNC_RESULT (simple));
+	g_return_if_fail (func != NULL);
+
+	g_mutex_lock (&thread_pool_mutex);
+
+	if (!thread_pool)
+		thread_pool = g_thread_pool_new (e_util_simple_async_result_thread, NULL, 20, FALSE, NULL);
+
+	thread_data = g_new0 (EUtilSimpleAsyncResultThreadData, 1);
+	thread_data->simple = g_object_ref (simple);
+	thread_data->func = func;
+	thread_data->cancellable = cancellable ? g_object_ref (cancellable) : NULL;
+
+	g_thread_pool_push (thread_pool, thread_data, NULL);
+
+	g_mutex_unlock (&thread_pool_mutex);
+}
+
+/**
+ * e_util_is_running_gnome:
+ *
+ * Returns: Whether the current running desktop environment is GNOME.
+ *
+ * Since: 3.18
+ **/
+gboolean
+e_util_is_running_gnome (void)
+{
+#ifdef G_OS_WIN32
+	return FALSE;
+#else
+	static gint runs_gnome = -1;
+
+	if (runs_gnome == -1) {
+		runs_gnome = g_strcmp0 (g_getenv ("XDG_CURRENT_DESKTOP"), "GNOME") == 0 ? 1 : 0;
+		if (runs_gnome) {
+			GDesktopAppInfo *app_info;
+
+			app_info = g_desktop_app_info_new ("gnome-notifications-panel.desktop");
+			if (!app_info) {
+				runs_gnome = 0;
+			}
+
+			g_clear_object (&app_info);
+		}
+	}
+
+	return runs_gnome != 0;
+#endif
+}
+
+/**
+ * e_util_set_entry_issue_hint:
+ * @entry: a #GtkEntry
+ * @hint: (allow none): a hint to set, or %NULL to unset
+ *
+ * Sets a @hint on the secondary @entry icon about an entered value issue,
+ * or unsets it, when the @hint is %NULL.
+ *
+ * Since: 3.20
+ **/
+void
+e_util_set_entry_issue_hint (GtkWidget *entry,
+			     const gchar *hint)
+{
+	GtkEntry *eentry;
+
+	g_return_if_fail (GTK_IS_ENTRY (entry));
+
+	eentry = GTK_ENTRY (entry);
+
+	if (hint) {
+		gtk_entry_set_icon_from_icon_name (eentry, GTK_ENTRY_ICON_SECONDARY, "dialog-warning");
+		gtk_entry_set_icon_tooltip_text (eentry, GTK_ENTRY_ICON_SECONDARY, hint);
+	} else {
+		gtk_entry_set_icon_from_icon_name (eentry, GTK_ENTRY_ICON_SECONDARY, NULL);
+		gtk_entry_set_icon_tooltip_text (eentry, GTK_ENTRY_ICON_SECONDARY, NULL);
+	}
+}
+
+static GThread *main_thread = NULL;
+
+void
+e_util_init_main_thread (GThread *thread)
+{
+	g_return_if_fail (main_thread == NULL);
+
+	main_thread = thread ? thread : g_thread_self ();
+}
+
+gboolean
+e_util_is_main_thread (GThread *thread)
+{
+	return thread ? thread == main_thread : g_thread_self () == main_thread;
+}
+
+/**
+ * e_util_save_image_from_clipboard:
+ * @clipboard: a #GtkClipboard
+ * @hint: (allow none): a hint to set, or %NULL to unset
+ *
+ * Saves the image from @clipboard to a temporary file and returns its URI.
+ *
+ * Since: 3.22
+ **/
+gchar *
+e_util_save_image_from_clipboard (GtkClipboard *clipboard)
+{
+	GdkPixbuf *pixbuf = NULL;
+	gchar *filename = NULL;
+	gchar *uri = NULL;
+	GError *error = NULL;
+
+	g_return_val_if_fail (GTK_IS_CLIPBOARD (clipboard), NULL);
+
+	/* Extract the image data from the clipboard. */
+	pixbuf = gtk_clipboard_wait_for_image (clipboard);
+	g_return_val_if_fail (pixbuf != NULL, FALSE);
+
+	/* Reserve a temporary file. */
+	filename = e_mktemp (NULL);
+	if (filename == NULL) {
+		g_set_error (
+			&error, G_FILE_ERROR,
+			g_file_error_from_errno (errno),
+			"Could not create temporary file: %s",
+			g_strerror (errno));
+		goto exit;
+	}
+
+	/* Save the pixbuf as a temporary file in image/png format. */
+	if (!gdk_pixbuf_save (pixbuf, filename, "png", &error, NULL))
+		goto exit;
+
+	/* Convert the filename to a URI. */
+	uri = g_filename_to_uri (filename, NULL, &error);
+
+ exit:
+	if (error != NULL) {
+		g_warning ("%s", error->message);
+		g_error_free (error);
+	}
+
+	g_object_unref (pixbuf);
+	g_free (filename);
+
+	return uri;
+}
+
+static void
+e_util_stop_signal_emission_cb (gpointer instance,
+				const gchar *signal_name)
+{
+	g_signal_stop_emission_by_name (instance, signal_name);
+}
+
+/**
+ * e_util_check_gtk_bindings_in_key_press_event_cb:
+ * @widget: a #GtkWidget, most often a #GtkWindow
+ * @event: a #GdkEventKey
+ *
+ * A callback function for GtkWidget::key-press-event signal,
+ * which checks whether currently focused widget inside @widget,
+ * if it's a #GtkWindow, or a toplevel window containing the @widget,
+ * will consume the @event due to gtk+ bindings and if so, then
+ * it'll stop processing the event further. When it's connected
+ * on a #GtkWindow, then it can prevent the event to be used
+ * for shortcuts of actions.
+ *
+ * Returns: %TRUE to stop other handlers from being invoked for
+ *    the event, %FALSE to propagate the event further.
+ *
+ * Since: 3.22
+ **/
+gboolean
+e_util_check_gtk_bindings_in_key_press_event_cb (GtkWidget *widget,
+						 GdkEvent *event)
+{
+	GdkEventKey *key_event = (GdkEventKey *) event;
+	GtkWindow *window = NULL;
+	GtkWidget *focused;
+
+	g_return_val_if_fail (GTK_IS_WIDGET (widget), FALSE);
+	g_return_val_if_fail (event != NULL, FALSE);
+	g_return_val_if_fail (event->type == GDK_KEY_PRESS, FALSE);
+
+	if (GTK_IS_WINDOW (widget)) {
+		window = GTK_WINDOW (widget);
+	} else {
+		GtkWidget *toplevel;
+
+		toplevel = gtk_widget_get_toplevel (widget);
+		if (GTK_IS_WINDOW (toplevel))
+			window = GTK_WINDOW (toplevel);
+	}
+
+	if (!window)
+		return FALSE;
+
+	focused = gtk_window_get_focus (window);
+	if (!focused)
+		return FALSE;
+
+	if (gtk_bindings_activate_event (G_OBJECT (focused), key_event))
+		return TRUE;
+
+	if (WEBKIT_IS_WEB_VIEW (focused) &&
+	    (key_event->state & (GDK_CONTROL_MASK | GDK_MOD1_MASK)) != 0) {
+		GtkWidget *text_view;
+		gboolean may_use;
+
+		/* WebKit uses GtkTextView to process key bindings. Do the same. */
+		text_view = gtk_text_view_new ();
+
+		/* Stop emissing for clipboard signals, to not populate the text_view */
+		g_signal_connect (text_view, "copy-clipboard", G_CALLBACK (e_util_stop_signal_emission_cb), (gpointer) "copy-clipboard");
+		g_signal_connect (text_view, "cut-clipboard", G_CALLBACK (e_util_stop_signal_emission_cb), (gpointer) "cut-clipboard");
+		g_signal_connect (text_view, "paste-clipboard", G_CALLBACK (e_util_stop_signal_emission_cb), (gpointer) "paste-clipboard");
+
+		may_use = gtk_bindings_activate_event (G_OBJECT (text_view), key_event);
+		gtk_widget_destroy (text_view);
+
+		if (may_use) {
+			gboolean result = FALSE;
+
+			g_signal_emit_by_name (focused, "key-press-event", event, &result);
+
+			return result;
+		}
+	}
+
+	return FALSE;
+}
+
+/**
+ * e_util_claim_dbus_proxy_call_error:
+ * @dbus_proxy: a #GDBusProxy instance
+ * @method_name: a method name of the @dbus_proxy
+ * @in_error: (allow-none): a #GError with the failure, or %NULL
+ *
+ * Claims the @in_error on the console as a failure to call
+ * method @method_name of the @dbus_proxy. It's safe to call this
+ * with a %NULL @in_error, then the function does nothing.
+ * Some errors can be ignored, like the G_IO_ERROR_CANCELLED is.
+ *
+ * Since: 3.22
+ **/
+void
+e_util_claim_dbus_proxy_call_error (GDBusProxy *dbus_proxy,
+				    const gchar *method_name,
+				    const GError *in_error)
+{
+	g_return_if_fail (G_IS_DBUS_PROXY (dbus_proxy));
+	g_return_if_fail (method_name != NULL);
+
+	if (in_error && !g_error_matches (in_error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+		g_warning ("Failed to call a DBus Proxy method %s::%s: %s",
+			g_dbus_proxy_get_name (dbus_proxy), method_name, in_error->message);
+}
+
+static void
+e_util_finish_dbus_proxy_call_cb (GObject *source_object,
+				  GAsyncResult *result,
+				  gpointer user_data)
+{
+	gchar *method_name = user_data;
+	GDBusProxy *dbus_proxy;
+	GVariant *ret;
+	GError *error = NULL;
+
+	g_return_if_fail (G_IS_DBUS_PROXY (source_object));
+
+	dbus_proxy = G_DBUS_PROXY (source_object);
+
+	ret = g_dbus_proxy_call_finish (dbus_proxy, result, &error);
+
+	if (ret)
+		g_variant_unref (ret);
+
+	if (error)
+		g_dbus_error_strip_remote_error (error);
+
+	e_util_claim_dbus_proxy_call_error (dbus_proxy, method_name, error);
+
+	g_clear_error (&error);
+	g_free (method_name);
+}
+
+/**
+ * e_util_invoke_g_dbus_proxy_call_with_error_check:
+ * @dbus_proxy: a #GDBusProxy instance
+ * @method_name: a method name to invoke
+ * @parameters: (allow-none): parameters of the method, or %NULL
+ * @cancellable: (allow-none): a #GCancellable, or %NULL
+ *
+ * Calls g_dbus_proxy_call() on the @dbus_proxy for the @method_name with @parameters
+ * and adds its own callback for the result. Then, if an error is returned, passes this
+ * error into e_util_claim_dbus_proxy_call_error().
+ *
+ * See: e_util_invoke_g_dbus_proxy_call_with_error_check_full()
+ *
+ * Since: 3.22
+ **/
+void
+e_util_invoke_g_dbus_proxy_call_with_error_check (GDBusProxy *dbus_proxy,
+						  const gchar *method_name,
+						  GVariant *parameters,
+						  GCancellable *cancellable)
+{
+	g_return_if_fail (G_IS_DBUS_PROXY (dbus_proxy));
+	g_return_if_fail (method_name != NULL);
+
+	e_util_invoke_g_dbus_proxy_call_with_error_check_full (
+		dbus_proxy, method_name, parameters,
+		G_DBUS_CALL_FLAGS_NONE, -1, cancellable);
+}
+
+/**
+ * e_util_invoke_g_dbus_proxy_call_with_error_check_full:
+ * @dbus_proxy: a #GDBusProxy instance
+ * @method_name: a method name to invoke
+ * @parameters: (allow-none): parameters of the method, or %NULL
+ * @flags: a bit-or of #GDBusCallFlags, with the same meaning as in the g_dbus_proxy_call()
+ * @timeout_msec: timeout in milliseconds, with the same meaning as in the g_dbus_proxy_call().
+ * @cancellable: (allow-none): a #GCancellable, or %NULL
+ *
+ * Calls g_dbus_proxy_call() on the @dbus_proxy for the @method_name with @parameters
+ * and adds its own callback for the result. Then, if an error is returned, passes this
+ * error into e_util_claim_dbus_proxy_call_error().
+ *
+ * See: e_util_invoke_g_dbus_proxy_call_with_error_check()
+ *
+ * Since: 3.22
+ **/
+void
+e_util_invoke_g_dbus_proxy_call_with_error_check_full (GDBusProxy *dbus_proxy,
+						       const gchar *method_name,
+						       GVariant *parameters,
+						       GDBusCallFlags flags,
+						       gint timeout_msec,
+						       GCancellable *cancellable)
+{
+	g_return_if_fail (G_IS_DBUS_PROXY (dbus_proxy));
+	g_return_if_fail (method_name != NULL);
+
+	g_dbus_proxy_call (dbus_proxy, method_name, parameters,
+		flags, timeout_msec, cancellable,
+		e_util_finish_dbus_proxy_call_cb, g_strdup (method_name));
+}
+
+/**
+ * e_util_invoke_g_dbus_proxy_call_sync_wrapper_with_error_check:
+ * @dbus_proxy: a #GDBusProxy instance
+ * @method_name: a method name to invoke
+ * @parameters: (allow-none): parameters of the method, or %NULL
+ * @cancellable: (allow-none): a #GCancellable, or %NULL
+ *
+ * Calls e_util_invoke_g_dbus_proxy_call_sync_wrapper_full() with some default
+ * values for flags and timeout_msec, while also providing its own GError and
+ * after the call is finished it calls e_util_claim_dbus_proxy_call_error()
+ * with the returned error, if any.
+ *
+ * Returns: The result of the method call, or %NULL on error. Free with g_variant_unref().
+ *
+ * Since: 3.22
+ **/
+GVariant *
+e_util_invoke_g_dbus_proxy_call_sync_wrapper_with_error_check (GDBusProxy *dbus_proxy,
+							       const gchar *method_name,
+							       GVariant *parameters,
+							       GCancellable *cancellable)
+{
+	GVariant *result;
+	GError *error = NULL;
+
+	g_return_val_if_fail (G_IS_DBUS_PROXY (dbus_proxy), NULL);
+	g_return_val_if_fail (method_name != NULL, NULL);
+
+	result = e_util_invoke_g_dbus_proxy_call_sync_wrapper_full (dbus_proxy, method_name, parameters,
+		G_DBUS_CALL_FLAGS_NONE, -1, cancellable, &error);
+
+	if (error)
+		g_dbus_error_strip_remote_error (error);
+
+	e_util_claim_dbus_proxy_call_error (dbus_proxy, method_name, error);
+	g_clear_error (&error);
+
+	return result;
+}
+
+static void
+sync_wrapper_result_callback (GObject *source_object,
+			      GAsyncResult *result,
+			      gpointer user_data)
+{
+	GAsyncResult **out_async_result = user_data;
+
+	g_return_if_fail (out_async_result != NULL);
+	g_return_if_fail (*out_async_result == NULL);
+
+	*out_async_result = g_object_ref (result);
+}
+
+/**
+ * e_util_invoke_g_dbus_proxy_call_sync_wrapper_full:
+ * @dbus_proxy: a #GDBusProxy instance
+ * @method_name: a method name to invoke
+ * @parameters: (allow-none): parameters of the method, or %NULL
+ * @flags: a bit-or of #GDBusCallFlags, with the same meaning as in the g_dbus_proxy_call()
+ * @timeout_msec: timeout in milliseconds, with the same meaning as in the g_dbus_proxy_call().
+ * @cancellable: (allow-none): a #GCancellable, or %NULL
+ * @error: (allow-none): Return location for error, or %NULL
+ *
+ * Wraps GDBusProxy synchronous call into an asynchronous without blocking
+ * the main context. This can be useful when doing calls on a WebExtension,
+ * because it can avoid freeze when this is called in the UI process and
+ * the WebProcess also does its own IPC call.
+ *
+ * This function should be called only from the main thread.
+ *
+ * Returns: The result of the method call, or %NULL on error. Free with g_variant_unref().
+ *
+ * Since: 3.22
+ **/
+GVariant *
+e_util_invoke_g_dbus_proxy_call_sync_wrapper_full (GDBusProxy *dbus_proxy,
+						   const gchar *method_name,
+						   GVariant *parameters,
+						   GDBusCallFlags flags,
+						   gint timeout_msec,
+						   GCancellable *cancellable,
+						   GError **error)
+{
+	GAsyncResult *async_result = NULL;
+	GVariant *var_result;
+	GMainContext *main_context;
+
+	g_return_val_if_fail (G_IS_DBUS_PROXY (dbus_proxy), NULL);
+	g_return_val_if_fail (method_name != NULL, NULL);
+
+	g_warn_if_fail (e_util_is_main_thread (g_thread_self ()));
+
+	g_dbus_proxy_call (
+		dbus_proxy, method_name, parameters, flags, timeout_msec, cancellable,
+		sync_wrapper_result_callback, &async_result);
+
+	main_context = g_main_context_get_thread_default ();
+
+	while (!async_result) {
+		g_main_context_iteration (main_context, TRUE);
+	}
+
+	var_result = g_dbus_proxy_call_finish (dbus_proxy, async_result, error);
+
+	g_clear_object (&async_result);
+
+	return var_result;
+}
+
+/**
+ * e_util_save_file_chooser_folder:
+ * @file_chooser: a #GtkFileChooser
+ *
+ * Saves the current folder of the @file_chooser, thus it could be used
+ * by e_util_load_file_chooser_folder() to open it in the last chosen folder.
+ *
+ * Since: 3.22.4
+ **/
+void
+e_util_save_file_chooser_folder (GtkFileChooser *file_chooser)
+{
+	GSettings *settings;
+	gchar *uri;
+
+	g_return_if_fail (GTK_IS_FILE_CHOOSER (file_chooser));
+
+	uri = gtk_file_chooser_get_current_folder_uri (file_chooser);
+	if (uri && g_str_has_prefix (uri, "file://")) {
+		settings = e_util_ref_settings ("org.gnome.evolution.shell");
+		g_settings_set_string (settings, "file-chooser-folder", uri);
+		g_object_unref (settings);
+	}
+
+	g_free (uri);
+}
+
+/**
+ * e_util_load_file_chooser_folder:
+ * @file_chooser: a #GtkFileChooser
+ *
+ * Sets the current folder to the @file_chooser to the one previously saved
+ * by e_util_save_file_chooser_folder(). The function does nothing if none
+ * or invalid is saved.
+ *
+ * Since: 3.22.4
+ **/
+void
+e_util_load_file_chooser_folder (GtkFileChooser *file_chooser)
+{
+	GSettings *settings;
+	gchar *uri;
+
+	g_return_if_fail (GTK_IS_FILE_CHOOSER (file_chooser));
+
+	settings = e_util_ref_settings ("org.gnome.evolution.shell");
+	uri = g_settings_get_string (settings, "file-chooser-folder");
+	g_object_unref (settings);
+
+	if (uri && g_str_has_prefix (uri, "file://")) {
+		gchar *filename;
+
+		filename = g_filename_from_uri (uri, NULL, NULL);
+		if (filename && g_file_test (filename, G_FILE_TEST_IS_DIR))
+			gtk_file_chooser_set_current_folder_uri (file_chooser, uri);
+
+		g_free (filename);
+	}
+
+	g_free (uri);
+}
+
+/**
+ * e_util_get_webkit_developer_mode_enabled:
+ *
+ * Returns: Whether WebKit developer mode is enabled. This is read only
+ *    once, thus any changes in the GSettings property require restart
+ *    of the Evolution.
+ *
+ * Since: 3.22.5
+ **/
+gboolean
+e_util_get_webkit_developer_mode_enabled (void)
+{
+	static gchar enabled = -1;
+
+	if (enabled == -1) {
+		GSettings *settings;
+
+		settings = e_util_ref_settings ("org.gnome.evolution.shell");
+		enabled = g_settings_get_boolean (settings, "webkit-developer-mode") ? 1 : 0;
+		g_clear_object (&settings);
+	}
+
+	return enabled != 0;
 }

@@ -521,6 +521,7 @@ mail_session_send_to_thread (GSimpleAsyncResult *simple,
 	CamelServiceConnectionStatus status;
 	GString *error_messages;
 	gboolean copy_to_sent = TRUE;
+	gboolean sent_message_saved = FALSE;
 	gboolean did_connect = FALSE;
 	guint ii;
 	GError *error = NULL;
@@ -548,13 +549,28 @@ mail_session_send_to_thread (GSimpleAsyncResult *simple,
 
 	status = camel_service_get_connection_status (context->transport);
 	if (status != CAMEL_SERVICE_CONNECTED) {
+		EMailSession *session;
+		ESourceRegistry *registry;
+		ESource *source;
+
+		/* Make sure user will be asked for a password, in case he/she cancelled it */
+		session = E_MAIL_SESSION (camel_service_ref_session (context->transport));
+		registry = e_mail_session_get_registry (session);
+		source = e_source_registry_ref_source (registry, camel_service_get_uid (context->transport));
+		g_object_unref (session);
+
+		if (source) {
+			e_mail_session_emit_allow_auth_prompt (session, source);
+			g_object_unref (source);
+		}
+
 		did_connect = TRUE;
 
 		camel_service_connect_sync (context->transport, cancellable, &error);
 
 		if (error != NULL) {
-			e_mail_session_unmark_service_used (session, context->transport);
 			g_simple_async_result_take_error (simple, error);
+			e_mail_session_unmark_service_used (session, context->transport);
 			return;
 		}
 	}
@@ -567,7 +583,7 @@ mail_session_send_to_thread (GSimpleAsyncResult *simple,
 	camel_transport_send_to_sync (
 		CAMEL_TRANSPORT (context->transport),
 		context->message, context->from,
-		context->recipients, cancellable, &error);
+		context->recipients, &sent_message_saved, cancellable, &error);
 
 	if (did_connect) {
 		/* Disconnect regardless of error or cancellation,
@@ -611,9 +627,13 @@ skip_send:
 
 		g_return_if_fail (CAMEL_IS_FOLDER (folder));
 
+		camel_operation_push_message (cancellable, _("Posting message to '%s'"), camel_folder_get_full_name (folder));
+
 		camel_folder_append_message_sync (
 			folder, context->message, context->info,
 			NULL, cancellable, &error);
+
+		camel_operation_pop_message (cancellable);
 
 		g_object_unref (folder);
 
@@ -649,13 +669,13 @@ skip_send:
 			g_clear_error (&error);
 		}
 
-		message_flags = camel_message_info_flags (context->info);
+		message_flags = camel_message_info_get_flags (context->info);
 
 		if (message_flags & CAMEL_MESSAGE_DELETED)
 			copy_to_sent = FALSE;
 	}
 
-	if (!copy_to_sent)
+	if (!copy_to_sent || sent_message_saved)
 		goto cleanup;
 
 	/* Append the sent message to a Sent folder. */
@@ -673,10 +693,15 @@ skip_send:
 		((folder == NULL) && (error != NULL)));
 
 	/* Append the message. */
-	if (folder != NULL)
+	if (folder != NULL) {
+		camel_operation_push_message (cancellable, _("Storing sent message to '%s'"), camel_folder_get_full_name (folder));
+
 		camel_folder_append_message_sync (
 			folder, context->message,
 			context->info, NULL, cancellable, &error);
+
+		camel_operation_pop_message (cancellable);
+	}
 
 	if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
 		goto exit;
@@ -704,9 +729,13 @@ skip_send:
 
 		g_clear_error (&error);
 
+		camel_operation_push_message (cancellable, _("Storing sent message to '%s'"), camel_folder_get_full_name (local_sent_folder));
+
 		camel_folder_append_message_sync (
 			local_sent_folder, context->message,
 			context->info, NULL, cancellable, &error);
+
+		camel_operation_pop_message (cancellable);
 	}
 
 	if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))

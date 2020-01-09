@@ -30,19 +30,25 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
@@ -58,18 +64,18 @@
 
 <section id="several-clients">
 <title>Verschiedene Mail-Clients verwenden</title>
-<p>Bedenken Sie auch stets, dass Filter von der Markierung »Neu« abhängen, die gesetzt ist, wenn eine Nachricht erstmals beim Server abgefragt wird. Wenn Sie neben Evolution ein anderes E-Mail-Programm verwenden, arbeiten Ihre Filter eventuell nicht automatisch.</p>
+<p>Bedenken Sie auch stets, dass Filter von der Markierung »Neu« abhängen, die gesetzt ist, wenn eine Nachricht erstmals beim Server abgefragt wird. Wenn Sie neben <gui>Evolution</gui> ein anderes E-Mail-Programm verwenden, arbeiten Ihre Filter eventuell nicht automatisch.</p>
 </section>
 
 <section id="filter-log">
 <title>Protokollieren der Filteraktionen</title>
 <p>Wenn immer noch nicht bekannt ist, warum Filter nicht wie erwartet arbeiten, so aktivieren Sie die Filteraktionen zur Protokollierung.</p>
 <list>
-<item><p>Schließen Sie Evolution.</p></item>
+<item><p>Schließen Sie <gui>Evolution</gui>.</p></item>
 <item><p>Öffnen Sie die Anwendung <app>Terminal</app>.</p></item>
 <item><p>Führen Sie folgenden Befehl aus: <cmd>gsettings set org.gnome.evolution.mail filters-log-actions true</cmd></p></item>
 <item><p>Führen Sie den Befehl <cmd>gsettings set org.gnome.evolution.mail filters-log-file "/home/MeinNutzername/mein-filter-log"</cmd> aus und ersetzen Sie <cmd>MeinNutzername</cmd> mit Ihrem Benutzernamen im System. Daraufhin wird eine Textdatei namens <file>mein-filter-log</file> im persönlichen Ordner erstellt. Beachten Sie, dass ein absoluter Pfad zum Dateinamen angegeben werden muss. Eine Syntax wie <sys>~</sys> oder <sys>$HOME</sys> funktioniert nicht.</p></item><!-- this is explained in https://bugzilla.gnome.org/show_bug.cgi?id=669471 -->
-<item><p>Starten Sie Evolution.</p></item>
+<item><p>Starten Sie <app>Evolution</app>.</p></item>
 <item><p>Nachrichten zum Anwenden der FIlter abrufen.</p></item>
 <item><p>Öffnen Sie die Datei <file>mein-filter-log</file> mit einer Textbearbeitung, um zu ersehen, welche Filter-Aktionen angewendet worden sind.</p></item>
 </list>

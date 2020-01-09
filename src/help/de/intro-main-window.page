@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="intro-main-window" xml:lang="de">
 
   <info>
-    <desc>Eine Übersicht über das Hauptfenster von Evolution.</desc>
+    <desc>Eine Übersicht über das Hauptfenster von <app>Evolution</app>.</desc>
 
     <link type="guide" xref="index#getting-started"/>
     <link type="seealso" xref="calendar-layout"/>
@@ -34,32 +34,38 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
   <title>Das Hauptfenster von <app>Evolution</app></title>
 
 <!-- This section fixes https://bugzilla.gnome.org/show_bug.cgi?id=657028 -->
-<p>Evolution ermöglicht den Umgang mit E-Mail, Kalender, Kontakten, Aufgaben und Notizen. Wechseln Sie zwischen diesen verschiedenen Arbeitsbereichen über die »Umschalter-Knöpfe« in der linken unteren Ecke. Je nach aktivem Arbeitsbereich werden unterschiedliche Elemente im Fenster angezeigt.</p>
+<p><app>Evolution</app> ermöglicht den Umgang mit E-Mail, Kalender, Kontakten, Aufgaben und Notizen. Wechseln Sie zwischen diesen verschiedenen Arbeitsbereichen über die »Umschalter-Knöpfe« in der linken unteren Ecke. Je nach aktivem Arbeitsbereich werden unterschiedliche Elemente im Fenster angezeigt.</p>
 
 <section id="e-mail">
 <title>E-Mail</title>
 
 <media type="image" src="./figures/window-overview-layers.png" width="600">
-  <p>Das Hauptfenster von Evolution E-Mail</p>
+  <p>Das Nachrichten-Hauptfenster von <app>Evolution</app></p>
 </media>
 
 <p>Die entsprechenden Elemente im E-Mail-Hauptfenster sind folgende:</p>
@@ -98,7 +104,7 @@
 </item>
 <item>
 <title>Umschalter</title>
-<p>Die Umschalter-Knöpfe im unteren Bereich der Seitenleiste ermöglichen das Wechseln zu den verschiedenen Evolution-Fenstern (wie E-Mail, Adressbuch, Kalender, Notizen und Aufgaben).</p><p>Lesen Sie für weitere Informationen <link xref="change-switcher-appearance">Das Erscheinungsbild der Umschalter-Knöpfe ändern</link>.</p>
+<p>Die Umschalter-Knöpfe im unteren Bereich der Seitenleiste ermöglichen das Wechseln zu den verschiedenen <app>Evolution</app>-Fenstern (wie E-Mail, Adressbuch, Kalender, Notizen und Aufgaben).</p><p>Lesen Sie für weitere Informationen <link xref="change-switcher-appearance">Das Erscheinungsbild der Umschalter-Knöpfe ändern</link>.</p>
 <note style="tip"><p>Sie können die Ordnerliste und die Umschalter-Seitenleiste über <guiseq><gui>Ansicht</gui><gui>Anordnung</gui><gui>Seitenleiste anzeigen</gui></guiseq> ein- oder ausblenden, oder Sie drücken <key>F9</key>.</p></note>
 </item>
 <item>

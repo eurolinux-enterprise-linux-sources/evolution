@@ -4,7 +4,7 @@
   <info>
     <link type="guide" xref="calendar-layout"/>
 
-    <revision pkgversion="3.0.2" version="0.4" date="2012-02-18" status="final"/>
+    <revision pkgversion="3.13.90" version="0.5" date="2015-03-10" status="final"/>
 
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
@@ -54,7 +54,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -65,12 +65,7 @@
        task-oriented, but that's it for the time being. Better ideas welcome.
        -->
 
-  <!-- TODO: Recheck once https://bugzilla.gnome.org/show_bug.cgi?id=657233 is
-       fixed, as the current UI is a huge mess. -->
-
-  <p>The following calendar-related options are available under
-  <guiseq><gui>Edit</gui><gui>Preferences</gui>
-  <gui>Calendar and Tasks</gui><gui>Display</gui></guiseq>.</p>
+  <p>Les options suivantes en relation avec l'agenda sont disponibles sous <guiseq><gui>Édition</gui><gui>Préférences</gui><gui>Agenda et tâches</gui><gui>Affichage</gui></guiseq>.</p>
 
 <section id="general">
   <title>Général</title>
@@ -82,8 +77,7 @@
     </item>
     <item>
       <p>Afficher les heures de fin de rendez-vous dans les vues mensuelles et hebdomadaires :</p>
-      <p>If there is space, <app>Evolution</app> shows the end times in the
-      week and month views for each appointment.</p>
+      <p>Si l'espace le permet, <app>Evolution</app> affiche l'heure de fin de chaque rendez-vous dans les vues hebdomadaires et mensuelles.</p>
     </item>
     <item>
       <p>Compresser les week-ends dans la vue mensuelle :</p>
@@ -94,7 +88,7 @@
       <p>Affiche le numéro de chaque semaine dans l'agenda.</p>
     </item>
     <item>
-      <p>Show recurring events in italic in bottom left calendar.</p>
+      <p>Afficher les événements récurrents en italique dans l'agenda en bas à gauche.</p>
     </item>
     <item>
       <p>Faire défiler la vue mensuelle d'une semaine</p>
@@ -103,12 +97,10 @@
 
 </section>
 
-<section id="date-time">
-  <title>Format de date et d'heure</title>
+<section id="alerts">
+  <title>Alertes</title>
 
-  <p>Vous pouvez modifier le format de la colonne <gui>Date</gui> en définissant votre format préféré.</p>
-
-  <p>Les substituants dans l'expression de format sont au format strftime. Pour une liste complète des formats disponibles, saisissez <cmd>date --help</cmd> dans l'application <app>Terminal</app>.</p>
+  <p>Si vous voulez qu'Evolution vous envoie une alerte avant de supprimer un rendez-vous, sélectionnez cette option.</p>
 
 </section>
 

@@ -5,7 +5,7 @@
     <link type="guide" xref="index#data-migration-and-sync"/>
     <link type="seealso" xref="data-storage"/>
 
-    <revision pkgversion="3.1.5" version="0.3" date="2011-09-29" status="final"/>
+    <revision pkgversion="3.1.5" version="0.4" date="2014-03-23" status="final"/>
 
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
@@ -17,9 +17,27 @@
     <desc>Εφεδρεία και ανάκτηση δεδομένων και ρυθμίσεων του <app>Evolution</app>.</desc>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
@@ -43,7 +61,7 @@
   </list>
 
   <note style="warning">
-    <p>Σημειώστε ότι οι ρυθμίσεις σας <link xref="mail-spam">φιλτράρισμα ανεπιθύμητων</link> δεν συμπεριλαμβάνονται στο αρχείο εφεδρείας, καθώς αυτές οι ρυθμίσεις δεν ελέγχονται από το <app>Evolution</app> και οι προγραμματιστές των εργαλείων φιλτραρίσματος οχλήσεων μπορεί να αλλάξουν τις λεπτομέρειες εφαρμογής. Εάν χρησιμοποιείτε Bogofilter θα χρειαστείτε εφεδρικό του <file>~/.bogofilter/</file>. Εάν χρησιμοποιείτε SpamAssassin θα χρειαστείτε εφεδρικό του <file>~/.spamassassin/</file>.</p>
+    <p>Σημειώστε ότι οι ρυθμίσεις σας <link xref="mail-spam">φιλτράρισμα ανεπιθύμητων</link> δεν συμπεριλαμβάνονται στο αρχείο του αντιγράφου ασφαλείας, καθώς αυτές οι ρυθμίσεις δεν ελέγχονται από το <app>Evolution</app> και οι προγραμματιστές των εργαλείων φιλτραρίσματος οχλήσεων μπορεί να αλλάξουν τις λεπτομέρειες εφαρμογής. Εάν χρησιμοποιείτε Bogofilter θα χρειαστείτε να πάρετε αντίγραφο ασφαλείας του κρυφού φακέλου <file>~/.bogofilter/</file>. Εάν χρησιμοποιείτε SpamAssassin θα χρειαστείτε να πάρετε αντίγραφο ασφαλείας του κρυφού φακέλου του <file>~/.spamassassin/</file>.</p>
   </note>
 
 </section>

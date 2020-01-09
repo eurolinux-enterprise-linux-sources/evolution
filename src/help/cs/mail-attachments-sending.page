@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="guide" id="mail-attachments-sending" xml:lang="cs">
 
   <info>
-    <desc>Attaching files to emails you want to send.</desc>
+    <desc>Jak do pošty vložit soubory, které chcete poslat.</desc>
 
     <link type="guide" xref="index#mail-composing"/>
     <link type="guide" xref="mail-attachments"/>
@@ -19,19 +19,31 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Adding attachments to an email</title>
+<title>Přikládání příloh do pošty</title>
 
 <section id="attaching">
-<title>Attaching files</title>
-<p>To attach a file to your email in the composer:</p>
+<title>Přiložení souborů</title>
+<p>Chcete-li při psaní své zprávy připojit soubor:</p>
 <steps>
-<item><p>Click <gui>Add Attachment...</gui>, or click <guiseq><gui>Insert</gui><gui>Attachment</gui></guiseq>, or press <keyseq><key>Ctrl</key><key>M</key></keyseq>.</p></item>
+<item><p>Klikněte na <gui>Přídat přílohu…</gui> nebo klikněte na <guiseq><gui>Vložit</gui> <gui>Příloha</gui></guiseq> nebo zmáčkněte <keyseq><key>Ctrl</key><key>M</key></keyseq>.</p></item>
 <item><p>Vyberte soubor, který chcete přiložit.</p></item>
 <item><p>Klikněte na <gui style="button">Budiž</gui>.</p></item>
 </steps>
-<p>You can also drag a file to the attachment bar of the composer window.</p>
+<p>Můžete také přetáhnout soubor do lišty příloh v okně editoru zprávy.</p>
 
 <p>Když odešlete zprávu, kopie přiloženého souboru jde s ní. Uvědomte si, že odesílání a přijímání velkých příloh může zabrat mnoho času.</p>
 </section>
@@ -39,16 +51,16 @@
 <section id="reminders">
 <title>Připomínka přílohy</title>
 
-<p>Evolution has an Attachment Reminder plugin you can use to remind yourself to attach a file to an email. If it determines that you have not attached the file, it displays a reminder window before the email is sent.</p>
+<p><app>Evolution</app> má zásuvný modul Připomínka přílohy, který můžete použít, abyste byli upomínáni na přiložení souboru do e-mailů. V případě, že rozhodne, že vám schází přiložit soubor, zobrazí před odesláním zprávy okno s připomenutím.</p>
 
-<p>Chcete-li zapnout Přípomínku přílohy:</p>
+<p>Chcete-li zapnout upomínání na přílohy:</p>
 <steps>
-<item><p>Select <guiseq><gui>Edit</gui><gui>Plugins</gui></guiseq>.</p></item>
-<item><p>Enable <gui>Attachment Reminder</gui>.</p></item>
-<item><p>Click the <gui>Configuration</gui> tab.</p></item>
-<item><p>Click <gui style="button">Add</gui>, then enter keywords in your language such as "Attach" or "enclosed".</p></item>
+<item><p>Vyberte <guiseq><gui>Upravit</gui> <gui>Zásuvné moduly</gui></guiseq>.</p></item>
+<item><p>Zapněte <gui>Připomínka přílohy</gui>.</p></item>
+<item><p>Klikněte na kartu <gui>Nastavení</gui>.</p></item>
+<item><p>Klikněte na <gui style="button">Přidat</gui>, po té zadejte klíčová slova ve svém jazyce, jako „přikládám“ nebo „vloženo“.</p></item>
 </steps>
-<p>Based on the keywords you have added, Evolution searches the text of every mail you are going to send. If it finds any of the keywords in your email and there is no actual attached file, the reminder window is displayed.</p>
+<p>Na základě klíčových slov, které jste zde uvedli, prohledává <app>Evolution</app> text každé zprávy, kterou odesíláte. Pokud nalezne klíčové slovo a žádný přiložený soubor, zobrazí se okno s připomenutím.</p>
 
 </section>
 

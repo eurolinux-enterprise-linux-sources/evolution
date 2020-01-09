@@ -159,13 +159,11 @@ update_comp_info (ECalComponentPreview *preview,
 static gchar *
 timet_to_str_with_zone (ECalComponentDateTime *dt,
                         ECalClient *client,
-                        icaltimezone *default_zone,
-                        gboolean use_24_hour_format)
+                        icaltimezone *default_zone)
 {
 	struct icaltimetype itt;
 	icaltimezone *zone = NULL;
 	struct tm tm;
-	gchar buf[256];
 
 	if (dt->tzid != NULL) {
 		e_cal_client_get_timezone_sync (
@@ -179,11 +177,7 @@ timet_to_str_with_zone (ECalComponentDateTime *dt,
 		icaltimezone_convert_time (&itt, zone, default_zone);
 	tm = icaltimetype_to_tm (&itt);
 
-	e_time_format_date_and_time (
-		&tm, use_24_hour_format,
-		FALSE, FALSE, buf, sizeof (buf));
-
-	return g_locale_to_utf8 (buf, -1, NULL, NULL, NULL);
+	return e_datetime_format_format_tm ("calendar", "table", itt.is_date ? DTFormatKindDate : DTFormatKindDateTime, &tm);
 }
 
 static void
@@ -193,7 +187,6 @@ cal_component_preview_write_html (ECalComponentPreview *preview,
 	ECalClient *client;
 	ECalComponent *comp;
 	icaltimezone *default_zone;
-	gboolean use_24_hour_format;
 	ECalComponentText text;
 	ECalComponentDateTime dt;
 	gchar *str;
@@ -208,7 +201,6 @@ cal_component_preview_write_html (ECalComponentPreview *preview,
 	client = preview->priv->client;
 	comp = preview->priv->comp;
 	default_zone = preview->priv->timezone;
-	use_24_hour_format = preview->priv->use_24_hour_format;
 
 	/* write document header */
 	e_cal_component_get_summary (comp, &text);
@@ -230,9 +222,9 @@ cal_component_preview_write_html (ECalComponentPreview *preview,
 		g_string_append_printf (buffer, "<tr><th>%s</th><td>", _("Categories:"));
 	for (iter = list; iter != NULL; iter = iter->next) {
 		const gchar *category = iter->data;
-		const gchar *icon_file;
+		gchar *icon_file;
 
-		icon_file = e_categories_get_icon_file_for (category);
+		icon_file = e_categories_dup_icon_file_for (category);
 		if (icon_file && g_file_test (icon_file, G_FILE_TEST_EXISTS)) {
 			gchar *uri;
 
@@ -246,6 +238,8 @@ cal_component_preview_write_html (ECalComponentPreview *preview,
 				g_string_append_len (string, ", ", 2);
 			g_string_append (string, category);
 		}
+
+		g_free (icon_file);
 	}
 	if (string->len > 0)
 		g_string_append_printf (buffer, "%s", string->str);
@@ -264,8 +258,7 @@ cal_component_preview_write_html (ECalComponentPreview *preview,
 	/* write start date */
 	e_cal_component_get_dtstart (comp, &dt);
 	if (dt.value != NULL) {
-		str = timet_to_str_with_zone (
-			&dt, client, default_zone, use_24_hour_format);
+		str = timet_to_str_with_zone (&dt, client, default_zone);
 		g_string_append_printf (
 			buffer, "<tr><th>%s</th><td>%s</td></tr>",
 			_("Start Date:"), str);
@@ -276,8 +269,7 @@ cal_component_preview_write_html (ECalComponentPreview *preview,
 	/* write end date */
 	e_cal_component_get_dtend (comp, &dt);
 	if (dt.value != NULL) {
-		str = timet_to_str_with_zone (
-			&dt, client, default_zone, use_24_hour_format);
+		str = timet_to_str_with_zone (&dt, client, default_zone);
 		g_string_append_printf (
 			buffer,"<tr><th>%s</th><td>%s</td></tr>",
 			_("End Date:"), str);
@@ -288,8 +280,7 @@ cal_component_preview_write_html (ECalComponentPreview *preview,
 	/* write Due Date */
 	e_cal_component_get_due (comp, &dt);
 	if (dt.value != NULL) {
-		str = timet_to_str_with_zone (
-			&dt, client, default_zone, use_24_hour_format);
+		str = timet_to_str_with_zone (&dt, client, default_zone);
 		g_string_append_printf (
 			buffer, "<tr><th>%s</th><td>%s</td></tr>",
 			_("Due Date:"), str);
@@ -314,7 +305,7 @@ cal_component_preview_write_html (ECalComponentPreview *preview,
 			str = g_strdup (_("Completed"));
 			break;
 		case ICAL_STATUS_CANCELLED :
-			str = g_strdup (_("Canceled"));
+			str = g_strdup (_("Cancelled"));
 			break;
 		case ICAL_STATUS_NONE :
 		default :

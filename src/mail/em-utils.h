@@ -36,7 +36,6 @@ G_BEGIN_DECLS
 struct _EMailPartList;
 
 gboolean em_utils_ask_open_many (GtkWindow *parent, gint how_many);
-gboolean em_utils_prompt_user (GtkWindow *parent, const gchar *promptkey, const gchar *tag, ...);
 
 void		em_utils_edit_filters		(EMailSession *session,
 						 EAlertSink *alert_sink,
@@ -64,6 +63,7 @@ gchar *		em_utils_message_to_html	(CamelSession *session,
 						 const gchar *credits,
 						 guint32 flags,
 						 struct _EMailPartList *parts_list,
+						 const gchar *prepend,
 						 const gchar *append,
 						 EMailPartValidityFlags *validity_found);
 
@@ -78,6 +78,23 @@ void emu_restore_folder_tree_state (EMFolderTree *folder_tree);
 gboolean	em_utils_is_re_in_subject	(const gchar *subject,
 						 gint *skip_len,
 						 const gchar * const *use_prefixes_strv);
+
+gchar *		em_utils_get_archive_folder_uri_from_folder
+						(CamelFolder *folder,
+						 EMailBackend *mail_backend,
+						 GPtrArray *uids,
+						 gboolean deep_uids_check);
+
+gboolean	em_utils_process_autoarchive_sync
+						(EMailBackend *mail_backend,
+						 CamelFolder *folder,
+						 const gchar *folder_uri,
+						 GCancellable *cancellable,
+						 GError **error);
+
+gchar *		em_utils_build_export_basename	(CamelFolder *folder,
+						 const gchar *uid,
+						 const gchar *extension);
 
 G_END_DECLS
 

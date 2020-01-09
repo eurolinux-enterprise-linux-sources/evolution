@@ -19,96 +19,77 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Sending a Meeting Invitation.</desc>
+    <desc>Jak poslat pozvánku na schůzku.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
   <title>Zaslání pozvánky na schůzku</title>
 
-  <p>When you create a meeting (group appointment), you can specify the
-  attendees in several categories, such as "chair" or "required". When you save
-  the meeting listing, each attendee is sent an email with the meeting
-  information, which also gives them the option to respond.</p>
+  <p>Když vytváříte schůzku (skupinovou událost), můžete zadat účastníky v několika kategoriích, jako „předsedové“ nebo „vyžadování účastníci“. Když uložíte seznam schůzky, každému účastníkovi je zaslán e-mail s informací o schůzce, což jim dává mimo jiné možnost odpovědět.</p>
 
-  <p>If you do not need to collect attendance information when you're
-  scheduling an event, and would rather just announce the event, right-click
-  the meeting and select <gui>Forward as iCalendar</gui>. This opens a new
-  email message with the event notification attached as an announcement.
-  Recipients can add the event to their calendars with one click, but it will
-  not automatically send you email about whether they plan to attend.</p>
+  <p>Nepotřebujete-li sbírat informace od účastníků, když plánujete schůzku, a raději byste schůzku jen oznámili, klikněte pravým tlačítkem na schůzku a vyberte <gui>Odeslat jako iCalendar…</gui>. Tím se otevře nový e-mail s oznámením v podobě upozornění v příloze. Příjemci mohou přidat událost do svých kalendářů jedním kliknutím, ale nepošle vám to automaticky e-mail, zda se hodlají zúčastnit či ne.</p>
 
-  <p>Chcete-li naplánovat schůzku:</p>
+  <p>Když chcete naplánovat schůzku:</p>
 
   <steps>
     <item>
-      <p>Click
-      <guiseq><gui>File</gui><gui>New</gui><gui>Meeting</gui></guiseq>.</p>
+      <p>Klikněte na <guiseq><gui>Soubor</gui> <gui>Nový</gui> <gui>Schůzka</gui></guiseq>.</p>
     </item>
     <item>
-      <p>If you have multiple email accounts, select the one to use by
-      selecting an item in the <gui>Organizer</gui> field.</p>
+      <p>Máte-li více e-mailových účtů, vyberte v poli <gui>Organizátor</gui> ten, který chcete používat.</p>
     </item>
     <item>
-      <p>Select a calendar in the <gui>Calendar</gui> drop-down list.</p>
+      <p>Vyberte kalendář v rozbalovacím seznamu <gui>Kalendář</gui>.</p>
     </item>
     <item>
-      <p>Click <gui style="button">Add</gui> to add the email addresses of
-      people you want to invite.</p>
+      <p>Klikněte na <gui style="button">Přidat</gui>, abyste přidali e-mailové adresy lidí, které chcete pozvat.</p>
     </item>
     <item>
-      <p>Click <gui>View</gui> in the menu bar to show or hide the
-      <gui>Type</gui>, <gui>Role</gui>, <gui>Status</gui>, and <gui>RSVP</gui>
-      fields.</p>
+      <p>Klikněte na <gui>Zobrazit</gui>, chcete-li zobrazit nebo skrýt pole <gui>Typ</gui>, <gui>Funkce</gui>, <gui>Stav</gui> a <gui>RSVP</gui>.</p>
     </item>
     <item>
-      <p>Enter a brief summary in the <gui>Summary</gui> field.</p>
+      <p>Vložte stručný souhrnný popis do pole <gui>Shrnutí</gui>.</p>
     </item>
     <item>
-      <p>(Optional) Type a location in the <gui>Location</gui> field.</p>
+      <p>(Volitelně) napište místo konání do pole <gui>Místo</gui>.</p>
     </item>
     <item>
-      <p>To select this event as an all day event, click
-      <guiseq><gui>Options</gui><gui>All Day Event</gui></guiseq>, or click the
-      <gui>All Day Event</gui> button on the toolbar.</p>
+      <p>Chcete-li, aby šlo o celodenní událost, klikněte na <guiseq><gui>Volby</gui> <gui>Celodenní událost</gui></guiseq> nebou klikněte na tlačítko <gui>Celodenní událost</gui> na nástrojové liště.</p>
     </item>
     <item>
       <p>Zvolte datum a čas.</p>
     </item>
     <item>
-      <p>If the event is not an all day event, select either <gui>For</gui> to
-      specify the duration, or select <gui>Until</gui> to specify the ending
-      time of the event.</p>
+      <p>Pokud událost není celodenní, vyberte buď <gui>po dobu</gui> k určení doby trvání nebo vyberte <gui>až do</gui> k určení času konce události.</p>
     </item>
     <item>
-      <p>(Optional) Enter a description in the <gui>Description</gui>
-      field.</p>
+      <p>(Volitelně) napište popis do pole <gui>Popis</gui>.</p>
     </item>
     <item>
-      <p>To query <link xref="calendar-free-busy">free/busy</link> information
-      for the attendees, click the <gui>Free/Busy</gui> button on the toolbar,
-      or click <guiseq><gui>Options</gui><gui>Free/Busy</gui></guiseq>.</p>
+      <p>Chcete-li se zeptat na informace o <link xref="calendar-free-busy">volnu/obsazení</link> účastníků, klikněte na nástrojové liště na tlačítko <gui>Volno/obsazeno</gui> nebo klikněte na <guiseq><gui>Volby</gui> <gui>Volno/obsazeno</gui></guiseq>.</p>
     </item>
     <item>
-      <p>Click <gui>Save</gui> to save the meeting.</p>
+      <p>Kliknutím na <gui>Uložit</gui> schůzku uložíte.</p>
     </item>
   </steps>
 
-  <p>E-mail je odeslán všem příjemcům zvouce je na schůzku.</p>
+  <p>Všem příjemcům bude odeslán e-mail s pozváním na schůzku.</p>
 
-  <p>You can also define a <link xref="calendar-timezones">time zone</link>, a
-  <link xref="using-categories">category</link>, a
-  <link xref="calendar-alarms-and-reminders">reminder</link>, a
-  <link xref="calendar-recurrence">recurrence</link>, or a
-  <link xref="calendar-classifications">classification</link> for the event, or
-  add an attachment.</p>
+  <p>U události můžete také určit <link xref="calendar-timezones">časové pásmo</link>, <link xref="using-categories">kategorii</link>, <link xref="calendar-alarms-and-reminders">připomínání</link>, <link xref="calendar-recurrence">opakování</link> nebo <link xref="calendar-classifications">klasifikaci</link> nebo k ní přidat přílohu.</p>
 
   <note style="tip">
-    <p>In <app>Evolution</app>, a meeting can have only one organizer, and only
-    the organizer can add participants to that meeting. Though it is possible
-    to change the organizer of a meeting, this is not recommended as a means to
-    invite additional participants to meetings. If you want to invite
-    additional people to a meeting and are not that meeting's organizer, it is
-    recommended that you forward the invitation message you received from the
-    original meeting organiser to additional participants.</p>
+    <p>V aplikaci <app>Evolution</app> může mít schůzka pouze jednoho organizátora a pouze organizátor může přidávat schůzce účastníky. Ačkoliv je možné změnit organizátora schůzky, nelze to doporučit jako způsob, jak pozvat na schůzku další účastníky. Chcete-li pozvat na schůzku další lidi a přitom nejste organizátorem schůzky, je doporučováno přeposlat dalším účastníkům zvací e-mail, který jste obdrželi od původního organizátora schůzky. </p>
   </note>
 
 </page>

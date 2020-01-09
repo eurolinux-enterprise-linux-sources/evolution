@@ -80,7 +80,7 @@ ee_editor_command_changed (GtkWidget *textbox)
 	d (printf ("\n\aeditor is : [%s] \n\a", editor));
 
 	/* GSettings access for every key-press. Sucky ? */
-	settings = g_settings_new ("org.gnome.evolution.plugin.external-editor");
+	settings = e_util_ref_settings ("org.gnome.evolution.plugin.external-editor");
 	g_settings_set_string (settings, "command", editor);
 	g_object_unref (settings);
 }
@@ -94,7 +94,7 @@ ee_editor_immediate_launch_changed (GtkWidget *checkbox)
 	immediately = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (checkbox));
 	d (printf ("\n\aimmediate launch is : [%d] \n\a", immediately));
 
-	settings = g_settings_new ("org.gnome.evolution.plugin.external-editor");
+	settings = e_util_ref_settings ("org.gnome.evolution.plugin.external-editor");
 	g_settings_set_boolean (settings, "launch-on-key-press", immediately);
 	g_object_unref (settings);
 }
@@ -112,7 +112,7 @@ e_plugin_lib_get_configure_widget (EPlugin *epl)
 	textbox = gtk_entry_new ();
 	label = gtk_label_new (_("Command to be executed to launch the editor: "));
 	help = gtk_label_new (_("For XEmacs use \"xemacs\"\nFor Vim use \"gvim -f\""));
-	settings = g_settings_new ("org.gnome.evolution.plugin.external-editor");
+	settings = e_util_ref_settings ("org.gnome.evolution.plugin.external-editor");
 
 	editor = g_settings_get_string (settings, "command");
 	if (editor) {
@@ -149,29 +149,28 @@ static void
 enable_disable_composer (EMsgComposer *composer,
                          gboolean enable)
 {
-	GtkhtmlEditor *editor;
+	EHTMLEditor *editor;
+	EContentEditor *cnt_editor;
 	GtkAction *action;
 	GtkActionGroup *action_group;
 
 	g_return_if_fail (E_IS_MSG_COMPOSER (composer));
 
-	editor = GTKHTML_EDITOR (composer);
+	editor = e_msg_composer_get_editor (composer);
+	cnt_editor = e_html_editor_get_content_editor (editor);
 
-	if (enable)
-		gtkhtml_editor_run_command (editor, "editable-on");
-	else
-		gtkhtml_editor_run_command (editor, "editable-off");
+	e_content_editor_set_editable (cnt_editor, enable);
 
-	action = GTKHTML_EDITOR_ACTION_EDIT_MENU (composer);
+	action = E_HTML_EDITOR_ACTION_EDIT_MENU (editor);
 	gtk_action_set_sensitive (action, enable);
 
-	action = GTKHTML_EDITOR_ACTION_FORMAT_MENU (composer);
+	action = E_HTML_EDITOR_ACTION_FORMAT_MENU (editor);
 	gtk_action_set_sensitive (action, enable);
 
-	action = GTKHTML_EDITOR_ACTION_INSERT_MENU (composer);
+	action = E_HTML_EDITOR_ACTION_INSERT_MENU (editor);
 	gtk_action_set_sensitive (action, enable);
 
-	action_group = gtkhtml_editor_get_action_group (editor, "composer");
+	action_group = e_html_editor_get_action_group (editor, "composer");
 	gtk_action_group_set_sensitive (action_group, enable);
 }
 
@@ -187,23 +186,49 @@ disable_composer (EMsgComposer *composer)
 	enable_disable_composer (composer, FALSE);
 }
 
-/* needed because the new thread needs to call g_idle_add () */
 static gboolean
-update_composer_text (GArray *array)
+enable_composer_idle (gpointer user_data)
 {
-	EMsgComposer *composer;
-	gchar *text;
+	EMsgComposer *composer = user_data;
 
-	composer = g_array_index (array, gpointer, 0);
-	text = g_array_index (array, gpointer, 1);
-
-	e_msg_composer_set_body_text (composer, text, FALSE);
+	g_return_val_if_fail (E_IS_MSG_COMPOSER (composer), FALSE);
 
 	enable_composer (composer);
 
-	gtkhtml_editor_set_changed (GTKHTML_EDITOR (composer), TRUE);
+	g_object_unref (composer);
 
-	g_free (text);
+	return FALSE;
+}
+
+struct ExternalEditorData {
+	EMsgComposer *composer;
+	gchar *content;
+	gint cursor_position, cursor_offset;
+};
+
+/* needed because the new thread needs to call g_idle_add () */
+static gboolean
+update_composer_text (gpointer user_data)
+{
+	struct ExternalEditorData *eed = user_data;
+	EHTMLEditor *editor;
+	EContentEditor *cnt_editor;
+
+	g_return_val_if_fail (eed != NULL, FALSE);
+	g_return_val_if_fail (E_IS_MSG_COMPOSER (eed->composer), FALSE);
+
+	editor = e_msg_composer_get_editor (eed->composer);
+	cnt_editor = e_html_editor_get_content_editor (editor);
+
+	e_msg_composer_set_body_text (eed->composer, eed->content, FALSE);
+
+	enable_composer (eed->composer);
+
+	e_content_editor_set_changed (cnt_editor, TRUE);
+
+	g_clear_object (&eed->composer);
+	g_free (eed->content);
+	g_free (eed);
 
 	return FALSE;
 }
@@ -223,6 +248,7 @@ run_error_dialog (struct run_error_dialog_data *data)
 	e_alert_run_dialog_for_args (GTK_WINDOW (data->composer), data->text, NULL);
 	enable_composer (data->composer);
 
+	g_clear_object (&data->composer);
 	g_free (data);
 
 	return FALSE;
@@ -256,29 +282,30 @@ static GMutex external_editor_running_lock;
 static gpointer
 external_editor_thread (gpointer user_data)
 {
-	EMsgComposer *composer = user_data;
+	struct ExternalEditorData *eed = user_data;
 	gchar *filename = NULL;
 	gint status = 0;
 	GSettings *settings;
-	gchar *editor_cmd_line = NULL, *editor_cmd = NULL, *content;
-	gint fd, position = -1, offset = -1;
+	gchar *editor_cmd_line = NULL, *editor_cmd = NULL;
+	gint fd;
+
+	g_return_val_if_fail (eed != NULL, NULL);
+	g_return_val_if_fail (E_IS_MSG_COMPOSER (eed->composer), NULL);
 
 	/* prefix temp files with evo so .*vimrc can be setup to recognize them */
 	fd = g_file_open_tmp ("evoXXXXXX", &filename, NULL);
 	if (fd > 0) {
-		gsize length = 0;
-
 		close (fd);
 		d (printf ("\n\aTemporary-file Name is : [%s] \n\a", filename));
 
 		/* Push the text (if there is one) from the composer to the file */
-		content = gtkhtml_editor_get_text_plain (GTKHTML_EDITOR (composer), &length);
-		g_file_set_contents (filename, content, length, NULL);
+		if (eed->content && *eed->content)
+			g_file_set_contents (filename, eed->content, strlen (eed->content), NULL);
 	} else {
 		struct run_error_dialog_data *data;
 
 		data = g_new0 (struct run_error_dialog_data, 1);
-		data->composer = composer;
+		data->composer = g_object_ref (eed->composer);
 		data->text = "org.gnome.evolution.plugins.external-editor:no-temp-file";
 
 		g_warning ("Temporary file fd is null");
@@ -289,10 +316,10 @@ external_editor_thread (gpointer user_data)
 		goto finished;
 	}
 
-	settings = g_settings_new ("org.gnome.evolution.plugin.external-editor");
+	settings = e_util_ref_settings ("org.gnome.evolution.plugin.external-editor");
 	editor_cmd = g_settings_get_string (settings, "command");
 	if (!editor_cmd) {
-		if (!(editor_cmd = g_strdup (g_getenv ("EDITOR"))))
+		if (!(editor_cmd = g_strdup (g_getenv ("EDITOR"))) )
 			/* Make gedit the default external editor,
 			 * if the default schemas are not installed
 			 * and no $EDITOR is set. */
@@ -300,33 +327,27 @@ external_editor_thread (gpointer user_data)
 	}
 	g_object_unref (settings);
 
-	if (g_strrstr (editor_cmd, "vim") != NULL
-	    && gtk_html_get_cursor_pos (
-			gtkhtml_editor_get_html (
-			GTKHTML_EDITOR (composer)), &position, &offset)
-				&& position >= 0 && offset >= 0) {
+	if (g_strrstr (editor_cmd, "vim") != NULL &&
+	    eed->cursor_position > 0) {
 		gchar *tmp = editor_cmd;
 		gint lineno;
 		gboolean set_nofork;
 
 		set_nofork = g_strrstr (editor_cmd, "gvim") != NULL;
-		/* Increment 1 so that entering vim insert mode places you
-		 * in the same entry position you were at in the html. */
-		offset++;
 
 		/* calculate the line number that the cursor is in */
-		lineno = numlines (content, position);
+		lineno = numlines (eed->content, eed->cursor_position);
 
+		/* Increment by 1 so that entering vim insert mode places you
+		 * in the same entry position you were at in the html. */
 		editor_cmd = g_strdup_printf (
 			"%s \"+call cursor(%d,%d)\"%s%s",
-			tmp, lineno, offset,
+			tmp, lineno, eed->cursor_offset + 1,
 			set_nofork ? " " : "",
 			set_nofork ? "--nofork" : "");
 
 		g_free (tmp);
 	}
-
-	g_free (content);
 
 	editor_cmd_line = g_strconcat (editor_cmd, " ", filename, NULL);
 
@@ -336,7 +357,7 @@ external_editor_thread (gpointer user_data)
 		g_warning ("Unable to launch %s: ", editor_cmd_line);
 
 		data = g_new0 (struct run_error_dialog_data, 1);
-		data->composer = composer;
+		data->composer = g_object_ref (eed->composer);
 		data->text = "org.gnome.evolution.plugins.external-editor:editor-not-launchable";
 
 		/* run_error_dialog also calls enable_composer */
@@ -356,25 +377,19 @@ external_editor_thread (gpointer user_data)
 	if (status) {
 #endif
 		d (printf ("\n\nsome problem here with external editor\n\n"));
-		g_idle_add ((GSourceFunc) enable_composer, composer);
+		g_idle_add (enable_composer_idle, g_object_ref (eed->composer));
 		goto finished;
 	} else {
 		gchar *buf;
 
 		if (g_file_get_contents (filename, &buf, NULL, NULL)) {
-			gchar *htmltext;
-			GArray *array;
+			struct ExternalEditorData *eed2;
 
-			htmltext = camel_text_to_html (
-				buf, CAMEL_MIME_FILTER_TOHTML_PRE, 0);
+			eed2 = g_new0 (struct ExternalEditorData, 1);
+			eed2->composer = g_object_ref (eed->composer);
+			eed2->content =  camel_text_to_html (buf, CAMEL_MIME_FILTER_TOHTML_PRE, 0);
 
-			array = g_array_sized_new (
-				TRUE, TRUE,
-				sizeof (gpointer), 2 * sizeof (gpointer));
-			array = g_array_append_val (array, composer);
-			array = g_array_append_val (array, htmltext);
-
-			g_idle_add ((GSourceFunc) update_composer_text, array);
+			g_idle_add ((GSourceFunc) update_composer_text, eed2);
 
 			/* We no longer need that temporary file */
 			if (g_remove (filename) == -1)
@@ -385,16 +400,24 @@ external_editor_thread (gpointer user_data)
 		}
 	}
 
- finished:
+finished:
 	g_mutex_lock (&external_editor_running_lock);
 	external_editor_running = FALSE;
 	g_mutex_unlock (&external_editor_running_lock);
+
+	g_clear_object (&eed->composer);
+	g_free (eed->content);
+	g_free (eed);
 
 	return NULL;
 }
 
 static void launch_editor (GtkAction *action, EMsgComposer *composer)
 {
+	struct ExternalEditorData *eed;
+	EHTMLEditor *editor;
+	EContentEditor *cnt_editor;
+
 	d (printf ("\n\nexternal_editor plugin is launched \n\n"));
 
 	if (editor_running ()) {
@@ -402,14 +425,27 @@ static void launch_editor (GtkAction *action, EMsgComposer *composer)
 		return;
 	}
 
+	editor = e_msg_composer_get_editor (composer);
+	cnt_editor = e_html_editor_get_content_editor (editor);
+
+	e_content_editor_clear_undo_redo_history (cnt_editor);
 	disable_composer (composer);
 
 	g_mutex_lock (&external_editor_running_lock);
 	external_editor_running = TRUE;
 	g_mutex_unlock (&external_editor_running_lock);
 
-	editor_thread = g_thread_new (
-		NULL, external_editor_thread, composer);
+	eed = g_new0 (struct ExternalEditorData, 1);
+	eed->composer = g_object_ref (composer);
+	eed->content = e_content_editor_get_content (cnt_editor,
+		E_CONTENT_EDITOR_GET_TEXT_PLAIN |
+		E_CONTENT_EDITOR_GET_PROCESSED,
+		NULL, NULL);
+	eed->cursor_position = e_content_editor_get_caret_position (cnt_editor);
+	if (eed->cursor_position > 0)
+		eed->cursor_offset = e_content_editor_get_caret_offset (cnt_editor);
+
+	editor_thread = g_thread_new (NULL, external_editor_thread, eed);
 	g_thread_unref (editor_thread);
 }
 
@@ -443,7 +479,7 @@ key_press_cb (GtkWidget *widget,
 		break;
 	}
 
-	settings = g_settings_new ("org.gnome.evolution.plugin.external-editor");
+	settings = e_util_ref_settings ("org.gnome.evolution.plugin.external-editor");
 	immediately = g_settings_get_boolean (settings, "launch-on-key-press");
 	g_object_unref (settings);
 	if (!immediately)
@@ -484,24 +520,23 @@ gboolean
 e_plugin_ui_init (GtkUIManager *manager,
                   EMsgComposer *composer)
 {
-	GtkhtmlEditor *editor;
-	EWebViewGtkHTML *web_view;
+	EHTMLEditor *editor;
+	EContentEditor *cnt_editor;
 
-	editor = GTKHTML_EDITOR (composer);
+	editor = e_msg_composer_get_editor (composer);
+	cnt_editor = e_html_editor_get_content_editor (editor);
 
 	/* Add actions to the "composer" action group. */
 	gtk_action_group_add_actions (
-		gtkhtml_editor_get_action_group (editor, "composer"),
+		e_html_editor_get_action_group (editor, "composer"),
 		entries, G_N_ELEMENTS (entries), composer);
 
-	web_view = e_msg_composer_get_web_view (composer);
-
 	g_signal_connect (
-		web_view, "key_press_event",
+		cnt_editor, "key_press_event",
 		G_CALLBACK (key_press_cb), composer);
 
 	g_signal_connect (
-		web_view, "delete-event",
+		cnt_editor, "delete-event",
 		G_CALLBACK (delete_cb), composer);
 
 	return TRUE;

@@ -21,9 +21,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -45,7 +51,7 @@
 <title>Adjuntar archivos</title>
 <p>Para adjuntar un archivo a su correo en el editor:</p>
 <steps>
-<item><p>Pulse <gui>Añadir adjunto...</gui>, <guiseq><gui>Insertar</gui><gui>Adjunto</gui></guiseq> o pulse <keyseq><key>Ctrl</key><key>M</key></keyseq>.</p></item>
+<item><p>Pulse <gui>Añadir adjunto…</gui>, <guiseq><gui>Insertar</gui><gui>Adjunto</gui></guiseq> o pulse <keyseq><key>Ctrl</key><key>M</key></keyseq>.</p></item>
 <item><p>Seleccione el archivo que quiere adjuntar.</p></item>
 <item><p>Pulse <gui style="button">Aceptar</gui>.</p></item>
 </steps>
@@ -57,7 +63,7 @@
 <section id="reminders">
 <title>Recuerdo de adjuntos</title>
 
-<p>Evolution tiene un complemento de Recuerdo de adjuntos que puede usar para recordarle que adjunte un archivo en un correo-e. Si determina que el archivo no está adjuntado, muestra una ventana de recordatorio antes de enviar el mensaje.</p>
+<p><app>Evolution</app> tiene un complemento de Recuerdo de adjuntos que puede usar para recordarle que adjunte un archivo en un correo-e. Si determina que el archivo no está adjuntado, muestra una ventana de recordatorio antes de enviar el mensaje.</p>
 
 <p>Para activar el Recuerdo de adjuntos:</p>
 <steps>
@@ -66,7 +72,7 @@
 <item><p>Pulse la pestaña <gui>Configuración</gui>.</p></item>
 <item><p>Pulse <gui style="button">Añadir</gui>, después introduzca las palabras claves en su idioma tales como «adjuntar» o «adjunto».</p></item>
 </steps>
-<p>Evolution busca cada correo electrónico que esté enviando basándose en las palabras clave que haya añadido. Si encuentra cualquiera de las palabras clave en su correo y no hay un archivo adjunto, se muestra la ventana de recordatorio.</p>
+<p><app>Evolution</app> busca cada correo electrónico que esté enviando basándose en las palabras clave que haya añadido. Si encuentra cualquiera de las palabras clave en su correo y no hay un archivo adjunto, se muestra la ventana de recordatorio.</p>
 
 </section>
 

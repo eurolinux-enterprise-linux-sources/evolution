@@ -53,7 +53,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -63,7 +63,7 @@
 <title>Joindre des fichiers</title>
 <p>Pour joindre un fichier à un courriel :</p>
 <steps>
-<item><p>Cliquez sur <gui>Ajouter une pièce jointe</gui> ou cliquez sur <guiseq><gui>Insertion</gui><gui>Pièce jointe</gui></guiseq> ou pressez <keyseq><key>Ctrl</key><key>M</key></keyseq>.</p></item>
+<item><p>Cliquez sur <gui>Ajouter une pièce jointe…</gui> ou cliquez sur <guiseq><gui>Insertion</gui><gui>Pièce jointe</gui></guiseq> ou appuyez sur <keyseq><key>Ctrl</key><key>M</key></keyseq>.</p></item>
 <item><p>Sélectionnez le fichier à joindre.</p></item>
 <item><p>Cliquez sur <gui style="button">Valider</gui>.</p></item>
 </steps>
@@ -75,7 +75,7 @@
 <section id="reminders">
 <title>Oubli des pièces jointes</title>
 
-<p>Evolution possède un greffon « Oubli des pièces jointes » qui peut vous rappeler d'ajouter un fichier à un courriel. S'il détermine que vous avez oublié de joindre un fichier, une fenêtre de rappel s'affiche avant l'envoi du message.</p>
+<p><app>Evolution</app> has an Attachment Reminder plugin you can use to remind yourself to attach a file to an email. If it determines that you have not attached the file, it displays a reminder window before the email is sent.</p>
 
 <p>Pour activer le greffon Oubli des pièces jointes :</p>
 <steps>
@@ -84,7 +84,7 @@
 <item><p>Cliquez sur l'onglet <gui>Configuration</gui>.</p></item>
 <item><p>Cliquez sur <gui style="button">Ajouter</gui> puis saisissez les mots-clés dans votre langue tels que « attaché » ou « jointe »...</p></item>
 </steps>
-<p>En fonction des mots-clés que vous avez ajoutés, Evolution parcourt chaque message que vous envoyez. S'il trouve un des mots-clés dans un message et qu'aucune pièce jointe n'a été ajoutée, une fenêtre de rappel vous avertit que des pièces jointes sont peut-être manquantes.</p>
+<p>Based on the keywords you have added, <app>Evolution</app> searches the text of every mail you are going to send. If it finds any of the keywords in your email and there is no actual attached file, the reminder window is displayed.</p>
 
 </section>
 

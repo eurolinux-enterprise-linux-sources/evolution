@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-localized-re-subjects" xml:lang="cs">
 
   <info>
-    <desc>Avoid long subject lines due to translated "Re:" prefixes.</desc>
+    <desc>Jak předejít zbytečnému prodlužování řádku s lokalizovanou předponou „Re:“</desc>
     
     <link type="guide" xref="index#common-mail-problems"/>
 
@@ -15,17 +15,28 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
-</info>
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
+  </info>
 
-<title>Handling localized "Re:" in subjects</title>
+<title>Rozpoznání lokalizovaného „Re:“ v předmětu</title>
 
-<p>Traditionally a "Re:" prefix is added to a subject line when replying to an email. Some email applications use localized terms for this (like "SV:" in Danish or "AW: in German). <app>Evolution</app> can recognize these terms to avoid subject lines getting longer as the conversation continues.</p>
+<p>Předpona „Re:“ se tradičně přidává na řádek s předmětem, když odpovídáte na zprávu. Některé poštovní aplikace používají lokalizovanou verzi této předpony (jako „SV:“ v dánštině, „AW:“ v němčině nebo „Odp:“ v češtině). <app>Evolution</app> umí tyto výrazy rozpoznat a předejít tak zbytečnému nabývání řádku na délce přidáváním další předpony.</p>
 
 <list>
 <item><p>Otevřete aplikaci <app>Terminál</app>.</p></item>
-<item><p>Run the command <cmd>gsettings set org.gnome.evolution.mail.composer-localized-re 'AW:,SV:'</cmd> (in case that you want "AW:" and "SV:" to be recognized).</p></item>
+<item><p>Spusťte příkaz <cmd>gsettings set org.gnome.evolution.mail.composer-localized-re 'Odp,AW'</cmd> (v případě, že chcete rozpoznávat „Odp:“ a „AW:“).</p></item>
 </list>
-<p>You can also use the <app>dconf-editor</app> application to do this.</p>
+<p>Toho stejného lze dosáhnout i použitím aplikace <app>dconf-editor</app>.</p>
 
 <!-- As per https://bugzilla.gnome.org/show_bug.cgi?id=661087#c6 -->
 

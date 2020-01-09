@@ -1,0 +1,62 @@
+diff -up evolution-3.22.6/e-util/e-name-selector-entry.c.name-selector-entry-fake-changed-signal evolution-3.22.6/e-util/e-name-selector-entry.c
+--- evolution-3.22.6/e-util/e-name-selector-entry.c.name-selector-entry-fake-changed-signal	2017-01-27 12:06:11.000000000 +0100
++++ evolution-3.22.6/e-util/e-name-selector-entry.c	2017-04-18 10:51:23.716045722 +0200
+@@ -65,6 +65,8 @@ struct _ENameSelectorEntryPrivate {
+ 	GQueue cancellables;
+ 
+ 	GHashTable *known_contacts; /* gchar * ~> 1 */
++
++	gboolean block_entry_changed_signal;
+ };
+ 
+ enum {
+@@ -2028,6 +2030,16 @@ sanitize_entry (ENameSelectorEntry *name
+ 	generate_attribute_list (name_selector_entry);
+ }
+ 
++static void
++maybe_block_entry_changed_cb (ENameSelectorEntry *name_selector_entry,
++			      gpointer user_data)
++{
++	g_return_if_fail (E_IS_NAME_SELECTOR_ENTRY (name_selector_entry));
++
++	if (name_selector_entry->priv->block_entry_changed_signal)
++		g_signal_stop_emission_by_name (name_selector_entry, "changed");
++}
++
+ static gboolean
+ user_focus_in (ENameSelectorEntry *name_selector_entry,
+                GdkEventFocus *event_focus)
+@@ -2037,6 +2049,8 @@ user_focus_in (ENameSelectorEntry *name_
+ 	GString *str = g_string_new ("");
+ 	EDestination *dest_dummy = e_destination_new ();
+ 
++	/* To not send fake 'changed' signals, which can influence message composer */
++	name_selector_entry->priv->block_entry_changed_signal = TRUE;
+ 	g_signal_handlers_block_matched (name_selector_entry, G_SIGNAL_MATCH_DATA, 0, 0, NULL, NULL, name_selector_entry);
+ 	g_signal_handlers_block_matched (name_selector_entry->priv->destination_store, G_SIGNAL_MATCH_DATA, 0, 0, NULL, NULL, name_selector_entry);
+ 
+@@ -2072,6 +2086,7 @@ user_focus_in (ENameSelectorEntry *name_
+ 
+ 	g_signal_handlers_unblock_matched (name_selector_entry->priv->destination_store, G_SIGNAL_MATCH_DATA, 0, 0, NULL, NULL, name_selector_entry);
+ 	g_signal_handlers_unblock_matched (name_selector_entry, G_SIGNAL_MATCH_DATA, 0, 0, NULL, NULL, name_selector_entry);
++	name_selector_entry->priv->block_entry_changed_signal = FALSE;
+ 
+ 	generate_attribute_list (name_selector_entry);
+ 
+@@ -3381,11 +3396,15 @@ e_name_selector_entry_init (ENameSelecto
+ 
+ 	name_selector_entry->priv->minimum_query_length = 3;
+ 	name_selector_entry->priv->show_address = FALSE;
++	name_selector_entry->priv->block_entry_changed_signal = FALSE;
+ 	name_selector_entry->priv->known_contacts = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+ 
+ 	/* Edit signals */
+ 
+ 	g_signal_connect (
++		name_selector_entry, "changed",
++		G_CALLBACK (maybe_block_entry_changed_cb), NULL);
++	g_signal_connect (
+ 		name_selector_entry, "insert-text",
+ 		G_CALLBACK (user_insert_text), name_selector_entry);
+ 	g_signal_connect (

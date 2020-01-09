@@ -25,25 +25,31 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
 <title>Automatisch nach neuen E-Mails sehen</title>
-<p>Wenn Evolution automatisch neue Nachrichten abrufen soll, so aktivieren Sie die Option <gui>Automatisch nach neuen E-Mails sehen alle … Minuten</gui> im Reiter <gui>Empfangsoptionen</gui> der Konteneinstellungen (abrufbar unter <guiseq><gui>Bearbeiten</gui><gui>Einstellungen</gui><gui>E-Mail-Konten</gui><gui style="button">Bearbeiten</gui><gui>Empfangsoptionen</gui></guiseq>) und wählen Sie das Zeitintervall in Minuten.</p>
+<p>Wenn <gui>Evolution</gui> automatisch neue Nachrichten abrufen soll, so aktivieren Sie die Option <gui>Automatisch nach neuen E-Mails sehen alle … Minuten</gui> im Reiter <gui>Empfangsoptionen</gui> der Konteneinstellungen (abrufbar unter <guiseq><gui>Bearbeiten</gui><gui>Einstellungen</gui><gui>E-Mail-Konten</gui><gui style="button">Bearbeiten</gui><gui>Empfangsoptionen</gui></guiseq>) und wählen Sie das Zeitintervall in Minuten.</p>
 
-<note style="advanced"><p>Evolution unterstützt <link href="https://en.wikipedia.org/wiki/IMAP_IDLE">IMAP IDLE</link> in dem aktuell gewählten Ordner und unterstützt teilweise die <link href="http://tools.ietf.org/search/rfc5465">IMAP NOTIFY</link>-Erweiterung.</p></note>
+<note style="advanced"><p><gui>Evolution</gui> unterstützt <link href="https://en.wikipedia.org/wiki/IMAP_IDLE">IMAP IDLE</link> in dem aktuell gewählten Ordner und unterstützt teilweise die <link href="http://tools.ietf.org/search/rfc5465">IMAP NOTIFY</link>-Erweiterung.</p></note>
 
 </page>

@@ -27,6 +27,12 @@
 #include <smime/gui/e-cert-selector.h>
 #endif /* HAVE_NSS */
 
+#ifdef HAVE_LIBCRYPTUI
+#define LIBCRYPTUI_API_SUBJECT_TO_CHANGE
+#include <libcryptui/cryptui.h>
+#undef LIBCRYPTUI_API_SUBJECT_TO_CHANGE
+#endif /* HAVE_LIBCRYPTUI */
+
 #define E_MAIL_CONFIG_SECURITY_PAGE_GET_PRIVATE(obj) \
 	(G_TYPE_INSTANCE_GET_PRIVATE \
 	((obj), E_TYPE_MAIL_CONFIG_SECURITY_PAGE, EMailConfigSecurityPagePrivate))
@@ -201,6 +207,81 @@ mail_config_security_page_dispose (GObject *object)
 		dispose (object);
 }
 
+#ifdef HAVE_LIBCRYPTUI
+static GtkWidget *
+mail_security_page_get_openpgpg_combo (void)
+{
+	GtkWidget *widget;
+	GtkListStore *store;
+	CryptUIKeyset *keyset;
+	GtkCellRenderer *cell;
+	GList *keys, *kiter;
+
+	store = GTK_LIST_STORE (gtk_list_store_new (2, G_TYPE_STRING, G_TYPE_STRING));
+
+	keyset = cryptui_keyset_new ("openpgp", FALSE);
+	cryptui_keyset_set_expand_keys (keyset, TRUE);
+
+	keys = cryptui_keyset_get_keys (keyset);
+	for (kiter = keys; kiter; kiter = g_list_next (kiter)) {
+		const gchar *key = kiter->data;
+		guint flags;
+
+		flags = cryptui_keyset_key_flags (keyset, key);
+
+		if ((flags & CRYPTUI_FLAG_CAN_SIGN) != 0 &&
+		    (flags & CRYPTUI_FLAG_IS_VALID) != 0 &&
+		    (flags & (CRYPTUI_FLAG_EXPIRED | CRYPTUI_FLAG_REVOKED | CRYPTUI_FLAG_DISABLED)) == 0) {
+			gchar *keyid, *display_name, *display_id, *description;
+
+			keyid = cryptui_keyset_key_raw_keyid (keyset, key);
+			if (keyid && *keyid) {
+				GtkTreeIter iter;
+
+				display_name = cryptui_keyset_key_display_name (keyset, key);
+				display_id = cryptui_keyset_key_display_id (keyset, key);
+
+				if (!display_id || !*display_id) {
+					g_free (display_id);
+					display_id = g_strdup (keyid);
+				}
+
+				/* Translators: This string is to describe a PGP key in a combo box in mail account's preferences.
+						The first '%s' is a key ID, the second '%s' is a display name of the key. */
+				description = g_strdup_printf (C_("PGPKeyDescription", "%s - %s"), display_id, display_name);
+
+				gtk_list_store_append (store, &iter);
+				gtk_list_store_set (store, &iter,
+					0, keyid,
+					1, description,
+					-1);
+
+				g_free (display_name);
+				g_free (display_id);
+				g_free (description);
+			}
+
+			g_free (keyid);
+		}
+	}
+
+	g_list_free (keys);
+	g_object_unref (keyset);
+
+	widget = gtk_combo_box_new_with_model_and_entry (GTK_TREE_MODEL (store));
+	g_object_unref (store);
+
+	gtk_combo_box_set_entry_text_column (GTK_COMBO_BOX (widget), 0);
+	gtk_cell_layout_clear (GTK_CELL_LAYOUT (widget));
+
+	cell = gtk_cell_renderer_text_new ();
+	gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (widget), cell, TRUE);
+	gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (widget), cell, "text", 1, NULL);
+
+	return widget;
+}
+#endif /* HAVE_LIBCRYPTUI */
+
 static void
 mail_config_security_page_constructed (GObject *object)
 {
@@ -271,7 +352,7 @@ mail_config_security_page_constructed (GObject *object)
 	gtk_grid_attach (GTK_GRID (container), widget, 0, 1, 1, 1);
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		composition_ext, "sign-imip",
 		widget, "active",
 		G_BINDING_BIDIRECTIONAL |
@@ -306,11 +387,22 @@ mail_config_security_page_constructed (GObject *object)
 
 	label = GTK_LABEL (widget);
 
+#ifdef HAVE_LIBCRYPTUI
+	widget = mail_security_page_get_openpgpg_combo ();
+#else /* HAVE_LIBCRYPTUI */
 	widget = gtk_entry_new ();
+#endif /* HAVE_LIBCRYPTUI */
+
 	gtk_widget_set_hexpand (widget, TRUE);
 	gtk_label_set_mnemonic_widget (label, widget);
 	gtk_grid_attach (GTK_GRID (container), widget, 1, 1, 1, 1);
 	gtk_widget_show (widget);
+
+#ifdef HAVE_LIBCRYPTUI
+	/* There's expected an entry, thus provide it. */
+	widget = gtk_bin_get_child (GTK_BIN (widget));
+	g_warn_if_fail (GTK_IS_ENTRY (widget));
+#endif /* HAVE_LIBCRYPTUI */
 
 	e_binding_bind_object_text_property (
 		openpgp_ext, "key-id",
@@ -349,7 +441,7 @@ mail_config_security_page_constructed (GObject *object)
 	gtk_grid_attach (GTK_GRID (container), widget, 1, 2, 1, 1);
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		openpgp_ext, "signing-algorithm",
 		widget, "active-id",
 		G_BINDING_SYNC_CREATE |
@@ -365,8 +457,20 @@ mail_config_security_page_constructed (GObject *object)
 	gtk_grid_attach (GTK_GRID (container), widget, 0, 3, 2, 1);
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		openpgp_ext, "sign-by-default",
+		widget, "active",
+		G_BINDING_SYNC_CREATE |
+		G_BINDING_BIDIRECTIONAL);
+
+	text = _("Always enc_rypt outgoing messages when using this account");
+	widget = gtk_check_button_new_with_mnemonic (text);
+	gtk_widget_set_margin_left (widget, 12);
+	gtk_grid_attach (GTK_GRID (container), widget, 0, 4, 2, 1);
+	gtk_widget_show (widget);
+
+	e_binding_bind_property (
+		openpgp_ext, "encrypt-by-default",
 		widget, "active",
 		G_BINDING_SYNC_CREATE |
 		G_BINDING_BIDIRECTIONAL);
@@ -374,10 +478,10 @@ mail_config_security_page_constructed (GObject *object)
 	text = _("Always encrypt to _myself when sending encrypted messages");
 	widget = gtk_check_button_new_with_mnemonic (text);
 	gtk_widget_set_margin_left (widget, 12);
-	gtk_grid_attach (GTK_GRID (container), widget, 0, 4, 2, 1);
+	gtk_grid_attach (GTK_GRID (container), widget, 0, 5, 2, 1);
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		openpgp_ext, "encrypt-to-self",
 		widget, "active",
 		G_BINDING_SYNC_CREATE |
@@ -386,11 +490,23 @@ mail_config_security_page_constructed (GObject *object)
 	text = _("Always _trust keys in my keyring when encrypting");
 	widget = gtk_check_button_new_with_mnemonic (text);
 	gtk_widget_set_margin_left (widget, 12);
-	gtk_grid_attach (GTK_GRID (container), widget, 0, 5, 2, 1);
+	gtk_grid_attach (GTK_GRID (container), widget, 0, 6, 2, 1);
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		openpgp_ext, "always-trust",
+		widget, "active",
+		G_BINDING_SYNC_CREATE |
+		G_BINDING_BIDIRECTIONAL);
+
+	text = _("Prefer _inline sign/encrypt for plain text messages");
+	widget = gtk_check_button_new_with_mnemonic (text);
+	gtk_widget_set_margin_left (widget, 12);
+	gtk_grid_attach (GTK_GRID (container), widget, 0, 7, 2, 1);
+	gtk_widget_show (widget);
+
+	e_binding_bind_property (
+		openpgp_ext, "prefer-inline",
 		widget, "active",
 		G_BINDING_SYNC_CREATE |
 		G_BINDING_BIDIRECTIONAL);
@@ -489,7 +605,7 @@ mail_config_security_page_constructed (GObject *object)
 	gtk_grid_attach (GTK_GRID (container), widget, 1, 2, 1, 1);
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		smime_ext, "signing-algorithm",
 		widget, "active-id",
 		G_BINDING_SYNC_CREATE |
@@ -505,13 +621,13 @@ mail_config_security_page_constructed (GObject *object)
 	gtk_grid_attach (GTK_GRID (container), widget, 0, 3, 4, 1);
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		smime_ext, "sign-by-default",
 		widget, "active",
 		G_BINDING_SYNC_CREATE |
 		G_BINDING_BIDIRECTIONAL);
 
-	g_object_bind_property_full (
+	e_binding_bind_property_full (
 		smime_ext, "signing-certificate",
 		widget, "sensitive",
 		G_BINDING_SYNC_CREATE,
@@ -570,13 +686,13 @@ mail_config_security_page_constructed (GObject *object)
 	gtk_grid_attach (GTK_GRID (container), widget, 0, 5, 4, 1);
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		smime_ext, "encrypt-by-default",
 		widget, "active",
 		G_BINDING_SYNC_CREATE |
 		G_BINDING_BIDIRECTIONAL);
 
-	g_object_bind_property_full (
+	e_binding_bind_property_full (
 		smime_ext, "encryption-certificate",
 		widget, "sensitive",
 		G_BINDING_SYNC_CREATE,
@@ -590,13 +706,13 @@ mail_config_security_page_constructed (GObject *object)
 	gtk_grid_attach (GTK_GRID (container), widget, 0, 6, 4, 1);
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		smime_ext, "encrypt-to-self",
 		widget, "active",
 		G_BINDING_SYNC_CREATE |
 		G_BINDING_BIDIRECTIONAL);
 
-	g_object_bind_property_full (
+	e_binding_bind_property_full (
 		smime_ext, "encryption-certificate",
 		widget, "sensitive",
 		G_BINDING_SYNC_CREATE,

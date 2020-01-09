@@ -6,7 +6,7 @@
 
     <link type="guide" xref="mail-receiving-options#local-account-server-types"/>
     <link type="guide" xref="mail-account-manage-unix-mbox-spool-directory#receiving-email"/>
-    <revision pkgversion="3.0.2" version="0.2" date="2011-07-30" status="final"/>
+    <revision pkgversion="3.12.9" version="0.3" date="2015-02-15" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -15,28 +15,40 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Možnosti příjmu standardního unixového adresáře mbox</title>
+  <title>Možnosti příjmu u standardní unixové složky mbox</title>
 
 <section id="receiving-email-unix-mbox-spool-directory">
 <title>Příjem pošty</title>
 
-<p>On the <gui>Receiving Email</gui> page (accessible via <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Mail Accounts</gui><gui style="button">Edit</gui><gui>Receiving Email</gui></guiseq>):</p>
+<p>Na stránce <gui>Příjem pošty</gui> (najdete v <guiseq><gui>Upravit</gui><gui>Předvolby</gui><gui>Poštovní účty</gui><gui style="button">Upravit</gui><gui>Příjem pošty</gui></guiseq>):</p>
 
 <list>
-<item><p>Choose the directory by clicking on the button next to <gui>Path</gui> in the <gui>Configuration</gui> section. Some default folders are available in the list. If the directory is not among those folders, choose the last option <gui>Other...</gui>. This will open a directory chooser window.</p></item>
+<item><p>Zvolte složku kliknutím na tlačítko vedle <gui>Cesta</gui> v části <gui>Nastavení</gui>. V seznamu jsou dostupné některé výchozí složky. Pokud mezi nimi požadovaná složka není, vyberte poslední volbu <gui>Další…</gui>. Otevře se okno pro výběr složky.</p></item>
 </list>
 
 </section>
 
 <section id="receiving-options-unix-mbox-spool-directory">
-<title>Možnosti příjmu</title>
+<title>Volby příjmu</title>
 
-<p>On the <gui>Receiving Options</gui> page (accessible via <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Mail Accounts</gui><gui style="button">Edit</gui><gui>Receiving Options</gui></guiseq>):</p>
+<p>Na kartě <gui>Volby příjmu</gui> (přístupné přes <guiseq><gui>Upravit</gui><gui>Předvolby</gui><gui>Poštovní účty</gui><gui style="button">Upravit</gui><gui>Volby příjmu</gui></guiseq>):</p>
 
 <list>
-<item><p>If you want <link xref="mail-filters">Filters</link> to be automatically used for new messages in your inbox, enable <gui>Apply filters to new messages in INBOX</gui>.</p></item>
+<item><p>Pokud chcete, aby se pro nové zprávy v příchozí poště automaticky používaly <link xref="mail-filters">filtry</link>, zapněte <gui>Používat filtry na nové zprávy ve složce Příchozí</gui>.</p></item>
 </list>
 
 </section>

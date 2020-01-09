@@ -4,7 +4,7 @@
   <info>
     <link type="guide" xref="calendar-layout"/>
 
-    <revision pkgversion="3.0.2" version="0.4" date="2012-02-18" status="final"/>
+    <revision pkgversion="3.13.90" version="0.5" date="2015-03-10" status="final"/>
 
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
@@ -30,19 +30,25 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
@@ -52,9 +58,6 @@
        calendar-layout-general-formatting) here is very poor and not
        task-oriented, but that's it for the time being. Better ideas welcome.
        -->
-
-  <!-- TODO: Recheck once https://bugzilla.gnome.org/show_bug.cgi?id=657233 is
-       fixed, as the current UI is a huge mess. -->
 
   <p>Die folgenden auf Kalenderaufgaben bezogenen Optionen sind unter <guiseq><gui>Bearbeiten</gui><gui>Einstellungen</gui><gui>Kalender und Aufgaben</gui><gui>Aufgaben</gui></guiseq> verfügbar.</p>
 
@@ -79,7 +82,7 @@
       <p>Zeigt die Wochennummer neben der jeweiligen Woche im kleinen Kalender in der Seitenleiste an.</p>
     </item>
     <item>
-      <p>Wiederkehrende Ereignisse im unteren linken Kalender kursiv anzeigen.</p>
+      <p>Wiederkehrende Termine im unteren linken Kalender kursiv anzeigen.</p>
     </item>
     <item>
       <p>Monatsansicht wochenweise durchblättern</p>
@@ -88,12 +91,10 @@
 
 </section>
 
-<section id="date-time">
-  <title>Format von Datum/Zeit</title>
+<section id="alerts">
+  <title>Alarme</title>
 
-  <p>Das Format der Spalte <gui>Datum</gui> ändert sich entsprechend der Einstellung Ihres bevorzugten Formats.</p>
-
-  <p>Die Platzhalter im Ausdruck sind im strftime-Format. Um eine vollständige Liste aller strftime-Formate zu sehen, führen Sie bitte <cmd>date --help</cmd> in einem <app>Terminal</app>-Fenster aus.</p>
+  <p>Falls Sie vor dem Löschen eines Termins gewarnt werden möchten, wählen Sie diese Option hier aus.</p>
 
 </section>
 

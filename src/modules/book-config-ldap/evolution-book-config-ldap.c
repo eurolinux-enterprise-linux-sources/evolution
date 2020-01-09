@@ -20,10 +20,9 @@
 #include <glib/gi18n-lib.h>
 
 #include <libebackend/libebackend.h>
+#include <libedataserver/libedataserver.h>
 
 #include <e-util/e-util.h>
-
-#include "e-source-ldap.h"
 
 #include <ldap.h>
 #ifndef SUNLDAP
@@ -52,6 +51,7 @@ struct _Context {
 	GtkWidget *auth_entry;
 	GtkWidget *host_entry;
 	GtkWidget *port_combo;
+	GtkWidget *port_error_image;
 	GtkWidget *security_combo;
 	GtkWidget *search_base_combo;
 	GtkWidget *search_base_button;
@@ -102,6 +102,7 @@ book_config_ldap_context_free (Context *context)
 	g_object_unref (context->auth_entry);
 	g_object_unref (context->host_entry);
 	g_object_unref (context->port_combo);
+	g_object_unref (context->port_error_image);
 	g_object_unref (context->security_combo);
 	g_object_unref (context->search_base_combo);
 	g_object_unref (context->search_base_button);
@@ -444,7 +445,7 @@ book_config_build_port_combo (void)
 	gtk_list_store_set (
 		store, &iter,
 		0, G_STRINGIFY (LDAPS_PORT),
-		1, _("LDAP over SSL (deprecated)"), -1);
+		1, _("LDAP over SSL/TLS (deprecated)"), -1);
 
 	gtk_list_store_append (store, &iter);
 	gtk_list_store_set (
@@ -456,7 +457,7 @@ book_config_build_port_combo (void)
 	gtk_list_store_set (
 		store, &iter,
 		0, G_STRINGIFY (MSGCS_PORT),
-		1, _("Microsoft Global Catalog over SSL"), -1);
+		1, _("Microsoft Global Catalog over SSL/TLS"), -1);
 
 	widget = gtk_combo_box_new_with_entry ();
 
@@ -482,7 +483,7 @@ book_config_build_port_combo (void)
 	return widget;
 }
 
-static void
+static GtkWidget *
 book_config_ldap_insert_notebook_widget (GtkWidget *vbox,
                                          GtkSizeGroup *size_group,
                                          const gchar *caption,
@@ -505,6 +506,8 @@ book_config_ldap_insert_notebook_widget (GtkWidget *vbox,
 	gtk_widget_show (label);
 
 	gtk_box_pack_start (GTK_BOX (hbox), widget, TRUE, TRUE, 0);
+
+	return hbox;
 }
 
 static void
@@ -604,10 +607,19 @@ book_config_ldap_insert_widgets (ESourceConfigBackend *backend,
 	gtk_widget_show (widget);
 
 	widget = book_config_build_port_combo ();
-	book_config_ldap_insert_notebook_widget (
+	hbox = book_config_ldap_insert_notebook_widget (
 		container, size_group, _("Port:"), widget);
 	context->port_combo = g_object_ref (widget);
 	gtk_widget_show (widget);
+
+	widget = gtk_image_new_from_icon_name ("dialog-warning", GTK_ICON_SIZE_BUTTON);
+	g_object_set (G_OBJECT (widget),
+		"visible", FALSE,
+		"has-tooltip", TRUE,
+		"tooltip-text", _("Port number is not valid"),
+		NULL);
+	gtk_box_pack_start (GTK_BOX (hbox), widget, FALSE, FALSE, 0);
+	context->port_error_image = g_object_ref (widget);
 
 	/* This must follow the order of ESourceLDAPSecurity. */
 	widget = gtk_combo_box_text_new ();
@@ -616,7 +628,7 @@ book_config_ldap_insert_widgets (ESourceConfigBackend *backend,
 		_("None"));
 	gtk_combo_box_text_append_text (
 		GTK_COMBO_BOX_TEXT (widget),
-		_("LDAP over SSL (deprecated)"));
+		_("LDAP over SSL/TLS (deprecated)"));
 	gtk_combo_box_text_append_text (
 		GTK_COMBO_BOX_TEXT (widget),
 		_("StartTLS (recommended)"));
@@ -625,7 +637,7 @@ book_config_ldap_insert_widgets (ESourceConfigBackend *backend,
 	context->security_combo = g_object_ref (widget);
 	gtk_widget_show (widget);
 
-	g_object_bind_property_full (
+	e_binding_bind_property_full (
 		context->port_combo, "active",
 		context->security_combo, "active",
 		G_BINDING_DEFAULT,
@@ -747,7 +759,7 @@ book_config_ldap_insert_widgets (ESourceConfigBackend *backend,
 
 	/* Only sensitive when we have complete
 	 * server and authentication details. */
-	g_object_bind_property (
+	e_binding_bind_property (
 		config, "complete",
 		context->search_base_button, "sensitive",
 		G_BINDING_DEFAULT);
@@ -850,7 +862,7 @@ book_config_ldap_insert_widgets (ESourceConfigBackend *backend,
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property_full (
+	e_binding_bind_property_full (
 		extension, "port",
 		context->port_combo, "active",
 		G_BINDING_BIDIRECTIONAL |
@@ -874,19 +886,19 @@ book_config_ldap_insert_widgets (ESourceConfigBackend *backend,
 	extension_name = E_SOURCE_EXTENSION_LDAP_BACKEND;
 	extension = e_source_get_extension (scratch_source, extension_name);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		extension, "authentication",
 		context->auth_combo, "active",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		extension, "can-browse",
 		context->can_browse_toggle, "active",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		extension, "limit",
 		context->limit_spinbutton, "value",
 		G_BINDING_BIDIRECTIONAL |
@@ -900,7 +912,7 @@ book_config_ldap_insert_widgets (ESourceConfigBackend *backend,
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		extension, "scope",
 		context->search_scope_combo, "active",
 		G_BINDING_BIDIRECTIONAL |
@@ -912,7 +924,7 @@ book_config_ldap_insert_widgets (ESourceConfigBackend *backend,
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		extension, "security",
 		context->security_combo, "active",
 		G_BINDING_BIDIRECTIONAL |
@@ -939,6 +951,11 @@ book_config_ldap_check_complete (ESourceConfigBackend *backend,
 	const gchar *host;
 	const gchar *user;
 	guint16 port;
+	Context *context;
+	gboolean correct, complete = TRUE;
+
+	context = g_object_get_data (G_OBJECT (backend), e_source_get_uid (scratch_source));
+	g_return_val_if_fail (context != NULL, FALSE);
 
 	extension_name = E_SOURCE_EXTENSION_LDAP_BACKEND;
 	extension = e_source_get_extension (scratch_source, extension_name);
@@ -955,14 +972,27 @@ book_config_ldap_check_complete (ESourceConfigBackend *backend,
 	user = e_source_authentication_get_user (
 		E_SOURCE_AUTHENTICATION (extension));
 
-	if (host == NULL || *host == '\0' || port == 0)
-		return FALSE;
+	correct = host != NULL && *host != '\0';
+	complete = complete && correct;
+
+	e_util_set_entry_issue_hint (context->host_entry, correct ? NULL : _("Server address cannot be empty"));
+
+	correct = port != 0;
+	complete = complete && correct;
+
+	gtk_widget_set_visible (context->port_error_image, !correct);
+
+	correct = TRUE;
 
 	if (auth != E_SOURCE_LDAP_AUTHENTICATION_NONE)
 		if (user == NULL || *user == '\0')
-			return FALSE;
+			correct = FALSE;
 
-	return TRUE;
+	complete = complete && correct;
+
+	e_util_set_entry_issue_hint (context->auth_entry, correct ? NULL : _("User name cannot be empty"));
+
+	return complete;
 }
 
 static void
@@ -992,7 +1022,6 @@ e_book_config_ldap_init (ESourceConfigBackend *backend)
 G_MODULE_EXPORT void
 e_module_load (GTypeModule *type_module)
 {
-	e_source_ldap_type_register (type_module);
 	e_book_config_ldap_register_type (type_module);
 }
 

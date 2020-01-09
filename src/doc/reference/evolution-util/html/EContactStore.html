@@ -2,13 +2,13 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Evolution Utilities Reference Manual: EContactStore</title>
-<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<title>EContactStore: Evolution Utilities Reference Manual</title>
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
 <link rel="home" href="index.html" title="Evolution Utilities Reference Manual">
-<link rel="up" href="ch16.html" title="(Unsorted Sections)">
-<link rel="prev" href="ECharsetComboBox.html" title="ECharsetComboBox">
+<link rel="up" href="ch17.html" title="(Unsorted Sections)">
+<link rel="prev" href="EConflictSearchSelector.html" title="EConflictSearchSelector">
 <link rel="next" href="EDataCapture.html" title="EDataCapture">
-<meta name="generator" content="GTK-Doc V1.21 (XML mode)">
+<meta name="generator" content="GTK-Doc V1.25 (XML mode)">
 <link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
@@ -16,13 +16,12 @@
 <td width="100%" align="left" class="shortcuts">
 <a href="#" class="shortcut">Top</a><span id="nav_description">  <span class="dim">|</span> 
                   <a href="#EContactStore.description" class="shortcut">Description</a></span><span id="nav_hierarchy">  <span class="dim">|</span> 
-                  <a href="#EContactStore.object-hierarchy" class="shortcut">Object Hierarchy</a></span><span id="nav_interfaces">  <span class="dim">|</span> 
-                  <a href="#EContactStore.implemented-interfaces" class="shortcut">Implemented Interfaces</a></span><span id="nav_signals">  <span class="dim">|</span> 
+                  <a href="#EContactStore.object-hierarchy" class="shortcut">Object Hierarchy</a></span><span id="nav_signals">  <span class="dim">|</span> 
                   <a href="#EContactStore.signals" class="shortcut">Signals</a></span>
 </td>
 <td><a accesskey="h" href="index.html"><img src="home.png" width="16" height="16" border="0" alt="Home"></a></td>
-<td><a accesskey="u" href="ch16.html"><img src="up.png" width="16" height="16" border="0" alt="Up"></a></td>
-<td><a accesskey="p" href="ECharsetComboBox.html"><img src="left.png" width="16" height="16" border="0" alt="Prev"></a></td>
+<td><a accesskey="u" href="ch17.html"><img src="up.png" width="16" height="16" border="0" alt="Up"></a></td>
+<td><a accesskey="p" href="EConflictSearchSelector.html"><img src="left.png" width="16" height="16" border="0" alt="Prev"></a></td>
 <td><a accesskey="n" href="EDataCapture.html"><img src="right.png" width="16" height="16" border="0" alt="Next"></a></td>
 </tr></table>
 <div class="refentry">
@@ -36,7 +35,7 @@
 </tr></table></div>
 <div class="refsect1">
 <a name="EContactStore.functions"></a><h2>Functions</h2>
-<div class="informaltable"><table width="100%" border="0">
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="functions_return">
 <col class="functions_name">
@@ -68,7 +67,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
 </td>
 <td class="function_name">
 <a class="link" href="EContactStore.html#e-contact-store-find-contact" title="e_contact_store_find_contact ()">e_contact_store_find_contact</a> <span class="c_punctuation">()</span>
@@ -76,7 +75,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-Singly-Linked-Lists.html#GSList"><span class="returnvalue">GSList</span></a> *
+<a href="/usr/share/gtk-doc/html/glibglib-Singly-Linked-Lists.html#GSList"><span class="returnvalue">GSList</span></a> *
 </td>
 <td class="function_name">
 <a class="link" href="EContactStore.html#e-contact-store-get-clients" title="e_contact_store_get_clients ()">e_contact_store_get_clients</a> <span class="c_punctuation">()</span>
@@ -92,7 +91,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
 </td>
 <td class="function_name">
 <a class="link" href="EContactStore.html#e-contact-store-remove-client" title="e_contact_store_remove_client ()">e_contact_store_remove_client</a> <span class="c_punctuation">()</span>
@@ -119,7 +118,7 @@
 </div>
 <div class="refsect1">
 <a name="EContactStore.signals"></a><h2>Signals</h2>
-<div class="informaltable"><table border="0">
+<div class="informaltable"><table class="informaltable" border="0">
 <colgroup>
 <col width="150px" class="signals_return">
 <col width="300px" class="signals_name">
@@ -129,40 +128,21 @@
 <tr>
 <td class="signal_type"><span class="returnvalue">void</span></td>
 <td class="signal_name"><a class="link" href="EContactStore.html#EContactStore-start-client-view" title="The “start-client-view” signal">start-client-view</a></td>
-<td class="signal_flags">Run Last</td>
+<td class="signal_flags"><a href="/usr/share/gtk-doc/html/gobjectgobject-Signals.html#G-SIGNAL-RUN-LAST:CAPS">Run Last</a></td>
 </tr>
 <tr>
 <td class="signal_type"><span class="returnvalue">void</span></td>
 <td class="signal_name"><a class="link" href="EContactStore.html#EContactStore-stop-client-view" title="The “stop-client-view” signal">stop-client-view</a></td>
-<td class="signal_flags">Run Last</td>
+<td class="signal_flags"><a href="/usr/share/gtk-doc/html/gobjectgobject-Signals.html#G-SIGNAL-RUN-LAST:CAPS">Run Last</a></td>
 </tr>
 </tbody>
 </table></div>
 </div>
 <div class="refsect1">
-<a name="EContactStore.other"></a><h2>Types and Values</h2>
-<div class="informaltable"><table width="100%" border="0">
-<colgroup>
-<col width="150px" class="name">
-<col class="description">
-</colgroup>
-<tbody><tr>
-<td class="datatype_keyword">struct</td>
-<td class="function_name"><a class="link" href="EContactStore.html#EContactStore-struct" title="struct EContactStore">EContactStore</a></td>
-</tr></tbody>
-</table></div>
-</div>
-<div class="refsect1">
 <a name="EContactStore.object-hierarchy"></a><h2>Object Hierarchy</h2>
-<pre class="screen">    <a href="https://developer.gnome.org/gobject/unstable/gobject-The-Base-Object-Type.html#GObject">GObject</a>
+<pre class="screen">    <a href="/usr/share/gtk-doc/html/gobjectgobject-The-Base-Object-Type.html#GObject-struct">GObject</a>
     <span class="lineart">╰──</span> EContactStore
 </pre>
-</div>
-<div class="refsect1">
-<a name="EContactStore.implemented-interfaces"></a><h2>Implemented Interfaces</h2>
-<p>
-EContactStore implements
- <a href="http://developer.gnome.org/gtk2/GtkTreeModel.html">GtkTreeModel</a>.</p>
 </div>
 <div class="refsect1">
 <a name="EContactStore.description"></a><h2>Description</h2>
@@ -175,9 +155,8 @@ EContactStore implements
 e_contact_store_new (<em class="parameter"><code><span class="type">void</span></code></em>);</pre>
 <p>Creates a new <a class="link" href="EContactStore.html" title="EContactStore"><span class="type">EContactStore</span></a>.</p>
 <div class="refsect3">
-<a name="id-1.17.10.9.2.5"></a><h4>Returns</h4>
+<a name="e-contact-store-new.returns"></a><h4>Returns</h4>
 <p> A new <a class="link" href="EContactStore.html" title="EContactStore"><span class="type">EContactStore</span></a>.</p>
-<p></p>
 </div>
 </div>
 <hr>
@@ -185,12 +164,12 @@ e_contact_store_new (<em class="parameter"><code><span class="type">void</span><
 <a name="e-contact-store-get-client"></a><h3>e_contact_store_get_client ()</h3>
 <pre class="programlisting"><span class="returnvalue">EBookClient</span> *
 e_contact_store_get_client (<em class="parameter"><code><a class="link" href="EContactStore.html" title="EContactStore"><span class="type">EContactStore</span></a> *contact_store</code></em>,
-                            <em class="parameter"><code><a href="http://developer.gnome.org/gtk2/GtkTreeModel.html#GtkTreeIter"><span class="type">GtkTreeIter</span></a> *iter</code></em>);</pre>
+                            <em class="parameter"><code><a href="/usr/share/gtk-doc/html/gtk3GtkTreeModel.html#GtkTreeIter-struct"><span class="type">GtkTreeIter</span></a> *iter</code></em>);</pre>
 <p>Gets the <span class="type">EBookClient</span> that provided the contact at <em class="parameter"><code>iter</code></em>
 .</p>
 <div class="refsect3">
-<a name="id-1.17.10.9.3.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-contact-store-get-client.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -204,7 +183,7 @@ e_contact_store_get_client (<em class="parameter"><code><a class="link" href="EC
 </tr>
 <tr>
 <td class="parameter_name"><p>iter</p></td>
-<td class="parameter_description"><p>a <a href="http://developer.gnome.org/gtk2/GtkTreeModel.html#GtkTreeIter"><span class="type">GtkTreeIter</span></a> from <em class="parameter"><code>contact_store</code></em>
+<td class="parameter_description"><p>a <a href="/usr/share/gtk-doc/html/gtk3GtkTreeModel.html#GtkTreeIter-struct"><span class="type">GtkTreeIter</span></a> from <em class="parameter"><code>contact_store</code></em>
 </p></td>
 <td class="parameter_annotations"> </td>
 </tr>
@@ -212,23 +191,22 @@ e_contact_store_get_client (<em class="parameter"><code><a class="link" href="EC
 </table></div>
 </div>
 <div class="refsect3">
-<a name="id-1.17.10.9.3.6"></a><h4>Returns</h4>
+<a name="e-contact-store-get-client.returns"></a><h4>Returns</h4>
 <p> An <span class="type">EBookClient</span>.</p>
-<p></p>
 </div>
-<p class="since">Since 3.2</p>
+<p class="since">Since: <a class="link" href="api-index-3.2.html" title="Index of new symbols in 3.2">3.2</a></p>
 </div>
 <hr>
 <div class="refsect2">
 <a name="e-contact-store-get-contact"></a><h3>e_contact_store_get_contact ()</h3>
 <pre class="programlisting"><span class="returnvalue">EContact</span> *
 e_contact_store_get_contact (<em class="parameter"><code><a class="link" href="EContactStore.html" title="EContactStore"><span class="type">EContactStore</span></a> *contact_store</code></em>,
-                             <em class="parameter"><code><a href="http://developer.gnome.org/gtk2/GtkTreeModel.html#GtkTreeIter"><span class="type">GtkTreeIter</span></a> *iter</code></em>);</pre>
+                             <em class="parameter"><code><a href="/usr/share/gtk-doc/html/gtk3GtkTreeModel.html#GtkTreeIter-struct"><span class="type">GtkTreeIter</span></a> *iter</code></em>);</pre>
 <p>Gets the <span class="type">EContact</span> at <em class="parameter"><code>iter</code></em>
 .</p>
 <div class="refsect3">
-<a name="id-1.17.10.9.4.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-contact-store-get-contact.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -242,7 +220,7 @@ e_contact_store_get_contact (<em class="parameter"><code><a class="link" href="E
 </tr>
 <tr>
 <td class="parameter_name"><p>iter</p></td>
-<td class="parameter_description"><p>a <a href="http://developer.gnome.org/gtk2/GtkTreeModel.html#GtkTreeIter"><span class="type">GtkTreeIter</span></a> from <em class="parameter"><code>contact_store</code></em>
+<td class="parameter_description"><p>a <a href="/usr/share/gtk-doc/html/gtk3GtkTreeModel.html#GtkTreeIter-struct"><span class="type">GtkTreeIter</span></a> from <em class="parameter"><code>contact_store</code></em>
 </p></td>
 <td class="parameter_annotations"> </td>
 </tr>
@@ -250,24 +228,23 @@ e_contact_store_get_contact (<em class="parameter"><code><a class="link" href="E
 </table></div>
 </div>
 <div class="refsect3">
-<a name="id-1.17.10.9.4.6"></a><h4>Returns</h4>
+<a name="e-contact-store-get-contact.returns"></a><h4>Returns</h4>
 <p> An <span class="type">EContact</span>.</p>
-<p></p>
 </div>
 </div>
 <hr>
 <div class="refsect2">
 <a name="e-contact-store-find-contact"></a><h3>e_contact_store_find_contact ()</h3>
-<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
 e_contact_store_find_contact (<em class="parameter"><code><a class="link" href="EContactStore.html" title="EContactStore"><span class="type">EContactStore</span></a> *contact_store</code></em>,
-                              <em class="parameter"><code>const <a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *uid</code></em>,
-                              <em class="parameter"><code><a href="http://developer.gnome.org/gtk2/GtkTreeModel.html#GtkTreeIter"><span class="type">GtkTreeIter</span></a> *iter</code></em>);</pre>
+                              <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *uid</code></em>,
+                              <em class="parameter"><code><a href="/usr/share/gtk-doc/html/gtk3GtkTreeModel.html#GtkTreeIter-struct"><span class="type">GtkTreeIter</span></a> *iter</code></em>);</pre>
 <p>Sets <em class="parameter"><code>iter</code></em>
  to point to the contact row matching <em class="parameter"><code>uid</code></em>
 .</p>
 <div class="refsect3">
-<a name="id-1.17.10.9.5.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-contact-store-find-contact.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -286,29 +263,28 @@ e_contact_store_find_contact (<em class="parameter"><code><a class="link" href="
 </tr>
 <tr>
 <td class="parameter_name"><p>iter</p></td>
-<td class="parameter_description"><p>a destination <a href="http://developer.gnome.org/gtk2/GtkTreeModel.html#GtkTreeIter"><span class="type">GtkTreeIter</span></a> to set</p></td>
+<td class="parameter_description"><p>a destination <a href="/usr/share/gtk-doc/html/gtk3GtkTreeModel.html#GtkTreeIter-struct"><span class="type">GtkTreeIter</span></a> to set</p></td>
 <td class="parameter_annotations"> </td>
 </tr>
 </tbody>
 </table></div>
 </div>
 <div class="refsect3">
-<a name="id-1.17.10.9.5.6"></a><h4>Returns</h4>
-<p> <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#TRUE:CAPS"><code class="literal">TRUE</code></a> if the contact was found, and <em class="parameter"><code>iter</code></em>
-was set. <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#FALSE:CAPS"><code class="literal">FALSE</code></a> otherwise.</p>
-<p></p>
+<a name="e-contact-store-find-contact.returns"></a><h4>Returns</h4>
+<p> <a href="/usr/share/gtk-doc/html/glibglib-Standard-Macros.html#TRUE:CAPS"><code class="literal">TRUE</code></a> if the contact was found, and <em class="parameter"><code>iter</code></em>
+was set. <a href="/usr/share/gtk-doc/html/glibglib-Standard-Macros.html#FALSE:CAPS"><code class="literal">FALSE</code></a> otherwise.</p>
 </div>
 </div>
 <hr>
 <div class="refsect2">
 <a name="e-contact-store-get-clients"></a><h3>e_contact_store_get_clients ()</h3>
-<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Singly-Linked-Lists.html#GSList"><span class="returnvalue">GSList</span></a> *
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Singly-Linked-Lists.html#GSList"><span class="returnvalue">GSList</span></a> *
 e_contact_store_get_clients (<em class="parameter"><code><a class="link" href="EContactStore.html" title="EContactStore"><span class="type">EContactStore</span></a> *contact_store</code></em>);</pre>
 <p>Gets the list of book clients that provide contacts for <em class="parameter"><code>contact_store</code></em>
 .</p>
 <div class="refsect3">
-<a name="id-1.17.10.9.6.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-contact-store-get-clients.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -322,12 +298,11 @@ e_contact_store_get_clients (<em class="parameter"><code><a class="link" href="E
 </table></div>
 </div>
 <div class="refsect3">
-<a name="id-1.17.10.9.6.6"></a><h4>Returns</h4>
-<p> A <a href="https://developer.gnome.org/glib/unstable/glib-Singly-Linked-Lists.html#GSList"><span class="type">GSList</span></a> of pointers to <span class="type">EBookClient</span>. The caller owns the list,
+<a name="e-contact-store-get-clients.returns"></a><h4>Returns</h4>
+<p> A <a href="/usr/share/gtk-doc/html/glibglib-Singly-Linked-Lists.html#GSList"><span class="type">GSList</span></a> of pointers to <span class="type">EBookClient</span>. The caller owns the list,
 but not the book clients.</p>
-<p></p>
 </div>
-<p class="since">Since 3.2</p>
+<p class="since">Since: <a class="link" href="api-index-3.2.html" title="Index of new symbols in 3.2">3.2</a></p>
 </div>
 <hr>
 <div class="refsect2">
@@ -343,8 +318,8 @@ e_contact_store_add_client (<em class="parameter"><code><a class="link" href="EC
 ,
 if added.</p>
 <div class="refsect3">
-<a name="id-1.17.10.9.7.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-contact-store-add-client.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -364,12 +339,12 @@ if added.</p>
 </tbody>
 </table></div>
 </div>
-<p class="since">Since 3.2</p>
+<p class="since">Since: <a class="link" href="api-index-3.2.html" title="Index of new symbols in 3.2">3.2</a></p>
 </div>
 <hr>
 <div class="refsect2">
 <a name="e-contact-store-remove-client"></a><h3>e_contact_store_remove_client ()</h3>
-<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
 e_contact_store_remove_client (<em class="parameter"><code><a class="link" href="EContactStore.html" title="EContactStore"><span class="type">EContactStore</span></a> *contact_store</code></em>,
                                <em class="parameter"><code><span class="type">EBookClient</span> *book_client</code></em>);</pre>
 <p>Removes <em class="parameter"><code>book_client</code></em>
@@ -377,8 +352,8 @@ e_contact_store_remove_client (<em class="parameter"><code><a class="link" href=
 <em class="parameter"><code>contact_store</code></em>
 .</p>
 <div class="refsect3">
-<a name="id-1.17.10.9.8.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-contact-store-remove-client.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -399,12 +374,11 @@ e_contact_store_remove_client (<em class="parameter"><code><a class="link" href=
 </table></div>
 </div>
 <div class="refsect3">
-<a name="id-1.17.10.9.8.6"></a><h4>Returns</h4>
+<a name="e-contact-store-remove-client.returns"></a><h4>Returns</h4>
 <p> whether <em class="parameter"><code>book_client</code></em>
 was found and removed</p>
-<p></p>
 </div>
-<p class="since">Since 3.2</p>
+<p class="since">Since: <a class="link" href="api-index-3.2.html" title="Index of new symbols in 3.2">3.2</a></p>
 </div>
 <hr>
 <div class="refsect2">
@@ -417,8 +391,8 @@ e_contact_store_set_query (<em class="parameter"><code><a class="link" href="ECo
 assigned to <em class="parameter"><code>contact_store</code></em>
 .</p>
 <div class="refsect3">
-<a name="id-1.17.10.9.9.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-contact-store-set-query.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -448,8 +422,8 @@ e_contact_store_peek_query (<em class="parameter"><code><a class="link" href="EC
 assigned to <em class="parameter"><code>contact_store</code></em>
 .</p>
 <div class="refsect3">
-<a name="id-1.17.10.9.10.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-contact-store-peek-query.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -463,18 +437,13 @@ assigned to <em class="parameter"><code>contact_store</code></em>
 </table></div>
 </div>
 <div class="refsect3">
-<a name="id-1.17.10.9.10.6"></a><h4>Returns</h4>
+<a name="e-contact-store-peek-query.returns"></a><h4>Returns</h4>
 <p> The <span class="type">EBookQuery</span> being used.</p>
-<p></p>
 </div>
 </div>
 </div>
 <div class="refsect1">
 <a name="EContactStore.other_details"></a><h2>Types and Values</h2>
-<div class="refsect2">
-<a name="EContactStore-struct"></a><h3>struct EContactStore</h3>
-<pre class="programlisting">struct EContactStore;</pre>
-</div>
 </div>
 <div class="refsect1">
 <a name="EContactStore.signal-details"></a><h2>Signal Details</h2>
@@ -483,8 +452,8 @@ assigned to <em class="parameter"><code>contact_store</code></em>
 <pre class="programlisting"><span class="returnvalue">void</span>
 user_function (<a class="link" href="EContactStore.html" title="EContactStore"><span class="type">EContactStore</span></a>   *econtactstore,
                <span class="type">EBookClientView</span> *arg1,
-               <a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a>         user_data)</pre>
-<p>Flags: Run Last</p>
+               <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a>         user_data)</pre>
+<p>Flags: <a href="/usr/share/gtk-doc/html/gobjectgobject-Signals.html#G-SIGNAL-RUN-LAST:CAPS">Run Last</a></p>
 </div>
 <hr>
 <div class="refsect2">
@@ -492,13 +461,12 @@ user_function (<a class="link" href="EContactStore.html" title="EContactStore"><
 <pre class="programlisting"><span class="returnvalue">void</span>
 user_function (<a class="link" href="EContactStore.html" title="EContactStore"><span class="type">EContactStore</span></a>   *econtactstore,
                <span class="type">EBookClientView</span> *arg1,
-               <a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a>         user_data)</pre>
-<p>Flags: Run Last</p>
+               <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a>         user_data)</pre>
+<p>Flags: <a href="/usr/share/gtk-doc/html/gobjectgobject-Signals.html#G-SIGNAL-RUN-LAST:CAPS">Run Last</a></p>
 </div>
 </div>
 </div>
 <div class="footer">
-<hr>
-          Generated by GTK-Doc V1.21</div>
+<hr>Generated by GTK-Doc V1.25</div>
 </body>
 </html>

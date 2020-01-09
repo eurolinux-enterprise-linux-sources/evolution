@@ -54,7 +54,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -69,8 +69,7 @@
 
   <steps>
     <item>
-      <p>Click <guiseq><gui>File</gui><gui>New</gui>
-      <gui>Contact List</gui></guiseq>.</p>
+      <p>Cliquez sur <guiseq><gui>Fichier</gui><gui>Nouveau</gui><gui>Liste de contacts</gui></guiseq>.</p>
     </item>
     <item>
       <p>Saisissez le nom que vous voulez.</p>
@@ -79,10 +78,7 @@
       <p>Sélectionnez le carnet d'adresses sous <gui>Où :</gui> dans lequel elle sera ajoutée.</p>
     </item>
     <item>
-      <p>Specify the list members by either entering the names or email
-      addresses of contacts (the text field supports autocompletion), or by
-      dragging contacts from the Contacts window into the list, or by using the
-      <gui style="button">Select…</gui> button.</p>
+      <p>Spécifiez les membres de la liste en saisissant les noms ou adresses électroniques des contacts (le champ de texte prend en charge la complétion automatique) ou en faisant glisser les contacts à partir de la fenêtre des contacts sur la liste ou en utilisant le bouton <gui style="button">Sélectionner...</gui>.</p>
     </item>
     <item>
       <p>Décidez si vous voulez masquer les adresses électroniques lorsque vous envoyez un message à la liste.</p><p>Il est recommandé de laisser les adresses masquées, sauf s'il s'agit d'une très petite liste. C'est l'équivalent de l'utilisation de la fonctionnalité « Cci : » examinée dans <link xref="mail-composer-several-recipients">Envoi d'un message à plusieurs destinataires</link>.</p>
@@ -92,8 +88,7 @@
     </item>
   </steps>
 
-  <p>The contact list will be added to the chosen address book in
-  <app>Evolution</app>.</p>
+  <p>La liste des contacts est ajoutée au carnet d'adresses sélectionné dans <app>Evolution</app>.</p>
 
 </section>
 

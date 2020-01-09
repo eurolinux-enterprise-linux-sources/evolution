@@ -5,7 +5,7 @@
     <link type="guide" xref="index#data-migration-and-sync"/>
     <link type="seealso" xref="data-storage"/>
 
-    <revision pkgversion="3.1.5" version="0.3" date="2011-09-29" status="final"/>
+    <revision pkgversion="3.1.5" version="0.4" date="2014-03-23" status="final"/>
 
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
@@ -25,19 +25,25 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
@@ -61,7 +67,7 @@
   </list>
 
   <note style="warning">
-    <p>Beachten Sie, dass Ihre Einstellungen zum <link xref="mail-spam">Filtern unerwünschter Nachrichten</link> nicht in der Sicherungskopie enthalten sind, weil diese Einstellungen nicht Teil von <app>Evolution</app> sind und weil Entwickler von Filter-Software Ihre Implementierung ändern könnten. Wenn Sie Bogofilter verwenden, so müssen Sie die Datei <file>~/.bogofilter/</file> sichern. Wenn Sie SpamAssassin verwenden, so müssen Sie die Datei <file>~/.spamassassin/</file> sichern.</p>
+    <p>Beachten Sie, dass Ihre Einstellungen zum <link xref="mail-spam">Filtern unerwünschter Nachrichten</link> nicht in der Sicherungskopie enthalten sind, weil diese Einstellungen nicht Teil von <app>Evolution</app> sind und weil Entwickler von Filter-Software Ihre Implementierung ändern könnten. Wenn Sie Bogofilter verwenden, so müssen Sie den verborgenen Ordner <file>~/.bogofilter/</file> sichern. Wenn Sie SpamAssassin verwenden, so müssen Sie den verborgenen Ordner <file>~/.spamassassin/</file> sichern.</p>
   </note>
 
 </section>

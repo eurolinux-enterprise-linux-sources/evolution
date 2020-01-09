@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-not-sent" xml:lang="cs">
 
   <info>
-    <desc>Possible reasons why emails are not sent.</desc>
+    <desc>Možné důvody, proč pošta neodchází.</desc>
     
     <link type="guide" xref="index#common-mail-problems"/>
 
@@ -15,16 +15,28 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
-</info>
 
-<title>Mail is not sent</title>
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
+  </info>
 
-<p>There can be several reasons why emails are not sent:</p>
+<title>Pošta se neodeslala</title>
+
+<p>Může být několik důvodů, proč se pošta neodeslala:</p>
 
 <list>
-<item><p>Invalid email address. Check if all the addresses listed as mail recipients are correct. If the message contains a wrong or invalid email address, the message will not be sent.</p></item>
-<item><p>Incorrect SMTP settings. Verify if the settings used for outgoing messages is correct. Using the incorrect server address or authentication method may prevent emails from being sent</p></item>
-<item><p>Offline status. Evolution may be offline. Check on the <gui style="button">Send and Receive</gui> button; if it is greyed out, then you are offline. To go online, go to <guiseq><gui>File</gui><gui>Work online</gui></guiseq>. You should now be able to use the <gui style="button">Send and Receive</gui> button.</p></item>
+<item><p>Neplatná e-mailová adresa. Zkontrolujte, jestli jsou v pořádku všechny adresy uvedené v příjemcích. V případě, že zpráva obsahuje nesprávnou nebo neplatnou e-mailovou adresu, tak se neodešle.</p></item>
+<item><p>Nesprávné nastavení SMTP. Ověřte, že jsou správná nastavení týkající se odchozí pošty. Použití nesprávné adresy serveru nebo autentizační metody může zabránit v odeslání pošty.</p></item>
+<item><p>Stav odpojení. Aplikace <app>Evolution</app> může být off-line. Podívejte se na tlačítko <gui style="button">Odeslat/příjmout</gui>. Pokud je zašedlé, jste odpojeni. Do režimu on-line se vrátíte pomocí <guiseq><gui>Soubor</gui> <gui>Pracovat on-line</gui></guiseq>. Po té by už mělo být tlačítko <gui style="button">Odeslat/přijmout</gui> použitelné.</p></item>
 </list>
 
 </page>

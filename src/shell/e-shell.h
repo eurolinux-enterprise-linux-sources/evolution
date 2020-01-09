@@ -22,6 +22,7 @@
 #define E_SHELL_H
 
 #include <libedataserver/libedataserver.h>
+#include <libedataserverui/libedataserverui.h>
 
 #include <e-util/e-util.h>
 
@@ -117,6 +118,10 @@ EShellBackend *	e_shell_get_backend_by_scheme	(EShell *shell,
 EClientCache *	e_shell_get_client_cache	(EShell *shell);
 ESourceRegistry *
 		e_shell_get_registry		(EShell *shell);
+ECredentialsPrompter *
+		e_shell_get_credentials_prompter(EShell *shell);
+void		e_shell_allow_auth_prompt_for	(EShell *shell,
+						 ESource *source);
 GtkWidget *	e_shell_create_shell_window	(EShell *shell,
 						 const gchar *view_name);
 guint		e_shell_handle_uris		(EShell *shell,
@@ -141,6 +146,7 @@ void		e_shell_event			(EShell *shell,
 gboolean	e_shell_quit			(EShell *shell,
 						 EShellQuitReason reason);
 void		e_shell_cancel_quit		(EShell *shell);
+gboolean	e_shell_requires_shutdown	(EShell *shell);
 
 G_END_DECLS
 

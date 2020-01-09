@@ -35,7 +35,7 @@
 
 <section id="search-single">
 <title>Searching in a Single Memo</title>
-<p>To find text in the displayed memo, select <guiseq><gui>Edit</gui><gui>Find in Memo...</gui></guiseq> from the main menu.</p>
+<p>To find text in the displayed memo, select <guiseq><gui>Edit</gui><gui>Find in Memo…</gui></guiseq> from the main menu.</p>
 </section>
 
 <section id="search-many">
@@ -49,13 +49,13 @@
 <item><p>Click the search icon <media type="image" mime="image/png" its:translate="no" src="figures/search-icon.png"/> to expand the drop-down list.</p></item>
 <item><p>Seleccione a condición da busca desde a lista.</p></item>
 <item><p>Escriba o texto que quere buscar e prema <key>Intro</key>.</p></item>
-<item><p>Evolution mostra os resultados da busca.</p></item>
+<item><p><app>Evolution</app> displays the search results.</p></item>
 </steps>
 <p>Buscar por categoría:</p>
 <steps>
 <item><p>Prema na lista despregábel <gui>Mostrar</gui>.</p></item>
 <item><p>Seleccione a categoría desde a lista.</p></item>
-<item><p>Evolution mostra os resultados da busca.</p></item>
+<item><p><app>Evolution</app> displays the search results.</p></item>
 </steps>
 <p>If you want to set several search conditions, you should use an Advanced search, which is described below.</p>
 </section>

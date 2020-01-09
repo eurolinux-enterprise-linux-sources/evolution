@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-filters-conditions" xml:lang="cs">
 
   <info>
-    <desc>Available conditions for setting up filtering.</desc>
+    <desc>Dostupné podmínky pro nastavení filtrování.</desc>
 
     <link type="seealso" xref="mail-filters"/>
 
@@ -18,9 +18,21 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
     
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Available Filter conditions</title>
+  <title>Dostupné podmínky filtrů</title>
 
 <list>
 
@@ -32,13 +44,13 @@ included by XInclude. See http://blogs.gnome.org/shaunm/2011/07/21/understanding
 <p>Filtruje zprávy podle serveru, z kterých jste je získali. Toto je nejužitečnější, používáte-li účty POP.</p></item>
 
 <item><p>Předat programu:</p>
-<p>Evolution může použít ke zpracování zprávy externí program, potom ji zpracovává na základě vrácené hodnoty. Použité příkazy musí vracet celá čísla. Toto je nejčastěji používáno pro přidání externího filtru nevyžádané pošty.</p></item>
+<p><app>Evolution</app> může použít ke zpracování zprávy externí program, potom ji zpracovává na základě vrácené hodnoty. Použité příkazy musí vracet celá čísla. Toto je nejčastěji používáno pro přidání externího filtru nevyžádané pošty.</p></item>
 
 <item><p>Test na nevyžádanou poštu:</p>
-<p>Filters based on the results of the <link xref="mail-spam">junk mail</link> test.</p></item>
+<p>Filtry vycházející z výsledků testu <link xref="mail-spam">nevyžádané pošty</link>.</p></item>
 
 <item><p>Vše odpovídá:</p>
-<p>Applies an action always to any message, without further conditions. This could be useful at the end of the list of message filters to cover those emails that did not match any conditions for the preceding filters in the list.</p></item>
+<p>Použije akci vždy na libovolnou zprávu, bez dalších podmínek. To se může hodit na konci seznamu filtrů zpráv, abyste pokryli i ty e-maily, které nevyhovují žádné z podmínek v předchozích filtrech v seznamu.</p></item>
 
 </list>
 </page>

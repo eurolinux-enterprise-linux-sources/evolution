@@ -43,6 +43,7 @@
 
 struct _ECellTogglePrivate {
 	gchar **icon_names;
+	gchar **icon_descriptions;
 	guint n_icon_names;
 
 	GdkPixbuf *empty;
@@ -77,7 +78,7 @@ cell_toggle_load_icons (ECellToggle *cell_toggle)
 
 		if (icon_name != NULL)
 			pixbuf = gtk_icon_theme_load_icon (
-				icon_theme, icon_name, height, 0, &error);
+				icon_theme, icon_name, height, GTK_ICON_LOOKUP_FORCE_SIZE, &error);
 
 		if (error != NULL) {
 			g_warning ("%s", error->message);
@@ -126,6 +127,12 @@ cell_toggle_finalize (GObject *object)
 	for (ii = 0; ii < priv->n_icon_names; ii++)
 		g_free (priv->icon_names[ii]);
 	g_free (priv->icon_names);
+
+	if (priv->icon_descriptions) {
+		for (ii = 0; ii < priv->n_icon_names; ii++)
+			g_free (priv->icon_descriptions[ii]);
+		g_free (priv->icon_descriptions);
+	}
 
 	g_ptr_array_free (priv->pixbufs, TRUE);
 
@@ -465,4 +472,37 @@ e_cell_toggle_get_pixbufs (ECellToggle *cell_toggle)
 	g_return_val_if_fail (E_IS_CELL_TOGGLE (cell_toggle), NULL);
 
 	return cell_toggle->priv->pixbufs;
+}
+
+void
+e_cell_toggle_set_icon_descriptions (ECellToggle *cell_toggle,
+				     const gchar **descriptions,
+				     gint n_descriptions)
+{
+	gint ii;
+	gint n_icon_names;
+
+	g_return_if_fail (E_IS_CELL_TOGGLE (cell_toggle));
+	g_return_if_fail (cell_toggle->priv->icon_descriptions == NULL);
+	g_return_if_fail (n_descriptions == cell_toggle->priv->n_icon_names);
+
+	n_icon_names = cell_toggle->priv->n_icon_names;
+
+	cell_toggle->priv->icon_descriptions = g_new (gchar *, n_icon_names);
+
+	for (ii = 0; ii < n_icon_names; ii++)
+		cell_toggle->priv->icon_descriptions[ii] = g_strdup (descriptions[ii]);
+}
+
+const gchar *
+e_cell_toggle_get_icon_description (ECellToggle *cell_toggle,
+				    gint n)
+{
+	if (n < 0 || n >= cell_toggle->priv->n_icon_names)
+		return NULL;
+
+	if (!cell_toggle->priv->icon_descriptions)
+		return NULL;
+
+	return cell_toggle->priv->icon_descriptions[n];
 }

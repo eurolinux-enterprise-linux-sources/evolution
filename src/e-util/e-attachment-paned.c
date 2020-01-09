@@ -55,6 +55,7 @@ struct _EAttachmentPanedPrivate {
 	GtkWidget *content_area;
 
 	gint active_view;
+	gint vpaned_handle_size;
 	gboolean expanded;
 	gboolean resize_toplevel;
 };
@@ -75,7 +76,7 @@ static void	e_attachment_paned_interface_init
 G_DEFINE_TYPE_WITH_CODE (
 	EAttachmentPaned,
 	e_attachment_paned,
-	GTK_TYPE_VPANED,
+	GTK_TYPE_PANED,
 	G_IMPLEMENT_INTERFACE (
 		E_TYPE_ATTACHMENT_VIEW,
 		e_attachment_paned_interface_init))
@@ -99,11 +100,21 @@ attachment_paned_notify_cb (EAttachmentPaned *paned,
 
 	label = GTK_LABEL (paned->priv->show_hide_label);
 
-	/* Update the expander label. */
-	if (gtk_expander_get_expanded (expander))
+	/* Update the expander label and set the right bottom margin around the handle. */
+	if (gtk_expander_get_expanded (expander)) {
+		gint bottom, value;
+
 		text = _("Hide Attachment _Bar");
-	else
+
+		bottom = gtk_widget_get_margin_bottom (paned->priv->controls_container);
+		value = bottom - paned->priv->vpaned_handle_size;
+
+		gtk_widget_set_margin_bottom (
+			paned->priv->controls_container, (value < 0) ? 0 : value);
+	} else {
+		gtk_widget_set_margin_bottom (paned->priv->controls_container, 6);
 		text = _("Show Attachment _Bar");
+	}
 
 	gtk_label_set_text_with_mnemonic (label, text);
 
@@ -352,59 +363,59 @@ attachment_paned_constructed (GObject *object)
 
 	priv = E_ATTACHMENT_PANED_GET_PRIVATE (object);
 
-	settings = g_settings_new ("org.gnome.evolution.shell");
+	settings = e_util_ref_settings ("org.gnome.evolution.shell");
 
 	/* Set up property-to-property bindings. */
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "active-view",
 		priv->combo_box, "active",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "active-view",
 		priv->notebook, "page",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "dragging",
 		priv->icon_view, "dragging",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "dragging",
 		priv->tree_view, "dragging",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "editable",
 		priv->icon_view, "editable",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "editable",
 		priv->tree_view, "editable",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "expanded",
 		priv->expander, "expanded",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "expanded",
 		priv->combo_box, "sensitive",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "expanded",
 		priv->notebook, "visible",
 		G_BINDING_BIDIRECTIONAL |
@@ -596,6 +607,19 @@ e_attachment_paned_class_init (EAttachmentPanedClass *class)
 }
 
 static void
+attachment_paned_style_updated_cb (EAttachmentPaned *paned)
+{
+	g_return_if_fail (E_IS_ATTACHMENT_PANED (paned));
+
+	gtk_widget_style_get (
+		GTK_WIDGET (paned), "handle-size",
+		&paned->priv->vpaned_handle_size, NULL);
+
+	if (paned->priv->vpaned_handle_size < 0)
+		paned->priv->vpaned_handle_size = 0;
+}
+
+static void
 e_attachment_paned_init (EAttachmentPaned *paned)
 {
 	EAttachmentView *view;
@@ -607,6 +631,8 @@ e_attachment_paned_init (EAttachmentPaned *paned)
 	paned->priv = E_ATTACHMENT_PANED_GET_PRIVATE (paned);
 	paned->priv->model = e_attachment_store_new ();
 
+	gtk_orientable_set_orientation (GTK_ORIENTABLE (paned), GTK_ORIENTATION_VERTICAL);
+
 	/* Keep the expander label and combo box the same height. */
 	size_group = gtk_size_group_new (GTK_SIZE_GROUP_VERTICAL);
 
@@ -617,7 +643,6 @@ e_attachment_paned_init (EAttachmentPaned *paned)
 	widget = gtk_notebook_new ();
 	gtk_widget_set_size_request (widget, -1, initial_height);
 	gtk_notebook_set_show_tabs (GTK_NOTEBOOK (widget), FALSE);
-	gtk_notebook_set_show_border (GTK_NOTEBOOK (widget), FALSE);
 	gtk_paned_pack2 (GTK_PANED (container), widget, FALSE, FALSE);
 	paned->priv->notebook = g_object_ref (widget);
 	gtk_widget_hide (widget);
@@ -628,8 +653,6 @@ e_attachment_paned_init (EAttachmentPaned *paned)
 	gtk_scrolled_window_set_policy (
 		GTK_SCROLLED_WINDOW (widget),
 		GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-	gtk_scrolled_window_set_shadow_type (
-		GTK_SCROLLED_WINDOW (widget), GTK_SHADOW_IN);
 	gtk_notebook_append_page (GTK_NOTEBOOK (container), widget, NULL);
 	gtk_widget_show (widget);
 
@@ -671,9 +694,18 @@ e_attachment_paned_init (EAttachmentPaned *paned)
 	paned->priv->content_area = g_object_ref (widget);
 	gtk_widget_show (widget);
 
+	paned->priv->vpaned_handle_size = 5;
+	attachment_paned_style_updated_cb (paned);
+
+	g_signal_connect (
+		GTK_PANED (paned), "style-updated",
+		G_CALLBACK (attachment_paned_style_updated_cb), NULL);
+
 	container = widget;
 
 	widget = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
+	gtk_widget_set_margin_right (widget, 6);
+	gtk_widget_set_margin_left (widget, 6);
 	gtk_box_pack_end (GTK_BOX (container), widget, FALSE, FALSE, 0);
 	paned->priv->controls_container = widget;
 	gtk_widget_show (widget);
@@ -758,6 +790,8 @@ e_attachment_paned_init (EAttachmentPaned *paned)
 		G_CALLBACK (attachment_paned_update_status), paned);
 
 	g_object_unref (size_group);
+
+	attachment_paned_notify_cb (paned, NULL, GTK_EXPANDER (paned->priv->expander));
 }
 
 static void

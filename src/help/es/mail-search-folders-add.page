@@ -20,9 +20,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -41,7 +47,7 @@
 <title>Crear una carpeta de búsqueda</title>
 
 <steps>
-<item><p>Pulse <guiseq><gui>Editar</gui><gui>Carpetas de búsqueda</gui></guiseq> o pulse <guiseq><gui>Mensaje</gui><gui>Crear regla</gui></guiseq> y seleccione el criterio en el que se basará la carpeta de búsqueda o si ha ejecutado una búsqueda, pulse <guiseq><gui>Buscar</gui><gui>Crear una carpeta de búsqueda desde la búsqueda...</gui></guiseq>.</p></item>
+<item><p>Pulse <guiseq><gui>Editar</gui><gui>Carpetas de búsqueda</gui></guiseq> o pulse <guiseq><gui>Mensaje</gui><gui>Crear regla</gui></guiseq> y seleccione el criterio en el que se basará la carpeta de búsqueda o si ha ejecutado una búsqueda, pulse <guiseq><gui>Buscar</gui><gui>Crear una carpeta de búsqueda desde la búsqueda…</gui></guiseq>.</p></item>
 <item><p>Pulse <gui style="button">Añadir</gui>.</p></item>
 <item><p>Introduzca un nombre en el campo <gui>Nombre de la regla</gui>.</p></item>
 <item><p>Defina las condiciones para la regla. Para cada condición debe seleccionar primero qué parte del mensaje se comprobará y después definir la comparación.</p><p>Para obtener más información acerca de las condiciones disponibles, consulte <link xref="mail-search-folders-conditions">condiciones disponibles para las carpetas de búsqueda</link>.</p></item>

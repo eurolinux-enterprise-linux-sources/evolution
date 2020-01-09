@@ -49,12 +49,12 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
   <title>Tri, organisation et groupement de contacts</title>
 
-  <p>Il y a plusieurs façons d'organiser vos contacts. Vous pouvez utiliser plusieurs carnets d'adresses et catégories et pour envoyer facilement des messages à des groupes de personnes, des listes de contacts sont disponibles.</p>
+  <p>Il y a plusieurs façons d'organiser vos contacts. Vous pouvez utiliser plusieurs carnets d'adresses et catégories, et, pour envoyer facilement des messages à des groupes de personnes, des listes de contacts sont disponibles.</p>
 
 </page>

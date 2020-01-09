@@ -44,11 +44,16 @@ settings_message_list_constructed (GObject *object)
 	extension = E_SETTINGS_MESSAGE_LIST (object);
 	message_list = settings_message_list_get_extensible (extension);
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 	g_settings_bind (
 		settings, "show-deleted",
 		message_list, "show-deleted",
+		G_SETTINGS_BIND_GET);
+
+	g_settings_bind (
+		settings, "show-junk",
+		message_list, "show-junk",
 		G_SETTINGS_BIND_GET);
 
 	g_settings_bind (
@@ -59,6 +64,11 @@ settings_message_list_constructed (GObject *object)
 	g_settings_bind (
 		settings, "thread-subject",
 		message_list, "thread-subject",
+		G_SETTINGS_BIND_GET);
+
+	g_settings_bind (
+		settings, "thread-children-ascending",
+		message_list, "sort-children-ascending",
 		G_SETTINGS_BIND_GET);
 
 	/* This setting only controls the initial message list

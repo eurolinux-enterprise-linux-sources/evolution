@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="guide" id="deleting-to-free-disk-space" xml:lang="fr">
 
   <info>
-    <desc>Supprimer les courriels et des entrées d'agenda pour réduire la taille des fichiers utilisés par Evolution.</desc>
+    <desc>Deleting emails and calendar entries to reduce the size of the files used by <app>Evolution</app>.</desc>
     
     <link type="guide" xref="index#common-other-problems"/>
 
@@ -49,7 +49,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 

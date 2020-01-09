@@ -49,7 +49,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -60,6 +60,6 @@
 <steps>
 <item><p>faites un double-clic sur le mémo que vous voulez modifier dans la liste des mémos ou faites un clic-droit sur le mémo, puis cliquez sur <gui>Ouvrir le mémo</gui>,</p></item>
 <item><p>modifiez les informations du mémo,</p></item>
-<item><p>cliquez sur le bouton <gui style="button">Enregistrer</gui> ou utilisez le menu <guiseq><gui>Fichier</gui><gui>Enregistrer</gui></guiseq>.</p></item>
+<item><p>Cliquez sur le bouton <gui style="button">Enregistrer</gui> ou utilisez le menu <guiseq><gui>Fichier</gui><gui>Enregistrer</gui></guiseq>.</p></item>
 </steps>
 </page>

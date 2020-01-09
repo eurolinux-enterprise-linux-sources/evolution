@@ -18,6 +18,30 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
 <title>Feljegyzés hozzáadása</title>
@@ -41,11 +65,11 @@
 <p>Megosztott feljegyzés küldéséhez:</p>
 <steps>
 <item><p>Válassza a <guiseq><gui>Fájl</gui><gui>Új</gui><gui>Megosztott feljegyzés</gui></guiseq> menüpontot, vagy nyomja meg a <keyseq><key>Shift</key><key>Ctrl</key><key>H</key></keyseq> kombinációt.</p></item>
-<item><p>Válassza ki a szervező fiókjának nevét a Szervező mező mellett megjelenő legördülő listából.</p></item>
-<item><p>A Címzett mezőbe írjon be egy felhasználónevet, majd nyomja meg az Enter billentyűt. Ismételje ezt meg minden további felhasználóhoz.</p></item>
+<item><p>Válassza ki a szervező fiókjának nevét a <gui>Szervező</gui> mező mellett megjelenő legördülő listából.</p></item>
+<item><p>A <gui>Címzett</gui> mezőbe írjon be egy felhasználónevet, majd nyomja meg az <key>Enter</key> billentyűt. Ismételje ezt meg minden további felhasználóhoz.</p></item>
 <item><p>Válassza ki a feladatlistát (a <gui>Lista</gui> alatt), amelyben létre szeretné hozni a bejegyzést.</p></item>
-<item><p>Írjon be egy rövid összegzést az Összefoglaló mezőbe.</p></item>
-<item><p>A Kezdés dátuma mezőbe írja be azt a dátumot, amikor ez a megosztott feljegyzés megjelenjen a címzettek naptárában.</p></item>
+<item><p>Írjon be egy rövid összegzést az <gui>Összefoglaló</gui> mezőbe.</p></item>
+<item><p>A <gui>Kezdés dátuma</gui> mezőbe írja be azt a dátumot, amikor ez a megosztott feljegyzés megjelenjen a címzettek naptárában.</p></item>
 <item><p>Nyomja meg a <gui style="button">Mentés</gui> gombot, vagy válassza a <guiseq><gui>Fájl</gui><gui>Mentés</gui></guiseq> menüpontot.</p></item>
 </steps>
 </section>

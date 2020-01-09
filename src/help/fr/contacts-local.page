@@ -48,19 +48,17 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
   <title>Ajout d'un autre carnet d'adresses local</title>
 
-  <p>To add another local address book to <app>Evolution</app>, perform the
-  following steps:</p>
+  <p>Pour ajouter un autre carnet d'adresses local à <app>Evolution</app>, suivez les étapes suivantes :</p>
 
   <steps>
     <item>
-      <p>Click <guiseq><gui>File</gui><gui>New</gui>
-      <gui>Address Book</gui></guiseq>.</p>
+      <p>Cliquez sur <guiseq><gui>Fichier</gui><gui>Nouveau</gui><gui>Carnet d'adresses</gui></guiseq>.</p>
     </item>
     <item>
       <p>Sélectionnez le type <gui>Sur cet ordinateur</gui>.</p>
@@ -73,7 +71,6 @@
     </item>
   </steps>
 
-  <p>The address book will be added to the list of address books in
-  <app>Evolution</app>.</p>
+  <p>Le carnet d'adresses sera ajouté à la liste des carnets d'adresses dans <app>Evolution</app>.</p>
 
 </page>

@@ -518,7 +518,7 @@ edvti_draw_zone (GnomeCanvasItem *canvas_item,
 				gdk_cairo_set_source_color (cr, &mb_color);
 			else
 				gdk_cairo_set_source_rgba (cr, &fg);
-			layout = pango_cairo_create_layout (cr);
+			layout = gtk_widget_create_pango_layout (GTK_WIDGET (day_view), NULL);
 			pango_layout_set_text (layout, buffer, -1);
 			pango_layout_get_pixel_size (layout, &minute_width, NULL);
 			cairo_translate (
@@ -529,6 +529,8 @@ edvti_draw_zone (GnomeCanvasItem *canvas_item,
 			cairo_restore (cr);
 
 			g_object_unref (layout);
+
+			cairo_restore (cr);
 		} else {
 			/* 5/10/15/30 minute intervals. */
 
@@ -557,7 +559,7 @@ edvti_draw_zone (GnomeCanvasItem *canvas_item,
 					gdk_cairo_set_source_color (cr, &mb_color);
 				else
 					gdk_cairo_set_source_rgba (cr, &fg);
-				layout = pango_cairo_create_layout (cr);
+				layout = gtk_widget_create_pango_layout (GTK_WIDGET (day_view), NULL);
 				pango_layout_set_text (layout, buffer, -1);
 				pango_layout_set_font_description (
 					layout, day_view->large_font_desc);
@@ -605,7 +607,7 @@ edvti_draw_zone (GnomeCanvasItem *canvas_item,
 					gdk_cairo_set_source_color (cr, &mb_color);
 				else
 					gdk_cairo_set_source_rgba (cr, &fg);
-				layout = pango_cairo_create_layout (cr);
+				layout = gtk_widget_create_pango_layout (GTK_WIDGET (day_view), NULL);
 				pango_layout_set_text (layout, buffer, -1);
 				pango_layout_set_font_description (
 					layout, day_view->small_font_desc);
@@ -744,6 +746,8 @@ edvti_second_zone_changed_cb (GSettings *settings,
 		day_view->time_canvas,
 		e_day_view_time_item_get_column_width (time_item), -1);
 	gtk_widget_queue_draw (day_view->time_canvas);
+
+	e_day_view_update_timezone_name_labels (day_view);
 }
 
 static void
@@ -883,6 +887,9 @@ e_day_view_time_item_show_popup_menu (EDayViewTimeItem *time_item,
 
 	gtk_widget_show_all (submenu);
 
+	gtk_menu_attach_to_widget (GTK_MENU (menu),
+				   GTK_WIDGET (day_view),
+				   NULL);
 	gtk_menu_popup (
 		GTK_MENU (menu), NULL, NULL, NULL, NULL,
 		event->button.button, event->button.time);

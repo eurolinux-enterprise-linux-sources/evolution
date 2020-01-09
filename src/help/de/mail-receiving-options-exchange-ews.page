@@ -6,7 +6,7 @@
 
     <link type="guide" xref="mail-receiving-options#corporate-server-types"/>
     <link type="guide" xref="mail-account-manage-microsoft-exchange-evo-ews#receiving-email"/>
-    <revision pkgversion="3.1.91" version="0.2" date="2013-06-22" status="draft"/>
+    <revision pkgversion="3.12.9" version="0.3" date="2015-02-15" status="draft"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -25,19 +25,25 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
@@ -52,7 +58,7 @@
 <item><p>Geben Sie Ihren Benutzernamen für den Server ein.</p></item>
 <item><p>Geben Sie entweder händisch die Rechner-Adresse und OAB-Adresse ein, oder klicken Sie auf <gui style="button">Adresse holen</gui>. Sie werden daraufhin nach Ihrem Passwort gefragt und es wird versucht, die Werte automatisch auszufüllen.</p>
 <note style="tip"><p>Falls Sie in einer Firma oder einer Organisation arbeiten, so fragen Sie bitte Ihren Systemadministrator für weitere Informationen.</p></note></item>
-<item><p>Wählen Sie Ihren Legitimierungstyp in der Legitimierungsliste, oder klicken Sie auf <gui style="button">Prüfen, welche Typen unterstützt werden</gui>, damit Evolution die verfügbaren Legitimationsarten abruft. Einige Server veröffentlichen nicht die verfügbaren Legitimationsarten, daher kann Evolution nicht garantieren, dass das Anklicken des Knopfes funktioniert.</p></item>
+<item><p>Wählen Sie Ihren Legitimierungstyp in der Legitimierungsliste, oder klicken Sie auf <gui style="button">Prüfen, welche Typen unterstützt werden</gui>, damit <gui>Evolution</gui> die verfügbaren Legitimationsarten abruft. Einige Server veröffentlichen nicht die verfügbaren Legitimationsarten, daher kann <gui>Evolution</gui> nicht garantieren, dass das Anklicken des Knopfes funktioniert.</p></item>
 </list>
 
 </section>
@@ -63,10 +69,10 @@
 <p>Auf der Seite <gui>Empfangsoptionen</gui> (abrufbar unter <guiseq><gui>Bearbeiten</gui><gui>Einstellungen</gui><gui>E-Mail-Konten</gui><gui style="button">Bearbeiten</gui><gui>Empfangsoptionen</gui></guiseq>):</p>
 
 <list>
-<item><p>Wenn Evolution automatisch nach neuen Nachrichten schauen soll, so wählen Sie die Option <gui>Automatisch nach neuen E-Mails sehen alle … Minuten</gui> und legen Sie das Zeitintervall fest.</p></item>
-<item><p>Sie können auch festlegen, ob Evolution nach neuen Nachrichten in allen Ordnern schauen soll.</p></item>
+<item><p>Wenn <gui>Evolution</gui> automatisch nach neuen Nachrichten schauen soll, so wählen Sie die Option <gui>Automatisch nach neuen E-Mails sehen alle … Minuten</gui> und legen Sie das Zeitintervall in Minuten fest.</p></item>
+<item><p>Sie können auch festlegen, ob <gui>Evolution</gui> nach neuen Nachrichten in allen Ordnern schauen soll.</p></item>
 <item><p>Wenn Sie eine Kopie des Adressbuchs des Servers für Offline-Zugriff haben möchten, so aktivieren Sie <gui>Offline-Adressbuch zwischenspeichern</gui> und klicken Sie auf <gui style="button">Liste holen</gui>. Wählen Sie danach das Adressbuch aus.</p></item>
-<item><p>Wenn <link xref="mail-filters">Filter</link> automatisch auf Nachrichten in Ihrem Posteingang angewendet werden sollen, so aktivieren Sie <gui>Filter auf neue Nachrichten im Eingang dieses Servers anwenden</gui>.</p></item>
+<item><p>Auswählen, wenn Sie <link xref="mail-filters">Filter</link> automatisch auf alle eingehenden E-Mails anwenden wollen, wenn <link xref="mail-spam-marking">Unerwünschtes</link> automatisch herausgefiltert werden soll und wenn <link xref="mail-working-offline">E-Mail zwischen Server und lokaler Kopie synchronisiert werden soll, damit es auch ohne aktive Internetverbindung verfügbar ist.</link>.</p></item>
 </list>
 
 </section>

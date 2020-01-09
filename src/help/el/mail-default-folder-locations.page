@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-default-folder-locations" xml:lang="el">
 
   <info>
-    <desc>Αλλαγή της θέσης των φακέλων πρόχειρο, απεσταλμένα, απορρίμματα και ανεπιθύμητα.</desc>
+    <desc>Changing the location of <gui>Draft</gui>, <gui>Sent</gui>, <gui>Trash</gui> and <gui>Junk</gui> folders.</desc>
 
     <link type="guide" xref="mail-account-manage-imap-plus#defaults"/>
     <link type="guide" xref="mail-account-manage-local-delivery#defaults"/>
@@ -15,7 +15,7 @@
     <link type="guide" xref="mail-account-manage-microsoft-exchange-evo-mapi#defaults"/>
     <link type="guide" xref="mail-account-manage-microsoft-exchange-evo-ews#defaults"/>
 
-    <revision pkgversion="3.7.4" version="0.2" date="2013-01-23" status="draft"/>
+    <revision pkgversion="3.13.90" version="0.3" date="2015-03-09" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -26,15 +26,34 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
   <title>Τοποθεσίες φακέλου αλληλογραφίας</title>
 
-<p>Μπορείτε να ορίσετε μια διαφορετική θέση αποθήκευσης μηνυμάτων στους φακέλους προχείρων και απεσταλμένων στην ενότητα <gui>προεπιλογές</gui> του επεξεργαστή λογαριασμού αλληλογραφίας (<guiseq><gui>επεξεργασία</gui><gui>προτιμήσεις</gui><gui>λογαριασμοί αλληλογραφίας</gui><gui style="button">επεξεργασία</gui><gui>προεπιλογές</gui></guiseq>).</p>
-<p>Για απομακρυσμένους τύπους λογαριασμού (λογαριασμοί όπως IMAP) μπορείτε επίσης να χρησιμοποιήσετε φακέλους απορριμμάτων και ανεπιθύμητων στον εξυπηρετητή αλληλογραφίας επιλέγοντας την αντίστοιχη επιλογή <gui>Χρήση ενός πραγματικού φακέλου</gui>. Σε αυτήν την περίπτωση, τα τοπικά του Evolution <link xref="mail-search-folders">εικονικοί φάκελοι</link> δεν θα χρησιμοποιηθούν.</p>
+<p>You can set a different place where to store messages in your <gui>Draft</gui> folder and <gui>Sent</gui> folder in the <gui>Defaults</gui> section of the mail account editor (<guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Mail Accounts</gui><gui style="button">Edit</gui><gui>Defaults</gui></guiseq>).</p>
+<p>Μπορείτε να ορίσετε έναν <gui>φάκελο αρχειοθήκης</gui>, παραδείγματος χάρη για να μετακινείτε τα παλιότερα μηνύματα εκεί. Επιλέγοντας <guiseq><gui>Μήνυμα</gui><gui>Αρχειοθήκη</gui></guiseq> στο κύριο παράθυρο μετακινεί το επιλεγμένο μήνυμα στον καθορισμένο φάκελο.</p>
+<p>For remote account types (accounts such as IMAP) you can also use folders on the mail server for Junk and Trash by selecting the corresponding <gui>Use a Real Folder</gui> option. In this case, <app>Evolution</app>'s local <link xref="mail-search-folders">virtual folders</link> will not be used.</p>
 
 </page>

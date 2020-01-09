@@ -49,7 +49,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -66,7 +66,8 @@
   <p>Si vous ne voyez aucun message dans un dossier, vérifiez que vous n'avez pas maximisé le panneau d'aperçu des messages (de sorte que le panneau de la liste des messages est masqué). Pour cela, cliquez sur <guiseq><gui>Affichage</gui><gui>Aperçu</gui><gui>Afficher l'aperçu du message</gui></guiseq>.</p>
  </item>
  <item>
-  <p>Regardez dans le dossier <gui>Pourriels</gui>. Les messages marqués comme pourriels disparaissent du dossier d'origine et sont déplacés dans le dossier Pourriels.</p>
+  <p>Look in the <gui>Junk</gui> folder. Messages that are marked as Junk disappear from the original folder and are moved to the <gui>Junk</gui> folder.
+  </p>
  </item>
  <!-- Does the following option still exist? -->
  <item>

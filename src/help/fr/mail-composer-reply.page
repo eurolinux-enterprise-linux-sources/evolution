@@ -52,7 +52,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -66,7 +66,7 @@
 
 <section id="reply-to-all">
 <title>Utilisation de la fonctionnalité Répondre à tous</title>
-<p>Susanne envoie un courriel à un client et met en copie Tim ainsi qu'une liste de diffusion de collaborateurs internes. Si Tim souhaite faire un commentaire destiné à tous, il utilisera <gui>Répondre à tous</gui>, mais s'il souhaite uniquement dire à Susanne qu'il est d'accord avec elle, il utilisera <gui>Répondre</gui>. Dans tous les cas, sa réponse ne parviendra à aucune personne mentionnée dans le champ Cci : du message de Susanne, car le contenu de ce champ n'est partagé avec personne.</p>
+<p>Suzanne envoie un courriel à un client et met en copie Tim ainsi qu'une liste de diffusion de collaborateurs internes. Si Tim souhaite faire un commentaire destiné à tous, il utilisera <gui>Répondre à tous</gui>, mais s'il souhaite uniquement dire à Suzanne qu'il est d'accord avec elle, il utilisera <gui>Répondre</gui>. Dans tous les cas, sa réponse ne parviendra à aucune personne mentionnée dans le champ Cci : du message de Suzanne, car le contenu de ce champ n'est partagé avec personne.</p>
 <p>Si vous êtes abonné à une liste de diffusion et que vous ne voulez répondre qu'à la liste, plutôt qu'à l'expéditeur, cliquez sur <gui>Répondre à la liste</gui> au lieu de <gui>Répondre</gui> ou <gui>Répondre à tous</gui>.</p>
 </section>
 

@@ -22,9 +22,27 @@
     <desc>Αποστολή πρόσκλησης συγκέντρωσης.</desc>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
@@ -32,7 +50,12 @@
 
   <p>Όταν δημιουργείτε μια συγκέντρωση (ομαδική συνάντηση), μπορείτε να ορίσετε τους παρευρισκόμενους σε διάφορες κατηγορίες, όπως "προεδρείο" ή "απαιτούμενος". Όταν αποθηκεύσετε τη λίστα της συγκέντρωσης, θα σταλεί μήνυμα σε κάθε παρευρισκόμενο με τις πληροφορίες της συγκέντρωσης, που τους δίνει επίσης την δυνατότητα απάντησης.</p>
 
-  <p>Αν δε χρειάζεστε να μαζέψετε πληροφορίες για τη συμμετοχή όταν προγραμματίζετε ένα γεγονός, και προτιμάτε απλά να το ανακοινώσετε, δεξί κλικ στη συγκέντρωση και επιλέξτε <gui>προώθηση ως iCalendar</gui>. Αυτό ανοίγει ένα νέο μήνυμα αλληλογραφίας με την ειδοποίηση συμβάντος συνημμένη ως ανακοίνωση. Οι αποδέκτες μπορούν να προσθέσουν το γεγονός στα ημερολόγιά τους με ένα κλικ, αλλά δε θα σας σταλεί αυτόματα μήνυμα σχετικά με το αν σκοπεύουν να παρευρεθούν.</p>
+  <p>If you do not need to collect attendance information when you're
+  scheduling an event, and would rather just announce the event, right-click
+  the meeting and select <gui>Forward as iCalendar...</gui>. This opens a new
+  email message with the event notification attached as an announcement.
+  Recipients can add the event to their calendars with one click, but it will
+  not automatically send you email about whether they plan to attend.</p>
 
   <p>Για σχεδιασμό συγκέντρωσης:</p>
 

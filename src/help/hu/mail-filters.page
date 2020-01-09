@@ -18,13 +18,37 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
     
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
   <title>Szűrők használata</title>
 
 <p>Az üzenetszűrők műveleteket hajtanak végre a leveleken az Ön által meghatározott feltételek alapján. Szűrőket megadhat a bejövő és kimenő levelekre egyaránt.</p>
 
-<p>A szűrők automatikusan alkalmazásra kerülnek a helyi fiókokba (például POP) érkező levelekre. A távoli fiókokat (például IMAP) használó levélkiszolgálók ezt közvetlenül a kiszolgálón végzik, mivel így gyorsabb. Ha az Evolution szűrőit távoli fiókokra is szeretné alkalmazni, akkor ezt a <guiseq><gui>Szerkesztés</gui><gui>Beállítások</gui><gui>Postafiókok</gui><gui style="button">Szerkesztés</gui><gui>Fogadás beállításai</gui><gui>Beállítások</gui><gui>Szűrők alkalmazása az új levelekre ezen kiszolgáló Beérkezett üzenetek mappájában</gui></guiseq> jelölőnégyzet bejelölésével teheti meg.</p>
+<p>A szűrők automatikusan alkalmazásra kerülnek a helyi fiókokba (például POP) érkező levelekre. A távoli fiókokat (például IMAP) használó levélkiszolgálók ezt közvetlenül a kiszolgálón végzik, mivel így gyorsabb. Ha az <app>Evolution</app> szűrőit távoli fiókokra is szeretné alkalmazni, akkor ezt a <guiseq><gui>Szerkesztés</gui><gui>Beállítások</gui><gui>Postafiókok</gui><gui style="button">Szerkesztés</gui><gui>Fogadás beállításai</gui><gui>Beállítások</gui><gui>Szűrők alkalmazása az új levelekre ezen kiszolgáló Beérkezett üzenetek mappájában</gui></guiseq> jelölőnégyzet bejelölésével teheti meg.</p>
 
 <p>A szűrők saját kezű alkalmazásához egy mappa üzeneteire, válassza ki az üzeneteket, majd az <guiseq><gui>Üzenet</gui><gui>Szűrők alkalmazása</gui></guiseq> menüpontot, vagy nyomja meg a <keyseq><key>Ctrl</key><key>Y</key></keyseq> kombinációt.</p>
 <p>Egy mappa összes üzenetét kijelölheti a <guiseq><gui>Szerkesztés</gui><gui>Összes kiválasztása</gui></guiseq> menüpont kiválasztásával, vagy a <keyseq><key>Ctrl</key><key>A</key></keyseq> kombináció megnyomásával.</p>
@@ -33,7 +57,7 @@
 <title>Szűrő létrehozása</title>
 
 <steps>
-<item><p>Válassza a <guiseq><gui>Szerkesztés</gui><gui>Üzenetszűrők</gui></guiseq>, vagy az <guiseq><gui>Üzenet</gui><gui>Szabály létrehozása</gui></guiseq> menüpontot, és adja meg a szűrő alapjául szolgáló feltételeket.</p></item>
+<item><p>Válassza a <guiseq><gui>Szerkesztés</gui><gui>Üzenetszűrők</gui></guiseq>, vagy az <guiseq><gui>Üzenet</gui><gui>Létrehozás</gui></guiseq> menüpontot, és adja meg a szűrő alapjául szolgáló feltételeket.</p></item>
 <item><p>Nyomja meg a <gui style="button">Hozzáadás</gui> gombot.</p></item>
 <item><p>Írjon be egy nevet a <gui>Szabály neve</gui> mezőbe.</p></item>
 <item><p>Adja meg a szabály feltételeit. Minden feltételhez elsőként válassza ki a levél ellenőrzendő részét, majd adja meg az összehasonlítást.</p><p>Az elérhető feltételekkel kapcsolatos további információkért lásd a <link xref="mail-filters-conditions">Használható szűrőfeltételek</link> szakaszt.</p></item>

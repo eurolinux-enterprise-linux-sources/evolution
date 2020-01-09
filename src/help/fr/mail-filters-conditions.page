@@ -52,7 +52,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -68,13 +68,13 @@ included by XInclude. See http://blogs.gnome.org/shaunm/2011/07/21/understanding
 <p>Filtre les messages selon le serveur de provenance. Ce critère est utile si vous disposez de plusieurs comptes POP.</p></item>
 
 <item><p>Transfert vers le programme :</p>
-<p>Evolution peut utiliser une commande externe pour traiter un message, puis le traiter à nouveau selon la valeur de retour. Les commandes utilisées à cet effet doivent retourner un nombre entier. L'usage le plus courant consiste à ajouter un filtre de pourriels externe.</p></item>
+<p><app>Evolution</app> can use an external command to process a message, then process it based on the return value. Commands used in this way must return an integer. This is most commonly used to add an external junk mail filter.</p></item>
 
-<item><p>Test pourriel :</p>
+<item><p>Test de pourriel :</p>
 <p>Filtre selon les résultats du <link xref="mail-spam">test de pourriel</link>.</p></item>
 
 <item><p>Vérifie tout :</p>
-<p>Applies an action always to any message, without further conditions. This could be useful at the end of the list of message filters to cover those emails that did not match any conditions for the preceding filters in the list.</p></item>
+<p>Applique toujours une action à n'importe quel message, sans autre condition. Cela est utile à la fin de la liste des filtres de messages pour concerner aussi ces courriels qui ne correspondent à aucun des critères de filtrage dans la liste des filtres précédents.</p></item>
 
 </list>
 </page>

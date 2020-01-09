@@ -2,13 +2,13 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Evolution Utilities Reference Manual: ECellTree</title>
-<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<title>ECellTree: Evolution Utilities Reference Manual</title>
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
 <link rel="home" href="index.html" title="Evolution Utilities Reference Manual">
-<link rel="up" href="ch11.html" title="Tables and Trees">
+<link rel="up" href="ch12.html" title="Tables and Trees">
 <link rel="prev" href="ECellToggle.html" title="ECellToggle">
 <link rel="next" href="ECellVbox.html" title="ECellVbox">
-<meta name="generator" content="GTK-Doc V1.21 (XML mode)">
+<meta name="generator" content="GTK-Doc V1.25 (XML mode)">
 <link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
@@ -19,7 +19,7 @@
                   <a href="#ECellTree.object-hierarchy" class="shortcut">Object Hierarchy</a></span>
 </td>
 <td><a accesskey="h" href="index.html"><img src="home.png" width="16" height="16" border="0" alt="Home"></a></td>
-<td><a accesskey="u" href="ch11.html"><img src="up.png" width="16" height="16" border="0" alt="Up"></a></td>
+<td><a accesskey="u" href="ch12.html"><img src="up.png" width="16" height="16" border="0" alt="Up"></a></td>
 <td><a accesskey="p" href="ECellToggle.html"><img src="left.png" width="16" height="16" border="0" alt="Prev"></a></td>
 <td><a accesskey="n" href="ECellVbox.html"><img src="right.png" width="16" height="16" border="0" alt="Next"></a></td>
 </tr></table>
@@ -34,7 +34,7 @@
 </tr></table></div>
 <div class="refsect1">
 <a name="ECellTree.functions"></a><h2>Functions</h2>
-<div class="informaltable"><table width="100%" border="0">
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="functions_return">
 <col class="functions_name">
@@ -64,25 +64,28 @@
 <a class="link" href="ECellTree.html#e-cell-tree-view-get-subcell-view" title="e_cell_tree_view_get_subcell_view ()">e_cell_tree_view_get_subcell_view</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
+<tr>
+<td class="function_type">
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+</td>
+<td class="function_name">
+<a class="link" href="ECellTree.html#e-cell-tree-get-grouped-view" title="e_cell_tree_get_grouped_view ()">e_cell_tree_get_grouped_view</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="ECellTree.html#e-cell-tree-set-grouped-view" title="e_cell_tree_set_grouped_view ()">e_cell_tree_set_grouped_view</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
 </tbody>
 </table></div>
 </div>
 <div class="refsect1">
-<a name="ECellTree.other"></a><h2>Types and Values</h2>
-<div class="informaltable"><table width="100%" border="0">
-<colgroup>
-<col width="150px" class="name">
-<col class="description">
-</colgroup>
-<tbody><tr>
-<td class="datatype_keyword">struct</td>
-<td class="function_name"><a class="link" href="ECellTree.html#ECellTree-struct" title="struct ECellTree">ECellTree</a></td>
-</tr></tbody>
-</table></div>
-</div>
-<div class="refsect1">
 <a name="ECellTree.object-hierarchy"></a><h2>Object Hierarchy</h2>
-<pre class="screen">    <a href="https://developer.gnome.org/gobject/unstable/gobject-The-Base-Object-Type.html#GObject">GObject</a>
+<pre class="screen">    <a href="/usr/share/gtk-doc/html/gobjectgobject-The-Base-Object-Type.html#GObject-struct">GObject</a>
     <span class="lineart">╰──</span> <a class="link" href="ECell.html" title="ECell">ECell</a>
         <span class="lineart">╰──</span> ECellTree
 </pre>
@@ -95,7 +98,7 @@
 <div class="refsect2">
 <a name="e-cell-tree-new"></a><h3>e_cell_tree_new ()</h3>
 <pre class="programlisting"><a class="link" href="ECell.html" title="ECell"><span class="returnvalue">ECell</span></a> *
-e_cell_tree_new (<em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="type">gboolean</span></a> draw_lines</code></em>,
+e_cell_tree_new (<em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="type">gboolean</span></a> draw_lines</code></em>,
                  <em class="parameter"><code><a class="link" href="ECell.html" title="ECell"><span class="type">ECell</span></a> *subcell</code></em>);</pre>
 <p>Creates a new ECell renderer that can be used to render tree
 effects that come from an ETreeModel.  Various assumptions are made
@@ -104,8 +107,8 @@ associated with is in fact an ETreeModel.  The cell uses special
 columns to get at structural information (needed to draw the
 lines/icons.</p>
 <div class="refsect3">
-<a name="id-1.12.49.7.2.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-cell-tree-new.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -126,9 +129,8 @@ lines/icons.</p>
 </table></div>
 </div>
 <div class="refsect3">
-<a name="id-1.12.49.7.2.6"></a><h4>Returns</h4>
+<a name="e-cell-tree-new.returns"></a><h4>Returns</h4>
 <p> an ECell object that can be used to render trees.</p>
-<p></p>
 </div>
 </div>
 <hr>
@@ -136,13 +138,13 @@ lines/icons.</p>
 <a name="e-cell-tree-construct"></a><h3>e_cell_tree_construct ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 e_cell_tree_construct (<em class="parameter"><code><a class="link" href="ECellTree.html" title="ECellTree"><span class="type">ECellTree</span></a> *ect</code></em>,
-                       <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="type">gboolean</span></a> draw_lines</code></em>,
+                       <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="type">gboolean</span></a> draw_lines</code></em>,
                        <em class="parameter"><code><a class="link" href="ECell.html" title="ECell"><span class="type">ECell</span></a> *subcell</code></em>);</pre>
 <p>Constructs an ECellTree.  used by subclasses that need to
 initialize a nested ECellTree.  See <a class="link" href="ECellTree.html#e-cell-tree-new" title="e_cell_tree_new ()"><code class="function">e_cell_tree_new()</code></a> for more info.</p>
 <div class="refsect3">
-<a name="id-1.12.49.7.3.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-cell-tree-construct.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -174,17 +176,25 @@ initialize a nested ECellTree.  See <a class="link" href="ECellTree.html#e-cell-
 <pre class="programlisting"><a class="link" href="ECell.html#ECellView" title="struct ECellView"><span class="returnvalue">ECellView</span></a> *
 e_cell_tree_view_get_subcell_view (<em class="parameter"><code><a class="link" href="ECell.html#ECellView" title="struct ECellView"><span class="type">ECellView</span></a> *ect</code></em>);</pre>
 </div>
+<hr>
+<div class="refsect2">
+<a name="e-cell-tree-get-grouped-view"></a><h3>e_cell_tree_get_grouped_view ()</h3>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+e_cell_tree_get_grouped_view (<em class="parameter"><code><a class="link" href="ECellTree.html" title="ECellTree"><span class="type">ECellTree</span></a> *cell_tree</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-cell-tree-set-grouped-view"></a><h3>e_cell_tree_set_grouped_view ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+e_cell_tree_set_grouped_view (<em class="parameter"><code><a class="link" href="ECellTree.html" title="ECellTree"><span class="type">ECellTree</span></a> *cell_tree</code></em>,
+                              <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="type">gboolean</span></a> grouped_view</code></em>);</pre>
+</div>
 </div>
 <div class="refsect1">
 <a name="ECellTree.other_details"></a><h2>Types and Values</h2>
-<div class="refsect2">
-<a name="ECellTree-struct"></a><h3>struct ECellTree</h3>
-<pre class="programlisting">struct ECellTree;</pre>
-</div>
 </div>
 </div>
 <div class="footer">
-<hr>
-          Generated by GTK-Doc V1.21</div>
+<hr>Generated by GTK-Doc V1.25</div>
 </body>
 </html>

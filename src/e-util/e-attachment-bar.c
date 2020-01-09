@@ -50,6 +50,8 @@ struct _EAttachmentBarPrivate {
 	GtkWidget *status_label;
 	GtkWidget *save_all_button;
 	GtkWidget *save_one_button;
+	GtkWidget *icon_scrolled_window; /* not referenced */
+	GtkWidget *tree_scrolled_window; /* not referenced */
 
 	gint active_view;
 	guint expanded : 1;
@@ -71,7 +73,7 @@ static void	e_attachment_bar_interface_init
 G_DEFINE_TYPE_WITH_CODE (
 	EAttachmentBar,
 	e_attachment_bar,
-	GTK_TYPE_VBOX,
+	GTK_TYPE_BOX,
 	G_IMPLEMENT_INTERFACE (
 		E_TYPE_ATTACHMENT_VIEW,
 		e_attachment_bar_interface_init))
@@ -116,6 +118,43 @@ attachment_bar_update_status (EAttachmentBar *bar)
 	gtk_action_set_visible (action, (num_attachments == 1));
 
 	g_free (display_size);
+}
+
+static void
+attachment_bar_notify_vadjustment_upper_cb (GObject *object,
+					    GParamSpec *param,
+					    gpointer user_data)
+{
+	EAttachmentBar *bar = user_data;
+	GtkAdjustment *adjustment;
+	gint max_upper, max_content_height = -2;
+	gint request_height = -1;
+
+	g_return_if_fail (E_IS_ATTACHMENT_BAR (bar));
+
+	adjustment = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (bar->priv->icon_scrolled_window));
+	max_upper = gtk_adjustment_get_upper (adjustment);
+
+	adjustment = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (bar->priv->tree_scrolled_window));
+	max_upper = MAX (max_upper, gtk_adjustment_get_upper (adjustment));
+
+	gtk_widget_style_get (GTK_WIDGET (bar), "max-content-height", &max_content_height, NULL);
+
+	if ((max_content_height >= 0 && max_content_height < 50) || max_content_height <= -2)
+		max_content_height = 50;
+
+	if (max_content_height == -1) {
+		request_height = max_upper;
+	} else if (max_content_height < max_upper) {
+		request_height = max_content_height;
+	} else {
+		request_height = max_upper;
+	}
+
+	gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (bar->priv->icon_scrolled_window),
+		request_height);
+	gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (bar->priv->tree_scrolled_window),
+		request_height);
 }
 
 static void
@@ -312,56 +351,56 @@ attachment_bar_constructed (GObject *object)
 
 	/* Set up property-to-property bindings. */
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "active-view",
 		priv->combo_box, "active",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "dragging",
 		priv->icon_view, "dragging",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "dragging",
 		priv->tree_view, "dragging",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "editable",
 		priv->icon_view, "editable",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "editable",
 		priv->tree_view, "editable",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "expanded",
 		priv->expander, "expanded",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "expanded",
 		priv->combo_box, "visible",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "expanded",
 		priv->vbox, "visible",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
 	/* Set up property-to-GSettings bindings. */
-	settings = g_settings_new ("org.gnome.evolution.shell");
+	settings = e_util_ref_settings ("org.gnome.evolution.shell");
 	g_settings_bind (
 		settings, "attachment-view",
 		object, "active-view",
@@ -482,10 +521,44 @@ attachment_bar_update_actions (EAttachmentView *view)
 	e_attachment_view_update_actions (view);
 }
 
+static gboolean
+attachment_bar_button_press_event (GtkWidget *widget,
+				   GdkEventButton *event)
+{
+	/* Chain up to parent's button_press_event() method. */
+	GTK_WIDGET_CLASS (e_attachment_bar_parent_class)->button_press_event (widget, event);
+
+	/* Never propagate the event to the parent */
+	return TRUE;
+}
+
+static gboolean
+attachment_bar_button_release_event (GtkWidget *widget,
+				     GdkEventButton *event)
+{
+	/* Chain up to parent's button_release_event() method. */
+	GTK_WIDGET_CLASS (e_attachment_bar_parent_class)->button_release_event (widget, event);
+
+	/* Never propagate the event to the parent */
+	return TRUE;
+}
+
+static gboolean
+attachment_bar_motion_notify_event (GtkWidget *widget,
+				    GdkEventMotion *event)
+{
+	/* Chain up to parent's motion_notify_event() method. */
+	GTK_WIDGET_CLASS (e_attachment_bar_parent_class)->motion_notify_event (widget, event);
+
+	/* Never propagate the event to the parent */
+	return TRUE;
+}
+
 static void
 e_attachment_bar_class_init (EAttachmentBarClass *class)
 {
 	GObjectClass *object_class;
+	GtkWidgetClass *widget_class;
 
 	g_type_class_add_private (class, sizeof (EAttachmentBarPrivate));
 
@@ -494,6 +567,15 @@ e_attachment_bar_class_init (EAttachmentBarClass *class)
 	object_class->get_property = attachment_bar_get_property;
 	object_class->dispose = attachment_bar_dispose;
 	object_class->constructed = attachment_bar_constructed;
+
+	widget_class = GTK_WIDGET_CLASS (class);
+	widget_class->button_press_event = attachment_bar_button_press_event;
+	widget_class->button_release_event = attachment_bar_button_release_event;
+	widget_class->motion_notify_event = attachment_bar_motion_notify_event;
+
+	#if GTK_CHECK_VERSION (3, 20, 0)
+	gtk_widget_class_set_css_name (widget_class, G_OBJECT_CLASS_NAME (class));
+	#endif
 
 	g_object_class_install_property (
 		object_class,
@@ -535,6 +617,15 @@ e_attachment_bar_class_init (EAttachmentBarClass *class)
 
 	g_object_class_override_property (
 		object_class, PROP_EDITABLE, "editable");
+
+	gtk_widget_class_install_style_property (
+		widget_class,
+		g_param_spec_int (
+			"max-content-height",
+			"Max Content Height",
+			NULL,
+			-1, G_MAXINT, 150,
+			G_PARAM_READABLE | G_PARAM_STATIC_STRINGS));
 }
 
 static void
@@ -560,10 +651,12 @@ e_attachment_bar_init (EAttachmentBar *bar)
 	GtkWidget *container;
 	GtkWidget *widget;
 	GtkAction *action;
+	GtkAdjustment *adjustment;
 
 	bar->priv = E_ATTACHMENT_BAR_GET_PRIVATE (bar);
 
 	gtk_box_set_spacing (GTK_BOX (bar), 6);
+	gtk_orientable_set_orientation (GTK_ORIENTABLE (bar), GTK_ORIENTATION_VERTICAL);
 
 	/* Keep the expander label and save button the same height. */
 	size_group = gtk_size_group_new (GTK_SIZE_GROUP_VERTICAL);
@@ -587,10 +680,16 @@ e_attachment_bar_init (EAttachmentBar *bar)
 
 	container = widget;
 
+	widget = gtk_scrolled_window_new (NULL, NULL);
+	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (widget), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+	gtk_container_add (GTK_CONTAINER (container), widget);
+	bar->priv->icon_scrolled_window = widget;
+	gtk_widget_show (widget);
+
 	widget = e_attachment_icon_view_new ();
 	gtk_widget_set_can_focus (widget, TRUE);
 	gtk_icon_view_set_model (GTK_ICON_VIEW (widget), bar->priv->model);
-	gtk_container_add (GTK_CONTAINER (container), widget);
+	gtk_container_add (GTK_CONTAINER (bar->priv->icon_scrolled_window), widget);
 	bar->priv->icon_view = g_object_ref (widget);
 	gtk_widget_show (widget);
 
@@ -604,10 +703,16 @@ e_attachment_bar_init (EAttachmentBar *bar)
 
 	container = widget;
 
+	widget = gtk_scrolled_window_new (NULL, NULL);
+	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (widget), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+	gtk_container_add (GTK_CONTAINER (container), widget);
+	bar->priv->tree_scrolled_window = widget;
+	gtk_widget_show (widget);
+
 	widget = e_attachment_tree_view_new ();
 	gtk_widget_set_can_focus (widget, TRUE);
 	gtk_tree_view_set_model (GTK_TREE_VIEW (widget), bar->priv->model);
-	gtk_container_add (GTK_CONTAINER (container), widget);
+	gtk_container_add (GTK_CONTAINER (bar->priv->tree_scrolled_window), widget);
 	bar->priv->tree_view = g_object_ref (widget);
 	gtk_widget_show (widget);
 
@@ -623,6 +728,7 @@ e_attachment_bar_init (EAttachmentBar *bar)
 
 	widget = gtk_expander_new (NULL);
 	gtk_expander_set_spacing (GTK_EXPANDER (widget), 0);
+	gtk_widget_set_valign (widget, GTK_ALIGN_CENTER);
 	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
 	bar->priv->expander = g_object_ref (widget);
 	gtk_widget_show (widget);
@@ -686,6 +792,14 @@ e_attachment_bar_init (EAttachmentBar *bar)
 	gtk_widget_show (widget);
 
 	g_object_unref (size_group);
+
+	adjustment = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (bar->priv->icon_scrolled_window));
+	e_signal_connect_notify (adjustment, "notify::upper",
+		G_CALLBACK (attachment_bar_notify_vadjustment_upper_cb), bar);
+
+	adjustment = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (bar->priv->tree_scrolled_window));
+	e_signal_connect_notify (adjustment, "notify::upper",
+		G_CALLBACK (attachment_bar_notify_vadjustment_upper_cb), bar);
 }
 
 GtkWidget *

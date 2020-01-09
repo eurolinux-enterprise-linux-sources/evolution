@@ -21,22 +21,40 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
 
 <title>Συνδρομές IMAP</title>
 
-<p>Καθώς ανοίγετε πολλούς φακέλους IMAP στον εξυπηρετητή παίρνει χρόνο μέχρι να ορίσετε ποιοι φάκελοι του IMAP θα ελεγχθούν και θα εμφανισθούν στο Evolution και ποιοι θα αγνοηθούν προς το παρόν, μέσα από τον <gui>διαχειριστή συνδρομών IMAP</gui>.</p>
+<p>As opening many IMAP folders on the server takes time you can define which IMAP folders to check and display in <app>Evolution</app>, and which ones to ignore for the time being, via the <gui>IMAP Subscriptions Manager</gui>.</p>
 <steps>
 <item><p>Επιλέξτε <guiseq><gui>Φάκελος</gui><gui>Συνδρομές</gui></guiseq>, ή δεξιοπατώντας στον κόμβο κορυφαίου επιπέδου ενός λογαριασμού αλληλογραφίας στον κατάλογο φακέλων και πατήστε στη <gui>διαχείριση συνδρομών</gui>.</p></item> 
 <item><p>Αν έχετε λογαριασμούς σε πολλαπλούς εξυπηρετητές, επιλέξτε τον εξυπηρετητή στον οποίο θέλετε να διαχειριστείτε τις συνδρομές σας.</p></item>
-<item><p>Το Evolution εμφανίζει έναν κατάλογο από διαθέσιμα αρχεία και φακέλους στον εξυπηρετητή IMAP.</p></item>
+<item><p><app>Evolution</app> displays a list of files and folders available on the IMAP server.</p></item>
 <item><p>Επιλέξτε ένα αρχείο ή φάκελο πατώντας πάνω του.</p>
-<p>Θα πρέπει να επιλέξετε τουλάχιστον το φάκελο Εισερχόμενα. Ανάλογα με τον τρόπο με τον οποίο ο διακομιστής IMAP είναι ρυθμισμένος, ο κατάλογος διαθέσιμων αρχείων μπορεί να περιλαμβάνει και φακέλους χωρίς αλληλογραφία. Αν είναι έτσι, μπορείτε να τους αγνοήσετε.</p></item>
+<p>You should select at least the <gui>Inbox</gui> folder. Depending upon the way your IMAP server is configured, the list of available files might include non-mail folders. If it does, you can ignore them.</p></item>
 <item><p>Κλικ στο πλαίσιο ελέγχου ενός φακέλου για να προσθέσετε έναν φάκελο στις συνδρομές σας.</p></item>
 </steps>
 

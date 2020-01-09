@@ -41,17 +41,10 @@
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0601
 #endif
-#include <windows.h>
-#include <conio.h>
-#include <io.h>
-#ifndef PROCESS_DEP_ENABLE
-#define PROCESS_DEP_ENABLE 0x00000001
-#endif
-#ifndef PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION
-#define PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION 0x00000002
-#endif
 
+#include <windows.h>
 #include "e-util/e-util-private.h"
+#include <libedataserver/libedataserver.h>
 
 #endif
 
@@ -59,7 +52,7 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
-#include <webkit/webkit.h>
+#include <webkit2/webkit2.h>
 
 #include "e-shell.h"
 #include "e-shell-migrate.h"
@@ -75,9 +68,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#ifdef HAVE_ICAL_UNKNOWN_TOKEN_HANDLING
-#include <libical/ical.h>
-#endif
+#include "e-util/e-util.h"
 
 #define APPLICATION_ID "org.gnome.Evolution"
 
@@ -118,31 +109,48 @@ void e_migrate_base_dirs (EShell *shell);
 static void
 categories_icon_theme_hack (void)
 {
+	GList *categories, *link;
 	GtkIconTheme *icon_theme;
+	GHashTable *dirnames;
 	const gchar *category_name;
-	const gchar *filename;
+	gchar *filename;
 	gchar *dirname;
 
 	/* XXX Allow the category icons to be referenced as named
 	 *     icons, since GtkAction does not support GdkPixbufs. */
 
+	icon_theme = gtk_icon_theme_get_default ();
+	dirnames = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
 	/* Get the icon file for some default category.  Doesn't matter
 	 * which, so long as it has an icon.  We're just interested in
 	 * the directory components. */
-	category_name = _("Birthday");
-	filename = e_categories_get_icon_file_for (category_name);
-	g_return_if_fail (filename != NULL && *filename != '\0');
+	categories = e_categories_dup_list ();
 
-	/* Extract the directory components. */
-	dirname = g_path_get_dirname (filename);
+	for (link = categories; link; link = g_list_next (link)) {
+		category_name = link->data;
 
-	/* Add it to the icon theme's search path.  This relies on
-	 * GtkIconTheme's legacy feature of using image files found
-	 * directly in the search path. */
-	icon_theme = gtk_icon_theme_get_default ();
-	gtk_icon_theme_append_search_path (icon_theme, dirname);
+		filename = e_categories_dup_icon_file_for (category_name);
+		if (filename && *filename) {
+			/* Extract the directory components. */
+			dirname = g_path_get_dirname (filename);
 
-	g_free (dirname);
+			if (dirname && !g_hash_table_contains (dirnames, dirname)) {
+				/* Add it to the icon theme's search path.  This relies on
+				 * GtkIconTheme's legacy feature of using image files found
+				 * directly in the search path. */
+				gtk_icon_theme_append_search_path (icon_theme, dirname);
+				g_hash_table_insert (dirnames, dirname, NULL);
+			} else {
+				g_free (dirname);
+			}
+		}
+
+		g_free (filename);
+	}
+
+	g_list_free_full (categories, g_free);
+	g_hash_table_destroy (dirnames);
 }
 
 #ifdef DEVELOPMENT
@@ -355,7 +363,7 @@ create_default_shell (void)
 	gboolean online = TRUE;
 	GError *error = NULL;
 
-	settings = g_settings_new ("org.gnome.evolution.shell");
+	settings = e_util_ref_settings ("org.gnome.evolution.shell");
 
 	/* Requesting online or offline mode from the command-line
 	 * should be persistent, just like selecting it in the UI. */
@@ -427,53 +435,11 @@ main (gint argc,
 #ifdef DEVELOPMENT
 	gboolean skip_warning_dialog;
 #endif
+	gboolean success;
 	GError *error = NULL;
 
 #ifdef G_OS_WIN32
-	gchar *path;
-
-	/* Reduce risks */
-	{
-		typedef BOOL (WINAPI *t_SetDllDirectoryA) (LPCSTR lpPathName);
-		t_SetDllDirectoryA p_SetDllDirectoryA;
-
-		p_SetDllDirectoryA = GetProcAddress (
-			GetModuleHandle ("kernel32.dll"),
-			"SetDllDirectoryA");
-		if (p_SetDllDirectoryA)
-			(*p_SetDllDirectoryA) ("");
-	}
-#ifndef _WIN64
-	{
-		typedef BOOL (WINAPI *t_SetProcessDEPPolicy) (DWORD dwFlags);
-		t_SetProcessDEPPolicy p_SetProcessDEPPolicy;
-
-		p_SetProcessDEPPolicy = GetProcAddress (
-			GetModuleHandle ("kernel32.dll"),
-			"SetProcessDEPPolicy");
-		if (p_SetProcessDEPPolicy)
-			(*p_SetProcessDEPPolicy) (
-				PROCESS_DEP_ENABLE |
-				PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION);
-	}
-#endif
-
-	if (fileno (stdout) != -1 && _get_osfhandle (fileno (stdout)) != -1) {
-		/* stdout is fine, presumably redirected to a file or pipe */
-	} else {
-		typedef BOOL (* WINAPI AttachConsole_t) (DWORD);
-
-		AttachConsole_t p_AttachConsole =
-			(AttachConsole_t) GetProcAddress (
-			GetModuleHandle ("kernel32.dll"), "AttachConsole");
-
-		if (p_AttachConsole && p_AttachConsole (ATTACH_PARENT_PROCESS)) {
-			freopen ("CONOUT$", "w", stdout);
-			dup2 (fileno (stdout), 1);
-			freopen ("CONOUT$", "w", stderr);
-			dup2 (fileno (stderr), 2);
-		}
-	}
+	e_util_win32_initialize ();
 #endif
 
 	/* Make ElectricFence work.  */
@@ -483,33 +449,32 @@ main (gint argc,
 	bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
 	textdomain (GETTEXT_PACKAGE);
 
-	/* do not require Gtk+ for --force-shutdown */
+	/* Do not require Gtk+ for --force-shutdown */
 	if (argc == 2 && argv[1] && g_str_equal (argv[1], "--force-shutdown")) {
 		shell_force_shutdown ();
 
 		return 0;
 	}
 
+	/* Initialize timezone specific global variables */
+	tzset ();
+
 	/* The contact maps feature uses clutter-gtk. */
 #ifdef WITH_CONTACT_MAPS
-	/* XXX This function is declared in gtk-clutter-util.h with an
-	 *     unnecessary G_GNUC_WARN_UNUSED_RESULT attribute.  But we
-	 *     don't need the returned error code because we're checking
-	 *     the GError directly.  Just ignore this warning. */
-	gtk_clutter_init_with_args (
+	success = gtk_clutter_init_with_args (
 		&argc, &argv,
 		_("- The Evolution PIM and Email Client"),
-		entries, (gchar *) GETTEXT_PACKAGE, &error);
+		entries, (gchar *) GETTEXT_PACKAGE, &error) == CLUTTER_INIT_SUCCESS;
 #else
-	gtk_init_with_args (
+	success = gtk_init_with_args (
 		&argc, &argv,
 		_("- The Evolution PIM and Email Client"),
 		entries, (gchar *) GETTEXT_PACKAGE, &error);
 #endif /* WITH_CONTACT_MAPS */
 
-	if (error != NULL) {
-		g_printerr ("%s\n", error->message);
-		g_error_free (error);
+	if (!success || error) {
+		g_printerr ("Failed to initialize gtk+: %s\n", error ? error->message : "Unknown error");
+		g_clear_error (&error);
 		exit (1);
 	}
 
@@ -517,16 +482,11 @@ main (gint argc,
 	ical_set_unknown_token_handling_setting (ICAL_DISCARD_TOKEN);
 #endif
 
-	e_gdbus_templates_init_main_thread ();
+#ifdef HAVE_ICALTZUTIL_SET_EXACT_VTIMEZONES_SUPPORT
+	icaltzutil_set_exact_vtimezones_support (0);
+#endif
 
 #ifdef G_OS_WIN32
-	path = g_build_path (";", _e_get_bindir (), g_getenv ("PATH"), NULL);
-
-	if (!g_setenv ("PATH", path, TRUE))
-		g_warning ("Could not set PATH for Evolution and its child processes");
-
-	g_free (path);
-
 	if (register_handlers || reinstall || show_icons) {
 		_e_win32_register_mailer ();
 		_e_win32_register_addressbook ();
@@ -586,15 +546,15 @@ main (gint argc,
 		shell_force_shutdown ();
 
 	if (disable_preview) {
-		settings = g_settings_new ("org.gnome.evolution.mail");
+		settings = e_util_ref_settings ("org.gnome.evolution.mail");
 		g_settings_set_boolean (settings, "safe-list", TRUE);
 		g_object_unref (settings);
 
-		settings = g_settings_new ("org.gnome.evolution.addressbook");
+		settings = e_util_ref_settings ("org.gnome.evolution.addressbook");
 		g_settings_set_boolean (settings, "show-preview", FALSE);
 		g_object_unref (settings);
 
-		settings = g_settings_new ("org.gnome.evolution.calendar");
+		settings = e_util_ref_settings ("org.gnome.evolution.calendar");
 		g_settings_set_boolean (settings, "show-memo-preview", FALSE);
 		g_settings_set_boolean (settings, "show-task-preview", FALSE);
 		g_object_unref (settings);
@@ -606,6 +566,7 @@ main (gint argc,
 		handle_term_signal, NULL, NULL);
 #endif
 
+	e_util_init_main_thread (NULL);
 	e_passwords_init ();
 
 	gtk_window_set_default_icon_name ("evolution");
@@ -617,7 +578,7 @@ main (gint argc,
 	gtk_accel_map_load (e_get_accels_filename ());
 
 #ifdef DEVELOPMENT
-	settings = g_settings_new ("org.gnome.evolution.shell");
+	settings = e_util_ref_settings ("org.gnome.evolution.shell");
 	skip_warning_dialog = g_settings_get_boolean (
 		settings, "skip-warning-dialog");
 
@@ -629,9 +590,16 @@ main (gint argc,
 	g_object_unref (settings);
 #endif
 
-	/* Workaround https://bugzilla.gnome.org/show_bug.cgi?id=683548 */
-	if (!quit)
+	if (!quit) {
+		/* Until there will be a proper WebKitGTK+ API for disabling the
+		 * accelerated compositing mode, we need to use the environment
+		 * variable. See https://bugzilla.gnome.org/show_bug.cgi?id=774067 */
+		g_setenv("WEBKIT_DISABLE_COMPOSITING_MODE", "1", TRUE);
+
+		/* FIXME WK2 - Look if we still need this it looks like it's not. */
+		/* Workaround https://bugzilla.gnome.org/show_bug.cgi?id=683548 */
 		g_type_ensure (WEBKIT_TYPE_WEB_VIEW);
+	}
 
 	shell = create_default_shell ();
 	if (!shell)
@@ -639,6 +607,18 @@ main (gint argc,
 
 	if (quit) {
 		e_shell_quit (shell, E_SHELL_QUIT_OPTION);
+		goto exit;
+	}
+
+	if (g_application_get_is_remote (G_APPLICATION (shell))) {
+		if (remaining_args && *remaining_args)
+			e_shell_handle_uris (shell, (const gchar * const *) remaining_args, import_uris);
+
+		/* This will be redirected to the previously run instance,
+		   because this instance is remote. */
+		if (requested_view && *requested_view)
+			e_shell_create_shell_window (shell, requested_view);
+
 		goto exit;
 	}
 
@@ -685,6 +665,11 @@ main (gint argc,
 	gtk_main ();
 
 exit:
+	if (e_shell_requires_shutdown (shell)) {
+		/* Workaround https://bugzilla.gnome.org/show_bug.cgi?id=737949 */
+		g_signal_emit_by_name (shell, "shutdown");
+	}
+
 	/* Drop what should be the last reference to the shell.
 	 * That will cause e_shell_get_default() to henceforth
 	 * return NULL.  Use that to check for reference leaks. */
@@ -699,6 +684,9 @@ exit:
 	}
 
 	gtk_accel_map_save (e_get_accels_filename ());
+
+	e_util_cleanup_settings ();
+	e_spell_checker_free_global_memory ();
 
 	return 0;
 }

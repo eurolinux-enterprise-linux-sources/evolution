@@ -102,7 +102,6 @@ day_view_main_item_draw_long_events_in_vbars (EDayViewMainItem *main_item,
 	ECalendarView *cal_view;
 	gint time_divisions;
 	gint event_num, start_day, end_day, day, bar_y1, bar_y2, grid_x;
-	GdkColor bg_color;
 
 	day_view = e_day_view_main_item_get_day_view (main_item);
 
@@ -154,10 +153,12 @@ day_view_main_item_draw_long_events_in_vbars (EDayViewMainItem *main_item,
 				gdk_cairo_set_source_color (cr, &day_view->colors[E_DAY_VIEW_COLOR_EVENT_BACKGROUND]);
 
 				if (first) {
+					GdkRGBA rgba;
+
 					first = FALSE;
 
-					if (gdk_color_parse (e_cal_model_get_color_for_component (e_calendar_view_get_model (E_CALENDAR_VIEW (day_view)), event->comp_data), &bg_color)) {
-						gdk_cairo_set_source_color (cr, &bg_color);
+					if (e_cal_model_get_rgba_for_component (e_calendar_view_get_model (E_CALENDAR_VIEW (day_view)), event->comp_data, &rgba)) {
+						gdk_cairo_set_source_rgba (cr, &rgba);
 					}
 				}
 
@@ -186,7 +187,7 @@ day_view_main_item_draw_day_event (EDayViewMainItem *main_item,
 	ECalendarView *cal_view;
 	gint time_divisions;
 	gint item_x, item_y, item_w, item_h, bar_y1, bar_y2;
-	GdkColor bg_color;
+	GdkRGBA bg_rgba;
 	ECalComponent *comp;
 	gint num_icons, icon_x = 0, icon_y, icon_x_inc = 0, icon_y_inc = 0;
 	gint max_icon_w, max_icon_h;
@@ -194,10 +195,8 @@ day_view_main_item_draw_day_event (EDayViewMainItem *main_item,
 	gboolean draw_attach_icon;
 	ECalComponentTransparency transparency;
 	cairo_pattern_t *pat;
-	guint16 red, green, blue;
 	gint i;
 	gdouble radius, x0, y0, rect_height, rect_width, text_x_offset = 0.0;
-	gdouble cc = 65535.0;
 	gdouble date_fraction;
 	gboolean short_event = FALSE, resize_flag = FALSE, is_editing;
 	const gchar *end_resize_suffix;
@@ -211,6 +210,7 @@ day_view_main_item_draw_day_event (EDayViewMainItem *main_item,
 	gchar *text = NULL;
 	gint scroll_flag = 0;
 	gint row_y;
+	PangoLayout *layout;
 
 	day_view = e_day_view_main_item_get_day_view (main_item);
 
@@ -254,15 +254,16 @@ day_view_main_item_draw_day_event (EDayViewMainItem *main_item,
 	 * where the event in the first column finishes. The border is drawn
 	 * along with the event using cairo */
 
-	red = day_view->colors[E_DAY_VIEW_COLOR_EVENT_BACKGROUND].red;
-	green = day_view->colors[E_DAY_VIEW_COLOR_EVENT_BACKGROUND].green;
-	blue = day_view->colors[E_DAY_VIEW_COLOR_EVENT_BACKGROUND].blue;
+	bg_rgba.red = day_view->colors[E_DAY_VIEW_COLOR_EVENT_BACKGROUND].red;
+	bg_rgba.green = day_view->colors[E_DAY_VIEW_COLOR_EVENT_BACKGROUND].green;
+	bg_rgba.blue = day_view->colors[E_DAY_VIEW_COLOR_EVENT_BACKGROUND].blue;
+	bg_rgba.alpha = 1.0;
 
-	if (gdk_color_parse (e_cal_model_get_color_for_component (e_calendar_view_get_model (E_CALENDAR_VIEW (day_view)), event->comp_data),
-			     &bg_color)) {
-		red = bg_color.red;
-		green = bg_color.green;
-		blue = bg_color.blue;
+	if (!e_cal_model_get_rgba_for_component (e_calendar_view_get_model (E_CALENDAR_VIEW (day_view)), event->comp_data, &bg_rgba)) {
+		bg_rgba.red = day_view->colors[E_DAY_VIEW_COLOR_EVENT_BACKGROUND].red;
+		bg_rgba.green = day_view->colors[E_DAY_VIEW_COLOR_EVENT_BACKGROUND].green;
+		bg_rgba.blue = day_view->colors[E_DAY_VIEW_COLOR_EVENT_BACKGROUND].blue;
+		bg_rgba.alpha = 1.0;
 	}
 
 	is_editing = day_view->editing_event_day == day && day_view->editing_event_num == event_num;
@@ -446,7 +447,7 @@ day_view_main_item_draw_day_event (EDayViewMainItem *main_item,
 
 	draw_curved_rectangle (cr, x0, y0, rect_width,rect_height, radius);
 	cairo_set_line_width (cr, 2.);
-	cairo_set_source_rgb (cr, red / cc, green / cc, blue / cc);
+	gdk_cairo_set_source_rgba (cr, &bg_rgba);
 	cairo_stroke (cr);
 	cairo_restore (cr);
 
@@ -483,19 +484,19 @@ day_view_main_item_draw_day_event (EDayViewMainItem *main_item,
 		item_x + E_DAY_VIEW_BAR_WIDTH + 1.75, item_y + 7.75,
 		item_x + E_DAY_VIEW_BAR_WIDTH + 1.75, item_y + item_h - 7.75);
 	if (!short_event) {
-		cairo_pattern_add_color_stop_rgba (pat, 1, red / cc, green / cc, blue / cc, 0.8);
-		cairo_pattern_add_color_stop_rgba (pat, 1 / (date_fraction + (rect_height / 18)), red / cc, green / cc, blue / cc, 0.8);
-		cairo_pattern_add_color_stop_rgba (pat, 1 / (date_fraction + (rect_height / 18)), red / cc, green / cc, blue / cc, 0.4);
-		cairo_pattern_add_color_stop_rgba (pat, 1, red / cc, green / cc, blue / cc, 0.8);
+		cairo_pattern_add_color_stop_rgba (pat, 1, bg_rgba.red, bg_rgba.green, bg_rgba.blue, 0.8 * bg_rgba.alpha);
+		cairo_pattern_add_color_stop_rgba (pat, 1 / (date_fraction + (rect_height / 18)), bg_rgba.red, bg_rgba.green, bg_rgba.blue, 0.8 * bg_rgba.alpha);
+		cairo_pattern_add_color_stop_rgba (pat, 1 / (date_fraction + (rect_height / 18)), bg_rgba.red, bg_rgba.green, bg_rgba.blue, 0.4 * bg_rgba.alpha);
+		cairo_pattern_add_color_stop_rgba (pat, 1, bg_rgba.red, bg_rgba.green, bg_rgba.blue, 0.8 * bg_rgba.alpha);
 	} else {
-		cairo_pattern_add_color_stop_rgba (pat, 1, red / cc, green / cc, blue / cc, 0.8);
-		cairo_pattern_add_color_stop_rgba (pat, 0, red / cc, green / cc, blue / cc, 0.4);
+		cairo_pattern_add_color_stop_rgba (pat, 1, bg_rgba.red, bg_rgba.green, bg_rgba.blue, 0.8 * bg_rgba.alpha);
+		cairo_pattern_add_color_stop_rgba (pat, 0, bg_rgba.red, bg_rgba.green, bg_rgba.blue, 0.4 * bg_rgba.alpha);
 	}
 	cairo_set_source (cr, pat);
 	cairo_fill_preserve (cr);
 	cairo_pattern_destroy (pat);
 
-	cairo_set_source_rgba (cr, red / cc, green / cc, blue / cc, 0.2);
+	cairo_set_source_rgba (cr, bg_rgba.red, bg_rgba.green, bg_rgba.blue, 0.2 * bg_rgba.alpha);
 	cairo_set_line_width (cr, 0.5);
 	cairo_stroke (cr);
 	cairo_restore (cr);
@@ -554,24 +555,29 @@ day_view_main_item_draw_day_event (EDayViewMainItem *main_item,
 			cairo_new_path (cr);
 
 			if (e_cal_model_get_use_24_hour_format (model)) {
-				cairo_translate (cr, item_x + item_w - E_DAY_VIEW_BAR_WIDTH - 32, item_y + item_h - 8);
+				cairo_translate (cr, item_x + item_w - E_DAY_VIEW_BAR_WIDTH - 35, item_y + item_h - 8 - 14);
 				end_regsizeime = g_strdup_printf (
 					"%2i:%02i",
 					end_display_hour, end_minute);
 
 			} else {
-				cairo_translate (cr, item_x + item_w - E_DAY_VIEW_BAR_WIDTH - 48, item_y + item_h - 8);
+				cairo_translate (cr, item_x + item_w - E_DAY_VIEW_BAR_WIDTH - 51, item_y + item_h - 8 - 14);
 				end_regsizeime = g_strdup_printf (
 					"%2i:%02i%s",
 					end_display_hour, end_minute,
 					end_resize_suffix);
 			}
-			cairo_set_font_size (cr, 14);
-			if ((red / cc > 0.7) || (green / cc > 0.7) || (blue / cc > 0.7))
+
+			layout = gtk_widget_create_pango_layout (GTK_WIDGET (GNOME_CANVAS_ITEM (main_item)->canvas), end_regsizeime);
+			cairo_set_font_size (cr, 13);
+			if ((bg_rgba.red > 0.7) || (bg_rgba.green > 0.7) || (bg_rgba.blue > 0.7))
 				cairo_set_source_rgb (cr, 0, 0, 0);
 			else
 				cairo_set_source_rgb (cr, 1, 1, 1);
-			cairo_show_text (cr, end_regsizeime);
+			pango_cairo_update_layout (cr, layout);
+			pango_cairo_show_layout (cr, layout);
+			g_object_unref (layout);
+
 			cairo_close_path (cr);
 			cairo_restore (cr);
 		}
@@ -590,9 +596,9 @@ day_view_main_item_draw_day_event (EDayViewMainItem *main_item,
 		pat = cairo_pattern_create_linear (
 			item_x + E_DAY_VIEW_BAR_WIDTH, item_y + 1,
 			item_x + E_DAY_VIEW_BAR_WIDTH, item_y + item_h - 1);
-		cairo_pattern_add_color_stop_rgba (pat, 1, red / cc, green / cc, blue / cc, 0.7);
-		cairo_pattern_add_color_stop_rgba (pat, 0.5, red / cc, green / cc, blue / cc, 0.7);
-		cairo_pattern_add_color_stop_rgba (pat, 0, red / cc, green / cc, blue / cc, 0.2);
+		cairo_pattern_add_color_stop_rgba (pat, 1, bg_rgba.red, bg_rgba.green, bg_rgba.blue, 0.7 * bg_rgba.alpha);
+		cairo_pattern_add_color_stop_rgba (pat, 0.5, bg_rgba.red, bg_rgba.green, bg_rgba.blue, 0.7 * bg_rgba.alpha);
+		cairo_pattern_add_color_stop_rgba (pat, 0, bg_rgba.red, bg_rgba.green, bg_rgba.blue, 0.2 * bg_rgba.alpha);
 
 		cairo_rectangle (
 			cr, item_x + 1, bar_y1,
@@ -801,16 +807,21 @@ day_view_main_item_draw_day_event (EDayViewMainItem *main_item,
 		if (icon_x_inc == 0)
 			icon_x += 14;
 
-		if (resize_flag)
-			cairo_move_to (cr, item_x + E_DAY_VIEW_BAR_WIDTH + 10, item_y + 13);
-		else
-			cairo_move_to (cr, icon_x, item_y + 13);
-		if ((red / cc > 0.7) || (green / cc > 0.7) || (blue / cc > 0.7))
+		if ((bg_rgba.red > 0.7) || (bg_rgba.green > 0.7) || (bg_rgba.blue > 0.7))
 			cairo_set_source_rgb (cr, 0, 0, 0);
 		else
 			cairo_set_source_rgb (cr, 1, 1, 1);
-		cairo_set_font_size (cr, 14.0);
-		cairo_show_text (cr, text);
+
+		layout = gtk_widget_create_pango_layout (GTK_WIDGET (GNOME_CANVAS_ITEM (main_item)->canvas), text);
+		if (resize_flag)
+			cairo_translate (cr, item_x + E_DAY_VIEW_BAR_WIDTH + 10, item_y + 1);
+		else
+			cairo_translate (cr, icon_x, item_y + 1);
+		cairo_set_font_size (cr, 13.0);
+		pango_cairo_update_layout (cr, layout);
+		pango_cairo_show_layout (cr, layout);
+		g_object_unref (layout);
+
 		cairo_close_path (cr);
 		cairo_restore (cr);
 	}
@@ -857,7 +868,7 @@ day_view_main_item_draw_events_in_vbars (EDayViewMainItem *main_item,
 	ECalendarView *cal_view;
 	gint time_divisions;
 	gint grid_x, event_num, bar_y, bar_h;
-	GdkColor bg_color;
+	GdkRGBA bg_rgba;
 
 	day_view = e_day_view_main_item_get_day_view (main_item);
 
@@ -897,8 +908,8 @@ day_view_main_item_draw_events_in_vbars (EDayViewMainItem *main_item,
 
 		gdk_cairo_set_source_color (cr, &day_view->colors[E_DAY_VIEW_COLOR_EVENT_BACKGROUND]);
 
-		if (gdk_color_parse (e_cal_model_get_color_for_component (e_calendar_view_get_model (E_CALENDAR_VIEW (day_view)), event->comp_data), &bg_color)) {
-			gdk_cairo_set_source_color (cr, &bg_color);
+		if (e_cal_model_get_rgba_for_component (e_calendar_view_get_model (E_CALENDAR_VIEW (day_view)), event->comp_data, &bg_rgba)) {
+			gdk_cairo_set_source_rgba (cr, &bg_rgba);
 		}
 
 		cairo_rectangle (cr, grid_x, bar_y, E_DAY_VIEW_BAR_WIDTH - 2, bar_h);
@@ -991,13 +1002,8 @@ day_view_main_item_draw (GnomeCanvasItem *canvas_item,
 	ECalendarView *cal_view;
 	ECalModel *model;
 	gint time_divisions;
-	gint work_day_start_hour;
-	gint work_day_start_minute;
-	gint work_day_end_hour;
-	gint work_day_end_minute;
 	gint row, row_y, grid_x1, grid_x2;
 	gint day, grid_y1, grid_y2;
-	gint work_day_start_y, work_day_end_y;
 	gint day_x, day_w;
 	gint start_row, end_row, rect_x, rect_y, rect_width, rect_height;
 	gint days_shown;
@@ -1020,10 +1026,6 @@ day_view_main_item_draw (GnomeCanvasItem *canvas_item,
 	time_divisions = e_calendar_view_get_time_divisions (cal_view);
 
 	model = e_calendar_view_get_model (cal_view);
-	work_day_start_hour = e_cal_model_get_work_day_start_hour (model);
-	work_day_start_minute = e_cal_model_get_work_day_start_minute (model);
-	work_day_end_hour = e_cal_model_get_work_day_end_hour (model);
-	work_day_end_minute = e_cal_model_get_work_day_end_minute (model);
 
 	rect.x = 0;
 	rect.y = 0;
@@ -1035,10 +1037,6 @@ day_view_main_item_draw (GnomeCanvasItem *canvas_item,
 		draw_region = cairo_region_create ();
 
 	/* Paint the background colors. */
-	work_day_start_y = e_day_view_convert_time_to_position (
-		day_view, work_day_start_hour, work_day_start_minute) - y;
-	work_day_end_y = e_day_view_convert_time_to_position (
-		day_view, work_day_end_hour, work_day_end_minute) - y;
 
 	today_tt = icaltime_from_timet_with_zone (
 		time (NULL), FALSE,
@@ -1082,6 +1080,21 @@ day_view_main_item_draw (GnomeCanvasItem *canvas_item,
 		day_w = day_view->day_widths[day];
 
 		if (e_cal_model_get_work_day (model, weekday)) {
+			gint work_day_start_hour;
+			gint work_day_start_minute;
+			gint work_day_end_hour;
+			gint work_day_end_minute;
+			gint work_day_start_y, work_day_end_y;
+
+			e_cal_model_get_work_day_range_for (model, weekday,
+				&work_day_start_hour, &work_day_start_minute,
+				&work_day_end_hour, &work_day_end_minute);
+
+			work_day_start_y = e_day_view_convert_time_to_position (
+				day_view, work_day_start_hour, work_day_start_minute) - y;
+			work_day_end_y = e_day_view_convert_time_to_position (
+				day_view, work_day_end_hour, work_day_end_minute) - y;
+
 			if (can_draw_in_region (draw_region, day_x, 0 - y, day_w, work_day_start_y - (0 - y))) {
 				cairo_save (cr);
 				gdk_cairo_set_source_color (cr, &day_view->colors[E_DAY_VIEW_COLOR_BG_NOT_WORKING]);

@@ -36,6 +36,7 @@
 #include "e-canvas-background.h"
 #include "e-canvas-utils.h"
 #include "e-canvas.h"
+#include "e-cell-tree.h"
 #include "e-table-column-specification.h"
 #include "e-table-header-item.h"
 #include "e-table-header.h"
@@ -102,7 +103,8 @@ enum {
 	PROP_HADJUSTMENT,
 	PROP_VADJUSTMENT,
 	PROP_HSCROLL_POLICY,
-	PROP_VSCROLL_POLICY
+	PROP_VSCROLL_POLICY,
+	PROP_SORT_CHILDREN_ASCENDING
 };
 
 enum {
@@ -205,6 +207,9 @@ struct _ETreePrivate {
 	guint state_change_freeze;
 
 	gboolean is_dragging;
+
+	gboolean grouped_view;
+	gboolean sort_children_ascending;
 };
 
 static guint signals[LAST_SIGNAL];
@@ -258,8 +263,10 @@ static void hover_off (ETree *tree);
 static void hover_on (ETree *tree, gint x, gint y);
 static void context_destroyed (gpointer data, GObject *ctx);
 
+static void e_tree_scrollable_init (GtkScrollableInterface *iface);
+
 G_DEFINE_TYPE_WITH_CODE (ETree, e_tree, GTK_TYPE_TABLE,
-			 G_IMPLEMENT_INTERFACE (GTK_TYPE_SCROLLABLE, NULL))
+			 G_IMPLEMENT_INTERFACE (GTK_TYPE_SCROLLABLE, e_tree_scrollable_init))
 
 static void
 tree_item_is_editing_changed_cb (ETableItem *item,
@@ -659,6 +666,7 @@ e_tree_init (ETree *tree)
 	tree->priv->state_change_freeze = 0;
 
 	tree->priv->is_dragging = FALSE;
+	tree->priv->grouped_view = TRUE;
 }
 
 /* Grab_focus handler for the ETree */
@@ -744,6 +752,8 @@ e_tree_setup_header (ETree *tree)
 	gchar *pointer;
 
 	widget = e_canvas_new ();
+	gtk_style_context_add_class (
+		gtk_widget_get_style_context (widget), "table-header");
 	gtk_widget_set_can_focus (widget, FALSE);
 	tree->priv->header_canvas = GNOME_CANVAS (widget);
 	gtk_widget_show (widget);
@@ -799,6 +809,8 @@ scroll_to_cursor (ETree *tree)
 				E_TABLE_ITEM (tree->priv->item),
 				&row, &col, &x, &y, &w, &h);
 	}
+
+	e_table_item_cancel_scroll_to_cursor (E_TABLE_ITEM (tree->priv->item));
 
 	scrollable = GTK_SCROLLABLE (tree->priv->table_canvas);
 	adjustment = gtk_scrollable_get_vadjustment (scrollable);
@@ -1027,9 +1039,13 @@ item_key_press (ETableItem *eti,
 	case GDK_KEY_KP_Right:
 		/* Only allow if the Shift modifier is used.
 		 * eg. Ctrl-Equal shouldn't be handled.  */
-		if ((key->state & (GDK_SHIFT_MASK | GDK_LOCK_MASK |
-			GDK_MOD1_MASK)) != GDK_SHIFT_MASK)
-			break;
+		if ((key->state & (GDK_SHIFT_MASK | GDK_LOCK_MASK | GDK_MOD1_MASK)) != GDK_SHIFT_MASK) {
+			/* Allow also plain (without modifiers) expand when in the 'line' cursor mode */
+			if (eti->cursor_mode != E_CURSOR_LINE ||
+			    (key->state & (GDK_SHIFT_MASK | GDK_LOCK_MASK | GDK_MOD1_MASK)) != 0)
+				break;
+		}
+
 		if (row != -1) {
 			path = e_tree_table_adapter_node_at_row (
 				tree->priv->etta, row);
@@ -1045,9 +1061,13 @@ item_key_press (ETableItem *eti,
 	case GDK_KEY_KP_Left:
 		/* Only allow if the Shift modifier is used.
 		 * eg. Ctrl-Minus shouldn't be handled.  */
-		if ((key->state & (GDK_SHIFT_MASK | GDK_LOCK_MASK |
-			GDK_MOD1_MASK)) != GDK_SHIFT_MASK)
-			break;
+		if ((key->state & (GDK_SHIFT_MASK | GDK_LOCK_MASK | GDK_MOD1_MASK)) != GDK_SHIFT_MASK) {
+			/* Allow also plain (without modifiers) collapse when in the 'line' cursor mode */
+			if (eti->cursor_mode != E_CURSOR_LINE ||
+			    (key->state & (GDK_SHIFT_MASK | GDK_LOCK_MASK | GDK_MOD1_MASK)) != 0)
+				break;
+		}
+
 		if (row != -1) {
 			path = e_tree_table_adapter_node_at_row (
 				tree->priv->etta, row);
@@ -1197,6 +1217,17 @@ white_item_event (GnomeCanvasItem *white_item,
 		tree,
 		signals[WHITE_SPACE_EVENT], 0,
 		event, &return_val);
+
+	if (!return_val && event && tree->priv->item) {
+		guint event_button = 0;
+
+		gdk_event_get_button (event, &event_button);
+
+		if (event->type == GDK_BUTTON_PRESS && (event_button == 1 || event_button == 2)) {
+			gnome_canvas_item_grab_focus (GNOME_CANVAS_ITEM (tree->priv->item));
+			return_val = TRUE;
+		}
+	}
 
 	return return_val;
 }
@@ -1528,6 +1559,28 @@ et_table_rows_deleted (ETableModel *table_model,
 }
 
 static void
+e_tree_update_full_header_grouped_view (ETree *tree)
+{
+	gint ii, sz;
+
+	g_return_if_fail (E_IS_TREE (tree));
+
+	if (!tree->priv->full_header)
+		return;
+
+	sz = e_table_header_count (tree->priv->full_header);
+	for (ii = 0; ii < sz; ii++) {
+		ETableCol *col;
+
+		col = e_table_header_get_column (tree->priv->full_header, ii);
+		if (!col || !E_IS_CELL_TREE (col->ecell))
+			continue;
+
+		e_cell_tree_set_grouped_view (E_CELL_TREE (col->ecell), tree->priv->grouped_view);
+	}
+}
+
+static void
 et_connect_to_etta (ETree *tree)
 {
 	tree->priv->table_model_change_id = g_signal_connect (
@@ -1546,6 +1599,9 @@ et_connect_to_etta (ETree *tree)
 		tree->priv->etta, "model_rows_deleted",
 		G_CALLBACK (et_table_rows_deleted), tree);
 
+	g_object_bind_property (tree, "sort-children-ascending",
+		tree->priv->etta, "sort-children-ascending",
+		G_BINDING_DEFAULT);
 }
 
 static gboolean
@@ -1570,6 +1626,8 @@ et_real_construct (ETree *tree,
 	tree->priv->draw_focus = specification->draw_focus;
 	tree->priv->cursor_mode = specification->cursor_mode;
 	tree->priv->full_header = e_table_spec_to_full_header (specification, ete);
+
+	e_tree_update_full_header_grouped_view (tree);
 
 	connect_header (tree, state);
 
@@ -1841,6 +1899,10 @@ et_get_property (GObject *object,
 			g_value_set_enum (value, 0);
 		break;
 
+	case PROP_SORT_CHILDREN_ASCENDING:
+		g_value_set_boolean (value, e_tree_get_sort_children_ascending (tree));
+		break;
+
 	default:
 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
 		break;
@@ -1949,6 +2011,10 @@ et_set_property (GObject *object,
 			g_object_set_property (
 				G_OBJECT (tree->priv->table_canvas),
 				"vscroll-policy", value);
+		break;
+
+	case PROP_SORT_CHILDREN_ASCENDING:
+		e_tree_set_sort_children_ascending (tree, g_value_get_boolean (value));
 		break;
 	}
 }
@@ -3131,6 +3197,16 @@ e_tree_class_init (ETreeClass *class)
 			FALSE,
 			G_PARAM_READWRITE));
 
+	g_object_class_install_property (
+		object_class,
+		PROP_SORT_CHILDREN_ASCENDING,
+		g_param_spec_boolean (
+			"sort-children-ascending",
+			"Sort Children Ascending",
+			"Always sort children tree nodes ascending",
+			FALSE,
+			G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+
 	gtk_widget_class_install_style_property (
 		widget_class,
 		g_param_spec_int (
@@ -3172,6 +3248,39 @@ e_tree_class_init (ETreeClass *class)
 
 	gtk_widget_class_set_accessible_type (widget_class,
 		GAL_A11Y_TYPE_E_TREE);
+}
+
+#if GTK_CHECK_VERSION (3, 15, 9)
+static gboolean
+e_tree_scrollable_get_border (GtkScrollable *scrollable,
+			      GtkBorder *border)
+{
+	ETree *tree;
+	ETableHeaderItem *header_item;
+
+	g_return_val_if_fail (E_IS_TREE (scrollable), FALSE);
+	g_return_val_if_fail (border != NULL, FALSE);
+
+	tree = E_TREE (scrollable);
+	if (!tree->priv->header_item)
+		return FALSE;
+
+	g_return_val_if_fail (E_IS_TABLE_HEADER_ITEM (tree->priv->header_item), FALSE);
+
+	header_item = E_TABLE_HEADER_ITEM (tree->priv->header_item);
+
+	border->top = header_item->height;
+
+	return TRUE;
+}
+#endif
+
+static void
+e_tree_scrollable_init (GtkScrollableInterface *iface)
+{
+#if GTK_CHECK_VERSION (3, 15, 9)
+	iface->get_border = e_tree_scrollable_get_border;
+#endif
 }
 
 static void
@@ -3278,4 +3387,48 @@ e_tree_is_editing (ETree *tree)
 	g_return_val_if_fail (E_IS_TREE (tree), FALSE);
 
 	return tree->priv->item && e_table_item_is_editing (E_TABLE_ITEM (tree->priv->item));
+}
+
+void
+e_tree_set_grouped_view (ETree *tree,
+			 gboolean grouped_view)
+{
+	g_return_if_fail (E_IS_TREE (tree));
+
+	if ((tree->priv->grouped_view ? 1 : 0) == (grouped_view ? 1 : 0))
+		return;
+
+	tree->priv->grouped_view = grouped_view;
+
+	e_tree_update_full_header_grouped_view (tree);
+}
+
+gboolean
+e_tree_get_grouped_view (ETree *tree)
+{
+	g_return_val_if_fail (E_IS_TREE (tree), FALSE);
+
+	return tree->priv->grouped_view;
+}
+
+gboolean
+e_tree_get_sort_children_ascending (ETree *tree)
+{
+	g_return_val_if_fail (E_IS_TREE (tree), FALSE);
+
+	return tree->priv->sort_children_ascending;
+}
+
+void
+e_tree_set_sort_children_ascending (ETree *tree,
+				    gboolean sort_children_ascending)
+{
+	g_return_if_fail (E_IS_TREE (tree));
+
+	if ((tree->priv->sort_children_ascending ? 1 : 0) == (sort_children_ascending ? 1 : 0))
+		return;
+
+	tree->priv->sort_children_ascending = sort_children_ascending;
+
+	g_object_notify (G_OBJECT (tree), "sort-children-ascending");
 }

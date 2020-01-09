@@ -40,7 +40,7 @@
 <p>Para marcar un obxecto como pertencente a unha categoría.</p>
 <steps>
 <item><p>Prema dúas veces no obxecto para mostrar o editor correspondente.</p></item>
-<item><p>Prema <gui style="button">Categorías…</gui>. (Se este botón non está dispoñíbel, seleccione <guiseq><gui>Ver</gui><gui>Categorías</gui></guiseq>.)</p></item>
+<item><p>Click <gui style="button">Categories…</gui>. (If this button is not available, select <guiseq><gui>View</gui><gui>Categories</gui></guiseq>.)</p></item>
 <item><p>Seleccione a categoría desde a lista. Pode seleccionar cantas categorías queira.</p></item>
 </steps>
 
@@ -52,7 +52,7 @@
 <p>If the default list of categories does not suit your needs, you can add your own categories either directly via <guiseq><gui>Edit</gui><gui>Available Categories</gui></guiseq>, or indirectly when editing an object:</p>
 <steps>
 <item><p>Double-click any object to bring up the corresponding editor.</p></item>
-<item><p>Prema <gui style="button">Categorías…</gui>. (Se este botón non está dispoñíbel, seleccione <guiseq><gui>Ver</gui><gui>Categorías</gui></guiseq>.)</p></item>
+<item><p>Click <gui style="button">Categories…</gui>. (If this button is not available, select <guiseq><gui>View</gui><gui>Categories</gui></guiseq>.)</p></item>
 <item><p>Escriba a nova categoría na caixa de entrada de arriba.</p></item>
 <item><p>Prema <gui style="button">Aceptar</gui>.</p></item>
 <item><p>Agora poderá ver a categoría desde o campo de texto <gui>Categorías</gui> no editor.</p></item>

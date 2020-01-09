@@ -45,6 +45,7 @@
 #define STATE_SAVE_TIMEOUT_SECONDS 3
 
 struct _EShellViewPrivate {
+	GThread *main_thread; /* not referenced */
 
 	gpointer shell_window;  /* weak pointer */
 
@@ -731,6 +732,8 @@ shell_view_update_actions (EShellView *shell_view)
 {
 	EShellWindow *shell_window;
 	EFocusTracker *focus_tracker;
+	GtkAction *action;
+	GtkActionGroup *action_group;
 
 	g_return_if_fail (e_shell_view_is_active (shell_view));
 
@@ -738,6 +741,12 @@ shell_view_update_actions (EShellView *shell_view)
 	focus_tracker = e_shell_window_get_focus_tracker (shell_window);
 
 	e_focus_tracker_update_actions (focus_tracker);
+
+	action_group = E_SHELL_WINDOW_ACTION_GROUP_CUSTOM_RULES (shell_window);
+	gtk_action_group_set_sensitive (action_group, TRUE);
+
+	action = E_SHELL_WINDOW_ACTION_SEARCH_ADVANCED (shell_window);
+	gtk_action_set_sensitive (action, TRUE);
 }
 
 static void
@@ -1085,6 +1094,7 @@ e_shell_view_init (EShellView *shell_view,
 	size_group = gtk_size_group_new (GTK_SIZE_GROUP_VERTICAL);
 
 	shell_view->priv = E_SHELL_VIEW_GET_PRIVATE (shell_view);
+	shell_view->priv->main_thread = g_thread_self ();
 	shell_view->priv->state_key_file = g_key_file_new ();
 	shell_view->priv->size_group = size_group;
 }
@@ -1917,6 +1927,10 @@ e_shell_view_show_popup_menu (EShellView *shell_view,
 		event_time = gtk_get_current_event_time ();
 	}
 
+	if (!gtk_menu_get_attach_widget (GTK_MENU (menu)))
+		gtk_menu_attach_to_widget (GTK_MENU (menu),
+					   GTK_WIDGET (shell_window),
+					   NULL);
 	gtk_menu_popup (
 		GTK_MENU (menu),
 		NULL, NULL, NULL, NULL,
@@ -2020,3 +2034,67 @@ e_shell_view_remote_delete_source (EShellView *shell_view,
 	e_shell_backend_add_activity (shell_backend, activity);
 }
 
+/**
+ * e_shell_view_submit_thread_job:
+ * @shell_view: an #EShellView instance
+ * @description: user-friendly description of the job, to be shown in UI
+ * @alert_ident: in case of an error, this alert identificator is used
+ *    for EAlert construction
+ * @alert_arg_0: (allow-none): in case of an error, use this string as
+ *    the first argument to the EAlert construction; the second argument
+ *    is the actual error message; can be #NULL, in which case only
+ *    the error message is passed to the EAlert construction
+ * @func: function to be run in a dedicated thread
+ * @user_data: (allow-none): custom data passed into @func; can be #NULL
+ * @free_user_data: (allow-none): function to be called on @user_data,
+ *   when the job is over; can be #NULL
+ *
+ * Runs the @func in a dedicated thread. Any error is propagated to UI.
+ * The cancellable passed into the @func is a #CamelOperation, thus
+ * the caller can overwrite progress and description message on it.
+ *
+ * Returns: (transfer full): Newly created #EActivity on success.
+ *   The caller is responsible to g_object_unref() it when done with it.
+ *
+ * Note: The @free_user_data, if set, is called in the main thread.
+ *
+ * Note: This function can be called only from the main thread.
+ **/
+EActivity *
+e_shell_view_submit_thread_job (EShellView *shell_view,
+				const gchar *description,
+				const gchar *alert_ident,
+				const gchar *alert_arg_0,
+				EAlertSinkThreadJobFunc func,
+				gpointer user_data,
+				GDestroyNotify free_user_data)
+{
+	EShellBackend *shell_backend;
+	EShellContent *shell_content;
+	EActivity *activity;
+	EAlertSink *alert_sink;
+
+	g_return_val_if_fail (E_IS_SHELL_VIEW (shell_view), NULL);
+	g_return_val_if_fail (description != NULL, NULL);
+	g_return_val_if_fail (func != NULL, NULL);
+	g_return_val_if_fail (g_thread_self () == shell_view->priv->main_thread, NULL);
+
+	shell_backend = e_shell_view_get_shell_backend (shell_view);
+	shell_content = e_shell_view_get_shell_content (shell_view);
+
+	alert_sink = E_ALERT_SINK (shell_content);
+
+	activity = e_alert_sink_submit_thread_job (
+		alert_sink,
+		description,
+		alert_ident,
+		alert_arg_0,
+		func,
+		user_data,
+		free_user_data);
+
+	if (activity)
+		e_shell_backend_add_activity (shell_backend, activity);
+
+	return activity;
+}

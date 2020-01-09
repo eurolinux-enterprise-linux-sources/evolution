@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="data-storage" xml:lang="es">
 
   <info>
-    <desc>¿Dónde almacena Evolution mis datos en el disco duro?</desc>
+    <desc>¿Dónde almacena <app>Evolution</app> mis datos en el disco duro?</desc>
     
     <link type="guide" xref="index#common-other-problems"/>
 
@@ -17,9 +17,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -41,7 +47,7 @@
 <p>Esto sólo es interesante para usuarios avanzados que quieren depurar problemas.</p>
 </note>
 
-<p>Evolution 3.6 y posterior almacena sus datos según la <link href="http://www.freedesktop.org/wiki/Specifications/basedir-spec">Especificación de carpetas base XDG</link>. De forma predeterminada significa que:</p>
+<p><app>Evolution</app> 3.6 y posterior almacena sus datos según la <link href="http://www.freedesktop.org/wiki/Specifications/basedir-spec">Especificación de carpetas base XDG</link>. De forma predeterminada significa que:</p>
 
 <terms>
 <item>

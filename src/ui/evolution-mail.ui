@@ -1,4 +1,4 @@
-<ui>
+<ui evolution-ui-version="1.0">
   <menubar name='main-menu'>
     <menu action='file-menu'>
       <placeholder name='mail-send-receiver'>
@@ -19,6 +19,7 @@
       <placeholder name='view-custom-menus'>
         <menu action='mail-preview-menu'>
           <menuitem action='mail-preview'/>
+          <menuitem action='mail-attachment-bar'/>
           <separator/>
           <menuitem action='mail-view-classic'/>
           <menuitem action='mail-view-vertical'/>
@@ -26,11 +27,14 @@
       </placeholder>
       <separator/>
       <placeholder name='mail-message-list-actions'>
+        <menuitem action='mail-goto-folder'/>
+        <separator/>
         <menuitem action='mail-threads-group-by'/>
         <menuitem action='mail-threads-expand-all'/>
         <menuitem action='mail-threads-collapse-all'/>
         <separator/>
         <menuitem action='mail-show-deleted'/>
+        <menuitem action='mail-show-junk'/>
       </placeholder>
     </menu>
     <placeholder name='custom-menus'>
@@ -85,7 +89,6 @@
     <menuitem action='mail-popup-flush-outbox'/>
     <menuitem action='mail-popup-account-refresh'/>
     <menuitem action='mail-popup-manage-subscriptions'/>
-    <menuitem action='mail-popup-account-expunge'/>
     <menuitem action='mail-popup-account-disable'/>
     <menuitem action='mail-vfolder-unmatched-enable'/>
     <separator/>
@@ -93,6 +96,8 @@
     <separator/>
     <menuitem action='mail-popup-account-properties'/>
     <menuitem action='mail-popup-folder-properties'/>
+    <separator/>
+    <menuitem action='mail-popup-account-expunge'/>
   </popup>
   <popup name='mail-message-popup'>
     <placeholder name='mail-message-popup-common-actions'/>
@@ -101,6 +106,7 @@
     <menuitem action='mail-popup-undelete'/>
     <menuitem action='mail-popup-copy'/>
     <menuitem action='mail-popup-move'/>
+    <menuitem action='mail-popup-archive'/>
     <separator/>
     <menuitem action='mail-popup-mark-read'/>
     <menuitem action='mail-popup-mark-unread'/>
@@ -111,6 +117,15 @@
     <menuitem action='mail-popup-flag-for-followup'/>
     <menuitem action="mail-popup-flag-clear"/>
     <menuitem action="mail-popup-flag-completed"/>
+    <separator/>
+    <menuitem action='mail-popup-add-note'/>
+    <menuitem action='mail-popup-edit-note'/>
+    <menuitem action='mail-popup-delete-note'/>
+    <separator/>
+    <menuitem action='mail-popup-mark-ignore-thread-whole'/>
+    <menuitem action='mail-popup-mark-ignore-thread-sub'/>
+    <menuitem action='mail-popup-mark-unignore-thread-whole'/>
+    <menuitem action='mail-popup-mark-unignore-thread-sub'/>
     <menu action='mail-label-menu'>
       <menuitem action='mail-label-none'/>
       <separator/>
@@ -143,6 +158,7 @@
     <menuitem action='mail-search-subject-contains'/>
     <menuitem action='mail-search-sender-contains'/>
     <menuitem action='mail-search-body-contains'/>
+    <menuitem action='mail-search-free-form-expr'/>
     <separator/>
     <menuitem action='search-advanced'/>
   </popup>

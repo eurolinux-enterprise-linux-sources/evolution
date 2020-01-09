@@ -21,43 +21,50 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Searching contacts.</desc>
+    <desc>Jak vyhledávat kontakty.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Searching Contacts</title>
+  <title>Vyhledávání kontaktů</title>
 
 <section id="search-single">
-  <title>Searching in a Single Contact</title>
+  <title>Hledání v jednom kontaktu</title>
 
-  <p>To find text in the displayed contact, select
-  <guiseq><gui>Edit</gui><gui>Find in Contact…</gui></guiseq> from the main
-  menu.</p>
+  <p>Chcete-li najít text v zobrazeném kontaktu, vyberte v hlavní nabídce <guiseq><gui>Upravit</gui> <gui>Najít v kontaktu…</gui></guiseq></p>
 
 </section>
 
 <section id="search-many">
-  <title>Searching Across Contacts</title>
+  <title>Hledání ve všech kontaktech</title>
 
   <section id="quick-search">
     <title>Rychlé hledání</title>
-      <p>In the Contacts view, you can quickly search for contacts either by
-      category or by contact's info.</p>
-      <p>Searching by contact's info:</p>
+      <p>V zobrazení kontaktů můžete kontakty rychle vyhledávat podle kategorie nebo údajů kontaktu.</p>
+      <p>Vyhledávání podle údajů kontaktů:</p>
 
       <steps>
         <item>
-	  <p>Click the search icon
-	  <media type="image" mime="image/png" its:translate="no" src="figures/search-icon.png"/>
-	  to expand the drop-down list.</p>
+	  <p>Klikněte na ikonu hledání <media type="image" mime="image/png" its:translate="no" src="figures/search-icon.png"/>, aby se rozbalil seznam.</p>
         </item>
         <item>
-	  <p>Vyberte ze seznamu kritérium hledání.</p>
+	  <p>V seznamu vyberte podmínky hledání.</p>
 	</item>
         <item>
-	  <p>Zadejte text, který chcete vyhledat, a stiskněte <key>Enter</key>.</p>
+	  <p>Zadejte text, který chcete vyhledat, a zmáčkněte <key>Enter</key>.</p>
 	</item>
         <item>
-	  <p><app>Evolution</app> displays the search results.</p>
+	  <p><app>Evolution</app> zobrazí výsledky hledání.</p>
 	</item>
       </steps>
 
@@ -71,7 +78,7 @@
 	  <p>Vyberte ze seznamu kategorii.</p>
 	</item>
         <item>
-	  <p><app>Evolution</app> displays the search results.</p>
+	  <p><app>Evolution</app> zobrazí výsledky hledání.</p>
 	</item>
       </steps>
 

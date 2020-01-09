@@ -4,7 +4,7 @@
   <info>
     <desc>Διαχείριση της ηλεκτρονικής αλληλογραφίας σας, των επαφών και του προγραμματισμού σας</desc>
     <title type="link" role="trail"><media type="image" its:translate="no" src="figures/evolutionlogo.png"/></title>
-    <title type="text">Αλληλογραφία και ημερολόγιο του evolution</title>
+    <title type="text"><app>Evolution</app> Mail and Calendar</title>
     <revision pkgversion="3.8.2" version="0.7" date="2013-06-22" status="final"/>
     <credit type="author">
       <name its:translate="no">Phil Bull</name>
@@ -20,15 +20,36 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
-<title><media type="image" its:translate="no" src="figures/evolutionlogo.png">
-    <span its:translate="yes">Λογότυπος Evolution</span>
-  </media> Αλληλογραφία και ημερολόγιο του evolution</title>
+<title>
+  <media type="image" its:translate="no" src="figures/evolutionlogo.png">
+    <span its:translate="yes">Evolution logo</span>
+  </media>
+ <app>Evolution</app> Mail and Calendar
+</title>
 
   <section id="getting-started" style="2column">
     <title>Ξεκινώντας</title>

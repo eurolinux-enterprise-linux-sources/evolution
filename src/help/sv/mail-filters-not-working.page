@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-filters-not-working" xml:lang="sv">
 
   <info>
-    <desc>Fix problems with mail filters that do not sort and organize mail as expected.</desc>
+    <desc>Fixa problem med e-postfilter som inte sorterar och organiserar e-post som förväntat.</desc>
     
     <link type="guide" xref="index#common-mail-problems"/>
     <link type="seealso" xref="mail-filters"/>
@@ -20,39 +20,51 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-<title>Mail filters are not working</title>
+<title>E-postfilter fungerar inte</title>
 
 <section id="order">
-<title>Order of Filters</title>
-<p>The order of filters is very important. They are applied to the original message in sequence, like a recipe.</p>
-<p>If your first filter has a <gui>Stop Processing</gui> rule, then all messages that match this filter will ignore all succeeding filters.</p>
-<p>When you move a message to another folder, "moving" actually means appending a copy of the message to the destination folder and marking the original message for deletion. So any subsequent filter rules will be applied to the original message that is now marked for deletion. Therefore moving a message should usually appear last in a sequence of filter rules.</p>
-<p>To check the rules and their order of an existing filter, review its actions in the <gui>Then</gui> section by <link xref="mail-filters#editing">editing the filter</link>.</p>
+<title>Filterordning</title>
+<p>Ordningen på filtren är mycket viktig. De tillämpas för originalmeddelandet i sekvens, som ett recept.</p>
+<p>Om ditt första filter har en regel <gui>Stoppa behandling</gui> så kommer alla meddelanden som matchar detta filter att ignorera alla efterföljande filter.</p>
+<p>När du flyttar ett meddelande till en annan mapp, innebär ”flytta” att faktiskt lägga till en kopia av meddelanden i slutet på destinationsmappen och att markera originalmeddelandet för borttagning. Så påföljande filterregler kommer att tillämpas på originalmeddelandet som nu är märkt för borttagning. Därför bör flyttning av ett meddelande vanligtvis finnas sist i en sekvens av filterregler.</p>
+<p>För att kontrollera reglerna och deras ordning för ett existerande filter, studera dess åtgärder i avsnittet <gui>Sedan</gui> genom att <link xref="mail-filters#editing">redigera filtret</link>.</p>
 </section>
 
 <section id="several-clients">
-<title>Using Several Mail Clients</title>
-<p>Another thing you have to keep in mind is that filters depend on the "new" flag that is set on the server when a particular email message is initially fetched from the server. If you use another email client aside from Evolution, your filters may not work automatically.</p>
+<title>Användning av flera e-postklienter</title>
+<p>En annan sak du måste tänka på är att filter beror på ”nytt”-flaggan som ställs in på servern när ett visst e-postmeddelande först hämtas från servern. Om du använder en annan e-postklient förutom <app>Evolution</app> kommer kanske dina filter inte att fungera automatiskt.</p>
 </section>
 
 <section id="filter-log">
-<title>Logging Filter Actions</title>
-<p>If it is still unclear why filters do not work as expected, you can enable logging filter actions.</p>
+<title>Logga filteråtgärder</title>
+<p>Om det fortfarande är oklart varför filter inte fungerar som förväntat kan du aktivera loggning av filteråtgärder.</p>
 <list>
-<item><p>Close Evolution.</p></item>
-<item><p>Open the <app>Terminal</app> application.</p></item>
-<item><p>Run the command <cmd>gsettings set org.gnome.evolution.mail filters-log-actions true</cmd></p></item>
-<item><p>Run the command <cmd>gsettings set org.gnome.evolution.mail filters-log-file "/home/myusername/my-filter-log"</cmd> and replace <cmd>myusername</cmd> by your username. This will create a text file named <file>my-filter-log</file> in your home directory. Note that the absolute path to the file name must be entered; a syntax like <sys>~</sys> or <sys>$HOME</sys> will not work.</p></item><!-- this is explained in https://bugzilla.gnome.org/show_bug.cgi?id=669471 -->
-<item><p>Starta Evolution.</p></item>
-<item><p>Fetch mail to apply filters.</p></item>
-<item><p>Open the file <file>my-filter-log</file> with a text editor to see which filter actions have been applied.</p></item>
+<item><p>Stäng <app>Evolution</app>.</p></item>
+<item><p>Öppna <app>Terminal</app>-programmet.</p></item>
+<item><p>Kör kommandot <cmd>gsettings set org.gnome.evolution.mail filters-log-actions true</cmd></p></item>
+<item><p>Kör kommandot <cmd>gsettings set org.gnome.evolution.mail filters-log-file "/home/mittanvändarnamn/min-filter-logg"</cmd> och ersätt <cmd>mittanvändarnamn</cmd> med ditt användarnamn. Detta kommer att skapa en textfil med namnet <file>min-filter-logg</file> i din hemkatalog. Notera att den absoluta sökvägen till filnamnet måste matas in; en syntax så som <sys>~</sys> eller <sys>$HOME</sys> kommer inte att fungera.</p></item><!-- this is explained in https://bugzilla.gnome.org/show_bug.cgi?id=669471 -->
+<item><p>Starta <app>Evolution</app>.</p></item>
+<item><p>Hämta e-postmeddelanden för att tillämpa filter.</p></item>
+<item><p>Öppna filen <file>min-filter-logg</file> med en textredigerare för att se vilka filteråtgärder som har tillämpats.</p></item>
 </list>
 
-<p>Note that you can disable filter logging again by using the command <cmd>gsettings set org.gnome.evolution.mail filters-log-actions false</cmd></p>
+<p>Notera att du kan inaktivera filterloggning igen genom kommandot <cmd>gsettings set org.gnome.evolution.mail filters-log-actions false</cmd></p>
 
-<p>You can also use the <app>dconf-editor</app> application to do this.</p>
+<p>Du kan också använda programmet <app>dconf-editor</app> för att göra detta.</p>
 </section>
 
 </page>

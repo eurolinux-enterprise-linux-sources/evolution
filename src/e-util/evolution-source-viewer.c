@@ -22,6 +22,7 @@
 #include <libedataserver/libedataserver.h>
 
 #include "e-dialog-widgets.h"
+#include "e-misc-utils.h"
 
 /* XXX Even though this is all one file, I'm still being pedantic about data
  *     encapsulation (except for a private struct, even I'm not that anal!).
@@ -174,7 +175,7 @@ source_viewer_get_monospace_font_name (void)
 	GSettings *settings;
 	gchar *font_name;
 
-	settings = g_settings_new ("org.gnome.desktop.interface");
+	settings = e_util_ref_settings ("org.gnome.desktop.interface");
 	font_name = g_settings_get_string (settings, "monospace-font-name");
 	g_object_unref (settings);
 
@@ -1164,7 +1165,7 @@ main (gint argc,
 	if (error != NULL) {
 		g_warn_if_fail (viewer == NULL);
 		g_error ("%s", error->message);
-		g_assert_not_reached ();
+		g_return_val_if_reached (-1);
 	}
 
 	g_signal_connect (
@@ -1174,6 +1175,8 @@ main (gint argc,
 	gtk_widget_show (viewer);
 
 	gtk_main ();
+
+	e_util_cleanup_settings ();
 
 	return 0;
 }

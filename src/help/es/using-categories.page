@@ -22,9 +22,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -52,7 +58,7 @@
 <p>Para marcar un objeto como perteneciente a una categoría,</p>
 <steps>
 <item><p>Pulse dos veces sobre el objeto para que aparezca la ventana del editor correspondiente.</p></item>
-<item><p>Pulse <gui style="button">Categorías...</gui>. (Si este botón no está disponible, seleccione <guiseq><gui>Ver</gui><gui>Categorías</gui></guiseq>.)</p></item>
+<item><p>Pulse <gui style="button">Categorías…</gui>. (Si este botón no está disponible, seleccione <guiseq><gui>Ver</gui><gui>Categorías</gui></guiseq>.)</p></item>
 <item><p>Seleccione la categoría de la lista. Puede seleccionar tantas categorías como desee.</p></item>
 </steps>
 
@@ -64,7 +70,7 @@
 <p>Si la lista predeterminada de categorías no satisface sus necesidades, puede añadir sus propias categorías directamente a través de <guiseq><gui>Editar</gui><gui>Categorías disponibles</gui></guiseq>, o indirectamente al editar un objeto:</p>
 <steps>
 <item><p>Pulse dos veces sobre cualquier objeto para que aparezca la ventana del editor correspondiente.</p></item>
-<item><p>Pulse <gui style="button">Categorías...</gui>. (Si este botón no está disponible, seleccione <guiseq><gui>Ver</gui><gui>Categorías</gui></guiseq>.)</p></item>
+<item><p>Pulse <gui style="button">Categorías…</gui>. (Si este botón no está disponible, seleccione <guiseq><gui>Ver</gui><gui>Categorías</gui></guiseq>.)</p></item>
 <item><p>Introduzca la nueva categoría en la caja de entrada de la parte superior.</p></item>
 <item><p>Pulse <gui style="button">Aceptar</gui>.</p></item>
 <item><p>Puede ver que el nombre de la categoría aparece en el campo <gui>Categorías</gui> en el editor.</p></item>

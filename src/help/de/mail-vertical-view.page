@@ -27,25 +27,31 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
   <title>Vertikale Ansicht</title>
 
-<p>Evolution bietet neben der klassischen Ansicht auch eine vertikale Ansicht. In der vertikalen Ansicht ist die Nachrichtenvorschau rechts von der E-Mail-Liste, während sich in der klassischen Ansicht die Nachrichtenvorschau unterhalb der E-Mail-Liste befindet. Die vertikale Ansicht bietet sich für Monitore mit breitem Bildschirm (zum Beispiel 16:9- oder Breitbild-Format) an.</p>
+<p><app>Evolution</app> bietet neben der klassischen Ansicht auch eine vertikale Ansicht. In der vertikalen Ansicht ist die Nachrichtenvorschau rechts von der E-Mail-Liste, während sich in der klassischen Ansicht die Nachrichtenvorschau unterhalb der E-Mail-Liste befindet. Die vertikale Ansicht bietet sich für Monitore mit breitem Bildschirm (zum Beispiel 16:9- oder Breitbild-Format) an.</p>
 
 <p>Um in die vertikale Ansicht zu wechseln, wählen Sie <guiseq><gui>Ansicht</gui><gui>Vorschau</gui><gui>Vertikale Ansicht</gui></guiseq>.</p>
 

@@ -53,7 +53,8 @@
       <p>Enter the address in the <gui>URL</gui> field.</p>
     </item>
     <item>
-      <p>Izberite <gui>Uporabi varno povezavo</gui>, če se želite varno povezati.</p>
+      <p>Choose <gui>Use a secure connection</gui> if you want to connect
+      securely.</p>
     </item>
     <item>
       <p>Vnesite svoje uporabniško ime in naslov e-pošte.</p>

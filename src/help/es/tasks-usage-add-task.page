@@ -20,9 +20,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -54,7 +60,7 @@
 <section id="assigned-tasks">
 <title>Tareas asignadas</title>
 
-<p>Evolution se puede usar para asignar una tarea a varias personas.</p>
+<p><app>Evolution</app> se puede usar para asignar una tarea a varias personas.</p>
 <p>Al asignar una tarea puede especificar los asistentes en varias categorías, tales como «presidencia» o «participante requerido». Cuando guarde la tarea, cada invitado recibirá un correo-e con los datos de la tarea y tendrán la opción de responder.</p>
 <p>Es similar a las <link xref="calendar-meetings-sending-invitation">reuniones</link>.</p>
 <p>Para crear una tarea asignada pulse <guiseq><gui>Archivo</gui><gui>Nuevo</gui><gui>Tarea asignada</gui></guiseq>.</p>

@@ -18,14 +18,32 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
 
 <title>Πώς να πάρετε βοήθεια</title>
 
-<p>Για να δεχτείτε βοήθεια σε προβλήματα μπορείτε να στείλετε ένα μήνυμα στο <link href="http://mail.gnome.org/mailman/listinfo/evolution-list">Κατάλογος αλληλογραφίας του Evolution</link> ή να μιλήσετε με τους προγραμματιστές και άλλους χρήστες στο κανάλι συνομιλιών IRC του #evolution στον εξυπηρετητή irc.gimp.net. Για σύνδεση με έναν εξυπηρετητή IRC μπορείτε για παράδειγμα να <link xref="help:empathy/irc-manage" href="https://help.gnome.org/users/empathy/stable/irc-manage">χρησιμοποιήσετε την εφαρμογή αγγελιοφόρου διαδικτύου του <app>Empathy</app></link>.</p>
+<p>To receive help on problems you can send an email to the <link href="http://mail.gnome.org/mailman/listinfo/evolution-list"><app>Evolution</app> mailing list</link> or talk to developers and other users in the IRC chat channel #evolution on the server irc.gimp.net. To connect to an IRC server you can for example <link xref="help:empathy/irc-manage" href="https://help.gnome.org/users/empathy/stable/irc-manage">use the internet messenger application <app>Empathy</app></link>.</p>
 </page>

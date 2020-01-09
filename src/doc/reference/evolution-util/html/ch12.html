@@ -2,13 +2,13 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Evolution Utilities Reference Manual: ESource Support</title>
-<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<title>Tables and Trees: Evolution Utilities Reference Manual</title>
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
 <link rel="home" href="index.html" title="Evolution Utilities Reference Manual">
 <link rel="up" href="index.html" title="Evolution Utilities Reference Manual">
-<link rel="prev" href="evolution-util-Popup-Menus-(Legacy).html" title="Popup Menus (Legacy)">
-<link rel="next" href="ESourceConfig.html" title="ESourceConfig">
-<meta name="generator" content="GTK-Doc V1.21 (XML mode)">
+<link rel="prev" href="EProxyComboBox.html" title="EProxyComboBox">
+<link rel="next" href="ETable.html" title="ETable">
+<meta name="generator" content="GTK-Doc V1.25 (XML mode)">
 <link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
@@ -16,59 +16,172 @@
 <td width="100%" align="left" class="shortcuts"></td>
 <td><a accesskey="h" href="index.html"><img src="home.png" width="16" height="16" border="0" alt="Home"></a></td>
 <td><img src="up-insensitive.png" width="16" height="16" border="0"></td>
-<td><a accesskey="p" href="evolution-util-Popup-Menus-(Legacy).html"><img src="left.png" width="16" height="16" border="0" alt="Prev"></a></td>
-<td><a accesskey="n" href="ESourceConfig.html"><img src="right.png" width="16" height="16" border="0" alt="Next"></a></td>
+<td><a accesskey="p" href="EProxyComboBox.html"><img src="left.png" width="16" height="16" border="0" alt="Prev"></a></td>
+<td><a accesskey="n" href="ETable.html"><img src="right.png" width="16" height="16" border="0" alt="Next"></a></td>
 </tr></table>
 <div class="chapter">
 <div class="titlepage"><div><div><h1 class="title">
-<a name="id-1.13"></a>ESource Support</h1></div></div></div>
+<a name="id-1.13"></a>Tables and Trees</h1></div></div></div>
 <div class="toc"><dl class="toc">
 <dt>
-<span class="refentrytitle"><a href="ESourceConfig.html">ESourceConfig</a></span><span class="refpurpose"></span>
+<span class="refentrytitle"><a href="ETable.html">ETable</a></span><span class="refpurpose"></span>
 </dt>
 <dt>
-<span class="refentrytitle"><a href="EBookSourceConfig.html">EBookSourceConfig</a></span><span class="refpurpose"></span>
+<span class="refentrytitle"><a href="ETableClickToAdd.html">ETableClickToAdd</a></span><span class="refpurpose"></span>
 </dt>
 <dt>
-<span class="refentrytitle"><a href="ECalSourceConfig.html">ECalSourceConfig</a></span><span class="refpurpose"></span>
+<span class="refentrytitle"><a href="ETableCol.html">ETableCol</a></span><span class="refpurpose"></span>
 </dt>
 <dt>
-<span class="refentrytitle"><a href="evolution-util-ESourceConfigBackend.html">ESourceConfigBackend</a></span><span class="refpurpose"></span>
+<span class="refentrytitle"><a href="ETableColumnSelector.html">ETableColumnSelector</a></span><span class="refpurpose"> — Select columns for an <span class="type">ETable</span> or <span class="type">ETree</span></span>
 </dt>
 <dt>
-<span class="refentrytitle"><a href="ESourceConfigDialog.html">ESourceConfigDialog</a></span><span class="refpurpose"></span>
+<span class="refentrytitle"><a href="ETableColumnSpecification.html">ETableColumnSpecification</a></span><span class="refpurpose"></span>
 </dt>
 <dt>
-<span class="refentrytitle"><a href="ESourceSelector.html">ESourceSelector</a></span><span class="refpurpose"></span>
+<span class="refentrytitle"><a href="ETableConfig.html">ETableConfig</a></span><span class="refpurpose"></span>
 </dt>
 <dt>
-<span class="refentrytitle"><a href="EAlarmSelector.html">EAlarmSelector</a></span><span class="refpurpose"></span>
+<span class="refentrytitle"><a href="ETableExtras.html">ETableExtras</a></span><span class="refpurpose"></span>
 </dt>
 <dt>
-<span class="refentrytitle"><a href="EAutocompleteSelector.html">EAutocompleteSelector</a></span><span class="refpurpose"></span>
+<span class="refentrytitle"><a href="ETableFieldChooserDialog.html">ETableFieldChooserDialog</a></span><span class="refpurpose"></span>
 </dt>
 <dt>
-<span class="refentrytitle"><a href="ESourceSelectorDialog.html">ESourceSelectorDialog</a></span><span class="refpurpose"></span>
+<span class="refentrytitle"><a href="ETableFieldChooserItem.html">ETableFieldChooserItem</a></span><span class="refpurpose"></span>
 </dt>
 <dt>
-<span class="refentrytitle"><a href="ESourceComboBox.html">ESourceComboBox</a></span><span class="refpurpose"></span>
+<span class="refentrytitle"><a href="ETableFieldChooser.html">ETableFieldChooser</a></span><span class="refpurpose"></span>
 </dt>
 <dt>
-<span class="refentrytitle"><a href="evolution-util-ESource-Utilities.html">ESource Utilities</a></span><span class="refpurpose"></span>
+<span class="refentrytitle"><a href="ETableGroupContainer.html">ETableGroupContainer</a></span><span class="refpurpose"></span>
 </dt>
 <dt>
-<span class="refentrytitle"><a href="EClientCache.html">EClientCache</a></span><span class="refpurpose">Shared <span class="type">EClient</span> instances</span>
+<span class="refentrytitle"><a href="ETableGroupLeaf.html">ETableGroupLeaf</a></span><span class="refpurpose"></span>
 </dt>
 <dt>
-<span class="refentrytitle"><a href="EClientComboBox.html">EClientComboBox</a></span><span class="refpurpose">Combo box of <span class="type">EClient</span> instances</span>
+<span class="refentrytitle"><a href="ETableGroup.html">ETableGroup</a></span><span class="refpurpose"></span>
 </dt>
 <dt>
-<span class="refentrytitle"><a href="EClientSelector.html">EClientSelector</a></span><span class="refpurpose">Tree view of <span class="type">EClient</span> instances</span>
+<span class="refentrytitle"><a href="ETableHeader.html">ETableHeader</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ETableHeaderItem.html">ETableHeaderItem</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="evolution-util-e-table-header-utils.html">e-table-header-utils</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ETableItem.html">ETableItem</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ETableModel.html">ETableModel</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ETableOne.html">ETableOne</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ETableSearch.html">ETableSearch</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ETableSelectionModel.html">ETableSelectionModel</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ETableSortInfo.html">ETableSortInfo</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ETableSortedVariable.html">ETableSortedVariable</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ETableSorted.html">ETableSorted</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ETableSorter.html">ETableSorter</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="evolution-util-e-table-sorting-utils.html">e-table-sorting-utils</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ETableSpecification.html">ETableSpecification</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ETableState.html">ETableState</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ETableSubsetVariable.html">ETableSubsetVariable</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ETableSubset.html">ETableSubset</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="evolution-util-e-table-utils.html">e-table-utils</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ETree.html">ETree</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ETreeModel.html">ETreeModel</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ETreeSelectionModel.html">ETreeSelectionModel</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ETreeTableAdapter.html">ETreeTableAdapter</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ECell.html">ECell</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ECellCheckbox.html">ECellCheckbox</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ECellCombo.html">ECellCombo</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ECellDate.html">ECellDate</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ECellDateEdit.html">ECellDateEdit</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ECellDateInt.html">ECellDateInt</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ECellHbox.html">ECellHbox</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ECellNumber.html">ECellNumber</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ECellPercent.html">ECellPercent</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ECellPixbuf.html">ECellPixbuf</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ECellPopup.html">ECellPopup</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ECellSize.html">ECellSize</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ECellText.html">ECellText</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ECellToggle.html">ECellToggle</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ECellTree.html">ECellTree</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ECellVbox.html">ECellVbox</a></span><span class="refpurpose"></span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="evolution-util-e-popup-menu.html">e-popup-menu</a></span><span class="refpurpose"></span>
 </dt>
 </dl></div>
 </div>
 <div class="footer">
-<hr>
-          Generated by GTK-Doc V1.21</div>
+<hr>Generated by GTK-Doc V1.25</div>
 </body>
 </html>

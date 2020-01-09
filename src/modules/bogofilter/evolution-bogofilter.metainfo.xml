@@ -8,6 +8,8 @@
 	<name xml:lang="ast">Bogofilter</name>
 	<name xml:lang="be">Bogofilter</name>
 	<name xml:lang="bg">Bogofilter</name>
+	<name xml:lang="bn_IN">Bogofilter</name>
+	<name xml:lang="bs">Bogofilter</name>
 	<name xml:lang="ca">Bogofilter</name>
 	<name xml:lang="ca@valencia">Bogofilter</name>
 	<name xml:lang="cs">Bogofilter</name>
@@ -23,6 +25,7 @@
 	<name xml:lang="gl">Bogofilter</name>
 	<name xml:lang="gu">Bogofilter</name>
 	<name xml:lang="hi">बोगोफिल्टर</name>
+	<name xml:lang="hr">Bogofilter</name>
 	<name xml:lang="hu">Bogofilter</name>
 	<name xml:lang="id">Bogofilter</name>
 	<name xml:lang="it">Bogofilter</name>
@@ -36,6 +39,7 @@
 	<name xml:lang="mr">बोगोफिल्टर</name>
 	<name xml:lang="nb">Bogofilter</name>
 	<name xml:lang="nl">Bogofilter</name>
+	<name xml:lang="oc">Bogofilter</name>
 	<name xml:lang="or">Bogofilter</name>
 	<name xml:lang="pa">ਬੋਗੋਲਫਿਲਟਰ</name>
 	<name xml:lang="pl">Bogofilter</name>
@@ -59,30 +63,46 @@
 	<name xml:lang="zh_HK">Bogofilter</name>
 	<name xml:lang="zh_TW">Bogofilter</name>
 	<summary>Junk filter using Bogofilter</summary>
-	<summary xml:lang="as">Bogofilter ব্যৱহাৰ কৰি আবৰ্জনাৰ ফিল্টাৰ</summary>
 	<summary xml:lang="bg">Програма за защита от спам чрез Bogofilter</summary>
+	<summary xml:lang="bs">Filter za smeće koristeći Bogofilter</summary>
+	<summary xml:lang="ca">Filtra la brossa amb Bogofilter</summary>
 	<summary xml:lang="cs">Filtr nevyžádané pošty používá Bogofilter</summary>
+	<summary xml:lang="da">Spamfilter med Bogofilter</summary>
 	<summary xml:lang="de">Filter für unerwünschte Nachrichten, der den Bogofilter verwendet</summary>
-	<summary xml:lang="el">Φιλτράρισμα ανεπιθύμητων με Bogofilter</summary>
+	<summary xml:lang="el">Φίλτρο ανεπιθύμητων χρησιμοποιώντας το Bogofilter</summary>
+	<summary xml:lang="en_GB">Junk filter using Bogofilter</summary>
 	<summary xml:lang="es">Filtro de spam usando Bogofilter</summary>
-	<summary xml:lang="fr">Filtre les pourriels avec Bogofilter</summary>
-	<summary xml:lang="gl">Software de filtrado usando Bogofilter</summary>
-	<summary xml:lang="gu">બોગોફિલ્ટરની મદદથી નકામુ ફિલ્ટર</summary>
+	<summary xml:lang="eu">Baztergarriak iragazteko Bogofilter erabiltzen</summary>
+	<summary xml:lang="fr">Filtre de pourriel utilisant Bogofilter</summary>
+	<summary xml:lang="gl">Filtro de spam usando Bogofilter</summary>
 	<summary xml:lang="hu">Levélszemétszűrő szoftver Bogofilter használatával</summary>
-	<summary xml:lang="id">Penyaring sampah memakai Bogofilter</summary>
 	<summary xml:lang="it">Filtra indesiderata usando Bogofilter</summary>
 	<summary xml:lang="kn">ಬೊಗೊಫಿಲ್ಟರ್ ಬಳಸಿಕೊಂಡು ರದ್ಧಿಯನ್ನು ಫಿಲ್ಟರ್ ಮಾಡಿ</summary>
+	<summary xml:lang="ko">보고필터를 사용한 정크메일 필터링</summary>
 	<summary xml:lang="lt">Šlamšto filtravimas naudojant Bogofilter</summary>
 	<summary xml:lang="lv">Mēstuļu filtrēšanas, izmantojot Bogofilter</summary>
-	<summary xml:lang="nb">Søppelfilter som bruker Bogofilter</summary>
-	<summary xml:lang="pl">Filtrowanie niechcianych wiadomości używając Bogofilter</summary>
-	<summary xml:lang="pt">Filtrar Não solicitado usando Bogofilter</summary>
-	<summary xml:lang="pt_BR">Filtro de lixo usando Bogofilter</summary>
-	<summary xml:lang="sl">Filter za vsiljeno pošto Bogofilter</summary>
-	<summary xml:lang="sr">Пропусник непожељне користећи Богофилтер</summary>
-	<summary xml:lang="sr@latin">Propusnik nepoželjne koristeći Bogofilter</summary>
+	<summary xml:lang="nb">Søppelfilter bruker Bogofilter</summary>
+	<summary xml:lang="nl">Spamfilter gebruikmakend van Bogofilter</summary>
+	<summary xml:lang="oc">Filtre de corrièr indesirable qu'utiliza Bogofilter</summary>
+	<summary xml:lang="pl">Filtrowanie niechcianych wiadomości za pomocą Bogofilter</summary>
+	<summary xml:lang="pt">Filtrar não solicitado usando Bogofilter</summary>
+	<summary xml:lang="pt_BR">Filtro de spam usando Bogofilter</summary>
+	<summary xml:lang="ru">Фильтр спама с помощью Bogofilter</summary>
+	<summary xml:lang="sk">Filtrovanie nevyžiadanej pošty pomocou programu Bogofilter</summary>
+	<summary xml:lang="sl">Filter neželene pošte, ki uporablja Bogofilter</summary>
+	<summary xml:lang="sr">Бого-филтер непожељних порука</summary>
+	<summary xml:lang="sr@latin">Bogo-filter nepoželjnih poruka</summary>
+	<summary xml:lang="sv">Skräppostfilter som använder Bogofilter</summary>
+	<summary xml:lang="ta">Bogofilter பயன்படுத்தி குப்பை வடிகட்டி</summary>
+	<summary xml:lang="tr">Bogofilter kullanarak gereksiz iletileri filtrele</summary>
+	<summary xml:lang="uk">Фільтрувати спам через Bogofilter</summary>
+	<summary xml:lang="zh_CN">使用 Bogofilter 过滤垃圾</summary>
+	<summary xml:lang="zh_TW">使用 Bogofilter 垃圾郵件過濾器</summary>
 	<url type="homepage">https://live.gnome.org/Apps/Evolution</url>
 	<metadata_license>CC0-1.0</metadata_license>
 	<project_license>LGPL</project_license>
 	<updatecontact>evolution-hackers_at_gnome.org</updatecontact>
+	<kudos>
+		<kudo>ModernToolkit</kudo>
+	</kudos>
 </component>

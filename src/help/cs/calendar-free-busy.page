@@ -21,47 +21,42 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Using the Free/Busy view on a groupware server to set up
-    meetings.</desc>
+    <desc>Jak použít zobrazení volných/obsazených termínů na serveru pro týmovou spolupráci k plánování schůzky.</desc>
     <!-- TODO: Really split this into Exchange/Groupware section and normal people section -->
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
   <title>Informace o volném/obsazeném čase</title>
 
-  <p>You can use the Free/Busy search for meetings to determine the
-  availability of invitees.</p>
+  <p>U schůzek můžete použít vyhledávání informací o volném/obsazeném čase zvaných, abyste věděli jestli budou v době schůzky k dispozici.</p>
 
-  <p>In addition to the standard meeting scheduling tools, you can use the
-  Free/Busy view to check whether people are available in advance. The
-  Free/Busy feature is normally a function of dedicated groupware servers such
-  as Microsoft Exchange and Novell GroupWise. However, you can also publish
-  Free/Busy information online, and access Free/Busy information published
-  elsewhere. If not everyone you collaborate with publishes Free/Busy data, you
-  can still use
-  <link xref="calendar-meetings-sending-invitation">meeting invitations</link>
-  to coordinate schedules with other people.</p>
+  <p>Kromě standardních nástrojů pro plánování schůzek můžete využít také zobrazení Volno/obsazeno, chcete-li dopředu zjistit, zda mají lidé čas. Funkce Volno/obsazeno je normálně funkcí vyhrazených serverů pro týmovou spolupráci (groupware) jako je Microsoft Exchange a Novell GroupWise. Nicméně můžete publikovat informace o volném/obsazeném čase také online a přistupovat k nim pak odkudkoliv. Pokud ne každý, s kým spolupracujete, zveřejňuje údaje o volném/obsazeném čase, můžete pořád použít <link xref="calendar-meetings-sending-invitation">pozvánku na událost</link>, chcete-li plány koordinovat s ostatními.</p>
 
   <p>Pro přístup k zobrazení volno/obsazeno:</p>
 
   <steps>
     <item>
-      <p>Click
-      <guiseq><gui>File</gui><gui>New</gui><gui>Meeting</gui></guiseq>.</p>
+      <p>Klikněte na <guiseq><gui>Soubor</gui> <gui>Nový</gui> <gui>Schůzka</gui></guiseq>.</p>
     </item>
     <item>
-      <p>Click <gui style="button">Add</gui> to add the email addresses of
-      people you want to invite.</p>
+      <p>Klikněte na <gui style="button">Přidat</gui>, abyste přidali e-mailové adresy lidí, které chcete pozvat.</p>
     </item>
     <item>
-      <p>Click the <gui>Free/Busy</gui> button on the toolbar, or click
-      <guiseq><gui>Options</gui><gui>Free/Busy</gui></guiseq>.</p>
+      <p>Klikněte na tlačítko <gui>Volno/obsazeno</gui> na nástrojové liště nebo na <guiseq><gui>Volby</gui> <gui>Volno/obsazeno</gui></guiseq>. </p>
     </item>
     <item>
-      <p>Adjust the meeting time, either by dragging the meeting borders or by
-      using the <gui>Autopick</gui> buttons to choose a time automatically,
-      then click <gui style="button">Close</gui>. Attendees on an Exchange
-      server have the appointment updated automatically; others receive email
-      notification of any change in plans.</p>
+      <p>Upravte čas schůzky buď přetažením hranic schůzky nebo použitím tlačítka <gui>Automatický výběr</gui>, které vybere čas automaticky, a potom klikněte na <gui style="button">Zavřít</gui>. Účastníci na serveru Exchange mají událost aktualizovanou automaticky, ostatní obdrží upozornění na jakoukoliv změnu plánů e-mailem.</p>
     </item>
   </steps>
 
@@ -72,46 +67,21 @@
     </item>
     <item>
       <p>Rastr rozvrhu:</p>
-      <p>The Schedule Grid shows the published Free/Busy information for the
-      people you have invited. This is where you compare schedules to find free
-      time to schedule the appointment. Individuals have visible scheduling
-      information only if they use the same Novell GroupWise or Microsoft
-      Exchange server you do (that is, if they are in the same organization as
-      you), or if they publish free/busy information at a web address (URL)
-      that you can reach and you have entered that web address for the specific
-      contact in the
-      <link xref="contacts-usage-edit-contact">Contact Editor</link> under
-      <guiseq><gui>Personal information</gui>
-      <gui>Web Addresses</gui><gui>Free/Busy</gui></guiseq>.</p>
+      <p>Rastr rozvrhu zobrazuje zveřejněné informace o volnu/obsazenu lidí, které jste pozvali. Je to místo, kde můžete srovnávat rozvrhy, abyste nalezli volný čas pro naplánování schůzky. Jednotlivci mají viditelné informace o rozvrhu pouze, když používají stejný server Novell GroupWise nebo Microsoft Exchange jako vy (to je, když jsou ve stejné organizaci jako vy) nebo když zveřejňují informace o volnu/obsazenu na webové adreswe (URL), ke které máte přístup a máte ji vloženu u příslušného kontaktu v <link xref="contacts-usage-edit-contact">editoru kontaktů</link> v pod <guiseq><gui>Osobní údaje</gui> <gui>Webové adresy</gui> <gui>Volno/obsazeno</gui></guiseq>.</p>
     </item>
   </list>
 
-  <p>You can publish Calendar and Free/Busy information to a WebDAV server, FTP
-  server, a remote machine through SSH or to any other web server with HTTP PUT
-  support.</p>
+  <p>Můžete zveřejňovat informace kalendáře a o volném/obsazeném čase na servery WebDAV a FTP nebo na vzdálený počítač skrze SSH nebo na ostatní webové servery s podporou HTTP PUT.</p>
 
-  <p>In corporate environments you can publish Calendar and Free/Busy
-  information to an Exchange or Groupwise server. Note that you must use the
-  top-level Exchange calendar if you want others to be able to access your Free
-  / Busy information when inviting you to a meeting.</p> <p>The default server
-  can be defined under
-  <guiseq><gui>Edit</gui><gui>Preferences</gui>
-  <gui>Calendar and Tasks</gui>
-  <gui>Publishing Information</gui>
-  <gui>Default Free/Busy Server</gui></guiseq>.</p>
+  <p>Ve firemním prostředí můžete zveřejnit kalendář a informace o volném/obsazeném čase na server Exchange nebo Groupwise. Upozorňujeme, že aby ostatní měli přístup k vašim informacím o volném/obsazeném čase, musíte použít kalendář Exchange v nejvyšší úrovni.</p> <p>Výchozí server lze určit v <guiseq><gui>Upravit</gui> <gui>Předvolby</gui> <gui>Kalendář a úkoly</gui> <gui>Zveřejňování informací</gui> <gui>Výchozí server volno/obsazeno</gui></guiseq>.</p>
 
   <!-- This is the location since 3.1.5, see bug
        https://bugzilla.gnome.org/show_bug.cgi?id=655666 -->
 
 <section id="no-groupware">
-  <title>Přístup k datům Volno/obsazeno bez server Groupware</title>
+  <title>Přístup k datům Volno/obsazeno bez serveru pro týmovou spolupráci</title>
 
-  <p>If individuals give you a URL for Free/Busy data or for their web
-  calendar, you can add the URL under
-  <guiseq><gui>Personal Information</gui><gui>Web Addresses</gui></guiseq> in
-  the <link xref="contacts-usage-edit-contact">Contact Editor</link>. Then,
-  when you schedule a meeting with them,<app>Evolution</app> looks up the
-  schedule and displays it in the Free/Busy data.</p>
+  <p>Pokud vám jednotlivci dávají adresu URL pro údaje o volném/obsazeném čase nebo pro svůj webový kalendář, můžete URL zadat do <guiseq><gui>Osobní údaje</gui> <gui>Webové adresy</gui></guiseq> v <link xref="contacts-usage-edit-contact">Editoru kontaktů</link>. Když s nimi budete později plánovat schůzku, vyhledá <app>Evolution</app> příslušný rozvrh a zobrazí jej v datech o volném/obsazeném čase.</p>
 
 </section>
 

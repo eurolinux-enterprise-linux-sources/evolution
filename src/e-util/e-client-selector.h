@@ -67,10 +67,14 @@ EClientCache *	e_client_selector_ref_client_cache
 EClient *	e_client_selector_get_client_sync
 						(EClientSelector *selector,
 						 ESource *source,
+						 gboolean call_allow_auth_prompt,
+						 guint32 wait_for_connected_seconds,
 						 GCancellable *cancellable,
 						 GError **error);
 void		e_client_selector_get_client	(EClientSelector *selector,
 						 ESource *source,
+						 gboolean call_allow_auth_prompt,
+						 guint32 wait_for_connected_seconds,
 						 GCancellable *cancellable,
 						 GAsyncReadyCallback callback,
 						 gpointer user_data);

@@ -25,6 +25,30 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
 <title>Levél megjelölése levélszemétként</title>
@@ -33,7 +57,7 @@
 
 <section id="marking-junk">
 <title>Levélszemét megjelölése saját kezűleg</title>
-<p>Ha az Evolution elvét egy levélszemetet, akkor kattintson a jobb egérgombbal a levélre, majd válassza a <gui>Megjelölés levélszemétként</gui> menüpontot, vagy nyomja meg a <keyseq><key>Ctrl</key><key>J</key></keyseq> billentyűkombinációt, vagy az eszköztár <gui>Levélszemét</gui> gombját. Ha kijavítja, akkor a szűrő a jövőben képes lesz felismerni a hasonló üzeneteket, és idővel egyre megbízhatóbbá fog válni.</p>
+<p>Ha az <app>Evolution</app> elvét egy levélszemetet, akkor kattintson a jobb egérgombbal a levélre, majd válassza a <gui>Megjelölés levélszemétként</gui> menüpontot, vagy nyomja meg a <keyseq><key>Ctrl</key><key>J</key></keyseq> billentyűkombinációt, vagy az eszköztár <gui>Levélszemét</gui> gombját. Ha kijavítja, akkor a szűrő a jövőben képes lesz felismerni a hasonló üzeneteket, és idővel egyre megbízhatóbbá fog válni.</p>
 <p>Ha egy valódi levél tévedésből kerül megjelölésre, akkor távolítsa el a Levélszemét mappából a levélen való jobb kattintással, és a <gui>Megjelölés nem szemétként</gui> menüpont kiválasztásával, vagy a <keyseq><key>Shift</key><key>Ctrl</key><key>J</key></keyseq> kombináció megnyomásával, vagy az eszköztár <gui>Nem levélszemét</gui> gombjának megnyomásával.</p>
 
 </section>

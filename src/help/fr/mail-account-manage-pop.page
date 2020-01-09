@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="guide" id="mail-account-manage-pop" xml:lang="fr">
 
   <info>
-    <desc>Ajouter et modifier un compte de messagerie POP dans Evolution.</desc>
+    <desc>Add and edit a POP mail account in <app>Evolution</app>.</desc>
 
     <link type="guide" xref="mail-account-management#mail-common-account-types"/>
 
@@ -49,7 +49,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -67,28 +67,28 @@ via XInclude. See +http://blogs.gnome.org/shaunm/2011/07/21/understanding-xinclu
 
 <section id="receiving-email">
 <info>
-  <title type="link">Receiving Email and Receiving options (POP accounts)</title>
+  <title type="link">Réception des courriels et options de réception (comptes POP)</title>
 </info>
 <title>Réception des courriels et options de réception</title>
 </section>
 
 <section id="sending-email">
 <info>
-  <title type="link">Sending Email (POP accounts)</title>
+  <title type="link">Envoi du courriel (comptes POP)</title>
 </info>
 <title>Envoi du courriel</title>
 </section>
 
 <section id="defaults">
 <info>
-  <title type="link">Defaults (POP accounts)</title>
+  <title type="link">Par défaut (comptes POP)</title>
 </info>
 <title>Valeurs par défaut</title>
 </section>
 
 <section id="security">
 <info>
-  <title type="link">Security (POP accounts)</title>
+  <title type="link">Sécurité (comptes POP)</title>
 </info>
 <title>Sécurité</title>
 </section>

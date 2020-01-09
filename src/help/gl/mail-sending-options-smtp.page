@@ -37,11 +37,11 @@
 </item>
 <item><p>If the server requires authentication, you need to provide the following information:</p>
 <list>
-  <item><p>Select the authentication type in the Authentication list, or click <gui>Check for Supported Types</gui> to have Evolution check. Some servers do not support this, so clicking this button is not a guarantee that available mechanisms actually work.</p></item>
+  <item><p>Select the authentication type in the Authentication list, or click <gui>Check for Supported Types</gui> to have <app>Evolution</app> check. Some servers do not support this, so clicking this button is not a guarantee that available mechanisms actually work.</p></item>
   <item><p>Escriba o seu nome de usuario.</p></item>
 </list>
 </item>
-<item><p>Seleccione <gui>Usar conexión segura</gui> se quere conectarse de forma segura.</p></item>
+<item><p>Choose <gui>Use a secure connection</gui> if you want to connect securely.</p></item>
 </list>
 
 </page>

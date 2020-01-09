@@ -13,26 +13,34 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Editing in appointment in your calendar.</desc>
+    <desc>Jak upravit událost ve svém kalendáři.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Editing an Appointment</title>
+  <title>Úprava události</title>
 
-  <p>If you want to change an appointment that already exists in your
-  calendars:</p>
+  <p>Když chcete změnit stávající událost ve svém kalendáři:</p>
 
   <steps>
     <item>
-      <p>Double-click on the appointment that you want to edit in the
-      calendar.</p>
+      <p>Dvojitě klikněte na událost, kterou chcete v kalendáři upravit.</p>
     </item>
     <item>
-      <p>Edit the appointment (see
-      <link xref="calendar-usage-add-appointment">Adding an Appointment</link>
-      for the list of available options).</p>
+      <p>Událost upravte (viz <link xref="calendar-usage-add-appointment">Přidání události</link> ohledně možných voleb).</p>
     </item>
     <item>
-      <p>Klikněte na tlačítko <gui style="button">Uložit</gui>, nebo na <guiseq><gui>Soubor</gui><gui>Uložit</gui></guiseq>.</p>
+      <p>Klikněte na tlačítko <gui style="button">Uložit</gui> nebo na <guiseq><gui>Soubor</gui><gui>Uložit</gui></guiseq>.</p>
     </item>
   </steps>
 

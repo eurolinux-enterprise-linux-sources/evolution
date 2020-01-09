@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-composer-html-image" xml:lang="cs">
 
   <info>
-    <desc>Embed a picture in the mail composer.</desc>
+    <desc>Jak vložit obrázek v editoru zpráv.</desc>
     <link type="guide" xref="mail-composer-html#formatting-options-html"/>
 
     <revision pkgversion="3.5.90" version="0.5" date="2012-08-16" status="final"/>
@@ -16,17 +16,29 @@
     
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Inserting an Image in HTML</title>
+<title>Vkládání obrázků do HTML</title>
 
-<p>You can insert an image into the email (at the current position of the cursor):</p>
+<p>Do e-mailu můžete vložit obrázek (na místo aktuální pozice kurzoru):</p>
 <steps>
-<item><p>Click <guiseq><gui>Insert</gui><gui>Image...</gui></guiseq> in the menubar.</p></item>
-<item><p>Browse to and select the file.</p></item>
-<item><p>Click <gui>Open</gui>.</p></item>
+<item><p>V nabídkové liště klikněte na <guiseq><gui>Vložit</gui> <gui>Obrázek…</gui></guiseq></p></item>
+<item><p>Najděte a vyberte soubor.</p></item>
+<item><p>Klikněte na <gui>Otevřít</gui>.</p></item>
 </steps>
 
-<p>Alternately, you can also use the <media type="image" its:translate="no" src="./figures/html-composer-insert-image.png"/> icon in the second bar below the <gui>Subject</gui> line, or drag an image into the text area of the message composer.</p>
+<p>Případně můžete také použít ikonu <media type="image" its:translate="no" src="./figures/html-composer-insert-image.png"/> ve druhé liště pod řádkem <gui>Předmět</gui> nebo přetáhnout obrázek do textové oblasti editoru zpráv.</p>
 
 </page>

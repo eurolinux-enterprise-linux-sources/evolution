@@ -28,23 +28,29 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
-  <title>Verfügbare Bedingungen für Suchordner</title>
+  <title>Verfügbare Bedingungen für <gui>Suchordner</gui></title>
 
 <list>
 
@@ -53,7 +59,7 @@ included by XInclude. See http://blogs.gnome.org/shaunm/2011/07/21/understanding
 <include xmlns="http://www.w3.org/2001/XInclude" href="xinclude-filter-vfolder-conditions.xml" xpointer="xmlns(mal=http://projectmallard.org/1.0/)xpointer(/mal:info/mal:item)"/>
 
 <item><p>Nachrichtenort:</p>
-<p>Prüft, ob sich die Nachricht in einem bestimmten Ordner befindet.</p><p>Die <gui>Papierkorb</gui>- und <gui>Unerwünscht</gui>-Ordner von Evolution sind <link xref="mail-search-folders">Suchordner</link> und können demnach hier nicht ausgewählt werden.</p></item>
+<p>Prüft, ob sich die Nachricht in einem bestimmten Ordner befindet.</p><p>Die <gui>Papierkorb</gui>- und <gui>Unerwünscht</gui>-Ordner von <gui>Evolution</gui> sind <link xref="mail-search-folders">Suchordner</link> und können demnach hier nicht ausgewählt werden.</p></item>
 
 <item><p>Auf alles zutreffen:</p>
 <p>Wendet eine Aktion immer auf jede Nachricht ohne weitere Bedingungen an. Dies kann am Ende der Suchordnerliste nützlich sein, um alle E-Mails abzudecken, die auf keinen der vorhergehenden Suchordner in der Liste passen.</p></item>

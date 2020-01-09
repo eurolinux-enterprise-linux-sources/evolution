@@ -56,18 +56,13 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
   <title>Publication d'agenda</title>
 
-  <p>In order to make one of your calendars available to the public, you can
-  define calendars to be uploaded to a web server under
-  <guiseq><gui>Edit</gui><gui>Preferences</gui>
-  <gui>Calendar and Tasks</gui>
-  <gui>Publishing Information</gui>
-  <gui>Locations</gui><gui style="button">Add</gui></guiseq>.</p>
+  <p>Afin de rendre public l'un de vos agendas, vous pouvez définir des agendas à téléverser vers un serveur Web sous <guiseq><gui>Édition</gui><gui>Préférences</gui><gui>Agenda et tâches</gui><gui>Publication d'informations</gui><gui>Emplacements</gui><gui style="button">Ajouter</gui></guiseq>.</p>
 
   <!-- This is the location since 3.1.5, see bug
      https://bugzilla.gnome.org/show_bug.cgi?id=655666 -->

@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-received-notification" xml:lang="cs">
 
   <info>
-    <desc>Options on notifications of newly received mail.</desc>
+    <desc>Jak navolit upozorňování na nově příchozí poštu.</desc>
 
     <link type="guide" xref="mail-send-and-receive"/>
     <link type="seealso" xref="calendar-alarms-and-reminders"/>
@@ -16,20 +16,32 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Getting notified of new mail</title>
+<title>Upozorňování na novou poštu</title>
 
-<p>Evolution always notifies you of new messages by adding a yellow star to the mailer icon in the window <link xref="change-switcher-appearance">switcher</link>.</p>
+<p><app>Evolution</app> vždy upozorňuje na nové zprávy přidáním žluté hvězdičky k ikoně poštovního klienta v <link xref="change-switcher-appearance">přepínači</link> oken.</p>
 <!-- Translators: Please make sure that the screenshot does have the small yellow star in the Mail icon -->
 <media type="image" src="./figures/new-mail-switcher.png" width="256">
-  <p>Switcher layout when a new message has arrived</p>
+  <p>Vzhled přepínače, když přijde nová pošta</p>
 </media>
 
-<p>In order to also be notified of new messages in the GNOME Notification area at the bottom of the screen, make sure that <guiseq><gui>Edit</gui><gui>Plugins</gui><gui>Mail Notification</gui></guiseq> is enabled and that you have set your preferred options in the <gui>Configuration</gui> tab.</p>
+<p>Abyste byli upozorňováni na nové zprávy také v oznamovací oblasti GNOME ve spodní části obrazovky, musíte mít zapnutý zásuvný modul <guiseq><gui>Upravit</gui><gui>Zásuvné moduly</gui><gui>Upozorňování na poštu</gui></guiseq> a mít správně nastavené volby na kartě <gui>Nastavení</gui>.</p>
 <!-- TODO: This screenshot might be outdated in 3.8 with the new notification section down there -->
 <media type="image" src="./figures/new-mail-notification.png" width="512">
-  <p>Switcher layout when a new message has arrived</p>
+  <p>Vzhled přepínače, když přijde nová pošta</p>
 </media>
 
 <!-- TODO: Quite short; plus recheck once https://bugzilla.gnome.org/show_bug.cgi?id=653699 is fixed -->

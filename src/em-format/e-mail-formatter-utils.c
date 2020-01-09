@@ -20,6 +20,7 @@
 #endif
 
 #include "e-mail-formatter-utils.h"
+#include "e-mail-part-headers.h"
 
 #include <string.h>
 #include <glib/gi18n.h>
@@ -281,7 +282,7 @@ e_mail_formatter_format_header (EMailFormatter *formatter,
 	e_mail_formatter_canon_header_name (canon_name);
 
 	for (i = 0; addrspec_hdrs[i]; i++) {
-		if (g_str_equal (canon_name, addrspec_hdrs[i])) {
+		if (g_ascii_strcasecmp (canon_name, addrspec_hdrs[i]) == 0) {
 			addrspec = TRUE;
 			break;
 		}
@@ -400,7 +401,7 @@ e_mail_formatter_format_header (EMailFormatter *formatter,
 		flags |= E_MAIL_FORMATTER_HEADER_FLAG_BOLD;
 
 	} else if (g_str_equal (canon_name, "Newsgroups")) {
-		struct _camel_header_newsgroup *ng, *scan;
+		GSList *ng, *scan;
 		GString *html;
 
 		buf = camel_header_unfold (header_value);
@@ -415,22 +416,24 @@ e_mail_formatter_format_header (EMailFormatter *formatter,
 		html = g_string_new ("");
 		scan = ng;
 		while (scan) {
+			const gchar *newsgroup = scan->data;
+
 			if (flags & E_MAIL_FORMATTER_HEADER_FLAG_NOLINKS)
 				g_string_append_printf (
-					html, "%s", scan->newsgroup);
+					html, "%s", newsgroup);
 			else
 				g_string_append_printf (
 					html, "<a href=\"news:%s\">%s</a>",
-					scan->newsgroup, scan->newsgroup);
-			scan = scan->next;
+					newsgroup, newsgroup);
+			scan = g_slist_next (scan);
 			if (scan)
 				g_string_append_printf (html, ", ");
 		}
 
-		camel_header_newsgroups_free (ng);
+		g_slist_free_full (ng, g_free);
 
 		txt = html->str;
-		g_string_free (html, FALSE);
+		value = g_string_free (html, FALSE);
 
 		flags |= E_MAIL_FORMATTER_HEADER_FLAG_HTML;
 		flags |= E_MAIL_FORMATTER_HEADER_FLAG_BOLD;
@@ -500,25 +503,119 @@ e_mail_formatter_parse_html_mnemonics (const gchar *label,
 	if (out_access_key != NULL)
 		*out_access_key = NULL;
 
+	if (!g_utf8_validate (label, -1, NULL)) {
+		gchar *res = g_strdup (label);
+
+		g_return_val_if_fail (g_utf8_validate (label, -1, NULL), res);
+
+		return res;
+	}
+
 	pos = strstr (label, "_");
 	if (pos != NULL) {
-		gchar ak = pos[1];
-
-		/* Convert to uppercase */
-		if (ak >= 'a')
-			ak = ak - 32;
+		gunichar uk;
 
 		html_label = g_string_new ("");
 		g_string_append_len (html_label, label, pos - label);
-		g_string_append_printf (html_label, "<u>%c</u>", pos[1]);
-		g_string_append (html_label, &pos[2]);
 
-		if (out_access_key != NULL && ak != '\0')
-			*out_access_key = g_strdup_printf ("%c", ak);
+		pos++;
+		uk = g_utf8_get_char (pos);
+
+		pos = g_utf8_next_char (pos);
+
+		g_string_append (html_label, "<u>");
+		g_string_append_unichar (html_label, uk);
+		g_string_append (html_label, "</u>");
+		g_string_append (html_label, pos);
+
+		if (out_access_key != NULL && uk != 0) {
+			gchar ukstr[10];
+			gint len;
+
+			len = g_unichar_to_utf8 (g_unichar_toupper (uk), ukstr);
+			if (len > 0)
+				*out_access_key = g_strndup (ukstr, len);
+		}
 
 	} else {
 		html_label = g_string_new (label);
 	}
 
 	return g_string_free (html_label, FALSE);
+}
+
+void
+e_mail_formatter_format_security_header (EMailFormatter *formatter,
+                                         EMailFormatterContext *context,
+                                         GString *buffer,
+                                         EMailPart *part,
+                                         guint32 flags)
+{
+	const gchar* part_id;
+	gchar* part_id_prefix;
+	GString* tmp;
+	GQueue queue = G_QUEUE_INIT;
+	GList *head, *link;
+
+	g_return_if_fail (E_IS_MAIL_PART_HEADERS (part));
+
+	/* Get prefix of this PURI */
+	part_id = e_mail_part_get_id (part);
+	part_id_prefix = g_strndup (part_id, g_strrstr (part_id, ".") - part_id);
+
+	/* Add encryption/signature header */
+	tmp = g_string_new ("");
+
+	e_mail_part_list_queue_parts (context->part_list, NULL, &queue);
+
+	head = g_queue_peek_head_link (&queue);
+
+	/* Find first secured part. */
+	for (link = head; link != NULL; link = g_list_next(link)) {
+		EMailPart *mail_part = link->data;
+
+		if (!e_mail_part_has_validity (mail_part))
+			continue;
+
+		if (!e_mail_part_id_has_prefix (mail_part, part_id_prefix))
+			continue;
+
+		if (e_mail_part_get_validity (mail_part, E_MAIL_PART_VALIDITY_PGP | E_MAIL_PART_VALIDITY_SIGNED)) {
+			g_string_append (tmp, _("GPG signed"));
+		}
+
+		if (e_mail_part_get_validity (mail_part, E_MAIL_PART_VALIDITY_PGP | E_MAIL_PART_VALIDITY_ENCRYPTED)) {
+			if (tmp->len > 0)
+				g_string_append (tmp, ", ");
+			g_string_append (tmp, _("GPG encrypted"));
+		}
+
+		if (e_mail_part_get_validity (mail_part, E_MAIL_PART_VALIDITY_SMIME | E_MAIL_PART_VALIDITY_SIGNED)) {
+			if (tmp->len > 0)
+				g_string_append (tmp, ", ");
+			g_string_append (tmp, _("S/MIME signed"));
+		}
+
+		if (e_mail_part_get_validity (mail_part, E_MAIL_PART_VALIDITY_SMIME | E_MAIL_PART_VALIDITY_ENCRYPTED)) {
+			if (tmp->len > 0)
+				g_string_append (tmp, ", ");
+			g_string_append (tmp, _("S/MIME encrypted"));
+		}
+
+		break;
+	}
+
+	if (tmp->len > 0) {
+		e_mail_formatter_format_header (
+			formatter, buffer,
+			_("Security"), tmp->str,
+			flags,
+			"UTF-8");
+	}
+
+	while (!g_queue_is_empty (&queue))
+		g_object_unref (g_queue_pop_head (&queue));
+
+	g_string_free (tmp, TRUE);
+	g_free (part_id_prefix);
 }

@@ -4,7 +4,7 @@
   <info>
     <link type="guide" xref="calendar-layout"/>
 
-    <revision pkgversion="3.0.2" version="0.2" date="2011-07-30" status="final"/>
+    <revision pkgversion="3.13.90" version="0.3" date="2015-03-10" status="final"/>
 
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
@@ -59,15 +59,13 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
   <title>Options générales de formatage</title>
 
-  <p>The following options are available under
-  <guiseq><gui>Edit</gui><gui>Preferences</gui>
-  <gui>Calendar and Tasks</gui><gui>General</gui></guiseq>.</p>
+  <p>Les options suivantes sont disponibles sous <guiseq><gui>Édition</gui><gui>Préférences</gui><gui>Agenda et tâches</gui><gui>Général</gui></guiseq>.</p>
 
 <section id="time">
   <title>Heure</title>
@@ -108,10 +106,12 @@
 
 </section>
 
-<section id="alerts">
-  <title>Alertes</title>
+<section id="date-time">
+  <title>Format de date et d'heure</title>
 
-  <p>Si vous voulez qu'Evolution vous envoie une alerte avant de supprimer un rendez-vous, sélectionnez cette option.</p>
+  <p>Vous pouvez modifier le format de la colonne <gui>Date</gui> en définissant votre format préféré.</p>
+
+  <p>Les substituants dans l'expression de format sont au format strftime. Pour une liste complète des formats disponibles, saisissez <cmd>date --help</cmd> dans l'application <app>Terminal</app>.</p>
 
 </section>
 

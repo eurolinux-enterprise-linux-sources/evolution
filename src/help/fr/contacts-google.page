@@ -49,19 +49,17 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
   <title>Utilisation d'un carnet d'adresses Google</title>
 
-  <p>To add such an address book to <app>Evolution</app>, perform the following
-  steps:</p>
+  <p>Pour ajouter ce type de carnet d'adresses à <app>Evolution</app>, effectuez les étapes suivantes :</p>
 
   <steps>
     <item>
-      <p>Click <guiseq><gui>File</gui><gui>New</gui>
-      <gui>Address Book</gui></guiseq>.</p>
+      <p>Cliquez sur <guiseq><gui>Fichier</gui><gui>Nouveau</gui><gui>Carnet d'adresses</gui></guiseq>.</p>
     </item>
     <item>
       <p>Sélectionnez le type <gui>Google</gui>.</p>
@@ -76,14 +74,14 @@
       <p>Saisissez votre nom d'utilisateur Google.</p>
     </item>
     <item>
-      <p>Choisissez <gui>Utiliser une connexion sécurisée</gui> si vous souhaitez utiliser une connexion sécurisée.</p>
+      <p>Choose <gui>Use a secure connection</gui> if you want to connect
+      securely.</p>
     </item>
     <item>
       <p>Cliquez sur <gui style="button">Valider</gui>.</p>
     </item>
   </steps>
 
-  <p>The address book will be added to the list of address books in
-  <app>Evolution</app>.</p>
+  <p>Le carnet d'adresses sera ajouté à la liste des carnets d'adresses dans <app>Evolution</app>.</p>
 
 </page>

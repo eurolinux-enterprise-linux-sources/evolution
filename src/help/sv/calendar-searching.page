@@ -24,57 +24,62 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Searching appointments and meetings.</desc>
+    <desc>Sök efter möten och sammanträden.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
   <title>Sök efter kalenderobjekt</title>
 
 <section id="quick-search">
-  <title>Quick Search</title>
+  <title>Snabbsökning</title>
 
-  <p>In the Calendar view, you can quickly search for appointments and meetings
-  either by summary or by category.</p>
+  <p>I kalendervyn kan du snabbt söka efter möten och sammanträden antingen efter sammanfattning eller efter kategori.</p>
 
-  <p>Searching by summary:</p>
-
-  <steps>
-    <item>
-      <p>Click the search icon
-      <media type="image" mime="image/png" its:translate="no" src="figures/search-icon.png"/>
-      to expand the drop-down list.</p>
-    </item>
-    <item>
-      <p>Select the search condition from the list.</p>
-    </item>
-    <item>
-      <p>Enter the text you want to search for and press <key>Enter</key>.</p>
-    </item>
-    <item>
-      <p><app>Evolution</app> displays the search results.</p>
-    </item>
-  </steps>
-
-  <p>Searching by category:</p>
+  <p>Sök efter sammanfattning:</p>
 
   <steps>
     <item>
-      <p>Click the <gui>Show</gui> drop-down list.</p>
+      <p>Klicka på sökikonen <media type="image" mime="image/png" its:translate="no" src="figures/search-icon.png"/> för att expandera rullgardinslistan.</p>
     </item>
     <item>
-      <p>Select the category from the list.</p>
+      <p>Välj sökvillkoret från listan.</p>
     </item>
     <item>
-      <p><app>Evolution</app> displays the search results.</p>
+      <p>Mata in texten du vill söka efter och tryck <key>Retur</key>.</p>
+    </item>
+    <item>
+      <p><app>Evolution</app> visar sökresultaten.</p>
     </item>
   </steps>
 
-  <p>To go through the results you can use the two arrow buttons next to the
-  search field. This searches in currently enabled calendars. It searches from
-  the currently selected day in the given direction, in a range of 10 years by
-  default.</p>
+  <p>Sök efter kategori:</p>
 
-  <p>If you want to set several search conditions, you should use an Advanced
-  search, which is described below.</p>
+  <steps>
+    <item>
+      <p>Klicka på rullgardinsmenyn <gui>Visa</gui>.</p>
+    </item>
+    <item>
+      <p>Välj kategorin från listan.</p>
+    </item>
+    <item>
+      <p><app>Evolution</app> visar sökresultaten.</p>
+    </item>
+  </steps>
+
+  <p>För att gå genom resultaten kan du använda de två pilknapparna intill sökfältet. Detta genomsöker kalendrar som för närvarande är aktiverade. Sökningen sker från den valda dagen i den angivna riktningen som standard upp till 10 år.</p>
+
+  <p>Om du vill ställa in flera sökvillkor bör du använda en Avancerad sökning som beskrivs nedan.</p>
 
 </section>
 

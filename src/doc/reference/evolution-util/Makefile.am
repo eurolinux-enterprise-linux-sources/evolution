@@ -4,11 +4,11 @@ DOC_MODULE = evolution-util
 # The top-level SGML file.
 DOC_MAIN_SGML_FILE = evolution-util-docs.sgml
 
-# Extra options to supply to gtkdoc-scan.
-SCAN_OPTIONS = --deprecated-guards="EDS_DISABLE_DEPRECATED"
-
 # The directory containing the source code. Relative to $(srcdir).
 DOC_SOURCE_DIR = $(top_srcdir)/e-util
+
+# Extra options to supply to gtkdoc-scan
+SCAN_OPTIONS = --rebuild-sections --rebuild-types
 
 # Used for dependencies. The docs will be rebuilt if any of these change.
 HFILE_GLOB = $(top_srcdir)/e-util/*.h
@@ -16,6 +16,8 @@ CFILE_GLOB = $(top_srcdir)/e-util/*.c
 
 # Ignore all accessiblity headers.
 IGNORE_HFILES = \
+	e-html-editor-actions.h \
+	e-html-editor-private.h \
 	e-marshal.h \
 	e-table-col-dnd.h \
 	e-table-defines.h \
@@ -29,6 +31,7 @@ IGNORE_HFILES = \
 	gal-a11y-e-cell.h \
 	gal-a11y-e-cell-popup.h \
 	gal-a11y-e-cell-registry.h \
+	gal-a11y-e-cell-text.h \
 	gal-a11y-e-cell-toggle.h \
 	gal-a11y-e-cell-tree.h \
 	gal-a11y-e-cell-vbox.h \
@@ -45,6 +48,16 @@ IGNORE_HFILES = \
 	gal-a11y-e-tree.h \
 	gal-a11y-factory.h \
 	gal-a11y-util.h \
+	test-html-editor-units-bugs.h \
+	test-html-editor-units-utils.h \
+	test-keyfile-settings-backend.h \
+	$(NULL)
+
+GITIGNOREFILES = \
+	$(DOC_MODULE)-overrides.txt \
+	$(DOC_MODULE)-sections.txt \
+	$(DOC_MODULE).hierarchy \
+	$(DOC_MODULE).types \
 	$(NULL)
 
 GTKDOC_CFLAGS  =					\
@@ -52,18 +65,18 @@ GTKDOC_CFLAGS  =					\
 	-I$(top_builddir)				\
 	$(EVOLUTION_DATA_SERVER_CFLAGS)			\
 	$(GNOME_PLATFORM_CFLAGS)			\
-	$(GTKHTML_CFLAGS)				\
 	$(NULL)
 
 GTKDOC_LIBS = 						\
 	$(top_builddir)/e-util/libevolution-util.la	\
 	$(EVOLUTION_DATA_SERVER_LIBS)			\
 	$(GNOME_PLATFORM_LIBS)				\
-	$(GTKHTML_LIBS)					\
 	$(NULL)
 
 # Extra options to supply to gtkdoc-mkdb
 MKDB_OPTIONS = --output-format=xml --sgml-mode
+
+DISTCLEANFILES = $(GITIGNOREFILES)
 
 # This includes the standard gtk-doc make rules, copied by gtkdocize.
 include $(top_srcdir)/gtk-doc.make

@@ -87,7 +87,11 @@ enum {
 	E_MAIL_READER_SELECTION_HAS_ATTACHMENTS = 1 << 15,
 	E_MAIL_READER_SELECTION_IS_MAILING_LIST = 1 << 16,
 	E_MAIL_READER_FOLDER_IS_JUNK = 1 << 17,
-	E_MAIL_READER_FOLDER_IS_VTRASH = 1 << 18
+	E_MAIL_READER_FOLDER_IS_VTRASH = 1 << 18,
+	E_MAIL_READER_FOLDER_ARCHIVE_FOLDER_SET = 1 << 19,
+	E_MAIL_READER_SELECTION_HAS_IGNORE_THREAD = 1 << 20,
+	E_MAIL_READER_SELECTION_HAS_NOTIGNORE_THREAD = 1 << 21,
+	E_MAIL_READER_SELECTION_HAS_MAIL_NOTE = 1 << 22
 };
 
 struct _EMailReaderInterface {
@@ -171,6 +175,11 @@ void		e_mail_reader_set_group_by_threads
 EMailReplyStyle	e_mail_reader_get_reply_style	(EMailReader *reader);
 void		e_mail_reader_set_reply_style	(EMailReader *reader,
 						 EMailReplyStyle style);
+gboolean	e_mail_reader_get_mark_seen_always
+						(EMailReader *reader);
+void		e_mail_reader_set_mark_seen_always
+						(EMailReader *reader,
+						 gboolean mark_seen_always);
 void		e_mail_reader_create_charset_menu
 						(EMailReader *reader,
 						 GtkUIManager *ui_manager,
@@ -178,9 +187,13 @@ void		e_mail_reader_create_charset_menu
 void		e_mail_reader_show_search_bar	(EMailReader *reader);
 void		e_mail_reader_avoid_next_mark_as_seen
 						(EMailReader *reader);
+void		e_mail_reader_unset_folder_just_selected
+						(EMailReader *reader);
 void		e_mail_reader_composer_created	(EMailReader *reader,
 						 EMsgComposer *composer,
 						 CamelMimeMessage *message);
+void		e_mail_reader_connect_remote_content
+						(EMailReader *reader);
 
 G_END_DECLS
 

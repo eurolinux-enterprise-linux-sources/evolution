@@ -560,13 +560,8 @@ set_empty (EReflow *reflow)
 			if (reflow->empty_message) {
 				gnome_canvas_item_set (
 					reflow->empty_text,
-					"width", reflow->minimum_width,
 					"text", reflow->empty_message,
 					NULL);
-				e_canvas_item_move_absolute (
-					reflow->empty_text,
-					reflow->minimum_width / 2,
-					0);
 			} else {
 				g_object_run_dispose (G_OBJECT (reflow->empty_text));
 				reflow->empty_text = NULL;
@@ -576,17 +571,23 @@ set_empty (EReflow *reflow)
 				reflow->empty_text = gnome_canvas_item_new (
 					GNOME_CANVAS_GROUP (reflow),
 					e_text_get_type (),
-					"width", reflow->minimum_width,
 					"clip", TRUE,
 					"use_ellipsis", TRUE,
-					"justification", GTK_JUSTIFY_CENTER,
+					"justification", GTK_JUSTIFY_LEFT,
 					"text", reflow->empty_message,
 					NULL);
-				e_canvas_item_move_absolute (
-					reflow->empty_text,
-					reflow->minimum_width / 2,
-					0);
 			}
+		}
+
+		if (reflow->empty_text) {
+			gdouble text_width = -1.0;
+
+			g_object_get (reflow->empty_text, "text_width", &text_width, NULL);
+
+			e_canvas_item_move_absolute (
+				reflow->empty_text,
+				(MAX (reflow->width - text_width, 0) + E_REFLOW_BORDER_WIDTH) / 2,
+				0);
 		}
 	} else {
 		if (reflow->empty_text) {
@@ -733,24 +734,21 @@ connect_adjustment (EReflow *reflow,
 		G_CALLBACK (adjustment_changed), reflow);
 }
 
-#if 0
 static void
-set_scroll_adjustments (GtkLayout *layout,
-                        GtkAdjustment *hadj,
-                        GtkAdjustment *vadj,
+set_scroll_adjustments (GnomeCanvas *canvas,
+                        GParamSpec *param,
                         EReflow *reflow)
 {
-	connect_adjustment (reflow, hadj);
+	connect_adjustment (reflow, gtk_scrollable_get_hadjustment (GTK_SCROLLABLE (GNOME_CANVAS_ITEM (reflow)->canvas)));
 }
 
 static void
 connect_set_adjustment (EReflow *reflow)
 {
 	reflow->set_scroll_adjustments_id = g_signal_connect (
-		GNOME_CANVAS_ITEM (reflow)->canvas, "set_scroll_adjustments",
+		GNOME_CANVAS_ITEM (reflow)->canvas, "notify::hadjustment",
 		G_CALLBACK (set_scroll_adjustments), reflow);
 }
-#endif
 
 static void
 disconnect_set_adjustment (EReflow *reflow)
@@ -942,9 +940,7 @@ e_reflow_realize (GnomeCanvasItem *item)
 
 	adjustment = gtk_scrollable_get_hadjustment (GTK_SCROLLABLE (item->canvas));
 
-#if 0
 	connect_set_adjustment (reflow);
-#endif
 	connect_adjustment (reflow, adjustment);
 
 	page_size = gtk_adjustment_get_page_size (adjustment);
@@ -1272,10 +1268,6 @@ e_reflow_draw (GnomeCanvasItem *item,
 
 	cairo_save (cr);
 
-	gtk_style_context_get_background_color (
-		style_context, GTK_STATE_FLAG_ACTIVE, &color);
-	gdk_cairo_set_source_rgba (cr, &color);
-
 	for (; i < reflow->column_count; i++) {
 		if (running_width > x + width)
 			break;
@@ -1321,7 +1313,7 @@ e_reflow_draw (GnomeCanvasItem *item,
 		cairo_save (cr);
 
 		gtk_style_context_get_color (
-			style_context, GTK_STATE_FLAG_NORMAL, &color);
+			style_context, gtk_style_context_get_state (style_context), &color);
 		gdk_cairo_set_source_rgba (cr, &color);
 
 		for (; i < reflow->column_count; i++) {
@@ -1506,6 +1498,14 @@ e_reflow_reflow (GnomeCanvasItem *item,
 	reflow->width = running_width + reflow->column_width + E_REFLOW_BORDER_WIDTH;
 	if (reflow->width < reflow->minimum_width)
 		reflow->width = reflow->minimum_width;
+	if (reflow->empty_text) {
+		gdouble text_width = -1.0;
+
+		g_object_get (reflow->empty_text, "text_width", &text_width, NULL);
+
+		if (text_width + (E_REFLOW_BORDER_WIDTH * 2) > reflow->width)
+			reflow->width = text_width + (E_REFLOW_BORDER_WIDTH * 2);
+	}
 	if (old_width != reflow->width)
 		e_canvas_item_request_parent_reflow (item);
 }

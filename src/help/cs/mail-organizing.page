@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="guide" id="mail-organizing" xml:lang="cs">
 
   <info>
-    <desc>On folders, sorting, searching, filters, search folders, and labels.</desc>
+    <desc>Řazení, hledání, filtrování, vyhledávací složky a označování štítky u složek.</desc>
 
     <link type="guide" xref="index#mail-basic"/>
     <link type="guide" xref="organizing"/>
@@ -16,13 +16,25 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Sorting and organizing mail</title>
+<title>Řazení a třídění pošty</title>
 
-<p>Evolution provides several options to organize your mail according to your needs.</p>
+<p><app>Evolution</app> poskytuje několik možností, jak si v poště udělat pořádek podle svých potřeb.</p>
 
   <section id="advanced" style="2column">
-    <title>Advanced Options</title>
+    <title>Pokročilé volby</title>
   </section>
 </page>

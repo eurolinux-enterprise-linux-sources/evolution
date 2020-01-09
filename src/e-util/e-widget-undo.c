@@ -90,6 +90,7 @@ free_undo_data (gpointer ptr)
 		for (ii = 0; ii < data->undo_len; ii++) {
 			free_undo_info (data->undo_stack[ii]);
 		}
+		g_free (data->undo_stack);
 		g_free (data);
 	}
 }
@@ -510,6 +511,7 @@ undo_reset (GObject *object)
 
 	data->n_undos = 0;
 	data->n_redos = 0;
+	data->current_info = NULL;
 }
 
 static void

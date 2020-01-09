@@ -121,7 +121,7 @@ alert_dialog_constructed (GObject *object)
 	GtkWidget *widget;
 	PangoAttribute *attr;
 	PangoAttrList *list;
-	GList *actions;
+	GList *link;
 	const gchar *primary, *secondary;
 	gint default_response;
 
@@ -154,8 +154,8 @@ alert_dialog_constructed (GObject *object)
 		G_CALLBACK (gtk_dialog_response), dialog);
 
 	/* Add buttons from actions. */
-	actions = e_alert_peek_actions (alert);
-	if (!actions) {
+	link = e_alert_peek_actions (alert);
+	if (!link && !e_alert_peek_widgets (alert)) {
 		GtkAction *action;
 
 		/* Make sure there is at least one action,
@@ -165,11 +165,12 @@ alert_dialog_constructed (GObject *object)
 		e_alert_add_action (alert, action, GTK_RESPONSE_CLOSE);
 		g_object_unref (action);
 
-		actions = e_alert_peek_actions (alert);
+		link = e_alert_peek_actions (alert);
 	}
 
-	while (actions != NULL) {
+	while (link != NULL) {
 		GtkWidget *button;
+		GtkAction *action = GTK_ACTION (link->data);
 		gpointer data;
 
 		/* These actions are already wired to trigger an
@@ -182,18 +183,11 @@ alert_dialog_constructed (GObject *object)
 		button = gtk_button_new ();
 
 		gtk_widget_set_can_default (button, TRUE);
-
-		gtk_activatable_set_related_action (
-			GTK_ACTIVATABLE (button),
-			GTK_ACTION (actions->data));
-
-		gtk_box_pack_end (
-			GTK_BOX (action_area),
-			button, FALSE, FALSE, 0);
+		gtk_activatable_set_related_action (GTK_ACTIVATABLE (button), action);
+		gtk_box_pack_end (GTK_BOX (action_area), button, FALSE, FALSE, 0);
 
 		/* This is set in e_alert_add_action(). */
-		data = g_object_get_data (
-			actions->data, "e-alert-response-id");
+		data = g_object_get_data (G_OBJECT (action), "e-alert-response-id");
 
 		/* Normally GtkDialog sets the initial focus widget to
 		 * the button corresponding to the default response, but
@@ -205,7 +199,15 @@ alert_dialog_constructed (GObject *object)
 			gtk_widget_grab_focus (button);
 		}
 
-		actions = g_list_next (actions);
+		link = g_list_next (link);
+	}
+
+	link = e_alert_peek_widgets (alert);
+	while (link != NULL) {
+		widget = link->data;
+
+		gtk_box_pack_end (GTK_BOX (action_area), widget, FALSE, FALSE, 0);
+		link = g_list_next (link);
 	}
 
 	widget = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 12);
@@ -342,12 +344,19 @@ e_alert_run_dialog (GtkWindow *parent,
 	GtkWidget *dialog;
 	gint response;
 	gulong signal_id = 0;
+	gulong parent_destroyed_signal_id = 0;
 
 	g_return_val_if_fail (E_IS_ALERT (alert), 0);
 
 	dialog = e_alert_dialog_new (parent, alert);
 
 	if (parent != NULL) {
+		/* Since we'll be in a nested main loop, the widgets may be destroyed
+		 * before we get back from gtk_dialog_run(). In practice, this can happen
+		 * if Evolution exits while the dialog is up. Make sure we don't try
+		 * to access destroyed widgets. */
+		parent_destroyed_signal_id = g_signal_connect (parent, "destroy", G_CALLBACK (gtk_widget_destroyed), &parent);
+
 		gtk_window_set_urgency_hint (parent, TRUE);
 		signal_id = g_signal_connect (
 			dialog, "focus-in-event",
@@ -356,14 +365,21 @@ e_alert_run_dialog (GtkWindow *parent,
 		gtk_window_set_urgency_hint (GTK_WINDOW (dialog), TRUE);
 	}
 
+	g_signal_connect (dialog, "destroy", G_CALLBACK (gtk_widget_destroyed), &dialog);
+
 	response = gtk_dialog_run (GTK_DIALOG (dialog));
 
 	if (signal_id > 0) {
-		gtk_window_set_urgency_hint (parent, FALSE);
-		g_signal_handler_disconnect (dialog, signal_id);
+		if (parent)
+			gtk_window_set_urgency_hint (parent, FALSE);
+		if (dialog)
+			g_signal_handler_disconnect (dialog, signal_id);
 	}
 
-	gtk_widget_destroy (dialog);
+	if (dialog)
+		gtk_widget_destroy (dialog);
+	if (parent && parent_destroyed_signal_id)
+		g_signal_handler_disconnect (parent, parent_destroyed_signal_id);
 
 	return response;
 }

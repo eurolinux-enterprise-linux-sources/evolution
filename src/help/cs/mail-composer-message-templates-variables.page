@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-composer-message-templates-variables" xml:lang="cs">
 
   <info>
-   <desc>Configure variables in templates and reuse items from the message you reply to</desc>
+   <desc>Nastavení proměnných v šablonách a opětovné použití položek ze zprávy, na kterou odpovídáte</desc>
    
    <link type="guide" xref="mail-composer-message-templates#options"/>
 
@@ -18,21 +18,33 @@
  <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
      
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Using Variables in Templates</title>
+<title>Použití proměnných v šablonách</title>
 
 <section id="configure">	
-<title>Configuring Variables for Message Templates</title>
+<title>Nastavení proměnných pro šablony zpráv</title>
 <steps>
-<item><p>Select <guiseq><gui>Edit</gui><gui>Plugins</gui></guiseq>.</p></item>
-<item><p>Click <gui>Templates</gui>.</p></item>
-<item><p>Click the <gui>Configuration</gui> tab.</p></item>
-<item><p>You can add, edit or remove the key-value pairs. You can specify any number of key-value pairs.</p></item>
+<item><p>Vyberte <guiseq><gui>Upravit</gui> <gui>Zásuvné moduly</gui></guiseq>.</p></item>
+<item><p>Klikněte na <gui>Šablony</gui>.</p></item>
+<item><p>Klikněte na kartu <gui>Nastavení</gui>.</p></item>
+<item><p>Můžete přidat, upravit nebo odstranit páry klíč - hodnota. Můžete určit libovolný počet párů klíč - hodnota.</p></item>
 </steps>
- <p>V kterékoliv šabloně je výskyt $klíč nahrazen hodnotou, kterou má v nastavení. Například nastavíte klíčové slovo na manažer a hodnotu na Jindra, jakýkoliv výskyt $manažer je nahrazen ve zprávě výrazem Jindra. </p>
- <p>Assume that you have 1000 message templates with your current manager's name in them. When the current manager is replaced by a new one, it is not easy for you to manually replace the manager's name in all the 1000 messages. If the messages have a $Manager key value, you can reset the value in the Configuration tab of this plugin.</p>
- <p>Ve výchozím stavu jsou proměnné celého prostředí použity jako páry klíčových hodnot. Výskyt $env_variable je nahrazen hodnotou, kterou nese. Například výskyt $PATH ve vaší šabloně je nahrazen hodnotou, když je šablona použita.</p>
+ <p>V kterékoliv šabloně je výskyt $klíč nahrazen hodnotou, kterou má ve svém nastavení. Například nastavíte klíčové slovo na vedouci a hodnotu na Jindra, jakýkoliv výskyt $vedouci je nahrazen ve zprávě výrazem Jindra. </p>
+ <p>Předpokládejme, že máte 1000 šablon zpráv se jménem vašeho současného vedoucího. V momentě, kdy je současný vedoucí nahrazen novým, není pro vás jednoduché změnit jméno vedoucího ve všech tisíci zprávách. Pokud má zpráva klíčovou hodnotu $vedouci, můžete hodnotu změnit na kartě Nastavení tohoto zásuvného modulu.</p>
+ <p>Ve výchozím stavu jsou proměnné celého prostředí použity jako páry klíčových hodnot. Výskyt $promenna_prostredi je nahrazen hodnotou, kterou nese. Například výskyt $PATH ve vaší šabloně je nahrazen hodnotou, když je šablona použita.</p>
  <p>Proces nahrazování používá následující pořadí priorit:</p>
  <steps>
   <item>
@@ -49,14 +61,14 @@
 
 <!-- as per https://bugzilla.gnome.org/show_bug.cgi?id=641845 - available since 3.2-->
 <section id="reply-variables">
-<title>Using Elements From a Message in a Template When Replying</title>
-<p>Templates can contain more than just the predefined set of <link xref="#configure">key-value pairs</link>. You can also get any message header values from the email that you are applying the template on, plus the complete message body.</p>
+<title>Použití prvků ze zprávy v šabloně pro odpověď̈́</title>
+<p>Šablony mohou obsahovat více, než jen předdefinované <link xref="#configure">páry klíč - hodnota</link>. Můžete také získávat libovolnou hodnotu hlavičky z e-mailu, na který šablonou odpovídáte a k tomu i celé tělo zprávy.</p>
 
 <!-- TRANSLATORS: Do NOT translate "$ORIG[subject]" and "$ORIG[body]" in this sentence. -->
-<p its:locNote="TO TRANSLATORS: Do NOT translate $ORIG[subject] and $ORIG[body] in this sentence!">In order to do this, use the format <code>$ORIG[header_name]</code> and replace the variable <code>header_name</code> by the actual header. For example, if you would like to insert the subject line of the message that you reply to, use <code>$ORIG[subject]</code>. To insert the complete body, use <code>$ORIG[body]</code>.</p>
+<p its:locNote="TO TRANSLATORS: Do NOT translate $ORIG[subject] and $ORIG[body] in this sentence!">Uděláte to tak, že použijete formát <code>$ORIG[název_hlavičky]</code> a nahradíte proměnnou <code>název_hlavičky</code> požadovanou hlavičkou. Například, když si přejete vložit řádek s předmětem zprávy na kterou odpovídáte, použijte <code>$ORIG[subject]</code>. Pro vložení celého těla použijte <code>$ORIG[body]</code>.</p>
 
 <!-- TRANSLATORS: Do NOT translate "$ORIG[body]" and "$ORIG[reply-to]" in this sentence. -->
-<p its:locNote="TO TRANSLATORS: Do NOT translate $ORIG[body] and $ORIG[reply-to] in this sentence!">If no replacement for a variable is found, the variable is not removed (except for <code>$ORIG[body]</code>) but left in place so that you see that something went wrong. This could happen when trying to use headers that are not necessarily always available in the original message (for example <code>$ORIG[reply-to]</code>).</p>
+<p its:locNote="TO TRANSLATORS: Do NOT translate $ORIG[body] and $ORIG[reply-to] in this sentence!">Pokud není za proměnnou nalezeno příslušné nahrazení, proměnná není odstraněna (vyjma <code>$ORIG[body]</code>), ale je ponechána na místě, takže uvidíte, že je něco špatně. Může se to stát, když zkusíte použít hlavičky, které nemusí být v původní zprávě nutně vždy dostupné (například <code>$ORIG[reply-to]</code>).</p>
 </section>
 
 </page>

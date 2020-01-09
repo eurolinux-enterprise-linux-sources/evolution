@@ -33,25 +33,31 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
   <title>Ordner verwenden</title>
   
-<p>Evolution speichert, wie die meisten anderen E-Mail-Systeme auch, E-Mails in Ordnern. Sie beginnen mit einer überschaubaren Anzahl an Ordnern, wie Eingang, Verschickt, und Entwürfe, aber Sie können so viele Ordner erstellen wie Sie mögen.</p>
+<p><gui>Evolution</gui> speichert, wie die meisten anderen E-Mail-Systeme auch, E-Mails in Ordnern. Sie beginnen mit einer überschaubaren Anzahl an Ordnern, wie <gui>Eingang</gui>, <gui>Verschickt</gui> und <gui>Entwürfe</gui>, aber Sie können so viele Ordner erstellen, wie Sie mögen.</p>
 
 <section id="create-folder">
 <title>Einen Ordner erstellen</title>
@@ -64,7 +70,7 @@
 <p>Der neue Ordner erscheint daraufhin in der Ordneransicht. Nun können Sie Nachrichten in diesen verschieben.</p>
 
 <note style="warning">
-<p>Auf den meisten IMAP-Servern kann der Eingangsordner nicht gleichzeitig Unterordner und Nachrichten enthalten. Wenn Sie zusätzliche Ordner auf Ihrem IMAP-Server erstellen, so sollten Sie diese im obersten Ordner des IMAP-Kontos erstellen und nicht im Eingangsordner. Wenn Sie Unterordner im Eingangsordner erstellen, so verlieren Sie eventuell die Möglichkeit, Nachrichten in Ihrem Eingangsordner zu lesen. In diesem Fall verschieben Sie die Ordner In das IMAP-Konto.</p>
+<p>Auf den meisten IMAP-Servern kann der <gui>Eingangsordner</gui> nicht gleichzeitig Unterordner und Nachrichten enthalten. Wenn Sie zusätzliche Ordner auf Ihrem IMAP-Server erstellen, so sollten Sie diese im obersten Ordner des IMAP-Kontos erstellen und nicht im Eingangsordner. Wenn Sie Unterordner im Eingangsordner erstellen, so verlieren Sie eventuell die Möglichkeit, Nachrichten in Ihrem Eingangsordner zu lesen. In diesem Fall verschieben Sie die Ordner In das IMAP-Konto.</p>
 </note>
 
 </section>

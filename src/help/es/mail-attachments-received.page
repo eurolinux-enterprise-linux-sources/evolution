@@ -21,9 +21,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -41,8 +47,8 @@
 
 <title>Gestionar adjuntos en correos recibidos</title>
 
-<p>Evolution muestra el número de adjuntos si recibe un mensaje de correo con uno o más adjuntos así como un botón <gui style="button">Guardar</gui> o <gui style="button">Guardar todo</gui> entre la cabecera del correo y el contenido del mismo.</p>
-<note style="tip"><p>Evolution no soporta guardar todos los adjuntos de todos los mensajes en una carpeta a la vez.</p></note>
+<p><app>Evolution</app> muestra el número de adjuntos si recibe un mensaje de correo con uno o más adjuntos así como un botón <gui style="button">Guardar</gui> o <gui style="button">Guardar todo</gui> entre la cabecera del correo y el contenido del mismo.</p>
+<note style="tip"><p><app>Evolution</app> no soporta guardar todos los adjuntos de todos los mensajes en una carpeta a la vez.</p></note>
 
 <p>También existe una lista de adjuntos disponible en la parte inferior del correo.</p>
 <p>Para guardar un adjunto al disco, pulse sobre la flecha hacia abajo junto al icono de adjunto y seleccione <gui>Guardar como</gui>.</p>

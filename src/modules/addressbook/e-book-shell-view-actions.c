@@ -83,6 +83,21 @@ action_address_book_delete_cb (GtkAction *action,
 }
 
 static void
+action_address_book_manage_groups_cb (GtkAction *action,
+				      EBookShellView *book_shell_view)
+{
+	EShellView *shell_view;
+	ESourceSelector *selector;
+
+	shell_view = E_SHELL_VIEW (book_shell_view);
+	selector = e_book_shell_sidebar_get_selector (book_shell_view->priv->book_shell_sidebar);
+
+	if (e_source_selector_manage_groups (selector) &&
+	    e_source_selector_save_groups_setup (selector, e_shell_view_get_state_key_file (shell_view)))
+		e_shell_view_set_state_dirty (shell_view);
+}
+
+static void
 action_address_book_move_cb (GtkAction *action,
                              EBookShellView *book_shell_view)
 {
@@ -205,29 +220,38 @@ address_book_refresh_done_cb (GObject *source_object,
                               gpointer user_data)
 {
 	EClient *client;
-	GError *error = NULL;
+	ESource *source;
+	EActivity *activity;
+	EAlertSink *alert_sink;
+	const gchar *display_name;
+	GError *local_error = NULL;
 
 	g_return_if_fail (E_IS_CLIENT (source_object));
 
 	client = E_CLIENT (source_object);
+	source = e_client_get_source (client);
+	activity = user_data;
 
-	e_client_refresh_finish (client, result, &error);
+	e_client_refresh_finish (client, result, &local_error);
 
-	if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED)) {
-		g_error_free (error);
+	alert_sink = e_activity_get_alert_sink (activity);
+	display_name = e_source_get_display_name (source);
 
-	} else if (error != NULL) {
-		ESource *source;
+	if (e_activity_handle_cancellation (activity, local_error)) {
+		/* nothing to do */
 
-		source = e_client_get_source (client);
+	} else if (local_error != NULL) {
+		e_alert_submit (
+			alert_sink,
+			"addressbook:refresh-error",
+			display_name, local_error->message, NULL);
 
-		g_warning (
-			"%s: Failed to refresh '%s', %s",
-			G_STRFUNC, e_source_get_display_name (source),
-			error ? error->message : "Unknown error");
-
-		g_error_free (error);
+	} else {
+		e_activity_set_state (activity, E_ACTIVITY_COMPLETED);
 	}
+
+	g_clear_object (&activity);
+	g_clear_error (&local_error);
 }
 
 static void
@@ -238,15 +262,39 @@ action_address_book_refresh_cb (GtkAction *action,
 	ESourceSelector *selector;
 	EClient *client = NULL;
 	ESource *source;
+	EActivity *activity;
+	EAlertSink *alert_sink;
+	EShellBackend *shell_backend;
+	EShellContent *shell_content;
+	EShellView *shell_view;
+	EShell *shell;
+	GCancellable *cancellable;
 
 	book_shell_sidebar = book_shell_view->priv->book_shell_sidebar;
 	selector = e_book_shell_sidebar_get_selector (book_shell_sidebar);
+
+	shell_view = E_SHELL_VIEW (book_shell_view);
+	shell_backend = e_shell_view_get_shell_backend (shell_view);
+	shell_content = e_shell_view_get_shell_content (shell_view);
+	shell = e_shell_backend_get_shell (shell_backend);
 
 	source = e_source_selector_ref_primary_selection (selector);
 
 	if (source != NULL) {
 		client = e_client_selector_ref_cached_client (
 			E_CLIENT_SELECTOR (selector), source);
+		if (!client) {
+			ESource *primary;
+
+			e_shell_allow_auth_prompt_for (shell, source);
+
+			primary = e_source_selector_ref_primary_selection (selector);
+			if (primary == source)
+				e_source_selector_set_primary_selection (selector, source);
+
+			g_clear_object (&primary);
+		}
+
 		g_object_unref (source);
 	}
 
@@ -255,8 +303,20 @@ action_address_book_refresh_cb (GtkAction *action,
 
 	g_return_if_fail (e_client_check_refresh_supported (client));
 
-	e_client_refresh (client, NULL, address_book_refresh_done_cb, book_shell_view);
+	alert_sink = E_ALERT_SINK (shell_content);
+	activity = e_activity_new ();
+	cancellable = g_cancellable_new ();
 
+	e_activity_set_alert_sink (activity, alert_sink);
+	e_activity_set_cancellable (activity, cancellable);
+
+	e_shell_allow_auth_prompt_for (shell, source);
+
+	e_client_refresh (client, cancellable, address_book_refresh_done_cb, activity);
+
+	e_shell_backend_add_activity (shell_backend, activity);
+
+	g_object_unref (cancellable);
 	g_object_unref (client);
 }
 
@@ -315,7 +375,7 @@ map_window_show_contact_editor_cb (EContactMapWindow *window,
 	/* FIXME This blocks.  Needs to be asynchronous. */
 	client = e_client_cache_get_client_sync (
 		client_cache, source,
-		E_SOURCE_EXTENSION_ADDRESS_BOOK,
+		E_SOURCE_EXTENSION_ADDRESS_BOOK, (guint32) -1,
 		NULL, &error);
 
 	g_object_unref (source);
@@ -342,6 +402,7 @@ map_window_show_contact_editor_cb (EContactMapWindow *window,
 
 	editor = e_contact_editor_new (
 		shell, E_BOOK_CLIENT (client), contact, FALSE, TRUE);
+	gtk_window_set_transient_for (eab_editor_get_window (editor), GTK_WINDOW (window));
 
 	g_signal_connect (
 		editor, "contact-modified",
@@ -382,7 +443,7 @@ action_address_book_map_cb (GtkAction *action,
 	/* FIXME This blocks.  Needs to be asynchronous. */
 	client = e_client_cache_get_client_sync (
 		client_cache, source,
-		E_SOURCE_EXTENSION_ADDRESS_BOOK,
+		E_SOURCE_EXTENSION_ADDRESS_BOOK, (guint32) -1,
 		NULL, &error);
 
 	g_object_unref (source);
@@ -646,6 +707,7 @@ action_contact_new_cb (GtkAction *action,
 
 	contact = e_contact_new ();
 	editor = e_contact_editor_new (shell, book, contact, TRUE, TRUE);
+	gtk_window_set_transient_for (eab_editor_get_window (editor), GTK_WINDOW (shell_window));
 	eab_editor_show (editor);
 	g_object_unref (contact);
 }
@@ -678,6 +740,7 @@ action_contact_new_list_cb (GtkAction *action,
 
 	contact = e_contact_new ();
 	editor = e_contact_list_editor_new (shell, book, contact, TRUE, TRUE);
+	gtk_window_set_transient_for (eab_editor_get_window (editor), GTK_WINDOW (shell_window));
 	eab_editor_show (editor);
 	g_object_unref (contact);
 }
@@ -887,6 +950,13 @@ static GtkActionEntry contact_entries[] = {
 	  N_("Delete the selected address book"),
 	  G_CALLBACK (action_address_book_delete_cb) },
 
+	{ "address-book-manage-groups",
+	  NULL,
+	  N_("_Manage Address Book groups..."),
+	  NULL,
+	  N_("Manage task list groups order and visibility"),
+	  G_CALLBACK (action_address_book_manage_groups_cb) },
+
 	{ "address-book-move",
 	  "folder-move",
 	  N_("Mo_ve All Contacts To..."),
@@ -1021,6 +1091,10 @@ static EPopupActionEntry contact_popup_entries[] = {
 	{ "address-book-popup-delete",
 	  N_("_Delete"),
 	  "address-book-delete" },
+
+	{ "address-book-popup-manage-groups",
+	  N_("_Manage groups..."),
+	  "address-book-manage-groups" },
 
 	{ "address-book-popup-properties",
 	  N_("_Properties"),
@@ -1283,7 +1357,7 @@ e_book_shell_view_actions_init (EBookShellView *book_shell_view)
 
 	/* Bind GObject properties to GSettings keys. */
 
-	settings = g_settings_new ("org.gnome.evolution.addressbook");
+	settings = e_util_ref_settings ("org.gnome.evolution.addressbook");
 
 	g_settings_bind (
 		settings, "show-preview",
@@ -1304,17 +1378,17 @@ e_book_shell_view_actions_init (EBookShellView *book_shell_view)
 
 	/* Fine tuning. */
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		ACTION (CONTACT_PREVIEW), "active",
 		ACTION (CONTACT_VIEW_CLASSIC), "sensitive",
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		ACTION (CONTACT_PREVIEW), "active",
 		ACTION (CONTACT_VIEW_VERTICAL), "sensitive",
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		ACTION (CONTACT_PREVIEW), "active",
 		ACTION (CONTACT_PREVIEW_SHOW_MAPS), "sensitive",
 		G_BINDING_SYNC_CREATE);
@@ -1366,10 +1440,10 @@ e_book_shell_view_update_search_filter (EBookShellView *book_shell_view)
 
 	/* Build the category actions. */
 
-	list = e_util_get_searchable_categories ();
+	list = e_util_dup_searchable_categories ();
 	for (iter = list, ii = 0; iter != NULL; iter = iter->next, ii++) {
 		const gchar *category_name = iter->data;
-		const gchar *filename;
+		gchar *filename;
 		GtkAction *action;
 		gchar *action_name;
 
@@ -1380,7 +1454,7 @@ e_book_shell_view_update_search_filter (EBookShellView *book_shell_view)
 		g_free (action_name);
 
 		/* Convert the category icon file to a themed icon name. */
-		filename = e_categories_get_icon_file_for (category_name);
+		filename = e_categories_dup_icon_file_for (category_name);
 		if (filename != NULL && *filename != '\0') {
 			gchar *basename;
 			gchar *cp;
@@ -1397,6 +1471,8 @@ e_book_shell_view_update_search_filter (EBookShellView *book_shell_view)
 			g_free (basename);
 		}
 
+		g_free (filename);
+
 		gtk_radio_action_set_group (radio_action, group);
 		group = gtk_radio_action_get_group (radio_action);
 
@@ -1405,7 +1481,7 @@ e_book_shell_view_update_search_filter (EBookShellView *book_shell_view)
 		gtk_action_group_add_action (action_group, action);
 		g_object_unref (radio_action);
 	}
-	g_list_free (list);
+	g_list_free_full (list, g_free);
 
 	book_shell_content = book_shell_view->priv->book_shell_content;
 	searchbar = e_book_shell_content_get_searchbar (book_shell_content);

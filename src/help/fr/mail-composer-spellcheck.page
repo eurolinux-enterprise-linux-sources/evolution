@@ -6,7 +6,7 @@
     
     <link type="guide" xref="index#mail-composing"/>
 
-    <revision pkgversion="3.5.1" version="0.6" date="2012-04-25" status="final"/>
+    <revision pkgversion="3.20.5" version="0.7" date="2016-11-21" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -49,7 +49,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -75,14 +75,14 @@
 <section id="global-preferences">
 <title>Préférences globales</title>
 
-<p>Sous <guiseq><gui>Édition</gui><gui>Préférences</gui><gui>Préférences de l'éditeur</gui><gui>Correction orthographique</gui><gui>Options</gui></guiseq>, vous pouvez définir si la vérification est réalisée pendant la frappe et quelle est la couleur utilisée pour souligner les mots incorrects.</p>
+<p>Under <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Composer Preferences</gui><gui>Spell Checking</gui><gui>Options</gui></guiseq> you can define whether your spelling is checked while you type.</p>
 
-<p>Vous pouvez aussi définir quelles langues installées sont utilisées pour la vérification orthographique dans la liste disponible sous <guiseq><gui>Édition</gui><gui>Préférences</gui><gui>Préférences de l'éditeur</gui><gui>Correction orthographique</gui><gui>Langues</gui></guiseq>.</p>
+<p>You can also define which installed languages are used for spell checking in the list available under <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Composer Preferences</gui><gui>Spell Checking</gui><gui>Languages</gui></guiseq> or in the email composer via <guiseq><gui>Edit</gui><gui>Current Languages</gui></guiseq>.</p>
 </section>
 
 <section id="composer">
 <title>Correction orthographique manuelle dans l'éditeur</title>
-<p>Si vous n'avez pas activé <gui>Vérifier l'orthographe pendant la frappe</gui> dans le <link xref="#global-preferences">Préférences de l'éditeur</link>, vous pouvez lancer le correcteur orthographique dans l'éditeur de courriel en cliquant sur <guiseq><gui>Édition</gui><gui>Vérifier l'orthographe</gui></guiseq> ou en pressant sur la touche <key>F7</key>.</p>
+<p>If you do not have <gui>Checking spelling while I type</gui> enabled in the <link xref="#global-preferences">Composer Preferences</link> you can run a spell check in the email composer by clicking <guiseq><gui>Edit</gui><gui>Check Spelling…</gui></guiseq> or by pressing <key>F7</key>.</p>
 </section>
 
 </page>

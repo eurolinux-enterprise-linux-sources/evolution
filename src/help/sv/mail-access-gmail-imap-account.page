@@ -2,13 +2,13 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-access-gmail-imap-account" xml:lang="sv">
 
   <info>
-    <desc>How to set up a Gmail IMAP Account.</desc>
+    <desc>Hur man ställer in ett Gmail-IMAP-konto.</desc>
     
     <link type="guide" xref="index#common-mail-problems"/>
     <link type="guide" xref="google-services"/>
     <link type="seealso" xref="mail-account-manage-imap-plus"/>
 
-    <revision pkgversion="3.1.5" version="0.2" date="2011-07-30" status="final"/>
+    <revision pkgversion="3.13.90" version="0.3" date="2015-03-09" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -17,13 +17,28 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
 <!-- Page only exists for the <note>, apart from that nothing special. -->
 
-<title>Access a Gmail IMAP Account via Evolution</title>
+<title>Nå ett Gmail-IMAP-konto via <app>Evolution</app></title>
 
-<p>Please refer to the <link xref="mail-account-manage-imap-plus">IMAP+ mail account settings</link>.</p>
+<p>Se <link xref="mail-account-manage-imap-plus">IMAP+-e-postkontoinställningar</link>.</p>
 
-<note style="important"><p>To access Gmail via IMAP you must turn on IMAP in your Google account. See the <link href="https://mail.google.com/support/bin/answer.py?answer=77695">Gmail Help</link> for more information.</p></note>
+<p>Av hastighetsskäl rekommenderas det att <gui>Använda en riktig mapp för Papperskorg</gui> genom att ställa in den på <gui>[GMail]/Papperskorg</gui> och att <gui>Använd en riktig mapp för Skräppost</gui> genom att ställa in den på <gui>[GMail]/Skräppost</gui> under kontots <link xref="mail-default-folder-locations"><gui>Standardvärden</gui></link>.</p>
+
+<note style="important"><p>För att nå Gmail via IMAP måste du aktivera IMAP i ditt Google-konto. Se <link href="https://mail.google.com/support/bin/answer.py?answer=77695">Gmail-hjälpen</link> för vidare information.</p></note>
+
 </page>

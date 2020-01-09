@@ -14,7 +14,7 @@
     <link type="guide" xref="mail-account-manage-unix-mbox-spool-file#defaults"/>
     <link type="guide" xref="mail-account-manage-usenet-news#defaults"/>
 
-    <revision pkgversion="2.32.1" version="0.2" date="2011-01-06" status="candidate"/>
+    <revision pkgversion="3.13.90" version="0.3" date="2015-03-09" status="final"/>
     <credit type="author">
       <name its:translate="no">April Gonzales</name>
       <email its:translate="no">loonycookie@gmail.com</email>
@@ -61,7 +61,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -69,8 +69,8 @@
 
 <p>Les accusés de lecture sont une façon pour les gens de faire savoir qu'ils ont lu votre courriel. Le destinataire peut normalement choisir d'accuser réception ou pas, ce n'est donc pas une manière tout à fait sûre de vérifier que vos courriels ont bien été lus par quelqu'un.</p>
 
-<p>Vous pouvez demander des accusés de lecture en activant cette option dans le menu de l'éditeur de courriel. Pour cela allez dans le menu <guiseq><gui>Options</gui><gui>Demander un accusé de lecture</gui></guiseq>.</p>
+<p>Vous pouvez demander des accusés de lecture en passant par <guiseq><gui>Options</gui><gui>Demander un accusé de lecture</gui></guiseq> dans le menu de l'éditeur de courriel, ou en cliquant sur l'icône correspondante dans la barre à outils. </p>
 
-<p>Pour les accusés de lecture que vous recevez, vous pouvez définir le comportement d'Evolution en allant dans <guiseq><gui>Édition</gui><gui>Préférences</gui><gui>Comptes de messagerie</gui><gui style="button">Modifier</gui><gui>Valeurs par défaut</gui><gui>Accusé de réception des messages</gui></guiseq>.</p>
+<p>For read receipts that you receive you can define <app>Evolution</app>'s behavior under <gui>Message Receipts</gui> under the account's <link xref="mail-default-folder-locations"><gui>Defaults</gui></link>.</p>
 
 </page>

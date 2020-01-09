@@ -142,10 +142,13 @@ table_one_free_value (ETableModel *etm,
 {
 	ETableOne *one = E_TABLE_ONE (etm);
 
-	if (one->source)
-		e_table_model_free_value (one->source, col, value);
-	if (one->data)
-		one->data[col] = one->source ? e_table_model_initialize_value (one->source, col) : NULL;
+	if (one->source) {
+		if (!one->data || one->data[col] != value) {
+			e_table_model_free_value (one->source, col, value);
+		}
+	} else if (one->data) {
+		one->data[col] = NULL;
+	}
 }
 
 static gpointer

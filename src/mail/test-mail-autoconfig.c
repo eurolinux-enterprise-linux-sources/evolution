@@ -25,7 +25,7 @@ main (gint argc,
       gchar **argv)
 {
 	ESourceRegistry *registry;
-	EMailAutoconfig *autoconfig;
+	EMailAutoconfig *autoconfig = NULL;
 	GError *error = NULL;
 
 	if (argc < 2) {
@@ -39,12 +39,14 @@ main (gint argc,
 		autoconfig = e_mail_autoconfig_new_sync (
 			registry, argv[1], NULL, &error);
 		g_object_unref (registry);
+	} else {
+		autoconfig = NULL;
 	}
 
 	/* Sanity check. */
-	g_assert (
+	g_return_val_if_fail (
 		((autoconfig != NULL) && (error == NULL)) ||
-		((autoconfig == NULL) && (error != NULL)));
+		((autoconfig == NULL) && (error != NULL)), -1);
 
 	if (error != NULL) {
 		g_printerr ("%s\n", error->message);
@@ -54,7 +56,7 @@ main (gint argc,
 
 	e_mail_autoconfig_dump_results (autoconfig);
 
-	g_object_unref (autoconfig);
+	g_clear_object (&autoconfig);
 
 	return EXIT_SUCCESS;
 }

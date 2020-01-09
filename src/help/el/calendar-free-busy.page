@@ -25,9 +25,27 @@
     <!-- TODO: Really split this into Exchange/Groupware section and normal people section -->
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
@@ -67,7 +85,10 @@
 
   <p>Μπορείτε να δημοσιεύετε πληροφορίες ημερολογίου και διαθεσιμότητας σε ένα διακομιστές WebDAV, FTP, ή σε απομακρυσμένα συστήματα μέσω SSH ή σε άλλο εξυπηρετητή ιστού με υποστήριξη HTTP PUT.</p>
 
-  <p>Σε εταιρικά περιβάλλοντα μπορείτε να δημοσιεύσετε πληροφορίες ημερολογίου και διαθεσιμότητας σε έναν εξυπηρετητή Exchange ή Groupwise. Σημειώστε ότι πρέπει να χρησιμοποιείτε το ημερολόγιο κορυφαίου επιπέδου του Exchange, εάν θέλετε οι άλλοι να μπορούν να προσπελάσουν τις πληροφορίες διαθεσιμότητας όταν σας προσκαλούν σε συγκέντρωση.</p> <p>Ο προεπιλεγμένος εξυπηρετητής μπορεί να οριστεί στο <guiseq><gui>Επεξεργασία</gui><gui>Προτιμήσεις</gui><gui>Ημερολόγιο και εργασίες</gui><gui>Δημοσίευση πληροφοριών</gui> <gui>Προεπιλεγμένος εξυπηρετητής διαθεσιμότητας</gui></guiseq>.</p>
+  <p>In corporate environments you can publish Calendar and Free/Busy
+  information to an Exchange or Groupwise server. Note that you must use the
+  top-level Exchange calendar if you want others to be able to access your
+  Free/Busy information when inviting you to a meeting.</p> <p>Ο προεπιλεγμένος εξυπηρετητής μπορεί να οριστεί στο <guiseq><gui>Επεξεργασία</gui><gui>Προτιμήσεις</gui><gui>Ημερολόγιο και εργασίες</gui><gui>Δημοσίευση πληροφοριών</gui> <gui>Προεπιλεγμένος εξυπηρετητής διαθεσιμότητας</gui></guiseq>.</p>
 
   <!-- This is the location since 3.1.5, see bug
        https://bugzilla.gnome.org/show_bug.cgi?id=655666 -->

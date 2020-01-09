@@ -66,6 +66,30 @@
 #define E_CALENDAR_AUTO_MOVE_TIMEOUT		150
 #define E_CALENDAR_AUTO_MOVE_TIMEOUT_DELAY	2
 
+struct _ECalendarPrivate {
+	ECalendarItem *calitem;
+
+	GnomeCanvasItem *prev_item;
+	GnomeCanvasItem *next_item;
+	GnomeCanvasItem *prev_item_year;
+	GnomeCanvasItem *next_item_year;
+
+	gint min_rows;
+	gint min_cols;
+
+	gint max_rows;
+	gint max_cols;
+
+	/* These are all used when the prev/next buttons are held down.
+	 * moving_forward is TRUE if we are moving forward in time, i.e. the
+	 * next button is pressed. */
+	gint timeout_id;
+	gint timeout_delay;
+	gboolean moving_forward;
+
+	gint reposition_timeout_id;
+};
+
 static void e_calendar_dispose		(GObject	*object);
 static void e_calendar_realize		(GtkWidget	*widget);
 static void e_calendar_style_updated	(GtkWidget	*widget);
@@ -116,16 +140,70 @@ G_DEFINE_TYPE (
 	E_TYPE_CANVAS)
 
 static void
+calitem_month_width_changed_cb (ECalendarItem *item,
+				ECalendar *cal)
+{
+	g_return_if_fail (E_IS_CALENDAR (cal));
+
+	gtk_widget_queue_resize (GTK_WIDGET (cal));
+}
+
+static GtkWidget *
+e_calendar_create_button (GtkArrowType arrow_type)
+{
+	GtkWidget *button, *pixmap;
+
+	button = gtk_button_new ();
+	gtk_button_set_relief (GTK_BUTTON (button), GTK_RELIEF_NONE);
+	gtk_widget_show (button);
+
+	pixmap = gtk_arrow_new (arrow_type, GTK_SHADOW_NONE);
+	gtk_widget_show (pixmap);
+	gtk_container_add (GTK_CONTAINER (button), pixmap);
+
+	#if GTK_CHECK_VERSION (3, 20, 0)
+	{
+		GtkCssProvider *css_provider;
+		GtkStyleContext *style_context;
+		GError *error = NULL;
+
+		css_provider = gtk_css_provider_new ();
+		gtk_css_provider_load_from_data (css_provider,
+			"button.ecalendar {"
+			" min-height: 0px;"
+			" min-width: 0px;"
+			" padding: 0px;"
+			"}", -1, &error);
+		style_context = gtk_widget_get_style_context (button);
+		if (error == NULL) {
+			gtk_style_context_add_class (style_context, "ecalendar");
+			gtk_style_context_add_provider (
+				style_context,
+				GTK_STYLE_PROVIDER (css_provider),
+				GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+		} else {
+			g_warning ("%s: %s", G_STRFUNC, error->message);
+			g_clear_error (&error);
+		}
+		g_object_unref (css_provider);
+	}
+	#endif
+
+	return button;
+}
+
+static void
 e_calendar_class_init (ECalendarClass *class)
 {
 	GObjectClass   *object_class;
 	GtkWidgetClass *widget_class;
 
-	object_class = (GObjectClass *) class;
-	widget_class = (GtkWidgetClass *) class;
+	g_type_class_add_private (class, sizeof (ECalendarPrivate));
 
+	object_class = (GObjectClass *) class;
 	object_class->dispose = e_calendar_dispose;
 
+	widget_class = (GtkWidgetClass *) class;
 	widget_class->realize = e_calendar_realize;
 	widget_class->style_updated = e_calendar_style_updated;
 	widget_class->get_preferred_width = e_calendar_get_preferred_width;
@@ -142,8 +220,10 @@ e_calendar_init (ECalendar *cal)
 	GnomeCanvasGroup *canvas_group;
 	PangoFontDescription *small_font_desc;
 	PangoContext *pango_context;
-	GtkWidget *button, *pixmap;
+	GtkWidget *button;
 	AtkObject *a11y;
+
+	cal->priv = G_TYPE_INSTANCE_GET_PRIVATE (cal, E_TYPE_CALENDAR, ECalendarPrivate);
 
 	pango_context = gtk_widget_create_pango_context (GTK_WIDGET (cal));
 	g_warn_if_fail (pango_context != NULL);
@@ -158,7 +238,7 @@ e_calendar_init (ECalendar *cal)
 
 	canvas_group = GNOME_CANVAS_GROUP (GNOME_CANVAS (cal)->root);
 
-	cal->calitem = E_CALENDAR_ITEM (
+	cal->priv->calitem = E_CALENDAR_ITEM (
 		gnome_canvas_item_new (
 			canvas_group,
 			e_calendar_item_get_type (),
@@ -168,10 +248,11 @@ e_calendar_init (ECalendar *cal)
 	pango_font_description_free (small_font_desc);
 	g_object_unref (pango_context);
 
+	g_signal_connect (cal->priv->calitem, "month-width-changed",
+		G_CALLBACK (calitem_month_width_changed_cb), cal);
+
 	/* Create the arrow buttons to move to the previous/next month. */
-	button = gtk_button_new ();
-	gtk_button_set_relief (GTK_BUTTON (button), GTK_RELIEF_NONE);
-	gtk_widget_show (button);
+	button = e_calendar_create_button (GTK_ARROW_LEFT);
 	g_signal_connect_swapped (
 		button, "pressed",
 		G_CALLBACK (e_calendar_on_prev_pressed), cal);
@@ -182,11 +263,7 @@ e_calendar_init (ECalendar *cal)
 		button, "clicked",
 		G_CALLBACK (e_calendar_on_prev_clicked), cal);
 
-	pixmap = gtk_arrow_new (GTK_ARROW_LEFT, GTK_SHADOW_NONE);
-	gtk_widget_show (pixmap);
-	gtk_container_add (GTK_CONTAINER (button), pixmap);
-
-	cal->prev_item = gnome_canvas_item_new (
+	cal->priv->prev_item = gnome_canvas_item_new (
 		canvas_group,
 		gnome_canvas_widget_get_type (),
 		"widget", button,
@@ -194,9 +271,7 @@ e_calendar_init (ECalendar *cal)
 	a11y = gtk_widget_get_accessible (button);
 	atk_object_set_name (a11y, _("Previous month"));
 
-	button = gtk_button_new ();
-	gtk_button_set_relief (GTK_BUTTON (button), GTK_RELIEF_NONE);
-	gtk_widget_show (button);
+	button = e_calendar_create_button (GTK_ARROW_RIGHT);
 	g_signal_connect_swapped (
 		button, "pressed",
 		G_CALLBACK (e_calendar_on_next_pressed), cal);
@@ -207,11 +282,7 @@ e_calendar_init (ECalendar *cal)
 		button, "clicked",
 		G_CALLBACK (e_calendar_on_next_clicked), cal);
 
-	pixmap = gtk_arrow_new (GTK_ARROW_RIGHT, GTK_SHADOW_NONE);
-	gtk_widget_show (pixmap);
-	gtk_container_add (GTK_CONTAINER (button), pixmap);
-
-	cal->next_item = gnome_canvas_item_new (
+	cal->priv->next_item = gnome_canvas_item_new (
 		canvas_group,
 		gnome_canvas_widget_get_type (),
 		"widget", button,
@@ -220,9 +291,7 @@ e_calendar_init (ECalendar *cal)
 	atk_object_set_name (a11y, _("Next month"));
 
 	/* Create the arrow buttons to move to the previous/next year. */
-	button = gtk_button_new ();
-	gtk_button_set_relief (GTK_BUTTON (button), GTK_RELIEF_NONE);
-	gtk_widget_show (button);
+	button = e_calendar_create_button (GTK_ARROW_LEFT);
 	g_signal_connect_swapped (
 		button, "pressed",
 		G_CALLBACK (e_calendar_on_prev_year_pressed), cal);
@@ -233,11 +302,7 @@ e_calendar_init (ECalendar *cal)
 		button, "clicked",
 		G_CALLBACK (e_calendar_on_prev_year_clicked), cal);
 
-	pixmap = gtk_arrow_new (GTK_ARROW_LEFT, GTK_SHADOW_NONE);
-	gtk_widget_show (pixmap);
-	gtk_container_add (GTK_CONTAINER (button), pixmap);
-
-	cal->prev_item_year = gnome_canvas_item_new (
+	cal->priv->prev_item_year = gnome_canvas_item_new (
 		canvas_group,
 		gnome_canvas_widget_get_type (),
 		"widget", button,
@@ -245,9 +310,7 @@ e_calendar_init (ECalendar *cal)
 	a11y = gtk_widget_get_accessible (button);
 	atk_object_set_name (a11y, _("Previous year"));
 
-	button = gtk_button_new ();
-	gtk_button_set_relief (GTK_BUTTON (button), GTK_RELIEF_NONE);
-	gtk_widget_show (button);
+	button = e_calendar_create_button (GTK_ARROW_RIGHT);
 	g_signal_connect_swapped (
 		button, "pressed",
 		G_CALLBACK (e_calendar_on_next_year_pressed), cal);
@@ -258,11 +321,7 @@ e_calendar_init (ECalendar *cal)
 		button, "clicked",
 		G_CALLBACK (e_calendar_on_next_year_clicked), cal);
 
-	pixmap = gtk_arrow_new (GTK_ARROW_RIGHT, GTK_SHADOW_NONE);
-	gtk_widget_show (pixmap);
-	gtk_container_add (GTK_CONTAINER (button), pixmap);
-
-	cal->next_item_year = gnome_canvas_item_new (
+	cal->priv->next_item_year = gnome_canvas_item_new (
 		canvas_group,
 		gnome_canvas_widget_get_type (),
 		"widget", button,
@@ -270,12 +329,12 @@ e_calendar_init (ECalendar *cal)
 	a11y = gtk_widget_get_accessible (button);
 	atk_object_set_name (a11y, _("Next year"));
 
-	cal->min_rows = 1;
-	cal->min_cols = 1;
-	cal->max_rows = -1;
-	cal->max_cols = -1;
+	cal->priv->min_rows = 1;
+	cal->priv->min_cols = 1;
+	cal->priv->max_rows = -1;
+	cal->priv->max_cols = -1;
 
-	cal->timeout_id = 0;
+	cal->priv->timeout_id = 0;
 }
 
 /**
@@ -297,6 +356,14 @@ e_calendar_new (void)
 	return cal;
 }
 
+ECalendarItem *
+e_calendar_get_item (ECalendar *cal)
+{
+	g_return_val_if_fail (E_IS_CALENDAR (cal), NULL);
+
+	return cal->priv->calitem;
+}
+
 static void
 e_calendar_dispose (GObject *object)
 {
@@ -307,9 +374,14 @@ e_calendar_dispose (GObject *object)
 
 	cal = E_CALENDAR (object);
 
-	if (cal->timeout_id != 0) {
-		g_source_remove (cal->timeout_id);
-		cal->timeout_id = 0;
+	if (cal->priv->timeout_id != 0) {
+		g_source_remove (cal->priv->timeout_id);
+		cal->priv->timeout_id = 0;
+	}
+
+	if (cal->priv->reposition_timeout_id) {
+		g_source_remove (cal->priv->reposition_timeout_id);
+		cal->priv->reposition_timeout_id = 0;
 	}
 
 	/* Chain up to parent's dispose() method. */
@@ -352,7 +424,7 @@ e_calendar_style_updated (GtkWidget *widget)
 	if (gtk_widget_get_realized (widget))
 		e_calendar_update_window_background (widget);
 
-	e_calendar_item_style_updated (widget, e_calendar->calitem);
+	e_calendar_item_style_updated (widget, e_calendar->priv->calitem);
 }
 
 static void
@@ -361,15 +433,17 @@ e_calendar_get_preferred_width (GtkWidget *widget,
                                 gint *natural)
 {
 	ECalendar *cal;
+	GtkStyleContext *style_context;
 	GtkBorder padding;
 	gint col_width;
 
 	cal = E_CALENDAR (widget);
 
-	g_object_get ((cal->calitem), "column_width", &col_width, NULL);
-	gtk_style_context_get_padding (gtk_widget_get_style_context (widget), 0, &padding);
+	g_object_get ((cal->priv->calitem), "column_width", &col_width, NULL);
+	style_context = gtk_widget_get_style_context (widget);
+	gtk_style_context_get_padding (style_context, gtk_style_context_get_state (style_context), &padding);
 
-	*minimum = *natural = col_width * cal->min_cols + padding.left * 2;
+	*minimum = *natural = col_width * cal->priv->min_cols + padding.left * 2;
 }
 
 static void
@@ -378,22 +452,25 @@ e_calendar_get_preferred_height (GtkWidget *widget,
                                  gint *natural)
 {
 	ECalendar *cal;
+	GtkStyleContext *style_context;
 	GtkBorder padding;
 	gint row_height;
 
 	cal = E_CALENDAR (widget);
 
-	g_object_get ((cal->calitem), "row_height", &row_height, NULL);
-	gtk_style_context_get_padding (gtk_widget_get_style_context (widget), 0, &padding);
+	g_object_get ((cal->priv->calitem), "row_height", &row_height, NULL);
+	style_context = gtk_widget_get_style_context (widget);
+	gtk_style_context_get_padding (style_context, gtk_style_context_get_state (style_context), &padding);
 
-	*minimum = *natural = row_height * cal->min_rows + padding.top * 2;
+	*minimum = *natural = row_height * cal->priv->min_rows + padding.top * 2;
 }
 
-static void
-e_calendar_size_allocate (GtkWidget *widget,
-                          GtkAllocation *allocation)
+static gboolean
+e_calendar_reposition_timeout_cb (gpointer user_data)
 {
-	ECalendar *cal;
+	ECalendar *cal = user_data;
+	GtkWidget *widget;
+	GtkStyleContext *style_context;
 	GtkBorder padding;
 	GtkAllocation old_allocation;
 	PangoContext *pango_context;
@@ -402,12 +479,15 @@ e_calendar_size_allocate (GtkWidget *widget,
 	gdouble xthickness, ythickness, arrow_button_size, current_x, month_width;
 	gboolean is_rtl;
 
-	cal = E_CALENDAR (widget);
-	gtk_style_context_get_padding (gtk_widget_get_style_context (widget), 0, &padding);
+	g_return_val_if_fail (E_IS_CALENDAR (cal), FALSE);
+
+	cal->priv->reposition_timeout_id = 0;
+
+	widget = GTK_WIDGET (cal);
+	style_context = gtk_widget_get_style_context (widget);
+	gtk_style_context_get_padding (style_context, gtk_style_context_get_state (style_context), &padding);
 	xthickness = padding.left;
 	ythickness = padding.top;
-
-	(*GTK_WIDGET_CLASS (e_calendar_parent_class)->size_allocate) (widget, allocation);
 
 	/* Set up Pango prerequisites */
 	pango_context = gtk_widget_get_pango_context (widget);
@@ -429,15 +509,15 @@ e_calendar_size_allocate (GtkWidget *widget,
 
 	/* Take off space for line & buttons if shown. */
 	gnome_canvas_item_set (
-		GNOME_CANVAS_ITEM (cal->calitem),
+		GNOME_CANVAS_ITEM (cal->priv->calitem),
 		"x1", 0.0,
 		"y1", 0.0,
 		"x2", new_x2,
 		"y2", new_y2,
 		NULL);
 
-	if (cal->calitem->month_width > 0)
-		month_width = cal->calitem->month_width;
+	if (cal->priv->calitem->month_width > 0)
+		month_width = cal->priv->calitem->month_width;
 	else
 		month_width = new_x2;
 	month_width -= E_CALENDAR_ITEM_MIN_CELL_XPAD + E_CALENDAR_ARROW_BUTTON_X_PAD;
@@ -456,17 +536,17 @@ e_calendar_size_allocate (GtkWidget *widget,
 		(xthickness);
 
 	gnome_canvas_item_set (
-		cal->prev_item,
+		cal->priv->prev_item,
 		"x", current_x,
 		"y", ythickness + E_CALENDAR_ARROW_BUTTON_Y_PAD,
 		"width", arrow_button_size,
 		"height", arrow_button_size,
 		NULL);
 
-	current_x += (is_rtl ? -1.0 : +1.0) * (cal->calitem->max_month_name_width - xthickness + 2 * arrow_button_size);
+	current_x += (is_rtl ? -1.0 : +1.0) * (cal->priv->calitem->max_month_name_width - xthickness + 2 * arrow_button_size);
 
 	gnome_canvas_item_set (
-		cal->next_item,
+		cal->priv->next_item,
 		"x", current_x,
 		"y", ythickness + E_CALENDAR_ARROW_BUTTON_Y_PAD,
 		"width", arrow_button_size,
@@ -478,17 +558,17 @@ e_calendar_size_allocate (GtkWidget *widget,
 		(month_width - 2 * xthickness - E_CALENDAR_ARROW_BUTTON_X_PAD - arrow_button_size);
 
 	gnome_canvas_item_set (
-		cal->next_item_year,
+		cal->priv->next_item_year,
 		"x", current_x,
 		"y", ythickness + E_CALENDAR_ARROW_BUTTON_Y_PAD,
 		"width", arrow_button_size,
 		"height", arrow_button_size,
 		NULL);
 
-	current_x += (is_rtl ? +1.0 : -1.0) * (cal->calitem->max_digit_width * 5 - xthickness + 2 * arrow_button_size);
+	current_x += (is_rtl ? +1.0 : -1.0) * (cal->priv->calitem->max_digit_width * 5 - xthickness + 2 * arrow_button_size);
 
 	gnome_canvas_item_set (
-		cal->prev_item_year,
+		cal->priv->prev_item_year,
 		"x", current_x,
 		"y", ythickness + E_CALENDAR_ARROW_BUTTON_Y_PAD,
 		"width", arrow_button_size,
@@ -496,6 +576,27 @@ e_calendar_size_allocate (GtkWidget *widget,
 		NULL);
 
 	pango_font_metrics_unref (font_metrics);
+
+	return FALSE;
+}
+
+static void
+e_calendar_size_allocate (GtkWidget *widget,
+                          GtkAllocation *allocation)
+{
+	ECalendar *cal;
+
+	(*GTK_WIDGET_CLASS (e_calendar_parent_class)->size_allocate) (widget, allocation);
+
+	cal = E_CALENDAR (widget);
+
+	if (cal->priv->reposition_timeout_id) {
+		g_source_remove (cal->priv->reposition_timeout_id);
+		cal->priv->reposition_timeout_id = 0;
+	}
+
+	cal->priv->reposition_timeout_id =
+		g_timeout_add (1, e_calendar_reposition_timeout_cb, widget);
 }
 
 void
@@ -505,11 +606,11 @@ e_calendar_set_minimum_size (ECalendar *cal,
 {
 	g_return_if_fail (E_IS_CALENDAR (cal));
 
-	cal->min_rows = rows;
-	cal->min_cols = cols;
+	cal->priv->min_rows = rows;
+	cal->priv->min_cols = cols;
 
 	gnome_canvas_item_set (
-		GNOME_CANVAS_ITEM (cal->calitem),
+		GNOME_CANVAS_ITEM (cal->priv->calitem),
 		"minimum_rows", rows,
 		"minimum_columns", cols,
 		NULL);
@@ -524,11 +625,11 @@ e_calendar_set_maximum_size (ECalendar *cal,
 {
 	g_return_if_fail (E_IS_CALENDAR (cal));
 
-	cal->max_rows = rows;
-	cal->max_cols = cols;
+	cal->priv->max_rows = rows;
+	cal->priv->max_cols = cols;
 
 	gnome_canvas_item_set (
-		GNOME_CANVAS_ITEM (cal->calitem),
+		GNOME_CANVAS_ITEM (cal->priv->calitem),
 		"maximum_rows", rows,
 		"maximum_columns", cols,
 		NULL);
@@ -553,7 +654,7 @@ e_calendar_get_border_size (ECalendar *cal,
 	if (style_context) {
 		GtkBorder padding;
 
-		gtk_style_context_get_padding (style_context, 0, &padding);
+		gtk_style_context_get_padding (style_context, gtk_style_context_get_state (style_context), &padding);
 
 		*top    = padding.top;
 		*bottom = padding.top;
@@ -592,14 +693,14 @@ static void
 e_calendar_start_auto_move (ECalendar *cal,
                             gboolean moving_forward)
 {
-	if (cal->timeout_id == 0) {
-		cal->timeout_id = e_named_timeout_add (
+	if (cal->priv->timeout_id == 0) {
+		cal->priv->timeout_id = e_named_timeout_add (
 			E_CALENDAR_AUTO_MOVE_TIMEOUT,
 			e_calendar_auto_move_handler, cal);
 	}
 
-	cal->timeout_delay = E_CALENDAR_AUTO_MOVE_TIMEOUT_DELAY;
-	cal->moving_forward = moving_forward;
+	cal->priv->timeout_delay = E_CALENDAR_AUTO_MOVE_TIMEOUT_DELAY;
+	cal->priv->moving_forward = moving_forward;
 
 }
 
@@ -607,14 +708,14 @@ static void
 e_calendar_start_auto_move_year (ECalendar *cal,
                                  gboolean moving_forward)
 {
-	if (cal->timeout_id == 0) {
-		cal->timeout_id = e_named_timeout_add (
+	if (cal->priv->timeout_id == 0) {
+		cal->priv->timeout_id = e_named_timeout_add (
 			E_CALENDAR_AUTO_MOVE_TIMEOUT,
 			e_calendar_auto_move_year_handler, cal);
 	}
 
-	cal->timeout_delay = E_CALENDAR_AUTO_MOVE_TIMEOUT_DELAY;
-	cal->moving_forward = moving_forward;
+	cal->priv->timeout_delay = E_CALENDAR_AUTO_MOVE_TIMEOUT_DELAY;
+	cal->priv->moving_forward = moving_forward;
 }
 
 static gboolean
@@ -627,12 +728,12 @@ e_calendar_auto_move_year_handler (gpointer data)
 	g_return_val_if_fail (E_IS_CALENDAR (data), FALSE);
 
 	cal = E_CALENDAR (data);
-	calitem = cal->calitem;
+	calitem = cal->priv->calitem;
 
-	if (cal->timeout_delay > 0) {
-		cal->timeout_delay--;
+	if (cal->priv->timeout_delay > 0) {
+		cal->priv->timeout_delay--;
 	} else {
-		offset = cal->moving_forward ? 12 : -12;
+		offset = cal->priv->moving_forward ? 12 : -12;
 		e_calendar_item_set_first_month (
 			calitem, calitem->year,
 			calitem->month + offset);
@@ -651,12 +752,12 @@ e_calendar_auto_move_handler (gpointer data)
 	g_return_val_if_fail (E_IS_CALENDAR (data), FALSE);
 
 	cal = E_CALENDAR (data);
-	calitem = cal->calitem;
+	calitem = cal->priv->calitem;
 
-	if (cal->timeout_delay > 0) {
-		cal->timeout_delay--;
+	if (cal->priv->timeout_delay > 0) {
+		cal->priv->timeout_delay--;
 	} else {
-		offset = cal->moving_forward ? 1 : -1;
+		offset = cal->priv->moving_forward ? 1 : -1;
 		e_calendar_item_set_first_month (
 			calitem, calitem->year,
 			calitem->month + offset);
@@ -692,9 +793,9 @@ e_calendar_on_next_year_released (ECalendar *cal)
 static void
 e_calendar_stop_auto_move (ECalendar *cal)
 {
-	if (cal->timeout_id != 0) {
-		g_source_remove (cal->timeout_id);
-		cal->timeout_id = 0;
+	if (cal->priv->timeout_id != 0) {
+		g_source_remove (cal->priv->timeout_id);
+		cal->priv->timeout_id = 0;
 	}
 }
 
@@ -702,32 +803,32 @@ static void
 e_calendar_on_prev_clicked (ECalendar *cal)
 {
 	e_calendar_item_set_first_month (
-		cal->calitem, cal->calitem->year,
-		cal->calitem->month - 1);
+		cal->priv->calitem, cal->priv->calitem->year,
+		cal->priv->calitem->month - 1);
 }
 
 static void
 e_calendar_on_next_clicked (ECalendar *cal)
 {
 	e_calendar_item_set_first_month (
-		cal->calitem, cal->calitem->year,
-		cal->calitem->month + 1);
+		cal->priv->calitem, cal->priv->calitem->year,
+		cal->priv->calitem->month + 1);
 }
 
 static void
 e_calendar_on_prev_year_clicked (ECalendar *cal)
 {
 	e_calendar_item_set_first_month (
-		cal->calitem, cal->calitem->year,
-		cal->calitem->month - 12);
+		cal->priv->calitem, cal->priv->calitem->year,
+		cal->priv->calitem->month - 12);
 }
 
 static void
 e_calendar_on_next_year_clicked (ECalendar *cal)
 {
 	e_calendar_item_set_first_month (
-		cal->calitem, cal->calitem->year,
-		cal->calitem->month + 12);
+		cal->priv->calitem, cal->priv->calitem->year,
+		cal->priv->calitem->month + 12);
 }
 
 static gint
@@ -755,8 +856,8 @@ e_calendar_button_has_focus (ECalendar *cal)
 
 	g_return_val_if_fail (E_IS_CALENDAR (cal), FALSE);
 
-	prev_widget = GNOME_CANVAS_WIDGET (cal->prev_item)->widget;
-	next_widget = GNOME_CANVAS_WIDGET (cal->next_item)->widget;
+	prev_widget = GNOME_CANVAS_WIDGET (cal->priv->prev_item)->widget;
+	next_widget = GNOME_CANVAS_WIDGET (cal->priv->next_item)->widget;
 	ret_val = gtk_widget_has_focus (prev_widget) ||
 		gtk_widget_has_focus (next_widget);
 	return ret_val;
@@ -781,11 +882,11 @@ e_calendar_focus (GtkWidget *widget,
 	if (!gtk_widget_get_can_focus (widget))
 		return FALSE;
 
-	children[0] = GNOME_CANVAS_ITEM (cal->calitem);
-	children[1] = cal->prev_item;
-	children[2] = cal->next_item;
-	children[3] = cal->prev_item_year;
-	children[4] = cal->next_item_year;
+	children[0] = GNOME_CANVAS_ITEM (cal->priv->calitem);
+	children[1] = cal->priv->prev_item;
+	children[2] = cal->priv->next_item;
+	children[3] = cal->priv->prev_item_year;
+	children[4] = cal->priv->next_item_year;
 
 	/* get current focused item, if e-calendar has had focus */
 	if (gtk_widget_has_focus (widget) || e_calendar_button_has_focus (cal))
@@ -833,8 +934,8 @@ e_calendar_set_focusable (ECalendar *cal,
 	g_return_if_fail (E_IS_CALENDAR (cal));
 
 	widget = GTK_WIDGET (cal);
-	prev_widget = GNOME_CANVAS_WIDGET (cal->prev_item)->widget;
-	next_widget = GNOME_CANVAS_WIDGET (cal->next_item)->widget;
+	prev_widget = GNOME_CANVAS_WIDGET (cal->priv->prev_item)->widget;
+	next_widget = GNOME_CANVAS_WIDGET (cal->priv->next_item)->widget;
 
 	if (focusable) {
 		gtk_widget_set_can_focus (widget, TRUE);

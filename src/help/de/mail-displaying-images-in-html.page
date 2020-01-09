@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-displaying-images-in-html" xml:lang="de">
 
   <info>
-    <desc>Über eingebettete Bilder in empfangenen HTML-Nachrichten.</desc>
+    <desc>Informationen über eingebettete Bilder in empfangenen HTML-Nachrichten.</desc>
 
     <link type="guide" xref="mail-displaying-message"/>
 
@@ -32,29 +32,35 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
 <title>Bilder in HTML-Nachrichten</title>
 
-<p>Wenn Ihnen jemand eine in HTML formatierte E-Mail schickt, die ein Bild in der Nachricht enthält (zum Beispiel die Willkommens-Nachricht in Ihrem Eingangsordner), so stellt Evolution das Bild in der Nachricht dar.</p>
+<p>Wenn Ihnen jemand eine in HTML formatierte E-Mail schickt, die ein Bild in der Nachricht enthält (zum Beispiel die Willkommens-Nachricht in Ihrem Eingangsordner), so stellt <gui>Evolution</gui> das Bild in der Nachricht dar.</p>
 
 <section id="loading">
 <title>Bilder laden</title>
-<p>Einige Bilder sind Verweise in einer Nachricht und nicht Teil der Nachricht selbst. Evolution kann diese Bilder aus dem Internet herunterladen, tut dies aber nicht ohne Ihren Willen. Dies geschieht, da das Herunterladen von Bildern langsam sein kann, und da diese Funktion von Spammern genutzt werden kann, um zu erfahren, dass die E-Mail geöffnet und gelesen wurde, und Ihre E-Mail-Adresse existiert. Das nicht-automatische Laden von Bildern hilft Ihnen, Ihre Privatsphäre zu schützen.</p>
+<p>Einige Bilder sind Verweise in einer Nachricht und nicht Teil der Nachricht selbst. <gui>Evolution</gui> kann diese Bilder aus dem Internet herunterladen, tut dies aber nicht ohne Ihren Willen. Dies geschieht, da das Herunterladen von Bildern langsam sein kann, und da diese Funktion von Spammern genutzt werden kann, um zu erfahren, dass die E-Mail geöffnet und gelesen wurde, und Ihre E-Mail-Adresse existiert. Das nicht-automatische Laden von Bildern hilft Ihnen, Ihre Privatsphäre zu schützen.</p>
 
 <p>Klicken Sie zum Laden der Bilder einer Nachricht auf <guiseq><gui>Ansicht</gui><gui>Bilder laden</gui></guiseq> oder drücken Sie <keyseq><key>Strg</key><key>I</key></keyseq>.</p>
 

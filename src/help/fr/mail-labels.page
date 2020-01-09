@@ -50,13 +50,13 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
   <title>Utilisation des étiquettes</title>
 
-<p>Vous pouvez ajouter des étiquettes colorées à vos courriels afin de les classer. C'est un concept similaire à celui des <link xref="using-categories">catégories</link> dans les autres fenêtres d'Evolution.</p>
+<p>You can add colored labels to emails in order to categorize them. This is similar to <link xref="using-categories">Categories</link> in the other <app>Evolution</app> windows.</p>
 
 <p>Vous pouvez rechercher des messages possédant des étiquettes spécifiques en utilisant la <link xref="mail-searching">liste déroulante de recherche rapide</link>. Des <link xref="mail-search-folders">dossiers de recherche</link> peuvent également être créés en se basant sur les étiquettes.</p>
 

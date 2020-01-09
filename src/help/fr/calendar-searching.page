@@ -59,7 +59,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -74,9 +74,7 @@
 
   <steps>
     <item>
-      <p>Click the search icon
-      <media type="image" mime="image/png" its:translate="no" src="figures/search-icon.png"/>
-      to expand the drop-down list.</p>
+      <p>Cliquez sur l'icône de recherche <media type="image" mime="image/png" its:translate="no" src="figures/search-icon.png"/> pour ouvrir la liste déroulante.</p>
     </item>
     <item>
       <p>Sélectionnez le critère de recherche dans la liste.</p>
@@ -85,7 +83,7 @@
       <p>Saisissez le texte à rechercher et appuyez sur <key>Entrée</key>.</p>
     </item>
     <item>
-      <p><app>Evolution</app> displays the search results.</p>
+      <p><app>Evolution</app> affiche les résultats de la recherche.</p>
     </item>
   </steps>
 
@@ -99,7 +97,7 @@
       <p>Sélectionnez la catégorie dans la liste.</p>
     </item>
     <item>
-      <p><app>Evolution</app> displays the search results.</p>
+      <p><app>Evolution</app> affiche les résultats de la recherche.</p>
     </item>
   </steps>
 

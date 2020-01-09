@@ -52,12 +52,12 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
 <title>Modèle de messages</title>
-<p>Un modèle de message est un message standard qui vous permet d'envoyer en tout temps des messages ayant la même structure.</p>
+<p>Un modèle de message est un message standard qui vous permet d'envoyer à tout moment des messages ayant la même structure.</p>
 <p>Pour activer le greffon modèles de message, cliquez sur <guiseq><gui>Édition</gui><gui>Greffons</gui></guiseq> et cochez <gui>Modèles</gui>.</p>
 
   <section id="options">

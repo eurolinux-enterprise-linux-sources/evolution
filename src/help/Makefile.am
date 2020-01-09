@@ -118,8 +118,10 @@ HELP_FILES = \
 	mail-composer-change-quotation-string.page \
 	mail-composer-custom-header-lines.page \
 	mail-composer-enable-html-format.page \
+	mail-composer-external-editor.page \
 	mail-composer-forward.page \
 	mail-composer-forward-as-attachment.page \
+	mail-composer-from-field-override.page \
 	mail-composer-html-image.page \
 	mail-composer-html-link.page \
 	mail-composer-html.page \
@@ -137,6 +139,7 @@ HELP_FILES = \
 	mail-composer-priority.page \
 	mail-composer-reply.page \
 	mail-composer-search.page \
+	mail-composer-send-account-overrides.page \
 	mail-composer-several-recipients.page \
 	mail-composer-spellcheck.page \
 	mail-composer-write-new-message.page \
@@ -214,7 +217,6 @@ HELP_FILES = \
 	memos-usage-delete-memo.page \
 	memos-usage-edit-memo.page \
 	memos-usage.page \
-	minimize-to-system-tray.page \
 	offline.page \
 	organizing.page \
 	problems-debug-how-to.page \
@@ -238,6 +240,6 @@ HELP_FILES = \
 	xinclude-mail-account-identity.xml \
 	xinclude-searching.xml
 
-HELP_LINGUAS = cs de el en_GB es eu fr gl hu ja mk oc ru sl sv te zh_CN
+HELP_LINGUAS = ca cs de el en_GB es eu fr gl hu mk oc ru sl sv te zh_CN
 
 -include $(top_srcdir)/git.mk

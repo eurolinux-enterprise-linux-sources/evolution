@@ -66,6 +66,68 @@ G_DEFINE_TYPE_WITH_CODE (
 	G_IMPLEMENT_INTERFACE (
 		E_TYPE_EXTENSIBLE, NULL))
 
+static const char *css =
+".table-header > .button {\
+   border-radius: 0;\
+   border-width: 1px 1px 1px 0;\
+   border-color: @borders;\
+}\
+.toolbar {\
+   border-bottom: 1px solid alpha(black, 0.1);\
+}\
+.taskbar {\
+   border-width: 1px 0 0 0;\
+}\
+EMailBrowser EPreviewPane GtkScrolledWindow {\
+    border: none;\
+}\
+EPaned.horizontal EPreviewPane GtkScrolledWindow {\
+    border-width: 1px 0 0 0;\
+}\
+EPaned.vertical EPreviewPane GtkScrolledWindow {\
+    border: none;\
+}\
+EAddressbookView {\
+   border-width: 1px 0 0 0;\
+}\
+ECalShellContent GtkSeparator {\
+   color: @borders;\
+}\
+ECalShellContent GtkNotebook {\
+   border-width: 1px 0 0 0;\
+}\
+EShellSidebar GtkScrolledWindow {\
+   border-width: 1px 0 0 0;\
+}\
+.switcher-visible EShellSidebar GtkScrolledWindow {\
+   border-width: 1px 0;\
+}\
+.switcher-visible ECalBaseShellSidebar EPaned {\
+   -GtkPaned-handle-size: 0;\
+}\
+EMAccountPrefs GtkFrame {\
+   border: none;\
+}\
+EAttachmentPaned > GtkBox > GtkPaned > GtkScrolledWindow {\
+   border-width: 1px 0;\
+}\
+EHTMLEditor .toolbar {\
+   border-bottom: none;\
+   background: transparent;\
+}\
+ECalendar .button {\
+   border: none;\
+   background: none;\
+   box-shadow: none;\
+   padding: 4px;\
+}\
+ECalendar .button:hover {\
+   color: @theme_selected_bg_color;\
+}\
+EMailConfigAssistant .sidebar {\
+   border-width: 0 1px 0 0;\
+}";
+
 static void
 shell_window_menubar_update_new_menu (EShellWindow *shell_window)
 {
@@ -474,7 +536,7 @@ shell_window_construct_toolbar (EShellWindow *shell_window)
 	box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
 	gtk_widget_show (box);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		shell_window, "toolbar-visible",
 		box, "visible",
 		G_BINDING_SYNC_CREATE);
@@ -500,7 +562,9 @@ shell_window_construct_toolbar (EShellWindow *shell_window)
 	gtk_toolbar_insert (GTK_TOOLBAR (toolbar), item, 0);
 	gtk_widget_show (GTK_WIDGET (item));
 
-	item = e_menu_tool_button_new (_("New"));
+	/* Translators: a 'New' toolbar button caption which is context sensitive and
+	   runs one of the actions under File->New menu */
+	item = e_menu_tool_button_new (C_("toolbar-button", "New"));
 	gtk_tool_item_set_is_important (GTK_TOOL_ITEM (item), TRUE);
 	gtk_widget_add_accelerator (
 		GTK_WIDGET (item), "clicked",
@@ -520,7 +584,7 @@ shell_window_construct_toolbar (EShellWindow *shell_window)
 	 *     It's a bit of a Rube Goldberg machine and should be
 	 *     reworked, but it's just serving one (now documented)
 	 *     corner case and works for now. */
-	g_object_bind_property_full (
+	e_binding_bind_property_full (
 		shell_window, "active-view",
 		item, "prefer-item",
 		G_BINDING_SYNC_CREATE,
@@ -555,12 +619,12 @@ shell_window_construct_sidebar (EShellWindow *shell_window)
 	switcher = e_shell_switcher_new ();
 	shell_window->priv->switcher = g_object_ref_sink (switcher);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		shell_window, "sidebar-visible",
 		switcher, "visible",
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		shell_window, "switcher-visible",
 		switcher, "toolbar-visible",
 		G_BINDING_SYNC_CREATE);
@@ -611,18 +675,26 @@ static GtkWidget *
 shell_window_construct_taskbar (EShellWindow *shell_window)
 {
 	EShell *shell;
+	GtkWidget *box;
 	GtkWidget *notebook;
 	GtkWidget *status_area;
 	GtkWidget *online_button;
 	GtkWidget *tooltip_label;
+	GtkStyleContext *style_context;
 	gint height;
 
 	shell = e_shell_window_get_shell (shell_window);
 
-	status_area = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 3);
-	gtk_container_set_border_width (GTK_CONTAINER (status_area), 3);
+	box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 3);
+	gtk_container_set_border_width (GTK_CONTAINER (box), 3);
+	gtk_widget_show (box);
 
-	g_object_bind_property (
+	status_area = gtk_frame_new (NULL);
+	style_context = gtk_widget_get_style_context (status_area);
+	gtk_style_context_add_class (style_context, "taskbar");
+	gtk_container_add (GTK_CONTAINER (status_area), box);
+
+	e_binding_bind_property (
 		shell_window, "taskbar-visible",
 		status_area, "visible",
 		G_BINDING_SYNC_CREATE);
@@ -633,15 +705,15 @@ shell_window_construct_taskbar (EShellWindow *shell_window)
 
 	online_button = e_online_button_new ();
 	gtk_box_pack_start (
-		GTK_BOX (status_area), online_button, FALSE, TRUE, 0);
+		GTK_BOX (box), online_button, FALSE, TRUE, 0);
 	gtk_widget_show (online_button);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		shell, "online",
 		online_button, "online",
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		shell, "network-available",
 		online_button, "sensitive",
 		G_BINDING_SYNC_CREATE);
@@ -654,14 +726,14 @@ shell_window_construct_taskbar (EShellWindow *shell_window)
 	tooltip_label = gtk_label_new ("");
 	gtk_misc_set_alignment (GTK_MISC (tooltip_label), 0.0, 0.5);
 	gtk_box_pack_start (
-		GTK_BOX (status_area), tooltip_label, TRUE, TRUE, 0);
+		GTK_BOX (box), tooltip_label, TRUE, TRUE, 0);
 	shell_window->priv->tooltip_label = g_object_ref (tooltip_label);
 	gtk_widget_hide (tooltip_label);
 
 	notebook = gtk_notebook_new ();
 	gtk_notebook_set_show_tabs (GTK_NOTEBOOK (notebook), FALSE);
 	gtk_notebook_set_show_border (GTK_NOTEBOOK (notebook), FALSE);
-	gtk_box_pack_start (GTK_BOX (status_area), notebook, TRUE, TRUE, 0);
+	gtk_box_pack_start (GTK_BOX (box), notebook, TRUE, TRUE, 0);
 	shell_window->priv->status_notebook = g_object_ref (notebook);
 	gtk_widget_show (notebook);
 
@@ -744,6 +816,11 @@ shell_window_create_shell_view (EShellWindow *shell_window,
 	notebook = GTK_NOTEBOOK (shell_window->priv->status_notebook);
 	widget = GTK_WIDGET (e_shell_view_get_shell_taskbar (shell_view));
 	gtk_notebook_append_page (notebook, widget, NULL);
+
+	e_binding_bind_property (
+		widget, "height-request",
+		shell_window->priv->tooltip_label, "height-request",
+		G_BINDING_SYNC_CREATE);
 
 	/* Listen for changes that affect the shell window. */
 
@@ -1047,9 +1124,17 @@ e_shell_window_alert_sink_init (EAlertSinkInterface *iface)
 static void
 e_shell_window_init (EShellWindow *shell_window)
 {
+	GtkCssProvider *css_provider;
+
 	shell_window->priv = E_SHELL_WINDOW_GET_PRIVATE (shell_window);
 
 	e_shell_window_private_init (shell_window);
+
+	css_provider = gtk_css_provider_new ();
+	gtk_css_provider_load_from_data (css_provider, css, -1, NULL);
+	gtk_style_context_add_provider_for_screen (gdk_screen_get_default (),
+		GTK_STYLE_PROVIDER (css_provider),
+		GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 }
 
 /**
@@ -1097,6 +1182,23 @@ e_shell_window_get_shell (EShellWindow *shell_window)
 	g_return_val_if_fail (E_IS_SHELL_WINDOW (shell_window), NULL);
 
 	return E_SHELL (shell_window->priv->shell);
+}
+
+/**
+ * e_shell_window_is_main_instance:
+ * @shell_window: an #EShellWindow
+ *
+ * Returns, whether the @shell_window is the main instance, which is
+ * the window which was created as the first @shell_window.
+ *
+ * Returns: whether the @shell_window is the main instance
+ **/
+gboolean
+e_shell_window_is_main_instance (EShellWindow *shell_window)
+{
+	g_return_val_if_fail (E_IS_SHELL_WINDOW (shell_window), FALSE);
+
+	return shell_window->priv->is_main_instance;
 }
 
 /**
@@ -1526,12 +1628,22 @@ void
 e_shell_window_set_switcher_visible (EShellWindow *shell_window,
                                      gboolean switcher_visible)
 {
+	GtkStyleContext *style_context;
+
 	g_return_if_fail (E_IS_SHELL_WINDOW (shell_window));
 
 	if (shell_window->priv->switcher_visible == switcher_visible)
 		return;
 
 	shell_window->priv->switcher_visible = switcher_visible;
+
+	style_context = gtk_widget_get_style_context (GTK_WIDGET (shell_window->priv->sidebar_notebook));
+
+	if (switcher_visible)
+		gtk_style_context_add_class (style_context, "switcher-visible");
+	else
+		gtk_style_context_remove_class (style_context, "switcher-visible");
+
 
 	g_object_notify (G_OBJECT (shell_window), "switcher-visible");
 }
@@ -1608,6 +1720,127 @@ e_shell_window_set_toolbar_visible (EShellWindow *shell_window,
 	shell_window->priv->toolbar_visible = toolbar_visible;
 
 	g_object_notify (G_OBJECT (shell_window), "toolbar-visible");
+}
+
+typedef struct {
+	EShellWindow *shell_window;
+	ESource *source;
+	gchar *extension_name;
+	EShellWindowConnetClientFunc connected_cb;
+	gpointer user_data;
+	GDestroyNotify destroy_user_data;
+
+	EClient *client;
+} ConnectClientData;
+
+static void
+connect_client_data_free (gpointer ptr)
+{
+	ConnectClientData *cc_data = ptr;
+
+	if (cc_data) {
+		if (cc_data->client && cc_data->connected_cb)
+			cc_data->connected_cb (cc_data->shell_window, cc_data->client, cc_data->user_data);
+
+		g_clear_object (&cc_data->shell_window);
+		g_clear_object (&cc_data->source);
+		g_clear_object (&cc_data->client);
+		g_free (cc_data->extension_name);
+
+		if (cc_data->destroy_user_data)
+			cc_data->destroy_user_data (cc_data->user_data);
+
+		g_free (cc_data);
+	}
+}
+
+static void
+shell_window_connect_client_thread (EAlertSinkThreadJobData *job_data,
+				    gpointer user_data,
+				    GCancellable *cancellable,
+				    GError **error)
+{
+	ConnectClientData *cc_data = user_data;
+	EShell *shell;
+	EClientCache *client_cache;
+	GError *local_error = NULL;
+
+	g_return_if_fail (cc_data != NULL);
+
+	shell = e_shell_window_get_shell (cc_data->shell_window);
+	client_cache = e_shell_get_client_cache (shell);
+
+	cc_data->client = e_client_cache_get_client_sync (client_cache,
+		cc_data->source, cc_data->extension_name, 30, cancellable, &local_error);
+
+	e_util_propagate_open_source_job_error (job_data, cc_data->extension_name, local_error, error);
+}
+
+/**
+ * e_shell_window_connect_client:
+ * @shell_window: an #EShellWindow
+ * @source: an #ESource to connect to
+ * @extension_name: an extension name
+ * @connected_cb: a callback to be called when the client is opened
+ * @user_data: a user data passed to @connected_cb
+ * @destroy_user_data: (allow none): callback to free @user_data when no longer needed
+ *
+ * Get's an #EClient from shell's #EClientCache in a dedicated thread, thus
+ * the operation doesn't block UI. The @connected_cb is called in the main thread,
+ * but only when the operation succeeded. Any failure is propageted to UI.
+ *
+ * Since: 3.16
+ **/
+void
+e_shell_window_connect_client (EShellWindow *shell_window,
+			       ESource *source,
+			       const gchar *extension_name,
+			       EShellWindowConnetClientFunc connected_cb,
+			       gpointer user_data,
+			       GDestroyNotify destroy_user_data)
+{
+	ConnectClientData *cc_data;
+	EShellView *shell_view;
+	EActivity *activity;
+	gchar *description = NULL, *alert_ident = NULL, *alert_arg_0 = NULL, *display_name;
+
+	g_return_if_fail (E_IS_SHELL_WINDOW (shell_window));
+	g_return_if_fail (E_IS_SOURCE (source));
+	g_return_if_fail (extension_name != NULL);
+	g_return_if_fail (connected_cb != NULL);
+
+	shell_view = e_shell_window_get_shell_view (shell_window,
+		e_shell_window_get_active_view (shell_window));
+
+	g_return_if_fail (E_IS_SHELL_VIEW (shell_view));
+
+	display_name = e_util_get_source_full_name (e_shell_get_registry (e_shell_backend_get_shell (e_shell_view_get_shell_backend (shell_view))), source);
+
+	if (!e_util_get_open_source_job_info (extension_name, display_name,
+		&description, &alert_ident, &alert_arg_0)) {
+		g_free (display_name);
+		g_warn_if_reached ();
+		return;
+	}
+
+	g_free (display_name);
+
+	cc_data = g_new0 (ConnectClientData, 1);
+	cc_data->shell_window = g_object_ref (shell_window);
+	cc_data->source = g_object_ref (source);
+	cc_data->extension_name = g_strdup (extension_name);
+	cc_data->connected_cb = connected_cb;
+	cc_data->user_data = user_data;
+	cc_data->destroy_user_data = destroy_user_data;
+	cc_data->client = NULL;
+
+	activity = e_shell_view_submit_thread_job (shell_view, description, alert_ident, alert_arg_0,
+		shell_window_connect_client_thread, cc_data, connect_client_data_free);
+
+	g_clear_object (&activity);
+	g_free (description);
+	g_free (alert_ident);
+	g_free (alert_arg_0);
 }
 
 /**

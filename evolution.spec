@@ -1,17 +1,17 @@
 %global _changelog_trimtime %(date +%s -d "1 year ago")
 
-%define glib2_version 2.36.0
-%define gtk3_version 3.4.0
-%define gtkhtml_version 4.8.5
+%define glib2_version 2.50.3
+%define gtk3_version 3.22.9
+%define gnome_autoar_version 0.1.1
 %define gnome_desktop_version 2.91.3
 %define gnome_doc_utils_version 0.8.0
-%define intltool_version 0.35.5
-%define libgdata_version 0.17.1
-%define libgweather_version 3.5.0
-%define libsoup_version 2.40.3
-%define webkit_version 1.8.0
+%define intltool_version 0.50.2-7
+%define libgdata_version 0.17.7
+%define libgweather_version 3.20.4
+%define libsoup_version 2.42
+%define webkit2gtk_version 2.14.5
 
-%define evo_base_version 3.12
+%define evo_base_version 3.22
 
 %define last_anjal_version 0.3.2-3
 %define last_libgal2_version 2:2.5.3-2
@@ -22,21 +22,21 @@
 %define libpst_support 1
 
 # Coverity scan can override this to 0, to skip checking in gtk-doc generated code
-%{!?with_docs: %define with_docs 1}
+%{!?with_docs: %global with_docs 1}
 
-%define evo_plugin_dir %{_libdir}/evolution/%{evo_base_version}/plugins
+%define evo_plugin_dir %{_libdir}/evolution/plugins
 
 ### Abstract ###
 
 Name: evolution
-Version: 3.12.11
-Release: 22%{?dist}
+Version: 3.22.6
+Release: 10%{?dist}
 Group: Applications/Productivity
 Summary: Mail and calendar client for GNOME
 License: GPLv2+ and GFDL
 URL: https://wiki.gnome.org/Apps/Evolution
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
-Source: http://download.gnome.org/sources/%{name}/3.12/%{name}-%{version}.tar.xz
+Source: http://download.gnome.org/sources/%{name}/3.22/%{name}-%{version}.tar.xz
 
 Obsoletes: anjal <= %{last_anjal_version}
 Obsoletes: libgal2 <= %{last_libgal2_version}
@@ -44,84 +44,41 @@ Obsoletes: evolution-NetworkManager < %{last_evo_nm_version}
 
 ### Patches ###
 
-# RH bug #589555
-Patch01: evolution-2.30.1-help-contents.patch
+Patch01: evolution-3.22.6-hide-menu-option.patch
+Patch02: evolution-3.22.6-coverity-scan-issues.patch
 
-Patch02: evolution-3.12.5-drop-icon-theme-dep.patch
-Patch03: evolution-3.12.11-misc-after-rebase-changes.patch
+# RH bug #1435137
+Patch03: evolution-3.22.6-composer-image-insert-undo.patch
 
-# RH bug #1211583
-Patch04: evolution-3.12.11-remove-skip-lookup-button.patch
+# RH bug #1435586
+Patch04: evolution-3.22.6-magic-spacebar-with-caret-mode.patch
 
-# RH bug #1204357
-Patch05: evolution-3.12.11-best-auth-method-suggest.patch
+# RH bug #1435589
+Patch05: evolution-3.22.6-composer-font-color.patch
 
-# RH bug #1070842
-Patch06: evolution-3.12.11-svg-images-in-mail.patch
+# RH bug #1435598
+Patch06: evolution-3.22.6-remote-content-cache.patch
 
-# RH bug #1221523
-Patch07: evolution-3.12.11-translations.patch
+# RH bug #1441145
+Patch07: evolution-3.22.6-meeting-time-selector-crash.patch
 
-# Coverity Scan issues
-Patch08: evolution-3.12.11-coverity-scan.patch
+# RH bug #1441283
+Patch08: evolution-3.22.6-composer-dnd.patch
 
-# RH bug #1214659
-Patch09: evolution-3.12.11-crash-composer-gallery.patch
+# RH bug #1440835
+Patch09: evolution-3.22.6-name-selector-entry-fake-changed-signal.patch
 
-# RH bug #1224758
-Patch10: evolution-3.12.11-parse-attachments-on-demand.patch
+# RH bug #1443023
+Patch10: evolution-3.22.6-calendar-print-action.patch
 
-# RH bug #1226925
-Patch11: evolution-3.12.11-client-cache-stuck.patch
+# RH bug #1445467
+Patch11: evolution-3.22.6-comp-editor-changed.patch
 
-# RH bug #1177344
-Patch12: evolution-3.12.11-calendar-event-time-font.patch
-
-# RH bug #1228699
-Patch13: evolution-3.12.11-contacts-drag-drop-vcard.patch
-
-# RH bug #1231196
-Patch14: evolution-3.12.11-calendar-tooltip-date-format.patch
-
-# RH bug #1231201
-Patch15: evolution-3.12.11-calendar-visualize-itip-state.patch
-
-# RH bug #1246511
-Patch16: evolution-3.12.11-buffer-tagger-char-offset.patch
-
-# RH bug #1251846
-Patch17: evolution-3.12.11-spell-entry-preedit.patch
-
-# RH bug #1252792
-Patch18: evolution-3.12.11-crash-in-ect-dispose.patch
-
-# RH bug #1221523
-Patch19: evolution-3.12.11-translations2.patch
-
-# RH bug #1261737
-Patch20: evolution-3.12.11-filter-rules-scroll.patch
-
-# RH bug #1265613
-Patch21: evolution-3.12.11-calendar-task-datetime-fmt.patch
-
-# RH bug #1284563
-Patch22: evolution-3.12.11-gravatar-disable.patch
-
-# RH bug #1300358
-Patch23: evolution-3.12.11-itip-formatter-not-disable.patch
-
-# RH bug #1070749
-Patch24: evolution-3.12.11-initial-setup-mail-remote-folders.patch
-
-# RH bug #1320466
-Patch25: evolution-3.12.11-empty-send-receive.patch
-
-# RH bug #1347672
-Patch26: evolution-3.12.11-gala11yetableitem-row-count.patch
+# RH bug #1444073
+Patch12: evolution-3.22.6-folder-changed-blocked.patch
 
 ## Dependencies ###
 
-Requires: evolution-data-server >= 3.12.11-27
 Requires: gvfs
 Requires: gtkspell3
 Requires: highlight
@@ -131,7 +88,6 @@ Requires: highlight
 BuildRequires: autoconf >= 2.59
 BuildRequires: automake >= 1.9
 BuildRequires: desktop-file-utils
-BuildRequires: evolution-data-server-devel >= 3.12.11-27
 BuildRequires: gettext
 BuildRequires: gnome-common
 BuildRequires: gnome-doc-utils >= %{gnome_doc_utils_version}
@@ -146,33 +102,36 @@ BuildRequires: yelp-tools
 BuildRequires: pkgconfig(atk)
 BuildRequires: pkgconfig(cairo-gobject)
 BuildRequires: pkgconfig(camel-1.2) >= %{version}
+BuildRequires: pkgconfig(cryptui-0.0)
+BuildRequires: pkgconfig(enchant)
 BuildRequires: pkgconfig(gail-3.0) >= %{gtk3_version}
 BuildRequires: pkgconfig(gcr-3)
 BuildRequires: pkgconfig(gdk-pixbuf-2.0)
 BuildRequires: pkgconfig(gio-2.0) >= %{glib2_version}
 BuildRequires: pkgconfig(gmodule-2.0) >= %{glib2_version}
+#BuildRequires: pkgconfig(gnome-autoar-0) >= %{gnome_autoar_version}
+#BuildRequires: pkgconfig(gnome-autoar-gtk-0) >= %{gnome_autoar_version}
 BuildRequires: pkgconfig(gnome-desktop-3.0) >= %{gnome_desktop_version}
 BuildRequires: pkgconfig(gsettings-desktop-schemas)
 BuildRequires: pkgconfig(gtk+-3.0) >= %{gtk3_version}
-BuildRequires: pkgconfig(gtkhtml-editor-4.0) >= %{gtkhtml_version}
 BuildRequires: pkgconfig(gtkspell3-3.0)
 BuildRequires: pkgconfig(gweather-3.0) >= %{libgweather_version}
+BuildRequires: pkgconfig(iso-codes)
 BuildRequires: pkgconfig(libcanberra-gtk3)
 BuildRequires: pkgconfig(libebackend-1.2) >= %{version}
 BuildRequires: pkgconfig(libebook-1.2) >= %{version}
 BuildRequires: pkgconfig(libecal-1.2) >= %{version}
 BuildRequires: pkgconfig(libedataserver-1.2) >= %{version}
 BuildRequires: pkgconfig(libgdata) >= %{libgdata_version}
-BuildRequires: pkgconfig(libgtkhtml-4.0) >= %{gtkhtml_version}
 BuildRequires: pkgconfig(libsoup-2.4) >= %{libsoup_version}
 BuildRequires: pkgconfig(libxml-2.0)
 BuildRequires: pkgconfig(nspr)
 BuildRequires: pkgconfig(nss)
 BuildRequires: pkgconfig(shared-mime-info)
-BuildRequires: pkgconfig(webkitgtk-3.0) >= %{webkit_version}
+BuildRequires: pkgconfig(webkit2gtk-4.0) >= %{webkit2gtk_version}
 
 %if %{ldap_support}
-BuildRequires: openldap-devel >= 2.0.11 
+BuildRequires: openldap-devel >= 2.0.11
 %endif
 
 %if %{libnotify_support}
@@ -194,8 +153,9 @@ Group: Development/Libraries
 Summary: Development files for building against %{name}
 Requires: %{name} = %{version}-%{release}
 Requires: pkgconfig(camel-1.2) >= %{version}
+Requires: pkgconfig(cryptui-0.0)
+Requires: pkgconfig(enchant)
 Requires: pkgconfig(gtk+-3.0) >= %{gtk3_version}
-Requires: pkgconfig(gtkhtml-editor-4.0) >= %{gtkhtml_version}
 Requires: pkgconfig(gtkspell3-3.0)
 Requires: pkgconfig(gweather-3.0) >= %{libgweather_version}
 Requires: pkgconfig(libebackend-1.2) >= %{version}
@@ -203,9 +163,9 @@ Requires: pkgconfig(libebook-1.2) >= %{version}
 Requires: pkgconfig(libecal-1.2) >= %{version}
 Requires: pkgconfig(libedataserver-1.2) >= %{version}
 Requires: pkgconfig(libgdata) >= %{libgdata_version}
-Requires: pkgconfig(libgtkhtml-4.0) >= %{gtkhtml_version}
 Requires: pkgconfig(libsoup-2.4) >= %{libsoup_version}
 Requires: pkgconfig(libxml-2.0)
+Obsoletes: libgal2-devel <= %{last_libgal2_version}
 
 %description devel
 Development files needed for building things which link against %{name}.
@@ -214,7 +174,7 @@ Development files needed for building things which link against %{name}.
 Summary: Developer documentation for Evolution
 Group: Development/Libraries
 Requires: devhelp
-Requires: evolution-devel = %{version}-%{release}
+Requires: %{name}-devel = %{version}-%{release}
 BuildArch: noarch
 
 %description devel-docs
@@ -229,13 +189,13 @@ Requires: yelp
 BuildArch: noarch
 
 %description help
-This package contains user documentation for %{name}. 
+This package contains user documentation for %{name}.
 %endif
 
 %package bogofilter
 Group: Applications/Productivity
 Summary: Bogofilter plugin for Evolution
-Requires: %{name} = %{version}-%{release}
+Requires: %{name}%{?_isa} = %{version}-%{release}
 Requires: bogofilter
 BuildRequires: bogofilter
 
@@ -245,60 +205,47 @@ This package contains the plugin to filter junk mail using Bogofilter.
 %package spamassassin
 Group: Applications/Productivity
 Summary: SpamAssassin plugin for Evolution
-Requires: %{name} = %{version}-%{release}
+Requires: %{name}%{?_isa} = %{version}-%{release}
 Requires: spamassassin
 BuildRequires: spamassassin
 
 %description spamassassin
 This package contains the plugin to filter junk mail using SpamAssassin.
 
-%package perl
-Group: Applications/Productivity
-Summary: Supplemental utilities that require Perl
-Requires: %{name} = %{version}-%{release}
-
-%description perl
-This package contains supplemental utilities for %{name} that require Perl.
-
 %if %{libpst_support}
 %package pst
 Group: Applications/Productivity
 Summary: PST importer plugin for Evolution
-Requires: %{name} = %{version}-%{release}
+Requires: %{name}%{?_isa} = %{version}-%{release}
 
 %description pst
 This package contains the plugin to import Microsoft Personal Storage Table
 (PST) files used by Microsoft Outlook and Microsoft Exchange.
 %endif
 
+#%package tests
+#Summary: Tests for the %{name} package
+#Group: Development/Libraries
+#Requires: %{name}%{?_isa} = %{version}-%{release}
+#
+#%description tests
+#The %{name}-tests package contains tests that can be used to verify
+#the functionality of the installed %{name} package.
+
 %prep
 %setup -q -n evolution-%{version}
-%patch01 -p1 -b .help-contents
-%patch02 -p1 -b .drop-icon-theme-dep
-%patch03 -p1 -b .misc-after-rebase-changes
-%patch04 -p1 -b .remove-skip-lookup-button
-%patch05 -p1 -b .best-auth-method-suggest
-%patch06 -p1 -b .svg-images-in-mail
-%patch07 -p1 -b .translations
-%patch08 -p1 -b .coverity-scan
-%patch09 -p1 -b .crash-composer-gallery
-%patch10 -p1 -b .parse-attachments-on-demand
-%patch11 -p1 -b .client-cache-stuck
-%patch12 -p1 -b .calendar-event-time-font
-%patch13 -p1 -b .contacts-drag-drop-vcard
-%patch14 -p1 -b .calendar-tooltip-date-format
-%patch15 -p1 -b .calendar-visualize-itip-state
-%patch16 -p1 -b .buffer-tagger-char-offset
-%patch17 -p1 -b .spell-entry-preedit
-%patch18 -p1 -b .crash-in-ect-dispose
-%patch19 -p1 -b .translations2
-%patch20 -p1 -b .filter-rules-scroll
-%patch21 -p1 -b .calendar-task-datetime-fmt
-%patch22 -p1 -b .gravatar-disable
-%patch23 -p1 -b .itip-formatter-not-disable
-%patch24 -p1 -b .initial-setup-mail-remote-folders
-%patch25 -p1 -b .empty-send-receive
-%patch26 -p1 -b .gala11yetableitem-row-count
+%patch01 -p1 -b .hide-menu-option
+%patch02 -p1 -b .coverity-scan-issues
+%patch03 -p1 -b .composer-image-insert-undo
+%patch04 -p1 -b .magic-spacebar-with-caret-mode
+%patch05 -p1 -b .composer-font-color
+%patch06 -p1 -b .remote-content-cache
+%patch07 -p1 -b .meeting-time-selector-crash
+%patch08 -p1 -b .composer-dnd
+%patch09 -p1 -b .name-selector-entry-fake-changed-signal
+%patch10 -p1 -b .calendar-print-action
+%patch11 -p1 -b .comp-editor-changed
+%patch12 -p1 -b .folder-changed-blocked
 
 # Remove the welcome email from Novell
 for inbox in mail/default/*/Inbox; do
@@ -315,7 +262,7 @@ done
 
 %define ssl_flags --enable-nss=yes --enable-smime=yes
 
-if ! pkg-config --exists nss; then 
+if ! pkg-config --exists nss; then
   echo "Unable to find suitable version of mozilla nss to use!"
   exit 1
 fi
@@ -326,8 +273,7 @@ fi
 %define gtkdoc_flags --disable-gtk-doc --without-help
 %endif
 
-CPPFLAGS="-I%{_includedir}/et"; export CPPFLAGS
-CFLAGS="$RPM_OPT_FLAGS -fPIC -DLDAP_DEPRECATED -I%{_includedir}/et -Wno-sign-compare -Wno-deprecated-declarations"; export CFLAGS
+CFLAGS="$RPM_OPT_FLAGS -fPIC -DLDAP_DEPRECATED -Wno-sign-compare -Wno-deprecated-declarations"; export CFLAGS
 
 # Regenerate configure to pick up configure.ac changes
 aclocal -I m4
@@ -341,7 +287,9 @@ autoconf
 	--disable-maintainer-mode \
 	--with-sub-version=" (%{version}-%{release})" \
 	%ldap_flags %ssl_flags %gtkdoc_flags \
-	--enable-plugins=all
+	--disable-autoar \
+	--enable-plugins=all \
+	--disable-installed-tests
 export tagname=CC
 make %{?_smp_mflags} LIBTOOL=/usr/bin/libtool CFLAGS="$CFLAGS -fno-strict-aliasing"
 
@@ -349,6 +297,10 @@ make %{?_smp_mflags} LIBTOOL=/usr/bin/libtool CFLAGS="$CFLAGS -fno-strict-aliasi
 
 # Strip unneeded translations from .mo files.
 # This reduces the RPM size by several megabytes.
+#
+# Disabled in RHEL, because it's causing multilib issue in .mo files,
+# due to different time in POT-Creation-Date key of those .mo files.
+#
 #cd po
 #grep -v ".*[.]desktop[.]in[.]in$" POTFILES.in > POTFILES.keep
 #mv POTFILES.keep POTFILES.in
@@ -376,7 +328,7 @@ for f in $helpdir/C/figures/*.png; do
   done
 done
 
-# %{with_docs}
+# %%{with_docs}
 %endif
 
 %install
@@ -391,6 +343,9 @@ find $RPM_BUILD_ROOT/%{_libdir}/evolution -name '*.la' -exec rm {} \;
 
 # remove statically built libraries:
 find $RPM_BUILD_ROOT/%{_libdir}/evolution -name '*.a' -exec rm {} \;
+
+# remove test GIO modules directory
+rm -r $RPM_BUILD_ROOT/%{_libdir}/evolution/test-gio-modules
 
 %find_lang evolution-%{evo_base_version} --all-name --with-gnome
 
@@ -421,7 +376,6 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &>/dev/null || :
 rm -rf $RPM_BUILD_ROOT
 
 %files -f translations.lang
-%defattr(-, root, root)
 %doc AUTHORS COPYING NEWS README
 
 # GSettings schemas:
@@ -462,79 +416,84 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/icons/hicolor/32x32/apps/*
 %{_datadir}/icons/hicolor/48x48/apps/*
 %{_datadir}/icons/hicolor/256x256/apps/*
+%{_datadir}/icons/hicolor/symbolic/apps/*
 
 # The main data directory
 # (have not attempted to split this up into an explicit list)
 %dir %{_datadir}/evolution
-%{_datadir}/evolution/%{evo_base_version}
+%{_datadir}/evolution
 
 # Modules:
 %dir %{_libdir}/evolution
-%dir %{_libdir}/evolution/%{evo_base_version}
-%dir %{_libdir}/evolution/%{evo_base_version}/modules
-%{_libdir}/evolution/%{evo_base_version}/modules/module-addressbook.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-backup-restore.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-book-config-google.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-book-config-ldap.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-book-config-local.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-book-config-webdav.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-cal-config-caldav.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-cal-config-contacts.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-cal-config-google.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-cal-config-local.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-cal-config-weather.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-cal-config-webcal.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-calendar.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-composer-autosave.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-contact-photos.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-gravatar.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-itip-formatter.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-mail-config.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-mail.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-mailto-handler.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-mdn.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-offline-alert.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-prefer-plain.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-plugin-lib.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-plugin-manager.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-settings.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-startup-wizard.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-text-highlight.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-vcard-inline.so
-%{_libdir}/evolution/%{evo_base_version}/modules/module-web-inspector.so
+%dir %{_libdir}/evolution/modules
+%{_libdir}/evolution/modules/module-addressbook.so
+%{_libdir}/evolution/modules/module-backup-restore.so
+%{_libdir}/evolution/modules/module-book-config-google.so
+%{_libdir}/evolution/modules/module-book-config-ldap.so
+%{_libdir}/evolution/modules/module-book-config-local.so
+%{_libdir}/evolution/modules/module-book-config-webdav.so
+%{_libdir}/evolution/modules/module-cal-config-caldav.so
+%{_libdir}/evolution/modules/module-cal-config-contacts.so
+%{_libdir}/evolution/modules/module-cal-config-google.so
+%{_libdir}/evolution/modules/module-cal-config-local.so
+%{_libdir}/evolution/modules/module-cal-config-weather.so
+%{_libdir}/evolution/modules/module-cal-config-webcal.so
+%{_libdir}/evolution/modules/module-calendar.so
+%{_libdir}/evolution/modules/module-composer-autosave.so
+%{_libdir}/evolution/modules/module-contact-photos.so
+%{_libdir}/evolution/modules/module-gravatar.so
+%{_libdir}/evolution/modules/module-itip-formatter.so
+%{_libdir}/evolution/modules/module-mail-config.so
+%{_libdir}/evolution/modules/module-mail.so
+%{_libdir}/evolution/modules/module-mailto-handler.so
+%{_libdir}/evolution/modules/module-mdn.so
+%{_libdir}/evolution/modules/module-offline-alert.so
+%{_libdir}/evolution/modules/module-prefer-plain.so
+%{_libdir}/evolution/modules/module-plugin-lib.so
+%{_libdir}/evolution/modules/module-plugin-manager.so
+%{_libdir}/evolution/modules/module-settings.so
+%{_libdir}/evolution/modules/module-startup-wizard.so
+%{_libdir}/evolution/modules/module-text-highlight.so
+%{_libdir}/evolution/modules/module-vcard-inline.so
+%{_libdir}/evolution/modules/module-webkit-editor.so
+%{_libdir}/evolution/modules/module-webkit-inspector.so
 
 # Shared libraries:
-%{_libdir}/evolution/%{evo_base_version}/libevolution-mail-composer.so
-%{_libdir}/evolution/%{evo_base_version}/libeabutil.so
-%{_libdir}/evolution/%{evo_base_version}/libecontacteditor.so
-%{_libdir}/evolution/%{evo_base_version}/libecontactlisteditor.so
-%{_libdir}/evolution/%{evo_base_version}/libemail-engine.so
-%{_libdir}/evolution/%{evo_base_version}/libevolution-mail-formatter.so
-%{_libdir}/evolution/%{evo_base_version}/libevolution-shell.so
-%{_libdir}/evolution/%{evo_base_version}/libessmime.so
-%{_libdir}/evolution/%{evo_base_version}/libevolution-util.so
-%{_libdir}/evolution/%{evo_base_version}/libevolution-addressbook-importers.so
-%{_libdir}/evolution/%{evo_base_version}/libevolution-calendar.so
-%{_libdir}/evolution/%{evo_base_version}/libevolution-calendar-importers.so
-%{_libdir}/evolution/%{evo_base_version}/libevolution-mail-importers.so
-%{_libdir}/evolution/%{evo_base_version}/libevolution-mail.so
-%{_libdir}/evolution/%{evo_base_version}/libevolution-smime.so
-%{_libdir}/evolution/%{evo_base_version}/libgnomecanvas.so
+%{_libdir}/evolution/libevolution-mail-composer.so
+%{_libdir}/evolution/libeabutil.so
+%{_libdir}/evolution/libecontacteditor.so
+%{_libdir}/evolution/libecontactlisteditor.so
+%{_libdir}/evolution/libemail-engine.so
+%{_libdir}/evolution/libevolution-mail-formatter.so
+%{_libdir}/evolution/libevolution-shell.so
+%{_libdir}/evolution/libessmime.so
+%{_libdir}/evolution/libevolution-util.so
+%{_libdir}/evolution/libevolution-addressbook-importers.so
+%{_libdir}/evolution/libevolution-calendar.so
+%{_libdir}/evolution/libevolution-calendar-importers.so
+%{_libdir}/evolution/libevolution-mail-importers.so
+%{_libdir}/evolution/libevolution-mail.so
+%{_libdir}/evolution/libevolution-smime.so
+%{_libdir}/evolution/libgnomecanvas.so
+
+# WebKit2 Extensions
+%{_libdir}/evolution/web-extensions/libedomutils.so
+%{_libdir}/evolution/web-extensions/libewebextension.so
+%{_libdir}/evolution/web-extensions/libmoduleitipformatterwebextension.so
+%{_libdir}/evolution/web-extensions/webkit-editor/libewebkiteditorwebextension.so
 
 # Various libexec programs:
 %dir %{_libexecdir}/evolution
-%dir %{_libexecdir}/evolution/%{evo_base_version}
-%{_libexecdir}/evolution/%{evo_base_version}/evolution-addressbook-export
-%{_libexecdir}/evolution/%{evo_base_version}/evolution-alarm-notify
-%{_libexecdir}/evolution/%{evo_base_version}/evolution-backup
-%{_libexecdir}/evolution/%{evo_base_version}/killev
+%{_libexecdir}/evolution/evolution-alarm-notify
+%{_libexecdir}/evolution/evolution-backup
+%{_libexecdir}/evolution/killev
 
 # The plugin directory:
 %dir %{evo_plugin_dir}
 
 # The various plugins follow; they are all part of the main package:
-# (note that there are various resources such as ui and pixmap files that 
-# are built as part of specific plugins but which are currently packaged using 
+# (note that there are various resources such as ui and pixmap files that
+# are built as part of specific plugins but which are currently packaged using
 # globs above; the purpose of the separation below is to be more explicit about
 # which plugins we ship)
 %{evo_plugin_dir}/org-gnome-evolution-attachment-reminder.eplug
@@ -551,9 +510,6 @@ rm -rf $RPM_BUILD_ROOT
 
 %{evo_plugin_dir}/org-gnome-face.eplug
 %{evo_plugin_dir}/liborg-gnome-face.so
-
-%{evo_plugin_dir}/org-gnome-itip-formatter.eplug
-%{evo_plugin_dir}/liborg-gnome-itip-formatter.so
 
 %{evo_plugin_dir}/org-gnome-mailing-list-actions.eplug
 %{evo_plugin_dir}/liborg-gnome-mailing-list-actions.so
@@ -581,15 +537,13 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %files devel
-%defattr(-, root, root)
-%{_includedir}/evolution-%{evo_base_version}
+%{_includedir}/evolution
 %{_libdir}/pkgconfig/evolution-calendar-3.0.pc
 %{_libdir}/pkgconfig/evolution-mail-3.0.pc
 %{_libdir}/pkgconfig/evolution-shell-3.0.pc
 %{_libdir}/pkgconfig/libemail-engine.pc
 
 %files devel-docs
-%defattr(-,root,root,-)
 %doc %{_datadir}/gtk-doc/html/evolution-mail-composer
 %doc %{_datadir}/gtk-doc/html/evolution-mail-engine
 %doc %{_datadir}/gtk-doc/html/evolution-mail-formatter
@@ -598,32 +552,72 @@ rm -rf $RPM_BUILD_ROOT
 
 %if %{with_docs}
 %files help -f help.lang
-%defattr(-, root, root)
 %dir %{_datadir}/help/*/evolution
 %endif
 
 %files bogofilter
-%defattr(-, root, root)
-%{_libdir}/evolution/%{evo_base_version}/modules/module-bogofilter.so
+%{_libdir}/evolution/modules/module-bogofilter.so
 %{_datadir}/appdata/evolution-bogofilter.metainfo.xml
 
 %files spamassassin
-%defattr(-, root, root)
-%{_libdir}/evolution/%{evo_base_version}/modules/module-spamassassin.so
+%{_libdir}/evolution/modules/module-spamassassin.so
 %{_datadir}/appdata/evolution-spamassassin.metainfo.xml
-
-%files perl
-%defattr(-, root, root)
-%{_libexecdir}/evolution/%{evo_base_version}/csv2vcard
 
 %if %{libpst_support}
 %files pst
-%defattr(-, root, root)
+%{_datadir}/appdata/evolution-pst.metainfo.xml
 %{evo_plugin_dir}/org-gnome-pst-import.eplug
 %{evo_plugin_dir}/liborg-gnome-pst-import.so
 %endif
 
+#%files tests
+#%{_libexecdir}/%{name}/installed-tests
+#%{_datadir}/installed-tests
+
 %changelog
+* Mon May 29 2017 Milan Crha <mcrha@redhat.com> - 3.22.6-10
+- Add patch for RH bug #1444073 (Folders do not show correct unread message count)
+
+* Thu Apr 27 2017 Milan Crha <mcrha@redhat.com> - 3.22.6-9
+- Add patch for RH bug #1445467 (Component editor marked changed after open)
+
+* Wed Apr 19 2017 Milan Crha <mcrha@redhat.com> - 3.22.6-8
+- Add patch for RH bug #1443023 (Calendar Print skips print dialog)
+
+* Tue Apr 18 2017 Milan Crha <mcrha@redhat.com> - 3.22.6-7
+- Add patch for RH bug #1440835 (Upon draft saving evolution opens redundant warning message)
+
+* Thu Apr 13 2017 Milan Crha <mcrha@redhat.com> - 3.22.6-6
+- Add patch for RH bug #1441283 (Evolution drag and drop to composer ends in a freeze)
+
+* Wed Apr 12 2017 Milan Crha <mcrha@redhat.com> - 3.22.6-5
+- Add patch for RH bug #1441145 (Crash under e_meeting_time_selector_refresh_cb())
+
+* Fri Mar 24 2017 Milan Crha <mcrha@redhat.com> - 3.22.6-4
+- Add patch for RH bug #1435137 (Cannot undo image insert in HTML composer body)
+- Add patch for RH bug #1435586 (magic spacebar doesn't work with caret mode)
+- Add patch for RH bug #1435589 (Can't change font color in HTML composer)
+- Add patch for RH bug #1435598 (Cached remote content not always found in cache)
+
+* Thu Mar 16 2017 Milan Crha <mcrha@redhat.com> - 3.22.6-3
+- Add patch to address some of the Coverity scan issues
+
+* Tue Mar 14 2017 Milan Crha <mcrha@redhat.com> - 3.22.6-2
+- Correct multilib issue with .mo files and disable 'tests' subpackage
+
+* Mon Mar 13 2017 Milan Crha <mcrha@redhat.com> - 3.22.6-1
+- Update to 3.22.6 upstream release
+- Add patch to add an option to hide menu bar
+
+* Thu Feb 16 2017 Kalev Lember <klember@redhat.com> - 3.22.5-3
+- Drop the workaround for RH bug #1422632 now that intltool is fixed
+
+* Thu Feb 16 2017 Milan Crha <mcrha@redhat.com> - 3.22.5-2
+- Require enchant development package in devel subpackage
+
+* Wed Feb 15 2017 Milan Crha <mcrha@redhat.com> - 3.22.5-1
+- Rebase to 3.22.5
+
 * Tue Aug 23 2016 Milan Crha <mcrha@redhat.com> - 3.12.11-22
 - Update patch for RH bug #1261737 (Avoid vertical scrolling in the filtering rules editor dialog)
 

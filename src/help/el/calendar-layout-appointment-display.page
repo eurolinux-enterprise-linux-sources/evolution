@@ -4,7 +4,7 @@
   <info>
     <link type="guide" xref="calendar-layout"/>
 
-    <revision pkgversion="3.0.2" version="0.4" date="2012-02-18" status="final"/>
+    <revision pkgversion="3.13.90" version="0.5" date="2015-03-10" status="final"/>
 
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
@@ -22,9 +22,27 @@
     <desc>Ορίστε την εμφάνιση των συναντήσεων στο ημερολόγιο.</desc>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
@@ -34,9 +52,6 @@
        calendar-layout-general-formatting) here is very poor and not
        task-oriented, but that's it for the time being. Better ideas welcome.
        -->
-
-  <!-- TODO: Recheck once https://bugzilla.gnome.org/show_bug.cgi?id=657233 is
-       fixed, as the current UI is a huge mess. -->
 
   <p>Οι επόμενες επιλογές σχετικές με ημερολόγιο είναι διαθέσιμες στο <guiseq><gui>Επεξεργασία</gui><gui>Προτιμήσεις</gui><gui>Ημερολόγιο και εργασίες</gui><gui>Εμφάνιση</gui></guiseq>.</p>
 
@@ -70,12 +85,10 @@
 
 </section>
 
-<section id="date-time">
-  <title>Μορφή ημερομηνίας/χρόνου</title>
+<section id="alerts">
+  <title>Ειδοποιήσεις</title>
 
-  <p>Μπορείτε να αλλάξετε τη μορφή της στήλης <gui>ημερομηνία</gui> ρυθμίζοντας την προτιμώμενη μορφή.</p>
-
-  <p>Τα δεσμευτικά θέσεων στην έκφραση μορφής είναι μορφές strftime. Για μια πλήρη λίστα των διαθέσιμων μορφών strftime, εκτελέστε <cmd>date --help</cmd> σε παράθυρο <app>τερματικού</app>.</p>
+  <p>Αν θέλετε να προειδοποιηθείτε πριν διαγράψετε ένα ραντεβού, σημειώστε αυτήν την επιλογή.</p>
 
 </section>
 

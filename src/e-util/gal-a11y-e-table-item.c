@@ -56,8 +56,9 @@ struct _GalA11yETableItemPrivate {
 	ETableItem *item;
 	gint cols;
 	gint rows;
-	gint selection_change_id;
-	gint cursor_change_id;
+	gulong selection_changed_id;
+	gulong selection_row_changed_id;
+	gulong cursor_changed_id;
 	ETableCol ** columns;
 	ESelectionModel *selection;
 	AtkStateSet *state_set;
@@ -86,24 +87,68 @@ free_columns (ETableCol **columns)
 }
 
 static void
+table_item_cell_gone_cb (gpointer user_data,
+			 GObject *gone_cell)
+{
+	GalA11yETableItem *a11y;
+	GObject *old_cell;
+
+	a11y = GAL_A11Y_E_TABLE_ITEM (user_data);
+
+	old_cell = g_object_get_data (G_OBJECT (a11y), "gail-focus-object");
+	if (old_cell == gone_cell)
+		g_object_set_data (G_OBJECT (a11y), "gail-focus-object", NULL);
+}
+
+static void
 item_finalized (gpointer user_data,
                 GObject *gone_item)
 {
 	GalA11yETableItem *a11y;
 	GalA11yETableItemPrivate *priv;
+	GObject *old_cell;
 
 	a11y = GAL_A11Y_E_TABLE_ITEM (user_data);
 	priv = GET_PRIVATE (a11y);
 
 	priv->item = NULL;
 
-	atk_state_set_add_state (priv->state_set, ATK_STATE_DEFUNCT);
-	atk_object_notify_state_change (ATK_OBJECT (a11y), ATK_STATE_DEFUNCT, TRUE);
+	old_cell = g_object_get_data (G_OBJECT (a11y), "gail-focus-object");
+	if (old_cell) {
+		g_object_weak_unref (G_OBJECT (old_cell), table_item_cell_gone_cb, a11y);
+		g_object_unref (old_cell);
+	}
+	g_object_set_data (G_OBJECT (a11y), "gail-focus-object", NULL);
+
+	if (atk_state_set_add_state (priv->state_set, ATK_STATE_DEFUNCT))
+		atk_object_notify_state_change (ATK_OBJECT (a11y), ATK_STATE_DEFUNCT, TRUE);
 
 	if (priv->selection)
 		gal_a11y_e_table_item_unref_selection (a11y);
 
 	g_object_unref (a11y);
+}
+
+static void
+gal_a11y_e_table_item_state_change_cb (AtkObject *atkobject,
+				       const gchar *state_name,
+				       gboolean was_set,
+				       gpointer user_data)
+{
+	g_return_if_fail (GAL_A11Y_IS_E_TABLE_ITEM (atkobject));
+
+	if (atk_state_type_for_name (state_name) == ATK_STATE_DEFUNCT) {
+		GalA11yETableItemPrivate *priv;
+
+		priv = GET_PRIVATE (atkobject);
+
+		g_return_if_fail (priv != NULL);
+
+		if (was_set)
+			atk_state_set_add_state (priv->state_set, ATK_STATE_DEFUNCT);
+		else
+			atk_state_set_remove_state (priv->state_set, ATK_STATE_DEFUNCT);
+	}
 }
 
 static AtkStateSet *
@@ -211,8 +256,10 @@ eti_a11y_reset_focus_object (GalA11yETableItem *a11y,
 	if (old_cell && GAL_A11Y_IS_E_CELL (old_cell))
 		gal_a11y_e_cell_remove_state (
 			GAL_A11Y_E_CELL (old_cell), ATK_STATE_FOCUSED, FALSE);
-	if (old_cell)
+	if (old_cell) {
+		g_object_weak_unref (G_OBJECT (old_cell), table_item_cell_gone_cb, a11y);
 		g_object_unref (old_cell);
+	}
 
 	cell = eti_ref_at (ATK_TABLE (a11y), view_row, view_col);
 
@@ -220,11 +267,12 @@ eti_a11y_reset_focus_object (GalA11yETableItem *a11y,
 		g_object_set_data (G_OBJECT (a11y), "gail-focus-object", cell);
 		gal_a11y_e_cell_add_state (
 			GAL_A11Y_E_CELL (cell), ATK_STATE_FOCUSED, FALSE);
+		g_object_weak_ref (G_OBJECT (cell), table_item_cell_gone_cb, a11y);
 	} else
 		g_object_set_data (G_OBJECT (a11y), "gail-focus-object", NULL);
 
 	if (notify && cell)
-		atk_focus_tracker_notify (cell);
+		g_signal_emit_by_name (a11y, "active-descendant-changed", cell);
 }
 
 static void
@@ -337,10 +385,12 @@ eti_ref_accessible_at_point (AtkComponent *component,
 	if (!item)
 		return NULL;
 
-	atk_component_get_position (
+	atk_component_get_extents (
 		component,
 		&x_origin,
 		&y_origin,
+		NULL,
+		NULL,
 		coord_type);
 	x -= x_origin;
 	y -= y_origin;
@@ -357,23 +407,6 @@ eti_ref_accessible_at_point (AtkComponent *component,
 	} else {
 		return NULL;
 	}
-}
-
-static void
-cell_destroyed (gpointer data)
-{
-	GalA11yECell * cell;
-
-	g_return_if_fail (GAL_A11Y_IS_E_CELL (data));
-	cell = GAL_A11Y_E_CELL (data);
-
-	g_return_if_fail (cell->item && G_IS_OBJECT (cell->item));
-
-	if (cell->item) {
-		g_object_unref (cell->item);
-		cell->item = NULL;
-	}
-
 }
 
 /* atk table */
@@ -409,10 +442,6 @@ eti_ref_at (AtkTable *table,
 			column,
 			row);
 		if (ATK_IS_OBJECT (ret)) {
-			g_object_weak_ref (
-				G_OBJECT (ret),
-				(GWeakNotify) cell_destroyed,
-				ret);
 			/* if current cell is focused, add FOCUSED state */
 			if (e_selection_model_cursor_row (item->selection) ==
 				GAL_A11Y_E_CELL (ret)->row &&
@@ -819,6 +848,25 @@ eti_rows_deleted (ETableModel *model,
 }
 
 static void
+eti_model_changed (ETableModel *model,
+		   AtkObject *table_item)
+{
+	GalA11yETableItemPrivate *priv;
+	gint row_count;
+
+	g_return_if_fail (GAL_A11Y_IS_E_TABLE_ITEM (table_item));
+
+	priv = GET_PRIVATE (table_item);
+
+	row_count = e_table_model_row_count (model);
+
+	if (priv->rows != row_count) {
+		priv->rows = row_count;
+		g_signal_emit_by_name (table_item, "visible-data-changed");
+	}
+}
+
+static void
 eti_tree_model_node_changed_cb (ETreeModel *model,
                                 ETreePath node,
                                 ETableItem *eti)
@@ -916,8 +964,12 @@ eti_header_structure_changed (ETableHeader *eth,
 	}
 
 	/* If nothing interesting just return. */
-	if (!reorder_found && !added_found && !removed_found)
+	if (!reorder_found && !added_found && !removed_found) {
+		g_free (state);
+		g_free (reorder);
+		g_free (prev_state);
 		return;
+	}
 
 	/* Emit signals */
 	if (reorder_found)
@@ -982,6 +1034,9 @@ eti_real_initialize (AtkObject *obj,
 		model, "model-rows-deleted",
 		G_CALLBACK (eti_rows_deleted), obj, 0);
 	g_signal_connect_object (
+		model, "model-changed",
+		G_CALLBACK (eti_model_changed), obj, 0);
+	g_signal_connect_object (
 		eti->header, "structure_change",
 		G_CALLBACK (eti_header_structure_changed), obj, 0);
 }
@@ -1012,8 +1067,9 @@ eti_init (GalA11yETableItem *a11y)
 
 	priv = GET_PRIVATE (a11y);
 
-	priv->selection_change_id = 0;
-	priv->cursor_change_id = 0;
+	priv->selection_changed_id = 0;
+	priv->selection_row_changed_id = 0;
+	priv->cursor_changed_id = 0;
 	priv->selection = NULL;
 }
 
@@ -1038,6 +1094,9 @@ static void eti_a11y_selection_model_added_cb (ETableItem *eti,
 					       ESelectionModel *selection,
 					       gpointer data);
 static void eti_a11y_selection_changed_cb (ESelectionModel *selection,
+					   GalA11yETableItem *a11y);
+static void eti_a11y_selection_row_changed_cb (ESelectionModel *selection,
+					   gint row,
 					   GalA11yETableItem *a11y);
 static void eti_a11y_cursor_changed_cb (ESelectionModel *selection,
 					gint row, gint col,
@@ -1128,6 +1187,8 @@ gal_a11y_e_table_item_new (ETableItem *item)
 	atk_state_set_add_state (GET_PRIVATE (a11y)->state_set, ATK_STATE_SHOWING);
 	atk_state_set_add_state (GET_PRIVATE (a11y)->state_set, ATK_STATE_VISIBLE);
 
+	g_signal_connect (a11y, "state-change", G_CALLBACK (gal_a11y_e_table_item_state_change_cb), NULL);
+
 	accessible = ATK_OBJECT (a11y);
 
 	GET_PRIVATE (a11y)->item = item;
@@ -1190,11 +1251,14 @@ gal_a11y_e_table_item_ref_selection (GalA11yETableItem *a11y,
 	g_return_val_if_fail (a11y && selection, FALSE);
 
 	priv = GET_PRIVATE (a11y);
-	priv->selection_change_id = g_signal_connect (
-		selection, "selection_changed",
+	priv->selection_changed_id = g_signal_connect (
+		selection, "selection-changed",
 		G_CALLBACK (eti_a11y_selection_changed_cb), a11y);
-	priv->cursor_change_id = g_signal_connect (
-		selection, "cursor_changed",
+	priv->selection_row_changed_id = g_signal_connect (
+		selection, "selection-row-changed",
+		G_CALLBACK (eti_a11y_selection_row_changed_cb), a11y);
+	priv->cursor_changed_id = g_signal_connect (
+		selection, "cursor-changed",
 		G_CALLBACK (eti_a11y_cursor_changed_cb), a11y);
 
 	priv->selection = selection;
@@ -1212,17 +1276,22 @@ gal_a11y_e_table_item_unref_selection (GalA11yETableItem *a11y)
 
 	priv = GET_PRIVATE (a11y);
 
-	g_return_val_if_fail (priv->selection_change_id != 0, FALSE);
-	g_return_val_if_fail (priv->cursor_change_id != 0, FALSE);
+	g_return_val_if_fail (priv->selection_changed_id != 0, FALSE);
+	g_return_val_if_fail (priv->selection_row_changed_id != 0, FALSE);
+	g_return_val_if_fail (priv->cursor_changed_id != 0, FALSE);
 
 	g_signal_handler_disconnect (
 		priv->selection,
-		priv->selection_change_id);
+		priv->selection_changed_id);
 	g_signal_handler_disconnect (
 		priv->selection,
-		priv->cursor_change_id);
-	priv->cursor_change_id = 0;
-	priv->selection_change_id = 0;
+		priv->selection_row_changed_id);
+	g_signal_handler_disconnect (
+		priv->selection,
+		priv->cursor_changed_id);
+	priv->cursor_changed_id = 0;
+	priv->selection_row_changed_id = 0;
+	priv->selection_changed_id = 0;
 
 	g_object_unref (priv->selection);
 	priv->selection = NULL;
@@ -1281,6 +1350,14 @@ eti_a11y_selection_changed_cb (ESelectionModel *selection,
 	g_return_if_fail (GAL_A11Y_IS_E_TABLE_ITEM (a11y));
 
 	g_signal_emit_by_name (a11y, "selection_changed");
+}
+
+static void
+eti_a11y_selection_row_changed_cb (ESelectionModel *selection,
+				   gint row,
+				   GalA11yETableItem *a11y)
+{
+	eti_a11y_selection_changed_cb (selection, a11y);
 }
 
 static void

@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="guide" id="mail-composer-custom-header-lines" xml:lang="sv">
 
   <info>
-    <desc>Using custom fields in the header of composed messages</desc>
+    <desc>Användning av anpassade fält i huvudet för redigerade meddelanden.</desc>
 
     <link type="guide" xref="index#mail-composing-advanced"/>
 
@@ -18,31 +18,43 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-<title>Custom Header Lines</title>
+<title>Anpassade rubrikrader</title>
 
-<p>You can add arbitrary header lines to outgoing emails.</p>
+<p>Du kan lägga till godtyckliga rubrikrader i utgående meddelanden.</p>
 
 <section id="managing">
-<title>Enabling and managing custom headers</title>
-<p>To set up the Custom Header plugin:</p>
+<title>Aktivera och hantera anpassade rubriker</title>
+<p>För att ställa in insticksmodulen Anpassad rubrik:</p>
 <steps>
-<item><p>Select <guiseq><gui>Edit</gui><gui>Plugins</gui></guiseq>.</p></item>
-<item><p>Enable <gui>Custom Header</gui>.</p></item>
-<item><p>Click the <gui>Configuration</gui> tab.</p></item>
-<item><p>You can add, edit, or remove the header fields. For every header field you add, you can specify the keys and values. The key is used as the title of the Custom Header. You can enter multiple values for the keys. You must use a semicolon to separate every value you enter.</p></item>
+<item><p>Välj <guiseq><gui>Redigera</gui><gui>Insticksmoduler</gui></guiseq>.</p></item>
+<item><p>Aktivera <gui>Anpassad rubrik</gui>.</p></item>
+<item><p>Klicka på fliken <gui>Konfiguration</gui>.</p></item>
+<item><p>Du kan lägga till, redigera eller ta bort rubrikfält. För varje rubrikfält du lägger till kan du anger nycklar och värden. Nyckeln används som titeln för den anpassade rubriken. Du kan skriva in multipla värden för nycklarna. Du måste använda semikolon för att separera varje värde du skriver in.</p></item>
 </steps>
 </section>
 
 <section id="inserting">
-<title>Inserting custom headers in a message</title>
+<title>Infoga anpassade rubriker i ett meddelande</title>
 <steps>
-<item><p>Click <guiseq><gui>New</gui><gui>Mail Message</gui></guiseq> or press <keyseq><key>Shift</key><key>Ctrl</key><key>M</key></keyseq> to open the message composer window.</p></item>
-<item><p>Select <guiseq><gui>Insert</gui><gui>Custom Header</gui></guiseq>.</p>
-<p>In the <gui>Email Custom Header</gui> window, you can view all the defined header fields and values.</p></item>
-<item><p>Set the values for the header fields by using the dropdown list.</p></item>
-<item><p>Click <gui style="button">OK</gui>.</p></item>
+<item><p>Klicka på <guiseq><gui>Nytt</gui><gui>E-postmeddelande</gui></guiseq> eller tryck på <keyseq><key>Skift</key><key>Ctrl</key><key>M</key></keyseq> för att öppna fönstret med meddelanderedigeraren.</p></item>
+<item><p>Välj <guiseq><gui>Infoga</gui><gui>Anpassad rubrik</gui></guiseq>.</p>
+<p>I fönstret <gui>Anpassad e-postrubrik</gui> kan du se alla de definierade rubrikfälten och värdena.</p></item>
+<item><p>Ställ in värdena för rubrikfälten genom att använda rullgardinslistan.</p></item>
+<item><p>Klicka på <gui style="button">OK</gui>.</p></item>
 </steps>
 </section>
 

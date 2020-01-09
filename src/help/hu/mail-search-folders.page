@@ -17,15 +17,39 @@
     
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Keresőmappák használata</title>
+  <title><gui>Keresőmappák</gui> használata</title>
   
 <p>Ha a <link xref="mail-filters">szűrők</link> nem elég rugalmasak, vagy ugyanazt a <link xref="mail-searching">keresést</link> időről időre elvégzi, akkor fontolja meg egy keresőmappa létrehozását.</p>
 
 <p>A keresőmappa úgy néz ki, mint egy <link xref="mail-folders">mappa</link>, úgy viselkedik, mint egy <link xref="mail-searching">keresés</link> és úgy hozhatja létre, mint egy <link xref="mail-filters">szűrőt</link>. Míg a hagyományos mappák ténylegesen tartalmaznak leveleket, a keresőmappa csak az esetleg több mappában lévő levelek nézete. Az általa tartalmazott levelek halmaza a keresőmappa beállításakor megadott feltételek alapján, folyamatosan kerül meghatározásra.</p>
 
-<p>Az Evolution automatikusan frissíti a keresőmappák tartalmát új levelek érkezésekor vagy levelek törlésekor.</p>
+<p>Az <app>Evolution</app> automatikusan frissíti a keresőmappák tartalmát új levelek érkezésekor vagy levelek törlésekor.</p>
 
 <p>A <gui>Ki nem válogatott</gui> keresőmappa a többi keresőmappa ellentéte: minden olyan levelet megjelenít, amely nem jelenik meg más keresőmappákban.</p>
 

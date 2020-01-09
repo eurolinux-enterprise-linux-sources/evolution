@@ -2,11 +2,11 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-displaying-sender-photograph" xml:lang="sv">
 
   <info>
-    <desc>Display a picture of the sender in the message header area.</desc>
+    <desc>Visa ett foto i området för meddelanderubriker.</desc>
 
     <link type="guide" xref="mail-displaying-message#advanced"/>
 
-    <revision pkgversion="3.9.1" version="0.4" date="2013-04-22" status="final"/>
+    <revision pkgversion="3.13.90" version="0.5" date="2015-03-10" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -18,22 +18,33 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-<title>Photograph Message Headers</title>
+<title>Meddelanderubriker med foto</title>
 
 <!-- NB: This is done by "Face" and "X-Face" headers. -->
-<p>Evolution automatically displays photographs of the sender of an email at the right side of the message header if the sender already embedded a photograph in the message.</p>
+<p><app>Evolution</app> visar automatiskt fotografier av avsändaren för ett e-postmeddelande till höger om meddelanderubriken om avsändaren redan har bäddat in ett fotografi i meddelandet.</p>
 <!-- TODO: If I ever manage to find out if the "Edit > Plugins > Face" reliably works, create a topic page covering it linked under <link type="guide" xref="index#mail-composing-advanced" />, and link to it from here and vice versa. -->
 
-<p>You can also manually enable displaying the photograph of the sender of an email if the sender is in one of your address books and has a photograph stored.</p>
+<p>Du kan också manuellt aktivera visning av fotografiet av avsändaren för ett e-postmeddelande om avsändaren finns i en av dina adressböcker och har ett fotografi lagrat.</p>
 
-<p>To enable this functionality, select <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Mail Preferences</gui><gui>Headers</gui><gui>Show the photograph of sender in the message preview</gui></guiseq>.</p>
+<p>För att aktivera denna funktionalitet, välj <guiseq><gui>Redigera</gui><gui>Inställningar</gui><gui>E-postinställningar</gui><gui>Rubriker</gui><gui>Visa fotografiet av avsändaren i förhandsvisningen av meddelandet</gui></guiseq>.</p>
 
-<p>If there are multiple matches for a contact, the first one is always used.</p>
+<p>Om det finns flera matchningar för en kontakt kommer den första alltid att användas.</p>
 
-<!-- Note: <guiseq><gui>Edit</gui><gui>Plugins</gui><gui>Face</gui></guiseq> 
-has no influence at all, so it is not mentioned here. 
-See https://bugzilla.gnome.org/show_bug.cgi?id=698435 -->
+<!-- From https://bugzilla.gnome.org/show_bug.cgi?id=698435 : -->
+<note style="tip"><p>Du kan också bädda in din egen bild i meddelanden som du skickar under <guiseq><gui>Redigera</gui><gui>Insticksmoduler</gui><gui>Ansikte</gui></guiseq>. Bilden måste ha storleken 48x48 bildpunkter och vara i filformatet PNG.</p></note>
  
 </page>

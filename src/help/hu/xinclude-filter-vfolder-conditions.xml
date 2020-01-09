@@ -21,13 +21,16 @@
 
 <item><p>Adott fejléc:</p>
 <p>Bármely fejléc, beleértve az <link xref="mail-composer-custom-header-lines">egyénieket</link> is.</p>
-<p>Ha egy levél többször is használ egy fejlécet, akkor az Evolution csak az elsőt veszi figyelembe, még ha a levél a másodikat másképp is adja meg. Ha például egy üzenet a Resent-From: fejlécet a „fejlesztes@példa.hu” értékkel adja meg, majd újra megadja a „marketing@példa.hu” értékkel, akkor az Evolution úgy szűri a levelet, mintha a második megadás nem is lenne ott. A fejléceket többször is megadó levelek szűréséhez használjon reguláris kifejezéseket.</p></item>
+<p>Ha egy levél többször is használ egy fejlécet, akkor az <app>Evolution</app> csak az elsőt veszi figyelembe, még ha a levél a másodikat másképp is adja meg. Ha például egy üzenet a Resent-From: fejlécet a „fejlesztes@példa.hu” értékkel adja meg, majd újra megadja a „marketing@példa.hu” értékkel, akkor az <app>Evolution</app> úgy szűri a levelet, mintha a második megadás nem is lenne ott. A fejléceket többször is megadó levelek szűréséhez használjon reguláris kifejezéseket.</p></item>
 
 <item><p>Üzenettörzs:</p>
 <p>A levél tényleges szövegében keres.</p></item>
 
 <item><p>Kifejezés:</p>
-<p>(Csak programozóknak) Üzenet szűrése az Evolution <link xref="mail-filters">szűrőinek</link> megadására használt Scheme nyelven írt kifejezéssel.</p></item>
+<p>(Csak programozóknak) Üzenet szűrése az <app>Evolution</app> <link xref="mail-filters">szűrőinek</link> megadására használt Scheme nyelven írt kifejezéssel.</p></item>
+
+<item><p>Tetszőleges kifejezés:</p>
+<p>(csak tapasztalt felhasználóknak) Egyesítsen több feltételt egy <link href="https://bugzilla.gnome.org/show_bug.cgi?id=550796#c10">különleges szintaxis</link> használatával.</p></item>
 
 <item><p>Küldés dátuma:</p>
 <p>A leveleket az elküldési dátumuk alapján szűri. Elsőként válassza ki a feltételeket, amelyeket a levélnek teljesítenie kell, például adott időpont előtt vagy után küldték. Ezután válassza ki az időpontot. A szűrő a futtatásakor összehasonlítja az üzenet időbélyegét a rendszerórával, vagy a naptárból kiválasztott adott dátummal és idővel. Választhatja azt is, hogy a szűrés idejéhez képest megadott időszakban érkezett leveleket szűrje, például a kettő-négy nappal ezelőttieket.</p></item>
@@ -60,6 +63,6 @@
 <p>Szűrés a levelezőlista alapján, amelyre a levél érkezett. Ez a szűrő kihagyhat egyes listakiszolgálókról érkező leveleket, mert az X-BeenThere fejlécet vizsgálja, amely levelezőlisták vagy más levélterjesztők azonosítására használatos. Az X-BeenThere fejlécet nem megfelelően beállító listakiszolgálókról érkező leveleket ezek a szűrők nem szűrik ki.</p></item>
 
 <item><p>Regex illeszkedés:</p>
-<p>(Csak programozóknak) Ha eligazodik a <link href="https://en.wikipedia.org/wiki/Regular_expression">regexek</link> vagy reguláris kifejezések világában, akkor ez a beállítás lehetővé teszi összetett karakterminták keresését, így például megtalálhatja az összes „a” betűvel kezdődő és „m”-mel végződő, vagy hat és tizenöt karakter közti hosszúságú szót, vagy egy bizonyos fejlécet kétszer adnak meg. A reguláris kifejezések használatával kapcsolatban nézze meg a <cmd>grep</cmd> parancs kézikönyvoldalát, vagy a fenti Wikipédia-oldal magyar változatát.</p></item>
+<p>(Csak programozóknak) Ha eligazodik a <link href="https://en.wikipedia.org/wiki/Regular_expression">regexek</link> vagy reguláris kifejezések világában, akkor ez a beállítás lehetővé teszi összetett karakterminták keresését, így például megtalálhatja az összes „a” betűvel kezdődő és „m”-mel végződő, vagy hat és tizenöt karakter közti hosszúságú szót, vagy egy bizonyos fejlécet kétszer adnak meg. A reguláris kifejezések használatával kapcsolatban nézze meg a <link href="man:grep">the man page for the <cmd>grep</cmd></link>, vagy a fenti Wikipédia-oldal magyar változatát.</p></item>
 
 </info>

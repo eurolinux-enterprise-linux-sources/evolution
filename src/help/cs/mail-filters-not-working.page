@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-filters-not-working" xml:lang="cs">
 
   <info>
-    <desc>Fix problems with mail filters that do not sort and organize mail as expected.</desc>
+    <desc>Jak opravit problém s filtry pošty, když neřadí a netřídí poštu, jak očekáváte.</desc>
     
     <link type="guide" xref="index#common-mail-problems"/>
     <link type="seealso" xref="mail-filters"/>
@@ -20,39 +20,51 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Mail filters are not working</title>
+<title>Filtry pošty nefungují</title>
 
 <section id="order">
-<title>Order of Filters</title>
-<p>The order of filters is very important. They are applied to the original message in sequence, like a recipe.</p>
-<p>If your first filter has a <gui>Stop Processing</gui> rule, then all messages that match this filter will ignore all succeeding filters.</p>
-<p>When you move a message to another folder, "moving" actually means appending a copy of the message to the destination folder and marking the original message for deletion. So any subsequent filter rules will be applied to the original message that is now marked for deletion. Therefore moving a message should usually appear last in a sequence of filter rules.</p>
-<p>To check the rules and their order of an existing filter, review its actions in the <gui>Then</gui> section by <link xref="mail-filters#editing">editing the filter</link>.</p>
+<title>Pořadí filtrů</title>
+<p>Pořadí filtrů je velmi důležité. Na původní zprávu jsou použity postupně v předepsaném pořadí.</p>
+<p>Když má váš první filtr pravidlo <gui>Zastavit zpracování</gui>, pak všechny zprávy, které tomuto filtru vyhovují, budou ignorovat všechny následující filtry.</p>
+<p>Když přesouváte zprávu do jiné složky, znamená „přesun“ ve skutečnosti vytvoření kopie zprávy v cílové složce a označení původní zprávy ke smazání. Takže některá pravidla v průběhu zpracování budou použita na původní zprávu, která je teď označena ke smazání. Proto by se přesun zprávy měl v pravidlech filtru použít až jako poslední.</p>
+<p>Pomocí <link xref="mail-filters#editing">úprav filtru</link> zkontrolujte pravidla a jejich pořadí ve stávajících filtrech a ověřte činnost v části <gui>Potom</gui>.</p>
 </section>
 
 <section id="several-clients">
-<title>Using Several Mail Clients</title>
-<p>Another thing you have to keep in mind is that filters depend on the "new" flag that is set on the server when a particular email message is initially fetched from the server. If you use another email client aside from Evolution, your filters may not work automatically.</p>
+<title>Používání několika poštovních klientů</title>
+<p>Další věc, kterou je třeba vzít v úvahu, je, že filtry závisí na příznaku „nová“, který je nastaven na straně serveru, když je zpráva poprvé stahována ze serveru. Pokud kromě pošťáka <app>Evolution</app> používáte i jiného poštovního klienta, nemusí filtry fungovat automaticky.</p>
 </section>
 
 <section id="filter-log">
-<title>Logging Filter Actions</title>
-<p>If it is still unclear why filters do not work as expected, you can enable logging filter actions.</p>
+<title>Zaznamenávání činností filtru</title>
+<p>Pokud stále není jasné, proč filtry nefungují podle očekávání, můžete zkusit zapnout zaznamenávání činností filtrů.</p>
 <list>
-<item><p>Close Evolution.</p></item>
+<item><p>Zavřete <app>Evolution</app>.</p></item>
 <item><p>Otevřete aplikaci <app>Terminál</app>.</p></item>
-<item><p>Run the command <cmd>gsettings set org.gnome.evolution.mail filters-log-actions true</cmd></p></item>
-<item><p>Run the command <cmd>gsettings set org.gnome.evolution.mail filters-log-file "/home/myusername/my-filter-log"</cmd> and replace <cmd>myusername</cmd> by your username. This will create a text file named <file>my-filter-log</file> in your home directory. Note that the absolute path to the file name must be entered; a syntax like <sys>~</sys> or <sys>$HOME</sys> will not work.</p></item><!-- this is explained in https://bugzilla.gnome.org/show_bug.cgi?id=669471 -->
-<item><p>Zapněte Evolution.</p></item>
-<item><p>Fetch mail to apply filters.</p></item>
-<item><p>Open the file <file>my-filter-log</file> with a text editor to see which filter actions have been applied.</p></item>
+<item><p>Spusťte příkaz <cmd>gsettings set org.gnome.evolution.mail filters-log-actions true</cmd></p></item>
+<item><p>Spusťte příkaz <cmd>gsettings set org.gnome.evolution.mail filters-log-file "/home/uživatelské_jméno/my-filter-log"</cmd>, kdy <cmd>uživatelské_jméno</cmd> nahraďte svým skutečným uživatelským jménem. Tím se vytvoří textový soubor s názvem <cmd>my-filter-log</cmd> ve vaší domovské složce. Upozorňujeme, že cesta musí být zadána jako absolutní, syntaxe typu <sys>~</sys> nebo <sys>$HOME</sys> nebude fungovat.</p></item><!-- this is explained in https://bugzilla.gnome.org/show_bug.cgi?id=669471 -->
+<item><p>Spusťte <app>Evolution</app>.</p></item>
+<item><p>Stáhněte poštu, aby se filtry použily.</p></item>
+<item><p>Otevřete soubor <file>my-filter-log</file> v textovém editoru a můžete si prohlédnout, které filtry a jak byly použity.</p></item>
 </list>
 
-<p>Note that you can disable filter logging again by using the command <cmd>gsettings set org.gnome.evolution.mail filters-log-actions false</cmd></p>
+<p>Zaznamenávání činnosti filtrů můžete zase vypnout pomocí příkazu <cmd>gsettings set org.gnome.evolution.mail filters-log-actions false</cmd></p>
 
-<p>You can also use the <app>dconf-editor</app> application to do this.</p>
+<p>Toho stejného lze dosáhnout i použitím aplikace <app>dconf-editor</app>.</p>
 </section>
 
 </page>

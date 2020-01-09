@@ -16,8 +16,9 @@ liborg_gnome_publish_calendar_la_CPPFLAGS =		\
 	-DEVOLUTION_UIDIR=\""$(uidir)"\"		\
 	$(EVOLUTION_DATA_SERVER_CFLAGS)			\
 	$(GNOME_PLATFORM_CFLAGS)			\
-	$(GTKHTML_CFLAGS)				\
-	$(LIBNOTIFY_CFLAGS)
+	$(LIBNOTIFY_CFLAGS)				\
+	$(CODE_COVERAGE_CFLAGS)				\
+	$(NULL)
 
 liborg_gnome_publish_calendar_la_SOURCES =	\
 	publish-calendar.c			\
@@ -30,7 +31,7 @@ liborg_gnome_publish_calendar_la_SOURCES =	\
 	url-editor-dialog.c			\
 	url-editor-dialog.h
 
-liborg_gnome_publish_calendar_la_LDFLAGS = -module -avoid-version $(NO_UNDEFINED)
+liborg_gnome_publish_calendar_la_LDFLAGS = -module -avoid-version $(NO_UNDEFINED) $(CODE_COVERAGE_LDFLAGS)
 
 liborg_gnome_publish_calendar_la_LIBADD =			\
 	$(top_builddir)/e-util/libevolution-util.la		\
@@ -38,8 +39,8 @@ liborg_gnome_publish_calendar_la_LIBADD =			\
 	$(top_builddir)/calendar/gui/libevolution-calendar.la	\
 	$(EVOLUTION_DATA_SERVER_LIBS)				\
 	$(GNOME_PLATFORM_LIBS)					\
-	$(GTKHTML_LIBS)						\
-	$(LIBNOTIFY_LIBS)
+	$(LIBNOTIFY_LIBS)					\
+	$(NULL)
 
 EXTRA_DIST =					\
 	org-gnome-publish-calendar.eplug.xml	\

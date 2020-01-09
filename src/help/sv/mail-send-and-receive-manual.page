@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-send-and-receive-manual" xml:lang="sv">
 
   <info>
-    <desc>Force sending and receiving emails.</desc>
+    <desc>Tvinga sändning och mottagning av e-postmeddelanden.</desc>
 
     <link type="guide" xref="mail-send-and-receive"/>
 
@@ -15,11 +15,23 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-<title>Manually send and receive messages</title>
-<p>To receive new messages from the mail server and to send messages you have written that are in the local Outbox, click the <gui style="button">Send / Receive</gui> button in the toolbar, or press <key>F12</key>, or choose <guiseq><gui>File</gui><gui>Send / Receive</gui></guiseq> from the main menu.</p>
-<p>To send and receive only for one of your mail accounts, or to only send or only receive, click the small down-arrow next to the <gui style="button">Send / Receive</gui> button and choose the corresponding option.</p>
-<p>If you just want to send messages which are in your Outbox, you can right-click on the Outbox and click <gui>Flush Outbox</gui>.</p>
+<title>Skicka och ta emot meddelanden manuellt</title>
+<p>För att skicka nya meddelanden från e-postservern och för att skicka meddelanden du har skickat som finns i den lokala utkorgen, klicka på <gui style="button">Skicka / Ta emot</gui>-knappen i verktygsfältet, eller tryck på <key>F12</key>, eller välj <guiseq><gui>Arkiv</gui><gui>Skicka / Ta emot</gui></guiseq> från huvudmenyn.</p>
+<p>För att skicka och ta emot för endast ett av dina e-postkonton, eller för att bara skicka eller bara ta emot, klicka på den lilla nedåtpilen intill knappen <gui style="button">Skicka / Ta emot</gui> och välj motsvarande alternativ.</p>
+<p>Om du bara vill skicka meddelanden som finns i din utkorg kan du högerklicka på utkorgen och klicka på <gui>Töm utkorg</gui>.</p>
 
 </page>

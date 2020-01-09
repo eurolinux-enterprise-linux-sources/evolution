@@ -49,12 +49,12 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
 <title>Envoi et réception manuels de messages</title>
-<p>To receive new messages from the mail server and to send messages you have written that are in the local Outbox, click the <gui style="button">Send / Receive</gui> button in the toolbar, or press <key>F12</key>, or choose <guiseq><gui>File</gui><gui>Send / Receive</gui></guiseq> from the main menu.</p>
+<p>Pour recevoir de nouveaux messages à partir d'un serveur de messagerie et pour envoyer des messages que vous avez rédigés et qui sont dans la boîte d'envoi locale, cliquez sur le bouton <gui style="button">Envoyer / Recevoir</gui> dans la barre d'outils ou pressez <key>F12</key> ou choisissez <guiseq><gui>Fichier</gui><gui>Envoyer / Recevoir</gui></guiseq> dans le menu principal.</p>
 <p>Pour envoyer ou recevoir seulement pour l'un des comptes de courriel ou pour envoyer ou recevoir uniquement, cliquez sur la petite flèche vers le bas à côte du bouton <gui style="button">Envoyer / Recevoir</gui> et choisissez l'option correspondante.</p>
 <p>Si vous voulez seulement envoyer les messages qui sont dans la boîte d'envoi, vous pouvez faire un clic-droit sur la boîte d'envoi et cliquez sur <gui>Vider la boîte d'envoi</gui>.</p>
 

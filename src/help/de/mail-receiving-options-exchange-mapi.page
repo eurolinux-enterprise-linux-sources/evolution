@@ -25,19 +25,25 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
@@ -52,7 +58,7 @@
 <item><p>Geben Sie die Adresse des E-Mail-Servers in das Feld <gui>Server</gui> und Ihren Benutzernamen für diesen Server ein.</p></item>
 <item><p>Geben Sie Ihren Domänennamen für den Server ein.</p>
 <note style="tip"><p>Falls Sie in einer Firma oder einer Organisation arbeiten, so fragen Sie bitte Ihren Systemadministrator für weitere Informationen.</p></note></item>
-<item><p>Wählen Sie Ihren Legitimierungstyp in der Legitimierungsliste, oder klicken Sie auf <gui style="button">Prüfen, welche Typen unterstützt werden</gui>, damit Evolution die verfügbaren Legitimationsarten abruft. Einige Server veröffentlichen nicht die verfügbaren Legitimationsarten, daher kann Evolution nicht garantieren, dass das Anklicken des Knopfes funktioniert.</p></item>
+<item><p>Wählen Sie Ihren Legitimierungstyp in der Legitimierungsliste, oder klicken Sie auf <gui style="button">Prüfen, welche Typen unterstützt werden</gui>, damit <gui>Evolution</gui> die verfügbaren Legitimationsarten abruft. Einige Server veröffentlichen nicht die verfügbaren Legitimationsarten, daher kann <gui>Evolution</gui> nicht garantieren, dass das Anklicken des Knopfes funktioniert.</p></item>
 <item><p>Wählen Sie aus, ob Sie eine sichere Verbindung (SSL oder TLS) verwenden möchten.</p></item>
 <item><p>Klicken Sie auf <gui style="button">Legitimieren</gui> und geben Sie Ihr Passwort ein.</p></item>
 </list>
@@ -65,8 +71,8 @@
 <p>Auf der Seite <gui>Empfangsoptionen</gui> (abrufbar unter <guiseq><gui>Bearbeiten</gui><gui>Einstellungen</gui><gui>E-Mail-Konten</gui><gui style="button">Bearbeiten</gui><gui>Empfangsoptionen</gui></guiseq>):</p>
 
 <list>
-<item><p>Wenn Evolution automatisch nach neuen Nachrichten schauen soll, so wählen Sie die Option <gui>Automatisch nach neuen E-Mails sehen alle … Minuten</gui> und legen Sie das Zeitintervall fest.</p></item>
-<item><p>Sie können auch festlegen, ob Evolution nach neuen Nachrichten in allen Ordnern schauen soll.</p></item>
+<item><p>Wenn <gui>Evolution</gui> automatisch nach neuen Nachrichten schauen soll, so wählen Sie die Option <gui>Automatisch nach neuen E-Mails sehen alle … Minuten</gui> und legen Sie das Zeitintervall in Minuten fest.</p></item>
+<item><p>Sie können auch festlegen, ob <gui>Evolution</gui> nach neuen Nachrichten in allen Ordnern schauen soll.</p></item>
 </list>
 
 </section>

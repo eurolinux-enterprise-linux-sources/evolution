@@ -28,6 +28,7 @@
 #include <em-format/e-mail-part-utils.h>
 
 #include <libebackend/libebackend.h>
+#include <e-util/e-util.h>
 
 #define d(x)
 
@@ -54,6 +55,7 @@ GType e_mail_parser_prefer_plain_get_type (void);
 enum {
 	PREFER_HTML,
 	PREFER_PLAIN,
+	PREFER_SOURCE,
 	ONLY_PLAIN
 };
 
@@ -81,6 +83,11 @@ static struct {
 	  N_("Show plain text if present"),
 	  N_("Show plain text part, if present, otherwise "
 	     "let Evolution choose the best part to show.") },
+
+	{ "prefer_source",
+	  N_("Show plain text if present, or HTML source"),
+	  N_("Show plain text part, if present, otherwise "
+	     "the HTML part source.") },
 
 	{ "only_plain",
 	  N_("Only ever show plain text"),
@@ -202,6 +209,24 @@ empe_prefer_plain_parse (EMailParserExtension *extension,
 		/* Prevent recursion, fall back to next (real text/html) parser */
 		if (strstr (part_id->str, ".alternative-prefer-plain.") != NULL)
 			return FALSE;
+
+		if (emp_pp->mode == PREFER_SOURCE && !e_mail_part_is_attachment (part)) {
+			EMailPart *mail_part;
+
+			partidlen = part_id->len;
+
+			g_string_truncate (part_id, partidlen);
+			g_string_append_printf (part_id, ".alternative-prefer-plain.%d", -1);
+
+			mail_part = e_mail_part_new (part, part_id->str);
+			e_mail_part_set_mime_type (mail_part, "application/vnd.evolution.plaintext");
+
+			g_string_truncate (part_id, partidlen);
+
+			g_queue_push_tail (out_mail_parts, mail_part);
+
+			return TRUE;
+		}
 
 		/* Not enforcing text/plain, so use real parser. */
 		if (emp_pp->mode != ONLY_PLAIN)
@@ -485,7 +510,7 @@ e_mail_parser_prefer_plain_init (EMailParserPreferPlain *parser)
 	gchar *key;
 	gint i;
 
-	parser->settings = g_settings_new ("org.gnome.evolution.plugin.prefer-plain");
+	parser->settings = e_util_ref_settings ("org.gnome.evolution.plugin.prefer-plain");
 	g_settings_bind_with_mapping (
 		parser->settings, "mode",
 		parser, "mode", G_SETTINGS_BIND_DEFAULT,

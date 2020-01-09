@@ -332,7 +332,7 @@ static void
 settings_deprecated_image_loading_policy_cb (GSettings *settings,
                                              const gchar *key)
 {
-	EMailImageLoadingPolicy policy;
+	EImageLoadingPolicy policy;
 
 	policy = g_settings_get_enum (settings, "image-loading-policy");
 	e_settings_deprecated_set_int_with_change_test (settings, "load-http-images", policy);
@@ -665,10 +665,10 @@ e_settings_deprecated_init (ESettingsDeprecated *extension)
 
 	extension->priv = E_SETTINGS_DEPRECATED_GET_PRIVATE (extension);
 
-	settings = g_settings_new ("org.gnome.evolution.calendar");
+	settings = e_util_ref_settings ("org.gnome.evolution.calendar");
 	extension->priv->calendar_settings = settings;
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 	extension->priv->mail_settings = settings;
 }
 

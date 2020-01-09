@@ -6,7 +6,7 @@
 
     <link type="guide" xref="mail-receiving-options#local-account-server-types"/>
     <link type="guide" xref="mail-account-manage-maildir-format-directories#receiving-email"/>
-    <revision pkgversion="3.0.2" version="0.2" date="2011-07-30" status="final"/>
+    <revision pkgversion="3.12.9" version="0.3" date="2015-02-15" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -17,9 +17,27 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
@@ -42,8 +60,8 @@
 <p>Στη σελίδα <gui>επιλογές λήψης</gui> (προσβάσιμη μέσα από <guiseq><gui>επεξεργασία</gui><gui>προτιμήσεις</gui><gui>λογαριασμοί μηνυμάτων</gui><gui style="button">επεξεργασία</gui><gui>επιλογές λήψης</gui></guiseq>):</p>
 
 <list>
-<item><p>Εάν θέλετε το evolution να ελέγχει αυτόματα για νέα μηνύματα, πατήστε την επιλογή <gui>έλεγχος για νέα μηνύματα κάθε ... λεπτά</gui> και επιλέξτε τη συχνότητα σε λεπτά.</p>
-<p>Εάν θέλετε να χρησιμοποιούνται αυτόματα τα <link xref="mail-filters">φίλτρα</link> για νέα μηνύματα στα εισερχόμενά σας, ενεργοποιήστε το <gui>εφαρμογή φίλτρων στα νέα μηνύματα στα εισερχόμενα</gui>.</p></item>
+<item><p>If you want <app>Evolution</app> to check automatically for new messages, click the <gui>Check for new messages every … minutes</gui> option and select the frequency in minutes.</p>
+<p>Αν θέλετε να χρησιμοποιούνται αυτόματα τα <link xref="mail-filters">Φίλτρα</link> για νέα μηνύματα στα εισερχόμενά σας, ενεργοποιήστε το <gui>Εφαρμογή φίλτρων στα νέα μηνύματα στα εισερχόμενα</gui>.</p></item>
 </list>
 
 </section>

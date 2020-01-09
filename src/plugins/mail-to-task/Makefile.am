@@ -9,11 +9,12 @@ liborg_gnome_mail_to_task_la_CPPFLAGS =			\
 	-I$(top_srcdir)					\
 	$(EVOLUTION_DATA_SERVER_CFLAGS)			\
 	$(GNOME_PLATFORM_CFLAGS)			\
-	$(GTKHTML_CFLAGS)
+	$(CODE_COVERAGE_CFLAGS)				\
+	$(NULL)
 
 liborg_gnome_mail_to_task_la_SOURCES = mail-to-task.c
 
-liborg_gnome_mail_to_task_la_LDFLAGS = -module -avoid-version $(NO_UNDEFINED)
+liborg_gnome_mail_to_task_la_LDFLAGS = -module -avoid-version $(NO_UNDEFINED) $(CODE_COVERAGE_LDFLAGS)
 
 liborg_gnome_mail_to_task_la_LIBADD =	\
 	$(top_builddir)/e-util/libevolution-util.la			\
@@ -24,7 +25,7 @@ liborg_gnome_mail_to_task_la_LIBADD =	\
 	$(top_builddir)/libemail-engine/libemail-engine.la		\
 	$(EVOLUTION_DATA_SERVER_LIBS)					\
 	$(GNOME_PLATFORM_LIBS)						\
-	$(GTKHTML_LIBS)
+	$(NULL)
 
 EXTRA_DIST = org-gnome-mail-to-task.eplug.xml
 

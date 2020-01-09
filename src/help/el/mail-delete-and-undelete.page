@@ -22,9 +22,27 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
@@ -35,7 +53,7 @@
 
 <p>Για να διαγράψετε ένα μήνυμα, επιλέξτε το και πιέστε το πλήκτρο <key>διαγραφή</key>, ή πατήστε το κουμπί <gui style="button">διαγραφή</gui> στην εργαλειοθήκη, ή πατήστε <keyseq><key>Ctrl</key><key>D</key></keyseq>, ή δεξί κλικ στο μήνυμα και κλικ στο <gui>διαγραφή</gui>.</p>
 
-<p>Όταν πατάτε διαγραφή ή πατάτε στο φάκελο απορριμάτων, το μήνυμά σας δε διαγράφεται πραγματικά, αλλά σημειώνεται για διαγραφή. Μπορείτε να δείτε όλα τα σημειωμένα μηνύματα για διαγραφή στον φάκελο απορριμάτων. Για να εμφανίσετε τα διαγραμμένα μηνύματα, κλικ στο <guiseq><gui>προβολή</gui><gui>προβολή διαγραμμένων μηνυμάτων</gui></guiseq>. Μπορείτε να προβάλετε τα διαγραμμένα μηνύματα που προορίζονται για μεταγενέστερη διαγραφή.</p>
+<p>When you press Delete or click the <gui>Trash</gui> folder, your mail is not actually deleted, but is marked for deletion. You can see all message marked for deletion in the <gui>Trash</gui> folder. To show deleted messages, click <guiseq><gui>View</gui><gui>Show Deleted Messages</gui></guiseq>. You can view the messages stricken off for later deletion.</p>
 
 <p>Για να σβήσετε μόνιμα όλα τα διαγραμμένα μηνύματα σ' ένα φάκελο, πατήστε στο <guiseq><gui>Φάκελος</gui><gui>Εξάλειψη</gui></guiseq> ή πατήστε <keyseq><key>Ctrl</key><key>Ε</key></keyseq>.</p>
 </section>
@@ -43,9 +61,9 @@
 <section id="undelete">
 <title>Επαναφορά μηνυμάτων</title>
 
-<p>Μπορείτε να επαναφέρετε ένα μήνυμα το οποίο έχει διαγραφεί αλλά δεν έχει εξαλειφθεί. Για να επαναφέρετε ένα μήνυμα, επιλέξτε το μήνυμα, κλικ στο <guiseq><gui>επεξεργασία</gui><gui>επαναφορά μηνύματος</gui></guiseq>. Σημειώστε ότι το <guiseq><gui>προβολή</gui><gui>προβολή διαγραμμένων μηνυμάτων</gui></guiseq> θα πρέπει να είναι ενεργό για αυτό.</p>
+<p>You can undelete a message that has been deleted but not expunged yet. To undelete a message, select the message, click <guiseq><gui>Edit</gui><gui>Undelete message</gui></guiseq>. Note that <guiseq><gui>View</gui><gui>Show Deleted Messages</gui></guiseq> must be enabled for this to work.</p>
 
-<p>Αν έχετε σημειώσει ένα μήνυμα για διαγραφή, η επαναφορά το ξεσημειώνει και το μήνυμα δεν εμφανίζεται πια στον φάκελο απορριμμάτων.</p>
+<p>If you have marked a message for deletion, undeleting it unmarks it, and the message is not shown anymore in the <gui>Trash</gui> folder.</p>
 </section>
 
 </page>

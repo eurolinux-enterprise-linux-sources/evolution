@@ -18,20 +18,31 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Ask somebody else to run the meeting.</desc>
+    <desc>Jak někoho požádat, aby se zůčastnil schůzky za vás.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
   <title>Postoupení schůzek</title>
 
-  <p>Only attendees of a meeting can delegate a meeting, but not the organizer
-  of a meeting.</p>
+  <p>Pouze účastníci schůzky ji mohou postoupit, organizátor ne.</p>
 
   <steps>
     <item>
-      <p>Right-click on the meeting that you want to delegate.</p>
+      <p>Klikněte pravým tlačítkem na schůzku, kterou chcete postoupit.</p>
     </item>
     <item>
-      <p>Click <gui>Delegate Meeting</gui>.</p>
+      <p>Klikněte na <gui>Delegovat schůzku</gui>.</p>
     </item>
     <item>
       <p>Vyberte kontakty, kterým chcete schůzku postoupit.</p>

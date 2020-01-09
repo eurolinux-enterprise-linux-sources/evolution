@@ -20,9 +20,15 @@
     
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -42,7 +48,7 @@
 
 <p>Los filtros de correos aplican acciones sobre correos basándose en condiciones que usted ha definido. Puede definir filtros tanto para correo entrante como para correo saliente.</p>
 
-<p>Los filtros se aplicarán automáticamente a los correos entrantes para las cuentas locales (tales como POP). A menudo el correo en cuentas de servidores remotos (tales como IMAP) se filtra directamente en el servidor ya que es más rápido. Si quiere aplicar sus filtros de Evolution en cuentas remotas puede hacerlo en <guiseq><gui>Editar</gui><gui>Preferencias</gui><gui>Cuentas de correo</gui><gui>Editar</gui><gui>Opciones de recepción</gui><gui>Opciones</gui><gui>Aplicar filtros en mensajes nuevos en la Bandeja de entrada en este servidor</gui></guiseq>.</p>
+<p>Los filtros se aplicarán automáticamente a los correos entrantes para las cuentas locales (tales como POP). A menudo el correo en cuentas de servidores remotos (tales como IMAP) se filtra directamente en el servidor ya que es más rápido. Si quiere aplicar sus filtros de <app>Evolution</app> en cuentas remotas puede hacerlo en <guiseq><gui>Editar</gui><gui>Preferencias</gui><gui>Cuentas de correo</gui><gui>Editar</gui><gui>Opciones de recepción</gui><gui>Opciones</gui><gui>Aplicar filtros en mensajes nuevos en la Bandeja de entrada en este servidor</gui></guiseq>.</p>
 
 <p>Para aplicar manualmente filtros sobre correos en una carpeta, seleccione los mensajes y pulse <guiseq><gui>Mensaje</gui><gui>Aplicar filtros</gui></guiseq> o pulse <keyseq><key>Ctrl</key><key>Y</key></keyseq>.</p>
 <p>Puede seleccionar todos los correos en su carpeta pulsando <guiseq><gui>Editar</gui><gui>Seleccionar todos</gui></guiseq> o pulsando <keyseq><key>Ctrl</key><key>A</key></keyseq>.</p>
@@ -51,7 +57,7 @@
 <title>Crear un filtro</title>
 
 <steps>
-<item><p>Pulse <guiseq><gui>Editar</gui><gui>Filtros de mensajes</gui></guiseq> o pulse <guiseq><gui>Mensaje</gui><gui>Crear regla</gui></guiseq> y elija el criterio en que se basará el filtro.</p></item>
+<item><p>Pulse <guiseq><gui>Editar</gui><gui>Filtros de mensajes</gui></guiseq> o pulse <guiseq><gui>Mensaje</gui><gui>Crear</gui></guiseq> y elija el criterio en que se basará el filtro.</p></item>
 <item><p>Pulse <gui style="button">Añadir</gui>.</p></item>
 <item><p>Introduzca un nombre en el campo <gui>Nombre de la regla</gui>.</p></item>
 <item><p>Defina las condiciones para la regla. Para cada condición debe seleccionar primero qué parte del mensaje se comprobará y después definir la comparación.</p><p>Para obtener más información acerca de las condiciones disponibles, consulte <link xref="mail-filters-conditions">condiciones disponibles para filtros</link>.</p></item>

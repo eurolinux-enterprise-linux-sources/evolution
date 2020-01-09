@@ -356,6 +356,7 @@ mail_config_window_constructed (GObject *object)
 	 */
 	widget = e_mail_config_notebook_new (
 		window->priv->session,
+		window->priv->original_source,
 		window->priv->account_source,
 		window->priv->identity_source,
 		window->priv->transport_source,
@@ -387,7 +388,7 @@ mail_config_window_constructed (GObject *object)
 	widget = gtk_dialog_get_widget_for_response (
 		GTK_DIALOG (window), GTK_RESPONSE_OK);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		window->priv->notebook, "complete",
 		widget, "sensitive",
 		G_BINDING_SYNC_CREATE);

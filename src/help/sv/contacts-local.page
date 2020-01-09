@@ -13,31 +13,40 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Adding another local address book.</desc>
+    <desc>Lägga till en annan lokal adressbok.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Adding another local address book</title>
+  <title>Lägga till en annan lokal adressbok</title>
 
-  <p>To add another local address book to <app>Evolution</app>, perform the
-  following steps:</p>
+  <p>För att lägga till en annan lokal adressbok i <app>Evolution</app>, utför följande steg:</p>
 
   <steps>
     <item>
-      <p>Click <guiseq><gui>File</gui><gui>New</gui>
-      <gui>Address Book</gui></guiseq>.</p>
+      <p>Klicka på <guiseq><gui>Arkiv</gui><gui>Nytt</gui> <gui>Adressbok</gui></guiseq>.</p>
     </item>
     <item>
-      <p>Select the type <gui>On This Computer</gui>.</p>
+      <p>Välj typen <gui>På denna dator</gui>.</p>
     </item>
     <item>
-      <p>Enter a name that you prefer.</p>
+      <p>Ange ett namn du föredrar.</p>
     </item>
     <item>
-      <p>Click <gui style="button">Apply</gui>.</p>
+      <p>Klicka på <gui style="button">Verkställ</gui>.</p>
     </item>
   </steps>
 
-  <p>The address book will be added to the list of address books in
-  <app>Evolution</app>.</p>
+  <p>Adressboken kommer att läggas till i listan över adressböcker i <app>Evolution</app>.</p>
 
 </page>

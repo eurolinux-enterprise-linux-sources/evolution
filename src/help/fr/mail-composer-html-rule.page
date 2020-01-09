@@ -50,7 +50,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -58,12 +58,12 @@
 
 <p>Vous pouvez insérer une ligne horizontale dans le courriel (à la position actuelle du curseur) pour aider à séparer deux sections :</p>
 <steps>
-<item><p>Cliquez sur <guiseq><gui>Insertion</gui><gui>Filet...</gui></guiseq> dans la barre de menu.</p></item>
+<item><p>Cliquez sur <guiseq><gui>Insertion</gui><gui>Trait horizontal…</gui></guiseq> dans la barre de menu.</p></item>
 <item><p>Choisissez la largeur, la taille et l'alignement.</p></item>
 <item><p>Cochez <gui>Ombré</gui> si vous voulez.</p></item>
 <item><p>Cliquez sur <gui>Fermer</gui>.</p></item>
 </steps>
 
-<p>Alternately, you can also use the <media type="image" its:translate="no" src="./figures/html-composer-insert-rule.png"/> icon in the second bar below the <gui>Subject</gui> line.</p>
+<p>Vous pouvez aussi utiliser l'icône <media type="image" its:translate="no" src="./figures/html-composer-insert-rule.png"/> dans la seconde barre d'outils sous la ligne <gui>Sujet</gui>.</p>
 
 </page>

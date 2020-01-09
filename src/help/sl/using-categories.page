@@ -40,7 +40,7 @@
 <p>To mark an object as belonging to a category,</p>
 <steps>
 <item><p>Double-click the object to bring up the corresponding editor.</p></item>
-<item><p>Click <gui style="button">Categories...</gui>. (If this button is not available, select <guiseq><gui>View</gui><gui>Categories</gui></guiseq>.)</p></item>
+<item><p>Click <gui style="button">Categories…</gui>. (If this button is not available, select <guiseq><gui>View</gui><gui>Categories</gui></guiseq>.)</p></item>
 <item><p>Select the category from the list. You can select as many or as few categories as you like.</p></item>
 </steps>
 
@@ -52,7 +52,7 @@
 <p>If the default list of categories does not suit your needs, you can add your own categories either directly via <guiseq><gui>Edit</gui><gui>Available Categories</gui></guiseq>, or indirectly when editing an object:</p>
 <steps>
 <item><p>Dvokliknite poljuben predmet za priklic ustreznega urejevalnika.</p></item>
-<item><p>Click <gui style="button">Categories...</gui>. (If this button is not available, select <guiseq><gui>View</gui><gui>Categories</gui></guiseq>.)</p></item>
+<item><p>Click <gui style="button">Categories…</gui>. (If this button is not available, select <guiseq><gui>View</gui><gui>Categories</gui></guiseq>.)</p></item>
 <item><p>Vnesite novo kategorijo v vnosno polje na vrhu.</p></item>
 <item><p>Kliknite <gui style="button">V redu</gui>.</p></item>
 <item><p>Sedaj lahko vidite kategorijo v besedilnem polju <gui>Kategorije</gui> v urejevalniku.</p></item>

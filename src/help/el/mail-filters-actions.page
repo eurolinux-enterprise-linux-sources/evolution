@@ -20,9 +20,27 @@
     
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
@@ -63,13 +81,13 @@
 <p>Κάνει το σύστημα να κάνει ένα μπιπ.</p></item>
 
 <item><p>Αναπαραγωγή ήχου:</p>
-<p>Επιλέξτε ένα αρχείο ήχου για να αναπαράγει το Evolution.</p></item>
+<p>Select a sound file for <app>Evolution</app> to play.</p></item>
 
 <item><p>Εκτέλεση προγράμματος:</p>
-<p>Το Evolution εκτελεί μια εφαρμογή.</p></item>
+<p><app>Evolution</app> runs an application.</p></item>
 
 <item><p>Σωλήνωση στο πρόγραμμα:</p>
-<p>Στέλνει το μήνυμα σε μια εφαρμογή της επιλογής σας. Δεν αναμένεται καμιά επιστροφή τιμής. Αυτό το χαρακτηριστικό μπορεί να χρησιμοποιηθεί για να δημιουργούνται αυτόματες δημοσιεύσεις στον ιστό από μηνύματα αλληλογραφίας ή να διενεργείτε πρόσθετη επεξεργασία του μηνύματος την οποία δεν υποστηρίζει το Evolution.</p></item>
+<p>Sends the message to an application of your choice. No return value is expected. This feature can be used to create automatic Web postings from email messages or to perform additional message post processing not supported by <app>Evolution</app>.</p></item>
 
 <item><p>Προώθηση σε:</p>
 <p>Προωθεί το μήνυμα σε άλλη διεύθυνση αλληλογραφίας.</p></item>

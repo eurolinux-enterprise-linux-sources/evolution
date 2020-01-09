@@ -16,9 +16,15 @@
     <desc>Usar datos de las libretas de direcciones de <app>Evolution</app> en documentos de LibreOffice.</desc>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -55,7 +61,7 @@
       <p>Ya que <app>Evolution</app> almacena sus datos en una carpeta oculto, pulse <keyseq><key>Ctrl</key><key>L</key></keyseq> para mostrar la barra de direcciones.</p>
     </item>
     <item>
-      <p>Vaya a <code>/home/nombre_de_usuario/.local/share/evolution/addressbook/system/addressbook.db</code> y pulse <gui style="button">Abrir</gui>.</p>
+      <p>Vaya a <file>~/.local/share/evolution/addressbook/system/addressbook.db</file> y pulse <gui style="button">Abrir</gui>.</p>
     </item>
   </steps>
 

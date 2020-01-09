@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="intro-main-window" xml:lang="sv">
 
   <info>
-    <desc>An explanation of the areas shown in the Evolution window.</desc>
+    <desc>En förklaring av de olika områdena som syns i <app>Evolution</app>-fönstret.</desc>
 
     <link type="guide" xref="index#getting-started"/>
     <link type="seealso" xref="calendar-layout"/>
@@ -24,108 +24,120 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>The <app>Evolution</app> main window</title>
+  <title>Huvudfönstret för <app>Evolution</app></title>
 
 <!-- This section fixes https://bugzilla.gnome.org/show_bug.cgi?id=657028 -->
-<p>Evolution provides functionality for E-Mail, Calendar, Contacts, Tasks, and Memos. You can switch to another functionality by using the "Switcher" buttons in the lower left corner. Depending on the displayed functionality also the displayed elements in the window differ.</p>
+<p><app>Evolution</app> tillhandahåller funktionalitet för e-post, kalender, kontakter, uppgifter och memon. Du kan växla till en annan funktionalitet genom att använda ”växlar”-knapparna i det nedre vänstra hörnet. Beroende på visad funktionalitet så skiljer sig också de visade elementen i fönstret.</p>
 
 <section id="e-mail">
-<title>E-Mail</title>
+<title>Post</title>
 
 <media type="image" src="./figures/window-overview-layers.png" width="600">
-  <p>The Evolution mail main window</p>
+  <p>Huvudfönstret för <app>Evolution</app> e-post</p>
 </media>
 
-<p>Corresponding elements in the mail main window:</p>
+<p>Motsvarande element i huvudfönstret för e-post:</p>
 <table frame="all" rules="all">
   <tr>
-    <td colspan="2"><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-c4a000.png" width="10"/> Menu bar</p></td>
+    <td colspan="2"><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-c4a000.png" width="10"/> Menyfält</p></td>
   </tr>
   <tr>
-    <td colspan="2"><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-ce5c00.png" width="10"/> Tool bar</p></td>
+    <td colspan="2"><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-ce5c00.png" width="10"/> Verktygsfält</p></td>
   </tr>
   <tr>
-    <td rowspan="2"><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-8f5902.png" width="10"/> Folder list</p></td>
-    <td><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-4e9a06.png" width="10"/> Search bar</p></td>
+    <td rowspan="2"><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-8f5902.png" width="10"/> Mapplista</p></td>
+    <td><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-4e9a06.png" width="10"/> Sökfält</p></td>
   </tr>
   <tr>
-    <td><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-204a87.png" width="10"/> Message list</p></td>
+    <td><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-204a87.png" width="10"/> Meddelandelista</p></td>
   </tr>
   <tr>
-    <td><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-a40000.png" width="10"/> Switcher</p></td>
-    <td><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-5c3566.png" width="10"/> Preview pane</p></td>
+    <td><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-a40000.png" width="10"/> Växlaren</p></td>
+    <td><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-5c3566.png" width="10"/> Förhandsgranskningspanel</p></td>
   </tr>
   <tr>
-    <td colspan="2"><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-2e3436.png" width="10"/> Status bar</p></td>
+    <td colspan="2"><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-2e3436.png" width="10"/> Statusrad</p></td>
   </tr>
 </table>
 
 <terms>
 <item>
-<title>Folder list</title>
-<p>The folder list gives you a list of the available folders for each account. To see the contents of a folder, click the folder name and its contents are displayed in the message list.</p>
-<note style="tip"><p>For more information see <link xref="mail-folders">Using Folders</link>.</p></note>
+<title>Mapplista</title>
+<p>Mapplistan ger dig en lista över de tillgängliga mapparna för varje konto. För att se innehållet i en mapp, klicka på mappnamnet och dess innehåll visas i meddelandelistan.</p>
+<note style="tip"><p>För ytterligare information, se <link xref="mail-folders">Använda mappar</link>.</p></note>
 </item>
 <item>
-<title>Message List</title>
-<p>The message list displays all the read and unread messages that you have in the chosen folder. To view an email in the preview pane, click the message in the message list.</p>
+<title>Meddelandelista</title>
+<p>Meddelandelistan visar en lista över lästa och olästa meddelanden som du har i den valda mappen. För att visa ett e-postmeddelande i förhandsgranskningspanelen, klicka på meddelandet i meddelandelistan.</p>
 </item>
 <item>
-<title>Switcher</title>
-<p>The switcher at the bottom of the side bar lets you switch between the Evolution tools:  Mail, Contacts, Calendars, Memos and Tasks.</p><p>For more information see <link xref="change-switcher-appearance">Changing the Switcher appearance</link>.</p>
-<note style="tip"><p>You can disable the folder list and the switcher side bar by toggling <guiseq><gui>View</gui><gui>Layout</gui><gui>Show Side Bar</gui></guiseq> or pressing <key>F9</key>.</p></note>
+<title>Växlare</title>
+<p>Växlaren längst ner i sidopanelen låter dig växla mellan <app>Evolution</app>-verktygen: e-post, kontakter, kalendrar, memon och uppgifter.</p><p>För mer information se <link xref="change-switcher-appearance">Ändra utseendet på växlaren</link>.</p>
+<note style="tip"><p>Du kan inaktivera mapplistan och sidopanelen med växlaren genom slå om <guiseq><gui>Visa</gui><gui>Layout</gui><gui>Visa sidopanel</gui></guiseq> eller tryck på <key>F9</key>.</p></note>
 </item>
 <item>
-<title>Preview Pane</title>
-<p>The preview pane displays the message that is currently chosen in the message list.</p>
-<note style="tip"><p>You can disable the preview pane by toggling <guiseq><gui>View</gui><gui>Preview</gui><gui>Show Message Preview</gui></guiseq>.</p></note>
+<title>Förhandsgranskningspanel</title>
+<p>Förhandsgranskningspanelen visar e-postmeddelandet som för närvarande är markerat i e-postlistan.</p>
+<note style="tip"><p>Du kan inaktivera förhandsgranskningspanelen genom att slå av <guiseq><gui>Visa</gui><gui>Förhandsvisning</gui><gui>Visa förhandsgranskning av meddelande</gui></guiseq>.</p></note>
 </item>
 </terms>
 </section>
 
 <section id="calendar">
 <title>Kalender</title>
-<p>Elements in the calendar main window:</p>
+<p>Element i kalenderns huvudfönster:</p>
 <table frame="all" rules="all">
   <tr>
-    <td colspan="3"><p><media type="image" its:translate="no" src="./figures/color-c4a000.png" width="10"/> Menu bar</p></td>
+    <td colspan="3"><p><media type="image" its:translate="no" src="./figures/color-c4a000.png" width="10"/> Menyfält</p></td>
   </tr>
   <tr>
-    <td colspan="3"><p><media type="image" its:translate="no" src="./figures/color-ce5c00.png" width="10"/> Tool bar</p></td>
+    <td colspan="3"><p><media type="image" its:translate="no" src="./figures/color-ce5c00.png" width="10"/> Verktygsfält</p></td>
   </tr>
   <tr>
-    <td rowspan="2"><p><media type="image" its:translate="no" src="./figures/color-8f5902.png" width="10"/> Calendar list</p></td>
-    <td colspan="2"><p><media type="image" its:translate="no" src="./figures/color-4e9a06.png" width="10"/> Search bar</p></td>
+    <td rowspan="2"><p><media type="image" its:translate="no" src="./figures/color-8f5902.png" width="10"/> Kalenderlista</p></td>
+    <td colspan="2"><p><media type="image" its:translate="no" src="./figures/color-4e9a06.png" width="10"/> Sökfält</p></td>
   </tr>
   <tr>
-    <td rowspan="3"><p><media type="image" its:translate="no" src="./figures/color-204a87.png" width="10"/> Appointment list</p></td>
-    <td><p>Task list</p></td>
+    <td rowspan="3"><p><media type="image" its:translate="no" src="./figures/color-204a87.png" width="10"/> Möteslista</p></td>
+    <td><p>Uppgiftslista</p></td>
   </tr>
   <tr>
-    <td><p>Month pane</p></td>
-    <td rowspan="2"><p>Memo list</p></td>
+    <td><p>Månadspanel</p></td>
+    <td rowspan="2"><p>Memolista</p></td>
   </tr>
   <tr>
-    <td><p><media type="image" its:translate="no" src="./figures/color-a40000.png" width="10"/> Switcher</p></td>
+    <td><p><media type="image" its:translate="no" src="./figures/color-a40000.png" width="10"/> Växlaren</p></td>
   </tr>
   <tr>
-    <td colspan="3"><p><media type="image" its:translate="no" src="./figures/color-2e3436.png" width="10"/> Status bar</p></td>
+    <td colspan="3"><p><media type="image" its:translate="no" src="./figures/color-2e3436.png" width="10"/> Statusrad</p></td>
   </tr>
 </table>
 <terms>
 <item>
-<title>Appointment List</title>
-<p>The appointment list displays all your scheduled appointments in the time frame selected.</p>
+<title>Möteslista</title>
+<p>Möteslistan visar alla dina schemalagda möten inom den valda tidsramen.</p>
 </item>
 <item>
-<title>Month Pane</title>
+<title>Månadspanel</title>
 <p>Månadspanelen är en liten vy av kalendermånaden. För att visa ytterligare månader kan du dra kolumnramen till höger. Du kan även välja ett intervall av dagar i månadspanelen för att visa ett anpassat intervall över dagar i möteslistan.</p>
 </item>
 <item>
-<title>Task list and Memo list</title>
-<p>Tasks and memos are just displayed for your convience and are not associated to any appointments. Use the <gui>switcher</gui> to go to their main windows.</p>
+<title>Uppgiftslista och memolista</title>
+<p>Uppgifter och memon visas för din bekvämlighet och är inte associerade med några möten. Använd <gui>växlaren</gui> för att gå till deras huvudfönster.</p>
 </item>
 </terms>
 
@@ -133,29 +145,29 @@
 
 <section id="contacts">
 <title>Kontakter</title>
-<p>Elements in the contacts main window:</p>
+<p>Element i kontakten huvudfönster:</p>
 <table frame="all" rules="all">
   <tr>
-    <td colspan="2"><p><media type="image" its:translate="no" src="./figures/color-c4a000.png" width="10"/> Menu bar</p></td>
+    <td colspan="2"><p><media type="image" its:translate="no" src="./figures/color-c4a000.png" width="10"/> Menyfält</p></td>
   </tr>
   <tr>
-    <td colspan="2"><p><media type="image" its:translate="no" src="./figures/color-ce5c00.png" width="10"/> Tool bar</p></td>
+    <td colspan="2"><p><media type="image" its:translate="no" src="./figures/color-ce5c00.png" width="10"/> Verktygsfält</p></td>
   </tr>
   <tr>
-    <td rowspan="2"><p><media type="image" its:translate="no" src="./figures/color-8f5902.png" width="10"/> Address book list</p></td>
-    <td><p><media type="image" its:translate="no" src="./figures/color-4e9a06.png" width="10"/> Search bar</p></td>
+    <td rowspan="2"><p><media type="image" its:translate="no" src="./figures/color-8f5902.png" width="10"/> Adressbokslista</p></td>
+    <td><p><media type="image" its:translate="no" src="./figures/color-4e9a06.png" width="10"/> Sökfält</p></td>
   </tr>
   <tr>
-    <td><p><media type="image" its:translate="no" src="./figures/color-204a87.png" width="10"/> Contacts list</p></td>
+    <td><p><media type="image" its:translate="no" src="./figures/color-204a87.png" width="10"/> Kontaktlista</p></td>
   </tr>
   <tr>
-    <td><p><media type="image" its:translate="no" src="./figures/color-a40000.png" width="10"/> Switcher</p></td>
-    <td><p><media type="image" its:translate="no" src="./figures/color-5c3566.png" width="10"/> Contact preview</p></td>
+    <td><p><media type="image" its:translate="no" src="./figures/color-a40000.png" width="10"/> Växlaren</p></td>
+    <td><p><media type="image" its:translate="no" src="./figures/color-5c3566.png" width="10"/> Förhandsgranskning av kontakt</p></td>
   </tr>
   <tr>
-    <td colspan="2"><p><media type="image" its:translate="no" src="./figures/color-2e3436.png" width="10"/> Status bar</p></td>
+    <td colspan="2"><p><media type="image" its:translate="no" src="./figures/color-2e3436.png" width="10"/> Statusrad</p></td>
   </tr>
 </table>
-<note style="tip"><p>You can disable the contact preview by toggling <guiseq><gui>View</gui><gui>Preview</gui><gui>Contact Preview</gui></guiseq>.</p></note>
+<note style="tip"><p>Du kan inaktivera förhandsvisning av kontakter genom att slå av <guiseq><gui>Visa</gui><gui>Förhandsvisning</gui><gui>Förhandsgranskning av kontakt</gui></guiseq>.</p></note>
 </section>
 </page>

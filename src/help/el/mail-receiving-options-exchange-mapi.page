@@ -17,9 +17,27 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
@@ -34,7 +52,7 @@
 <item><p>Εισάγετε τη διεύθυνση του εξυπηρετητή αλληλογραφίας στο πεδίο <gui>εξυπηρετητής</gui> και εισαγωγή ονόματος χρήστη για αυτόν τον εξυπηρετητή.</p></item>
 <item><p>Εισάγετε το όνομα τομέα του εξυπηρετητή.</p>
 <note style="tip"><p>Αν είστε σε έναν οργανισμό, μπορεί να χρειαστεί να επικοινωνήσετε με το διαχειριστή του συστήματός σας για περισσότερες πληροφορίες.</p></note></item>
-<item><p>Επιλέξτε τον τύπο πιστοποίησης στον κατάλογο πιστοποίησης, ή πατήστε <gui style="button">έλεγχος για υποστηριζόμενους τύπους</gui> για έλεγχο από το Evolution των υποστηριζόμενων μηχανισμών πιστοποίησης. Μερικοί εξυπηρετητές δεν ανακοινώνουν τους μηχανισμούς πιστοποίησης που υποστηρίζουν, έτσι πατώντας αυτό το κουμπί δεν είναι εγγύηση ότι οι διαθέσιμοι μηχανισμοί στην πραγματικότητα δουλεύουν.</p></item>
+<item><p>Select your authentication type in the Authentication list, or click <gui style="button">Check for Supported Types</gui> to have <app>Evolution</app> check for supported authentication mechanisms. Some servers do not announce the authentication mechanisms they support, so clicking this button is not a guarantee that available mechanisms actually work.</p></item>
 <item><p>Επιλέξτε αν θέλετε να χρησιμοποιείτε μια ασφαλή σύνδεση (SSL ή TLS).</p></item>
 <item><p>Κλικ <gui style="button">πιστοποίηση</gui> και εισαγωγή του κωδικού σας.</p></item>
 </list>
@@ -47,8 +65,8 @@
 <p>Στη σελίδα <gui>επιλογές λήψης</gui> (προσβάσιμη μέσα από <guiseq><gui>επεξεργασία</gui><gui>προτιμήσεις</gui><gui>λογαριασμοί μηνυμάτων</gui><gui style="button">επεξεργασία</gui><gui>επιλογές λήψης</gui></guiseq>):</p>
 
 <list>
-<item><p>Εάν θέλετε το evolution να ελέγχει αυτόματα για νέα μηνύματα, πατήστε την επιλογή <gui>έλεγχος για νέα μηνύματα κάθε ... λεπτά</gui> και επιλέξτε τη συχνότητα σε λεπτά.</p></item>
-<item><p>Μπορείτε επίσης να ορίσετε εάν το Evolution ελέγχει για νέα μηνύματα σε όλους τους φακέλους.</p></item>
+<item><p>If you want <app>Evolution</app> to check automatically for new messages, click the <gui>Check for new messages every … minutes</gui> option and select the frequency in minutes.</p></item>
+<item><p>You can also define if <app>Evolution</app> checks for new messages in all folders.</p></item>
 </list>
 
 </section>

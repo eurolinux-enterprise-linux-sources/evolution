@@ -2,11 +2,11 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" xmlns:e="http://projectmallard.org/experimental/" xmlns:if="http://projectmallard.org/experimental/if/" type="topic" id="mail-composer-spellcheck" xml:lang="de">
 
   <info>
-    <desc>Über die Rechtschreibprüfung im E-Mail-Editor</desc>
+    <desc>Informationen über die Rechtschreibprüfung im E-Mail-Editor.</desc>
     
     <link type="guide" xref="index#mail-composing"/>
 
-    <revision pkgversion="3.5.1" version="0.6" date="2012-04-25" status="final"/>
+    <revision pkgversion="3.20.5" version="0.7" date="2016-11-21" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -25,19 +25,25 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
@@ -63,14 +69,14 @@
 <section id="global-preferences">
 <title>Globale Einstellungen</title>
 
-<p>Unter <guiseq><gui>Bearbeiten</gui><gui>Einstellungen</gui><gui>Editoreinstellungen</gui><gui>Rechtschreibprüfung</gui><gui>Optionen</gui></guiseq> können Sie festlegen, ob die Rechtschreibung während der Eingabe geprüft werden soll und mit welcher Farbe falsch geschriebene Wörter unterstrichen werden.</p>
+<p>Unter <guiseq><gui>Bearbeiten</gui><gui>Einstellungen</gui><gui>Editoreinstellungen</gui><gui>Rechtschreibprüfung</gui><gui>Optionen</gui></guiseq> können Sie festlegen, ob die Rechtschreibung während der Eingabe geprüft werden soll.</p>
 
-<p>Legen Sie in der Liste unter <guiseq><gui>Bearbeiten</gui><gui>Einstellungen</gui><gui>Editoreinstellungen</gui><gui>Rechtschreibprüfung</gui><gui>Sprachen</gui></guiseq> fest, welche installierten Sprachen für die Rechtschreibprüfung verwendet werden sollen.</p>
+<p>Legen Sie in der Liste unter <guiseq><gui>Bearbeiten</gui><gui>Einstellungen</gui><gui>Editoreinstellungen</gui><gui>Rechtschreibprüfung</gui><gui>Sprachen</gui></guiseq> oder im E-Mail-Editor unter <guiseq><gui>Bearbeiten</gui><gui>Momentan verwendete Sprachen</gui></guiseq> fest, welche installierten Sprachen für die Rechtschreibprüfung verwendet werden sollen.</p>
 </section>
 
 <section id="composer">
 <title>Manuelle Rechtschreibprüfung im E-Mail-Editor</title>
-<p>Wenn <gui>Rechtschreibprüfung während der Eingabe durchführen</gui> nicht in den <link xref="#global-preferences">Editoreinstellungen</link> aktiviert ist, so können Sie eine Prüfung im Editor starten, indem Sie auf <guiseq><gui>Bearbeiten</gui><gui>Rechtschreibprüfung</gui></guiseq> klicken oder <key>F7</key> drücken.</p>
+<p>Wenn <gui>Rechtschreibprüfung während der Eingabe durchführen</gui> nicht in den <link xref="#global-preferences">Editoreinstellungen</link> aktiviert ist, so können Sie eine Prüfung im E-Mail-Editor starten, indem Sie auf <guiseq><gui>Bearbeiten</gui><gui>Rechtschreibprüfung …</gui></guiseq> klicken oder <key>F7</key> drücken.</p>
 </section>
 
 </page>

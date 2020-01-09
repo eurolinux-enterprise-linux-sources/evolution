@@ -20,9 +20,27 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
@@ -32,9 +50,9 @@
 <steps>
 <item><p>Επιλέξτε ένα ή περισσότερα μηνύματα.</p></item>
 <item><p>Δεξί κλικ σε ένα από τα μηνύματα.</p></item>
-<item><p>Κλικ στο <gui>σημείωση για παρακολούθηση...</gui>.</p></item>
+<item><p>Πατήστε στο <gui>Σημείωση για παρακολούθηση…</gui>.</p></item>
 </steps>
-<p>Μπορείτε επίσης να το κάνετε επιλέγοντας τα μηνύματα και πατώντας <guiseq><gui>Μήνυμα</gui><gui>Σημείωση ως</gui><gui>Παρακολούθηση...</gui></guiseq> ή πατώντας <keyseq><key>Shift</key><key>Ctrl</key><key>G</key></keyseq>.</p>
+<p>Μπορείτε επίσης να το κάνετε επιλέγοντας τα μηνύματα και πατώντας <guiseq><gui>Μήνυμα</gui><gui>Σημείωση ως</gui><gui>Παρακολούθηση…</gui></guiseq> ή πατώντας <keyseq><key>Shift</key><key>Ctrl</key><key>G</key></keyseq>.</p>
 
 <p>Ένα παράθυρο ανοίγει που σας επιτρέπει να ορίσετε τον τύπο σημαίας και την ημερομηνία λήξης.</p>
 

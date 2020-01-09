@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="deleting-emails" xml:lang="cs">
 
   <info>
-    <desc>Deleting emails or attachments to reduce the size of the mailbox.</desc>
+    <desc>Jak smazáním pošty nebo příloh zmenšit velikost poštovní schránky.</desc>
     
     <link type="guide" xref="deleting-to-free-disk-space"/>
     <link type="seealso" xref="mail-moving-emails"/>
@@ -21,19 +21,31 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Deleting emails or attachments permanently</title>
+<title>Trvalé smazání pošty nebo příloh</title>
 
 <section id="emails">
-<title>Emails</title>
-<p>Evolution deletes emails on IMAP servers by <em>marking</em> the messages for deletion; space is not freed until you <em>expunge</em> the marked emails. </p>
+<title>Pošta</title>
+<p><app>Evolution</app> maže poštu na serverech IMAP tak, že zprávy <em>označí</em> ke smazání. Místo se neuvolní, dokud se označená pošta <em>nevyčistí</em>.</p>
 
-<p>To Expunge a specific folder, go to <guiseq><gui>Folder</gui><gui>Expunge</gui></guiseq> or press <keyseq><key>Ctrl</key><key>E</key></keyseq>. To Expunge all folders, go to <guiseq><gui>File</gui><gui>Empty Trash</gui></guiseq>. This applies to other types of accounts as well.</p>
+<p>Pro vyčištění konkrétní složky přejděte na <guiseq><gui>Složka</gui> <gui>Vyčistit</gui></guiseq> nebo zmáčkněte <keyseq><key>Ctrl</key> <key>E</key></keyseq>. Pro vyčištění všech složek použijte <guiseq><gui>Soubor</gui> <gui>Vyprázdnit koš</gui></guiseq>. Pro jiné typy účtů to funguje stejně.</p>
 </section>
 
 <section id="attachments">
 <title>Přílohy</title>
-<p>To delete the attachments of an email, select the message and click <guiseq><gui>Message</gui><gui>Remove Attachments</gui></guiseq>.</p>
+<p>Když chcete vymazat přílohy ze zprávy, zprávu vyberte a klikněte na <guiseq><gui>Zpráva</gui> <gui>Odstranit přílohy</gui></guiseq>.</p>
 </section>
 </page>

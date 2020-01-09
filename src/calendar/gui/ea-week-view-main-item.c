@@ -50,8 +50,10 @@ static gint	ea_week_view_main_item_get_index_in_parent
 						(AtkObject *accessible);
 
 /* callbacks */
-static void	ea_week_view_main_item_dates_change_cb
-						(GnomeCalendar *gcal,
+static void	ea_week_view_main_item_time_range_changed_cb
+						(ECalModel *model,
+						 time_t start,
+						 time_t end,
 						 gpointer data);
 static void	ea_week_view_main_item_time_change_cb
 						(EWeekView *week_view,
@@ -217,7 +219,7 @@ AtkObject *
 ea_week_view_main_item_new (GObject *obj)
 {
 	AtkObject *accessible;
-	GnomeCalendar *gcal;
+	ECalModel *model;
 	EWeekViewMainItem *main_item;
 	EWeekView *week_view;
 
@@ -246,11 +248,11 @@ ea_week_view_main_item_new (GObject *obj)
 		accessible);
 
 	/* listen for date changes of calendar */
-	gcal = e_calendar_view_get_calendar (E_CALENDAR_VIEW (week_view));
-	if (gcal)
+	model = e_calendar_view_get_model (E_CALENDAR_VIEW (week_view));
+	if (model)
 		g_signal_connect (
-			gcal, "dates_shown_changed",
-			G_CALLBACK (ea_week_view_main_item_dates_change_cb),
+			model, "time-range-changed",
+			G_CALLBACK (ea_week_view_main_item_time_range_changed_cb),
 			accessible);
 
 	return accessible;
@@ -400,12 +402,14 @@ ea_week_view_main_item_get_index_in_parent (AtkObject *accessible)
 /* callbacks */
 
 static void
-ea_week_view_main_item_dates_change_cb (GnomeCalendar *gcal,
-                                        gpointer data)
+ea_week_view_main_item_time_range_changed_cb (ECalModel *model,
+					      time_t start,
+					      time_t end,
+					      gpointer data)
 {
 	EaWeekViewMainItem *ea_main_item;
 
-	g_return_if_fail (GNOME_IS_CALENDAR (gcal));
+	g_return_if_fail (E_IS_CAL_MODEL (model));
 	g_return_if_fail (data);
 	g_return_if_fail (EA_IS_WEEK_VIEW_MAIN_ITEM (data));
 
@@ -449,7 +453,6 @@ ea_week_view_main_item_time_change_cb (EWeekView *week_view,
 			"active-descendant-changed",
 			item_cell);
 		g_signal_emit_by_name (data, "selection_changed");
-		atk_focus_tracker_notify (item_cell);
 		g_object_unref (item_cell);
 	}
 }
@@ -758,8 +761,9 @@ table_interface_get_column_extent_at (AtkTable *table,
 	child = atk_object_ref_accessible_child (
 		ATK_OBJECT (ea_main_item), index);
 	if (child)
-		atk_component_get_size (
-			ATK_COMPONENT (child), &width, &height);
+		atk_component_get_extents (
+			ATK_COMPONENT (child), NULL, NULL, &width, &height,
+			ATK_XY_SCREEN);
 
 	return width;
 }
@@ -779,8 +783,9 @@ table_interface_get_row_extent_at (AtkTable *table,
 	child = atk_object_ref_accessible_child (
 		ATK_OBJECT (ea_main_item), index);
 	if (child)
-		atk_component_get_size (
-			ATK_COMPONENT (child), &width, &height);
+		atk_component_get_extents (
+			ATK_COMPONENT (child), NULL, NULL, &width, &height,
+			ATK_XY_SCREEN);
 
 	return height;
 }

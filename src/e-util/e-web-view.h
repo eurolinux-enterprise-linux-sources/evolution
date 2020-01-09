@@ -16,9 +16,7 @@
  */
 
 /* This is intended to serve as a common base class for all HTML viewing
- * needs in Evolution.  Currently based on GtkHTML, the idea is to wrap
- * the GtkHTML API enough that we no longer have to make direct calls to
- * it.  This should help smooth the transition to WebKit/GTK+.
+ * needs in Evolution.
  *
  * This class handles basic tasks like mouse hovers over links, clicked
  * links, and servicing URI requests asynchronously via GIO. */
@@ -30,8 +28,9 @@
 #ifndef E_WEB_VIEW_H
 #define E_WEB_VIEW_H
 
-#include <webkit/webkit.h>
+#include <webkit2/webkit2.h>
 #include <e-util/e-activity.h>
+#include <e-util/e-content-request.h>
 
 /* Standard GObject macros */
 #define E_TYPE_WEB_VIEW \
@@ -58,6 +57,21 @@ typedef struct _EWebView EWebView;
 typedef struct _EWebViewClass EWebViewClass;
 typedef struct _EWebViewPrivate EWebViewPrivate;
 
+typedef enum {
+	CID_URI_SCHEME,
+	FILE_URI_SCHEME,
+	MAIL_URI_SCHEME,
+	EVO_HTTP_URI_SCHEME,
+	EVO_HTTPS_URI_SCHEME,
+	GTK_STOCK_URI_SCHEME
+} EURIScheme;
+
+typedef void (*EWebViewElementClickedFunc) (EWebView *web_view,
+					    const gchar *element_class,
+					    const gchar *element_value,
+					    const GtkAllocation *element_position,
+					    gpointer user_data);
+
 struct _EWebView {
 	WebKitWebView parent;
 	EWebViewPrivate *priv;
@@ -80,8 +94,6 @@ struct _EWebViewClass {
 						 const gchar *load_string);
 	void		(*load_uri)		(EWebView *web_view,
 						 const gchar *load_uri);
-	gchar *		(*redirect_uri)		(EWebView *web_view,
-						 const gchar *uri);
 	gchar *		(*suggest_filename)	(EWebView *web_view,
 						 const gchar *uri);
 	void		(*set_fonts)		(EWebView *web_view,
@@ -92,28 +104,56 @@ struct _EWebViewClass {
 	void		(*new_activity)		(EWebView *web_view,
 						 EActivity *activity);
 	gboolean	(*popup_event)		(EWebView *web_view,
-						 const gchar *uri);
+						 const gchar *uri,
+						 GdkEvent *event);
 	void		(*status_message)	(EWebView *web_view,
 						 const gchar *status_message);
 	void		(*stop_loading)		(EWebView *web_view);
 	void		(*update_actions)	(EWebView *web_view);
 	gboolean	(*process_mailto)	(EWebView *web_view,
 						 const gchar *mailto_uri);
+	void		(*uri_requested)	(EWebView *web_view,
+						 const gchar *uri,
+						 gchar **redirect_to_uri);
 };
 
 GType		e_web_view_get_type		(void) G_GNUC_CONST;
 GtkWidget *	e_web_view_new			(void);
+WebKitSettings *
+		e_web_view_get_default_webkit_settings
+						(void);
+void		e_web_view_register_content_request_for_scheme
+						(EWebView *web_view,
+						 const gchar *scheme,
+						 EContentRequest *content_request);
+void		e_web_view_update_fonts_settings
+						(GSettings *font_settings,
+						 GSettings *aliasing_settings,
+						 PangoFontDescription *ms_font,
+						 PangoFontDescription *vw_font,
+						 GtkWidget *view_widget);
 void		e_web_view_clear		(EWebView *web_view);
 void		e_web_view_load_string		(EWebView *web_view,
 						 const gchar *string);
 void		e_web_view_load_uri		(EWebView *web_view,
 						 const gchar *uri);
-gchar *		e_web_view_redirect_uri		(EWebView *web_view,
-						 const gchar *uri);
 gchar *		e_web_view_suggest_filename	(EWebView *web_view,
 						 const gchar *uri);
 void		e_web_view_reload		(EWebView *web_view);
-gchar *		e_web_view_get_html		(EWebView *web_view);
+void		e_web_view_get_content_html	(EWebView *web_view,
+						 GCancellable *cancellable,
+						 GAsyncReadyCallback callback,
+						 gpointer user_data);
+gchar *		e_web_view_get_content_html_finish
+						(EWebView *web_view,
+						 GAsyncResult *result,
+						 GError **error);
+gchar *		e_web_view_get_content_html_sync
+						(EWebView *web_view,
+						 GCancellable *cancellable,
+						 GError **error);
+GDBusProxy *	e_web_view_get_web_extension_proxy
+						(EWebView *web_view);
 gboolean	e_web_view_get_caret_mode	(EWebView *web_view);
 void		e_web_view_set_caret_mode	(EWebView *web_view,
 						 gboolean caret_mode);
@@ -129,6 +169,12 @@ void		e_web_view_set_disable_save_to_disk
 gboolean	e_web_view_get_editable		(EWebView *web_view);
 void		e_web_view_set_editable		(EWebView *web_view,
 						 gboolean editable);
+guint32		e_web_view_get_clipboard_flags	(EWebView *web_view);
+void		e_web_view_set_clipboard_flags	(EWebView *web_view,
+						 guint32 clipboard_flags);
+gboolean	e_web_view_get_need_input	(EWebView *web_view);
+void		e_web_view_set_need_input	(EWebView *web_view,
+						 gboolean need_input);
 gboolean	e_web_view_get_inline_spelling	(EWebView *web_view);
 void		e_web_view_set_inline_spelling	(EWebView *web_view,
 						 gboolean inline_spelling);
@@ -176,13 +222,26 @@ void		e_web_view_zoom_in		(EWebView *web_view);
 void		e_web_view_zoom_out		(EWebView *web_view);
 GtkUIManager *	e_web_view_get_ui_manager	(EWebView *web_view);
 GtkWidget *	e_web_view_get_popup_menu	(EWebView *web_view);
-void		e_web_view_show_popup_menu	(EWebView *web_view);
+void		e_web_view_show_popup_menu	(EWebView *web_view,
+						 GdkEvent *event);
 EActivity *	e_web_view_new_activity		(EWebView *web_view);
 void		e_web_view_status_message	(EWebView *web_view,
 						 const gchar *status_message);
 void		e_web_view_stop_loading		(EWebView *web_view);
 void		e_web_view_update_actions	(EWebView *web_view);
-gchar *		e_web_view_get_selection_html	(EWebView *web_view);
+void		e_web_view_get_selection_content_html
+						(EWebView *web_view,
+						 GCancellable *cancellable,
+						 GAsyncReadyCallback callback,
+						 gpointer user_data);
+gchar *		e_web_view_get_selection_content_html_finish
+						(EWebView *web_view,
+						 GAsyncResult *result,
+						 GError **error);
+gchar *		e_web_view_get_selection_content_html_sync
+						(EWebView *web_view,
+						 GCancellable *cancellable,
+						 GError **error);
 void		e_web_view_update_fonts		(EWebView *web_view);
 void		e_web_view_cursor_image_copy	(EWebView *web_view);
 void		e_web_view_cursor_image_save	(EWebView *web_view);
@@ -197,11 +256,49 @@ GInputStream *	e_web_view_request_finish	(EWebView *web_view,
 void		e_web_view_install_request_handler
 						(EWebView *web_view,
 						 GType handler_type);
+void		e_web_view_create_and_add_css_style_sheet
+						(EWebView *web_view,
+						 const gchar *style_sheet_id);
 void		e_web_view_add_css_rule_into_style_sheet
 						(EWebView *web_view,
 						 const gchar *style_sheet_id,
 						 const gchar *selector,
 						 const gchar *style);
+const gchar *	e_web_view_get_citation_color_for_level
+						(gint level);
+gchar *		e_web_view_get_document_uri_from_point
+						(EWebView *web_view,
+						 gint32 x,
+						 gint32 y);
+void		e_web_view_set_document_iframe_src
+						(EWebView *web_view,
+						 const gchar *document_uri,
+						 const gchar *new_iframe_src);
+void		e_web_view_register_element_clicked
+						(EWebView *web_view,
+						 const gchar *element_class,
+						 EWebViewElementClickedFunc callback,
+						 gpointer user_data);
+void		e_web_view_unregister_element_clicked
+						(EWebView *web_view,
+						 const gchar *element_class,
+						 EWebViewElementClickedFunc callback,
+						 gpointer user_data);
+void		e_web_view_set_element_hidden	(EWebView *web_view,
+						 const gchar *element_id,
+						 gboolean hidden);
+void		e_web_view_set_element_style_property
+						(EWebView *web_view,
+						 const gchar *element_id,
+						 const gchar *property_name,
+						 const gchar *value,
+						 const gchar *priority);
+void		e_web_view_set_element_attribute
+						(EWebView *web_view,
+						 const gchar *element_id,
+						 const gchar *namespace_uri,
+						 const gchar *qualified_name,
+						 const gchar *value);
 G_END_DECLS
 
 #endif /* E_WEB_VIEW_H */

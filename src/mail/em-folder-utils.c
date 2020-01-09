@@ -51,24 +51,6 @@
 
 #define d(x)
 
-typedef struct _AsyncContext AsyncContext;
-
-struct _AsyncContext {
-	EMFolderTree *folder_tree;
-	gchar *folder_uri;
-};
-
-static void
-async_context_free (AsyncContext *context)
-{
-	if (context->folder_tree != NULL)
-		g_object_unref (context->folder_tree);
-
-	g_free (context->folder_uri);
-
-	g_slice_free (AsyncContext, context);
-}
-
 static gboolean
 emfu_is_special_local_folder (const gchar *name)
 {
@@ -113,13 +95,15 @@ emft_copy_folders__exec (struct _EMCopyFolders *m,
 	CamelFolderInfo *fi;
 	const gchar *tmp;
 	gint fromlen;
+	gboolean same_store = m->fromstore == m->tostore;
 
 	flags = CAMEL_STORE_FOLDER_INFO_FAST |
 		CAMEL_STORE_FOLDER_INFO_SUBSCRIBED;
 
 	/* If we're copying, then we need to copy every subfolder. If we're
-	 * *moving*, though, then we only need to rename the top-level folder */
-	if (!m->delete)
+	 * *moving*, though, then we only need to rename the top-level folder
+	 * when moving within the same store, otherwise move whole structure */
+	if (!m->delete || !same_store)
 		flags |= CAMEL_STORE_FOLDER_INFO_RECURSIVE;
 
 	fi = camel_store_get_folder_info_sync (
@@ -143,7 +127,7 @@ emft_copy_folders__exec (struct _EMCopyFolders *m,
 	while (pending) {
 		CamelFolderInfo *info = pending->data;
 
-		pending = g_list_remove_link (pending, pending);
+		pending = g_list_delete_link (pending, pending);
 		while (info) {
 			CamelFolder *fromfolder, *tofolder;
 			GPtrArray *uids;
@@ -151,8 +135,9 @@ emft_copy_folders__exec (struct _EMCopyFolders *m,
 
 			/* We still get immediate children even without the
 			 * CAMEL_STORE_FOLDER_INFO_RECURSIVE flag. But we only
-			 * want to process the children too if we're *copying * */
-			if (info->child && !m->delete)
+			 * want to process the children too if we're *copying*
+			 * or moving between different stores */
+			if (info->child && (!m->delete || !same_store))
 				pending = g_list_append (pending, info->child);
 
 			if (m->tobase[0])
@@ -174,28 +159,35 @@ emft_copy_folders__exec (struct _EMCopyFolders *m,
 			 * e.g. for spool stores, but it makes the ui work. */
 			if ((info->flags & CAMEL_FOLDER_NOSELECT) == 0) {
 				d (printf ("this folder is selectable\n"));
-				if (m->tostore == m->fromstore && m->delete) {
-					camel_store_rename_folder_sync (
+				if (same_store && m->delete) {
+					if (!camel_store_rename_folder_sync (
 						m->fromstore,
 						info->full_name,
 						toname->str,
-						cancellable, error);
-					if (error && *error)
+						cancellable, error))
 						goto exception;
 
 					/* this folder no longer exists, unsubscribe it */
 					if (CAMEL_IS_SUBSCRIBABLE (m->fromstore))
 						camel_subscribable_unsubscribe_folder_sync (
 							CAMEL_SUBSCRIBABLE (m->fromstore),
-							info->full_name, NULL, NULL);
+							info->full_name, cancellable, NULL);
 
 					deleted = 1;
 				} else {
+					gboolean success;
+
 					fromfolder = camel_store_get_folder_sync (
 						m->fromstore, info->full_name, 0,
 						cancellable, error);
 					if (fromfolder == NULL)
 						goto exception;
+
+					/* Refresh the source folder first, to get up-to-date content */
+					if (!camel_folder_refresh_info_sync (fromfolder, cancellable, error)) {
+						g_object_unref (fromfolder);
+						goto exception;
+					}
 
 					tofolder = camel_store_get_folder_sync (
 						m->tostore, toname->str,
@@ -207,19 +199,23 @@ emft_copy_folders__exec (struct _EMCopyFolders *m,
 					}
 
 					uids = camel_folder_get_uids (fromfolder);
-					camel_folder_transfer_messages_to_sync (
+					success = camel_folder_transfer_messages_to_sync (
 						fromfolder, uids, tofolder,
 						m->delete, NULL,
 						cancellable, error);
 					camel_folder_free_uids (fromfolder, uids);
 
-					if (m->delete && (!error || !*error))
+					if (m->delete && success) {
 						camel_folder_synchronize_sync (
 							fromfolder, TRUE,
-							NULL, NULL);
+							cancellable, NULL);
+					}
 
 					g_object_unref (fromfolder);
 					g_object_unref (tofolder);
+
+					if (!success)
+						goto exception;
 				}
 			}
 
@@ -235,7 +231,7 @@ emft_copy_folders__exec (struct _EMCopyFolders *m,
 					toname->str))
 				camel_subscribable_subscribe_folder_sync (
 					CAMEL_SUBSCRIBABLE (m->tostore),
-					toname->str, NULL, NULL);
+					toname->str, cancellable, NULL);
 
 			info = info->next;
 		}
@@ -255,10 +251,9 @@ emft_copy_folders__exec (struct _EMCopyFolders *m,
 		if (CAMEL_IS_SUBSCRIBABLE (m->fromstore))
 			camel_subscribable_unsubscribe_folder_sync (
 				CAMEL_SUBSCRIBABLE (m->fromstore),
-				info->full_name, NULL, NULL);
+				info->full_name, cancellable, NULL);
 
-		camel_store_delete_folder_sync (
-			m->fromstore, info->full_name, NULL, NULL);
+		camel_store_delete_folder_sync (m->fromstore, info->full_name, cancellable, NULL);
 		l = l->next;
 	}
 
@@ -507,12 +502,14 @@ em_folder_utils_copy_folder (GtkWindow *parent,
 
 	model = em_folder_tree_model_get_default ();
 
-	dialog = em_folder_selector_new (
-		parent, model,
-		EM_FOLDER_SELECTOR_CAN_CREATE,
-		title, NULL, label);
+	dialog = em_folder_selector_new (parent, model);
+
+	gtk_window_set_title (GTK_WINDOW (dialog), title);
 
 	selector = EM_FOLDER_SELECTOR (dialog);
+	em_folder_selector_set_can_create (selector, TRUE);
+	em_folder_selector_set_default_button_label (selector, label);
+
 	folder_tree = em_folder_selector_get_folder_tree (selector);
 
 	em_folder_tree_set_excluded_func (
@@ -525,148 +522,6 @@ em_folder_utils_copy_folder (GtkWindow *parent,
 		emfu_copy_folder_selected (session, alert_sink, uri, cfd);
 	}
 
-	gtk_widget_destroy (dialog);
-}
-
-static void
-new_folder_created_cb (CamelStore *store,
-                       GAsyncResult *result,
-                       AsyncContext *context)
-{
-	GError *error = NULL;
-
-	e_mail_store_create_folder_finish (store, result, &error);
-
-	/* FIXME Use an EActivity here. */
-	if (error != NULL) {
-		e_notice (NULL, GTK_MESSAGE_ERROR, "%s", error->message);
-		g_error_free (error);
-
-	} else if (context->folder_tree != NULL) {
-		gpointer data;
-		gboolean expand_only;
-
-		/* XXX What in the hell kind of lazy hack is this? */
-		data = g_object_get_data (
-			G_OBJECT (context->folder_tree), "select");
-		expand_only = GPOINTER_TO_INT (data) ? FALSE : TRUE;
-
-		em_folder_tree_set_selected (
-			context->folder_tree,
-			context->folder_uri, expand_only);
-	}
-
-	async_context_free (context);
-}
-
-void
-em_folder_utils_create_folder (GtkWindow *parent,
-                               EMailSession *session,
-                               EMFolderTree *emft,
-                               const gchar *initial_uri)
-{
-	EMFolderSelector *selector;
-	EMFolderTree *folder_tree;
-	EMFolderTreeModel *model;
-	EMailAccountStore *account_store;
-	CamelStore *store = NULL;
-	GtkWidget *dialog;
-	GQueue queue = G_QUEUE_INIT;
-	const gchar *folder_uri;
-	gchar *folder_name = NULL;
-	GError *error = NULL;
-
-	g_return_if_fail (GTK_IS_WINDOW (parent));
-	g_return_if_fail (E_IS_MAIL_SESSION (session));
-
-	model = em_folder_tree_model_new ();
-	em_folder_tree_model_set_session (model, session);
-
-	account_store = e_mail_ui_session_get_account_store (E_MAIL_UI_SESSION (session));
-	e_mail_account_store_queue_enabled_services (account_store, &queue);
-
-	while (!g_queue_is_empty (&queue)) {
-		CamelService *service;
-		CamelStoreFlags flags;
-
-		service = g_queue_pop_head (&queue);
-		g_warn_if_fail (CAMEL_IS_STORE (service));
-
-		flags = CAMEL_STORE (service)->flags;
-		if ((flags & CAMEL_STORE_CAN_EDIT_FOLDERS) == 0)
-			continue;
-
-		em_folder_tree_model_add_store (model, CAMEL_STORE (service));
-	}
-
-	dialog = em_folder_selector_create_new (
-		parent, model, 0,
-		_("Create Folder"),
-		_("Specify where to create the folder:"));
-
-	g_object_unref (model);
-
-	selector = EM_FOLDER_SELECTOR (dialog);
-	folder_tree = em_folder_selector_get_folder_tree (selector);
-
-	if (initial_uri != NULL)
-		em_folder_tree_set_selected (folder_tree, initial_uri, FALSE);
-
-	if (gtk_dialog_run (GTK_DIALOG (dialog)) != GTK_RESPONSE_OK)
-		goto exit;
-
-	folder_uri = em_folder_selector_get_selected_uri (selector);
-	g_return_if_fail (folder_uri != NULL);
-
-	e_mail_folder_uri_parse (
-		CAMEL_SESSION (session), folder_uri,
-		&store, &folder_name, &error);
-
-	/* XXX This is unlikely to fail since the URI comes straight from
-	 *     EMFolderSelector, but leave a breadcrumb if it does fail. */
-	if (error != NULL) {
-		g_warn_if_fail (store == NULL);
-		g_warn_if_fail (folder_name == NULL);
-		e_notice (parent, GTK_MESSAGE_ERROR, "%s", error->message);
-		g_error_free (error);
-		goto exit;
-	}
-
-	g_return_if_fail (folder_name != NULL);
-
-	/* HACK: we need to create vfolders using the vfolder editor */
-	if (CAMEL_IS_VEE_STORE (store)) {
-		EFilterRule *rule;
-		const gchar *skip_slash;
-
-		if (*folder_name == '/')
-			skip_slash = folder_name + 1;
-		else
-			skip_slash = folder_name;
-
-		rule = em_vfolder_editor_rule_new (session);
-		e_filter_rule_set_name (rule, skip_slash);
-		vfolder_gui_add_rule (EM_VFOLDER_RULE (rule));
-	} else {
-		AsyncContext *context;
-
-		context = g_slice_new0 (AsyncContext);
-		context->folder_uri = e_mail_folder_uri_build (store, folder_name);
-
-		if (EM_IS_FOLDER_TREE (emft))
-			context->folder_tree = g_object_ref (emft);
-
-		/* FIXME Not passing a GCancellable. */
-		e_mail_store_create_folder (
-			store, folder_name, G_PRIORITY_DEFAULT, NULL,
-			(GAsyncReadyCallback) new_folder_created_cb,
-			context);
-	}
-
-	g_free (folder_name);
-	g_object_unref (store);
-
-exit:
 	gtk_widget_destroy (dialog);
 }
 

@@ -17,9 +17,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -46,7 +52,7 @@
 <item><p>Introduzca la dirección del servidor de correo electrónico en el campo <gui>Servidor</gui> e introduzca su nombre de usuario para ese servidor.</p></item>
 <item><p>Introduzca el nombre de dominio para ese servidor.</p>
 <note style="tip"><p>Si está en un acontecimiento organizado puede que quiera contactar con el administrador de su sistema para obtener más información.</p></note></item>
-<item><p>Seleccione el tipo de autenticación en la lista de Autenticación o pulse <gui style="button">Comprobar tipos soportados</gui> para que Evolution compruebe qué tipos están soportados. Algunos servidores no informan de qué mecanismos de autenticación soportan esto, así que pulsar este botón no garantiza que los mecanismos disponibles actualmente funcionen.</p></item>
+<item><p>Seleccione el tipo de autenticación en la lista de Autenticación o pulse <gui style="button">Comprobar tipos soportados</gui> para que <app>Evolution</app> compruebe qué tipos están soportados. Algunos servidores no informan de qué mecanismos de autenticación soportan esto, así que pulsar este botón no garantiza que los mecanismos disponibles actualmente funcionen.</p></item>
 <item><p>Seleccione su quiere usar una conexión segura (SSL o TLS).</p></item>
 <item><p>Pulse <gui style="button">Autenticar</gui> e introduzca su contraseña.</p></item>
 </list>
@@ -59,8 +65,8 @@
 <p>En la página <gui>Recepción de correo</gui> (accesible a través de <guiseq><gui>Editar</gui><gui>Preferencias</gui><gui>Cuentas de correo</gui><gui style="button">Editar</gui><gui>Recepción de correo</gui></guiseq>):</p>
 
 <list>
-<item><p>Si quiere que Evolution compruebe automáticamente si hay correo nuevo, seleccione la opción <gui>Comprobar si hay mensajes nuevos cada ... minutos</gui> y seleccione la frecuencia en minutos.</p></item>
-<item><p>También puede definir si quiere que Evolution compruebe si hay mensajes nuevos en todas las carpetas.</p></item>
+<item><p>Si quiere que <app>Evolution</app> compruebe automáticamente si hay correo nuevo, seleccione la opción <gui>Comprobar si hay mensajes nuevos cada … minutos</gui> y seleccione la frecuencia en minutos.</p></item>
+<item><p>También puede definir si quiere que <app>Evolution</app> compruebe si hay mensajes nuevos en todas las carpetas.</p></item>
 </list>
 
 </section>

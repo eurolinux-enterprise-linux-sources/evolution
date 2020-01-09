@@ -85,13 +85,17 @@ struct _EMailFormatterClass {
 
 	/* Signals */
 	void		(*need_redraw)		(EMailFormatter *formatter);
+	void		(*claim_attachment)	(EMailFormatter *formatter,
+						 EAttachment *attachment);
 };
 
 GType		e_mail_formatter_get_type	(void);
 
 EMailFormatter *
 		e_mail_formatter_new		(void);
-
+void		e_mail_formatter_claim_attachment
+						(EMailFormatter *formatter,
+						 EAttachment *attachment);
 void		e_mail_formatter_format_sync	(EMailFormatter *formatter,
 						 EMailPartList *part_list,
 						 GOutputStream *stream,
@@ -143,12 +147,12 @@ void		e_mail_formatter_set_color	(EMailFormatter *formatter,
 void		e_mail_formatter_update_style	(EMailFormatter *formatter,
 						 GtkStateFlags state);
 
-EMailImageLoadingPolicy
+EImageLoadingPolicy
 		e_mail_formatter_get_image_loading_policy
 						(EMailFormatter *formatter);
 void		e_mail_formatter_set_image_loading_policy
 						(EMailFormatter *formatter,
-						 EMailImageLoadingPolicy policy);
+						 EImageLoadingPolicy policy);
 
 gboolean	e_mail_formatter_get_mark_citations
 						(EMailFormatter *formatter);

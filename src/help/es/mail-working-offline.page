@@ -20,9 +20,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -40,11 +46,11 @@
 
 <title>Trabar desconectado</title>
 
-<p>El modo desconectado le ayuda a comunicarse con sistemas de almacenamiento de correo remoto tales como GroupWise, IMAP o Exchange en situaciones en las que no podrá estar siempre conectado a la red local. Evolution guarda copia de una o más carpetas y le permite crear nuevos mensajes, guardarlos en la Bandeja de salida y enviarlo en cuanto vuelva a conectarse.</p>
+<p>El modo desconectado le ayuda a comunicarse con sistemas de almacenamiento de correo remoto tales como GroupWise, IMAP o Exchange en situaciones en las que no podrá estar siempre conectado a la red local. <app>Evolution</app> guarda copia de una o más carpetas y le permite crear nuevos mensajes, guardarlos en la Bandeja de salida y enviarlo en cuanto vuelva a conectarse.</p>
 
-<note style="warning"><p>El modo desconectado de Evolution sólo se refiere al correo y no se aplica a los contactos ni a los calendarios.</p></note>
+<note style="warning"><p>El modo desconectado de <app>Evolution</app> sólo se refiere al correo y no se aplica a los contactos ni a los calendarios.</p></note>
 
-<p>El correo POP descarga todos sus mensajes al sistema local, pero normalmente otras conexiones sólo descargan las cabeceras y obtienen el resto solamente cuando quiere leer el mensaje entero. Antes de desconectar, Evolution descargará todos los mensajes sin leer desde las carpetas que haya elegido almacenar.</p>
+<p>El correo POP descarga todos sus mensajes al sistema local, pero normalmente otras conexiones sólo descargan las cabeceras y obtienen el resto solamente cuando quiere leer el mensaje entero. Antes de desconectar, <app>Evolution</app> descargará todos los mensajes sin leer desde las carpetas que haya elegido almacenar.</p>
 
 <section id="mark-folders">
 <title>Marcar carpetas para su uso desconectado</title>
@@ -57,13 +63,13 @@
 
 <section id="sync-for-offline">
 <title>Sincronizar mensajes para su uso desconectado</title>
-<p>El estado de la conexión lo muestra un icono en la esquina inferior izquierda de la ventana principal de Evolution. Cuando está conectado mostrará dos cables enchufados. Cuando fuerza el modo desconectado, pulsando el icono o mediante <guiseq><gui>Archivo</gui><gui>Trabajar desconectado</gui></guiseq> los cables estarán desenchufados. Se le preguntará si quiere desconectarse inmediatamente o sincronizar sus carpetas localmente antes de desconectarse.</p>
+<p>El estado de la conexión lo muestra un icono en la esquina inferior izquierda de la ventana principal de <app>Evolution</app>. Cuando está conectado mostrará dos cables enchufados. Cuando fuerza el modo desconectado, pulsando el icono o mediante <guiseq><gui>Archivo</gui><gui>Trabajar desconectado</gui></guiseq> los cables estarán desenchufados. Se le preguntará si quiere desconectarse inmediatamente o sincronizar sus carpetas localmente antes de desconectarse.</p>
 <p>Para descargar los mensajes para operaciones en modo desconectado, seleccione <guiseq><gui>Archivo</gui><gui>Descargar mensajes para trabajar sin conexión</gui></guiseq>.</p>
 </section>
 
 <section id="network-manager-integration">
 <title>Gestión automática del estado de la red</title>
-<p>Evolution entiende automáticamente el estado de la red y actúa en concordancia. Por ejemplo, Evolution cambia a modo desconectado cuando la red se cae y cambia automáticamente cuando la red se recupera.</p>
+<p><app>Evolution</app> entiende automáticamente el estado de la red y actúa en concordancia. Por ejemplo, <app>Evolution</app> cambia a modo desconectado cuando la red se cae y cambia automáticamente cuando la red se recupera.</p>
 </section>
 
 </page>

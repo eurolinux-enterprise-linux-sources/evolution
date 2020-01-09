@@ -27,11 +27,15 @@
 #include <glib/gi18n.h>
 #include <string.h>
 
+#include <camel/camel.h>
+#include <camel/camel-search-private.h>
+
 #include <e-util/e-util.h>
 
 #include <mail/em-config.h>
 #include <mail/em-event.h>
 
+#include <mail/em-composer-utils.h>
 #include <mail/em-utils.h>
 
 #include "composer/e-msg-composer.h"
@@ -53,6 +57,12 @@ enum {
 	CLUE_N_COLUMNS
 };
 
+enum {
+	AR_IS_PLAIN,
+	AR_IS_FORWARD,
+	AR_IS_REPLY
+};
+
 gint		e_plugin_lib_enable	(EPlugin *ep,
 					 gint enable);
 GtkWidget *	e_plugin_lib_get_configure_widget
@@ -65,8 +75,9 @@ GtkWidget *	org_gnome_attachment_reminder_config_option
 					 EConfigHookItemFactoryData *data);
 
 static gboolean ask_for_missing_attachment (EPlugin *ep, GtkWindow *widget);
-static gboolean check_for_attachment_clues (GByteArray *msg_text);
+static gboolean check_for_attachment_clues (GByteArray *msg_text, guint32 ar_flags);
 static gboolean check_for_attachment (EMsgComposer *composer);
+static guint32 get_flags_from_composer (EMsgComposer *composer);
 static void commit_changes (UIData *ui);
 
 gint
@@ -86,12 +97,13 @@ org_gnome_evolution_attachment_reminder (EPlugin *ep,
 	if (check_for_attachment (t->composer))
 		return;
 
-	raw_msg_barray = e_msg_composer_get_raw_message_text (t->composer);
+	raw_msg_barray =
+		e_msg_composer_get_raw_message_text_without_signature (t->composer);
 	if (!raw_msg_barray)
 		return;
 
 	/* Set presend_check_status for the composer*/
-	if (check_for_attachment_clues (raw_msg_barray)) {
+	if (check_for_attachment_clues (raw_msg_barray, get_flags_from_composer (t->composer))) {
 		if (!ask_for_missing_attachment (ep, (GtkWindow *) t->composer))
 			g_object_set_data (
 				G_OBJECT (t->composer),
@@ -100,6 +112,43 @@ org_gnome_evolution_attachment_reminder (EPlugin *ep,
 	}
 
 	g_byte_array_free (raw_msg_barray, TRUE);
+}
+
+static guint32
+get_flags_from_composer (EMsgComposer *composer)
+{
+	const gchar *header;
+
+	g_return_val_if_fail (E_IS_MSG_COMPOSER (composer), AR_IS_PLAIN);
+
+	header = e_msg_composer_get_header (composer, "X-Evolution-Source-Flags", 0);
+	if (!header || !*header)
+		return AR_IS_PLAIN;
+
+	if (e_util_utf8_strstrcase (header, "FORWARDED")) {
+		GSettings *settings;
+		EMailForwardStyle style;
+
+		settings = e_util_ref_settings ("org.gnome.evolution.mail");
+		style = g_settings_get_enum (settings, "forward-style-name");
+		g_object_unref (settings);
+
+		return style == E_MAIL_FORWARD_STYLE_INLINE ? AR_IS_FORWARD : AR_IS_PLAIN;
+	}
+
+	if (e_util_utf8_strstrcase (header, "ANSWERED") ||
+	    e_util_utf8_strstrcase (header, "ANSWERED_ALL")) {
+		GSettings *settings;
+		EMailReplyStyle style;
+
+		settings = e_util_ref_settings ("org.gnome.evolution.mail");
+		style = g_settings_get_enum (settings, "reply-style-name");
+		g_object_unref (settings);
+
+		return style == E_MAIL_REPLY_STYLE_OUTLOOK ? AR_IS_REPLY : AR_IS_PLAIN;
+	}
+
+	return AR_IS_PLAIN;
 }
 
 static gboolean
@@ -136,113 +185,76 @@ ask_for_missing_attachment (EPlugin *ep,
 	return response == GTK_RESPONSE_YES;
 }
 
-static gboolean
-get_next_word (GByteArray *msg_text,
-               guint *from,
-               const gchar **word,
-               guint *wlen)
+static void
+censor_quoted_lines (GByteArray *msg_text,
+		     const gchar *until_marker)
 {
-	gboolean new_line;
+	gchar *ptr;
+	gboolean in_quotation = FALSE;
+	gint marker_len;
 
-	g_return_val_if_fail (msg_text != NULL, FALSE);
-	g_return_val_if_fail (from != NULL, FALSE);
-	g_return_val_if_fail (word != NULL, FALSE);
-	g_return_val_if_fail (wlen != NULL, FALSE);
+	g_return_if_fail (msg_text != NULL);
 
-	if (*from >= msg_text->len)
-		return FALSE;
+	if (until_marker)
+		marker_len = strlen (until_marker);
+	else
+		marker_len = 0;
 
-	new_line = TRUE;
-	while (new_line) {
-		new_line = FALSE;
+	ptr = (gchar *) msg_text->data;
 
-		while (*from < msg_text->len && g_ascii_isspace (msg_text->data[*from])) {
-			new_line = msg_text->data[*from] == '\n';
-			*from = (*from) + 1;
-		}
-
-		if (*from >= msg_text->len)
-			return FALSE;
-
-		if (new_line && msg_text->data[*from] == '>') {
-			/* skip quotation lines */
-			while (*from < msg_text->len && msg_text->data[*from] != '\n') {
-				*from = (*from) + 1;
-			}
-		} else if (new_line && *from + 3 < msg_text->len &&
-			   strncmp ((const gchar *) (msg_text->data + (*from)), "-- \n", 4) == 0) {
-			/* signature delimiter finishes message text */
-			*from = msg_text->len;
-			return FALSE;
+	if (marker_len &&
+	    strncmp (ptr, until_marker, marker_len) == 0 &&
+	    (ptr[marker_len] == '\r' || ptr[marker_len] == '\n')) {
+		/* Simply cut everything below the marker and the marker itself */
+		if (marker_len > 3) {
+			ptr[0] = '\r';
+			ptr[1] = '\n';
+			ptr[2] = '\0';
 		} else {
-			new_line = FALSE;
+			*ptr = '\0';
+		}
+
+		return;
+	}
+
+	for (ptr = (gchar *) msg_text->data; ptr && *ptr; ptr++) {
+		if (*ptr == '\n') {
+			in_quotation = ptr[1] == '>';
+			if (!in_quotation && marker_len &&
+			    strncmp (ptr + 1, until_marker, marker_len) == 0 &&
+			    (ptr[1 + marker_len] == '\r' || ptr[1 + marker_len] == '\n')) {
+				/* Simply cut everything below the marker and the marker itself */
+				if (marker_len > 3) {
+					ptr[0] = '\r';
+					ptr[1] = '\n';
+					ptr[2] = '\0';
+				} else {
+					*ptr = '\0';
+				}
+				break;
+			}
+		} else if (*ptr != '\r' && in_quotation) {
+			*ptr = ' ';
 		}
 	}
-
-	if (*from >= msg_text->len)
-		return FALSE;
-
-	*word = (const gchar *) (msg_text->data + (*from));
-	*wlen = 0;
-
-	while (*from < msg_text->len && !g_ascii_isspace (msg_text->data[*from])) {
-		*from = (*from) + 1;
-		*wlen = (*wlen) + 1;
-	}
-
-	return TRUE;
-}
-
-/* 's1' has s1len bytes of text, while 's2' is NULL-terminated
- * and *s2len contains how many bytes were read */
-static gboolean
-utf8_casencmp (const gchar *s1,
-               guint s1len,
-               const gchar *s2,
-               guint *s2len)
-{
-	gunichar u1, u2;
-	guint u1len, u2len;
-
-	if (!s1 || !s2 || !s1len || !s2len)
-		return FALSE;
-
-	*s2len = 0;
-
-	while (s1len > 0 && *s1 && *s2) {
-		u1 = g_utf8_get_char_validated (s1, s1len);
-		u2 = g_utf8_get_char_validated (s2, -1);
-
-		if (u1 == -1 || u1 == -2 || u2 == -1 || u2 == -2)
-			break;
-
-		if (u1 != u2 && g_unichar_tolower (u1) != g_unichar_tolower (u2))
-			break;
-
-		u1len = g_unichar_to_utf8 (u1, NULL);
-		if (s1len < u1len)
-			break;
-
-		u2len = g_unichar_to_utf8 (u2, NULL);
-
-		s1len -= u1len;
-		s1 += u1len;
-		*s2len = (*s2len) + u2len;
-		s2 += u2len;
-	}
-
-	return s1len == 0;
 }
 
 /* check for the clues */
 static gboolean
-check_for_attachment_clues (GByteArray *msg_text)
+check_for_attachment_clues (GByteArray *msg_text,
+			    guint32 ar_flags)
 {
 	GSettings *settings;
 	gchar **clue_list;
+	gchar *marker = NULL;
 	gboolean found = FALSE;
 
-	settings = g_settings_new ("org.gnome.evolution.plugin.attachment-reminder");
+	if (ar_flags == AR_IS_FORWARD)
+		marker = em_composer_utils_get_forward_marker ();
+	else if (ar_flags == AR_IS_REPLY)
+		marker = em_composer_utils_get_original_marker ();
+
+	settings = e_util_ref_settings ("org.gnome.evolution.plugin.attachment-reminder");
 
 	/* Get the list from GSettings */
 	clue_list = g_settings_get_strv (settings, CONF_KEY_ATTACH_REMINDER_CLUES);
@@ -250,62 +262,39 @@ check_for_attachment_clues (GByteArray *msg_text)
 	g_object_unref (settings);
 
 	if (clue_list && clue_list[0]) {
-		gint ii;
-		guint from = 0, wlen = 0, clen = 0;
-		const gchar *word = NULL;
+		gint ii, jj, to;
 
-		while (!found && get_next_word (msg_text, &from, &word, &wlen)) {
-			for (ii = 0; !found && clue_list[ii] != NULL; ii++) {
-				const gchar *clue = clue_list[ii];
+		g_byte_array_append (msg_text, (const guint8 *) "\r\n\0", 3);
 
-				if (utf8_casencmp (word, wlen, clue, &clen)) {
-					found = clue[clen] == 0;
+		censor_quoted_lines (msg_text, marker);
 
-					if (!found && g_ascii_isspace (clue[clen])) {
-						/* clue is a multi-word, then test more words */
-						guint bfrom = from, blen = 0;
-						const gchar *bword = NULL;
+		for (ii = 0; clue_list[ii] && !found; ii++) {
+			GString *word;
+			const gchar *clue = clue_list[ii];
 
-						clue = clue + clen;
-						while (*clue && g_ascii_isspace (*clue))
-							clue++;
+			if (!*clue)
+				continue;
 
-						found = !*clue;
-						if (!found) {
-							found = TRUE;
+			word = g_string_new ("\"");
 
-							while (found && get_next_word (msg_text, &bfrom, &bword, &blen)) {
-								found = FALSE;
+			to = word->len;
+			g_string_append (word, clue);
 
-								if (utf8_casencmp (bword, blen, clue, &clen)) {
-									found = clue[clen] == 0;
-									if (found) {
-										clue = clue + clen;
-										break;
-									} else if (g_ascii_isspace (clue[clen])) {
-										/* another word in clue */
-										found = TRUE;
-
-										clue = clue + clen;
-										while (*clue && g_ascii_isspace (*clue))
-											clue++;
-									}
-								} else {
-									found = FALSE;
-								}
-							}
-
-							found = found && !*clue;
-						}
-					}
-				}
+			for (jj = word->len - 1; jj >= to; jj--) {
+				if (word->str[jj] == '\\' || word->str[jj] == '\"')
+					g_string_insert_c (word, jj, '\\');
 			}
+
+			g_string_append_c (word, '\"');
+
+			found = camel_search_header_match ((const gchar *) msg_text->data, word->str, CAMEL_SEARCH_MATCH_WORD, CAMEL_SEARCH_TYPE_ASIS, NULL);
+
+			g_string_free (word, TRUE);
 		}
 	}
 
-	if (clue_list) {
-		g_strfreev (clue_list);
-	}
+	g_strfreev (clue_list);
+	g_free (marker);
 
 	return found;
 }
@@ -568,7 +557,7 @@ e_plugin_lib_get_configure_widget (EPlugin *plugin)
 	gtk_container_add (GTK_CONTAINER (vbuttonbox2), clue_remove);
 	gtk_widget_set_can_default (clue_remove, TRUE);
 
-	ui->settings = g_settings_new ("org.gnome.evolution.plugin.attachment-reminder");
+	ui->settings = e_util_ref_settings ("org.gnome.evolution.plugin.attachment-reminder");
 
 	ui->treeview = clue_treeview;
 

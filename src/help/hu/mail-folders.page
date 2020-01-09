@@ -23,11 +23,35 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
     
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
   <title>Mappák használata</title>
   
-<p>Az Evolution a legtöbb levelezőrendszerhez hasonlóan mappákat használ az e-mailek tárolására. Kezdetben néhány levélmappája van, például Beérkezett üzenetek, Postázandó és Piszkozatok. Szükség esetén további mappákat is létrehozhat.</p>
+<p>Az <app>Evolution</app> a legtöbb levelezőrendszerhez hasonlóan mappákat használ az e-mailek tárolására. Kezdetben néhány levélmappája van, például Beérkezett üzenetek, Postázandó és Piszkozatok. Szükség esetén további mappákat is létrehozhat.</p>
 
 <section id="create-folder">
 <title>Mappa létrehozása</title>
@@ -40,7 +64,7 @@
 <p>Az új mappa megjelenik a mappanézetben. Ezután üzeneteket mozgathat a mappába.</p>
 
 <note style="warning">
-<p>A Beérkezett üzenetek mappa a legtöbb IMAP-kiszolgálón nem tartalmazhat egyidejűleg üzeneteket és almappákat is. Az IMAP levélkiszolgálón további mappák létrehozásakor ügyeljen arra, hogy a mappákat az IMAP-fiók gyökerében és ne a Beérkezett üzenetek mappában hozza létre. Az almappák létrehozása a Beérkezett üzenetek mappában megakadályozhatja a már ott lévő üzenetek elolvasását. Ha ez bekövetkezik, akkor helyezze át a mappákat az IMAP-fiók gyökerébe.</p>
+<p>A <gui>Beérkezett</gui> üzenetek mappa a legtöbb IMAP-kiszolgálón nem tartalmazhat egyidejűleg üzeneteket és almappákat is. Az IMAP levélkiszolgálón további mappák létrehozásakor ügyeljen arra, hogy a mappákat az IMAP-fiók gyökerében és ne a Beérkezett üzenetek mappában hozza létre. Az almappák létrehozása a Beérkezett üzenetek mappában megakadályozhatja a már ott lévő üzenetek elolvasását. Ha ez bekövetkezik, akkor helyezze át a mappákat az IMAP-fiók gyökerébe.</p>
 </note>
 
 </section>

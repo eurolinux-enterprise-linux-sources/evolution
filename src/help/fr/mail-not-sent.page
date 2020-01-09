@@ -49,18 +49,18 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
 <title>Le courriel n'est pas envoyé</title>
 
-<p>Ils existent plusieurs raisons de non envoi de courriels :</p>
+<p>Il existe plusieurs raisons de non envoi de courriels :</p>
 
 <list>
 <item><p>Adresse de courriel non valide. Vérifiez que toutes les adresses des destinataires sont correctes. Si le message contient une adresse électronique erronée ou non valide, le message n'est pas envoyé.</p></item>
-<item><p>Réglages SMTP non corrects. Vérifiez que les paramètres utilisés pour les messages sortants sont corrects. L'utilisation d'une adresse de serveur ou d'une méthode d'authentification incorrectes peut empêcher l'envoi de courriels.</p></item>
-<item><p>Statut hors ligne. Il se peut qu'Evolution soit hors ligne. Vérifiez le bouton <gui style="button">Envoyer et recevoir</gui>, s'il est grisé alors vous êtes hors ligne. Pour passer en ligne, aller dans <guiseq><gui>Fichier</gui><gui>Travailler en ligne</gui></guiseq>. Vous devriez maintenant être capable d'utiliser le bouton <gui style="button">Envoyer et recevoir</gui>.</p></item>
+<item><p>Incorrect SMTP settings. Verify if the settings used for outgoing messages are correct. Using the incorrect server address or authentication method may prevent emails from being sent.</p></item>
+<item><p>Offline status. <app>Evolution</app> may be offline. Check on the <gui style="button">Send and Receive</gui> button; if it is greyed out, then you are offline. To go online, go to <guiseq><gui>File</gui><gui>Work online</gui></guiseq>. You should now be able to use the <gui style="button">Send and Receive</gui> button.</p></item>
 </list>
 
 </page>

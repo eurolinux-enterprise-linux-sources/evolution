@@ -8,7 +8,7 @@ module_startup_wizard_la_CPPFLAGS = \
 	-DG_LOG_DOMAIN=\"evolution-startup-wizard\"		\
 	$(EVOLUTION_DATA_SERVER_CFLAGS)				\
 	$(GNOME_PLATFORM_CFLAGS)				\
-	$(GTKHTML_CFLAGS)					\
+	$(CODE_COVERAGE_CFLAGS)					\
 	$(NULL)
 
 module_startup_wizard_la_SOURCES = \
@@ -30,10 +30,9 @@ module_startup_wizard_la_LIBADD = \
 	$(libevolution_mail_settings_la)			\
 	$(EVOLUTION_DATA_SERVER_LIBS)				\
 	$(GNOME_PLATFORM_LIBS)					\
-	$(GTKHTML_LIBS)						\
 	$(NULL)
 
 module_startup_wizard_la_LDFLAGS = \
-	-module -avoid-version $(NO_UNDEFINED)
+	-module -avoid-version $(NO_UNDEFINED) $(CODE_COVERAGE_LDFLAGS)
 
 -include $(top_srcdir)/git.mk

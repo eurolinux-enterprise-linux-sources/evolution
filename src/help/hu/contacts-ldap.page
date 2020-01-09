@@ -4,7 +4,7 @@
   <info>
     <link type="guide" xref="contacts-using-several-addressbooks"/>
 
-    <revision pkgversion="3.1.5" version="0.3" date="2011-07-28" status="final"/>
+    <revision pkgversion="3.1.5" version="0.4" date="2015-03-09" status="final"/>
 
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
@@ -22,6 +22,30 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
     <desc>Megosztott címjegyzékek használata a helyi hálózaton.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
   <title>LDAP-hozzáférés felvétele</title>
@@ -57,7 +81,8 @@
 	  <p>Keresés kiindulópontja: a keresés kiindulópontja a címtárkeresés kezdőpontja. Keresse meg a rendszergazdát a helyes beállításokkal kapcsolatos információkért.</p>
         </item>
         <item>
-	  <p>Keresés hatóköre: a keresés hatóköre az adott keresés szélessége. A következő lehetőségek állnak rendelkezésre:</p>
+	  <p>Keresés hatóköre: a keresés hatóköre az adott keresés szélessége.</p>
+	  <p>A következő beállítások érhetők el:</p>
           <list>
             <item>
 	      <p>Egy: a Keresés kiindulópontján és egy bejegyzéssel alatta keres.</p>
@@ -110,7 +135,7 @@
       <p>A hálózati mappák csak akkor érhetők el, ha csatlakozott a hálózatra. Ha laptopot vagy modemes kapcsolatot használ, akkor készítsen másolatot vagy gyorsítótárazza a hálózati címtár egy részét. Ezt a kívánt névjegyek helyi címjegyzékbe húzásával és ejtésével érheti el.</p>
     </item>
     <item>
-      <p>A hálózati mappát megjelölheti kapcsolat nélküli használatra is. A megjelöléshez kattintson a jobb egérgombbal a mappára, válassza a Tulajdonságok menüpontot, és jelölje be az „A mappa tartalmáról helyi másolat készítése kapcsolat nélküli munkához” jelölőnégyzetet.</p>
+      <p>A hálózati mappát megjelölheti kapcsolat nélküli használatra is. A megjelöléshez kattintson a jobb egérgombbal a mappára, válassza a <gui>Tulajdonságok</gui> menüpontot, és jelölje be <gui>A mappa tartalmáról helyi másolat készítése kapcsolat nélküli munkához</gui> jelölőnégyzetet.</p>
     </item>
     <item>
       <p>A túlzott hálózati forgalom elkerülése érdekében az <app>Evolution</app> általában nem tölti be az adatokat az LDAP-kiszolgálóról a megnyitáskor.</p>

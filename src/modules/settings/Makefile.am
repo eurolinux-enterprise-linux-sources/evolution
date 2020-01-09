@@ -8,7 +8,7 @@ module_settings_la_CPPFLAGS = \
 	-DG_LOG_DOMAIN=\"evolution-module-settings\" \
 	$(EVOLUTION_DATA_SERVER_CFLAGS) \
 	$(GNOME_PLATFORM_CFLAGS) \
-	$(GTKHTML_CFLAGS) \
+	$(CODE_COVERAGE_CFLAGS) \
 	$(NULL)
 
 module_settings_la_SOURCES = \
@@ -21,12 +21,12 @@ module_settings_la_SOURCES = \
 	e-settings-calendar-view.h \
 	e-settings-client-cache.c \
 	e-settings-client-cache.h \
-	e-settings-comp-editor.c \
-	e-settings-comp-editor.h \
 	e-settings-date-edit.c \
 	e-settings-date-edit.h \
 	e-settings-deprecated.c \
 	e-settings-deprecated.h \
+	e-settings-content-editor.c \
+	e-settings-content-editor.h \
 	e-settings-mail-browser.c \
 	e-settings-mail-browser.h \
 	e-settings-mail-formatter.c \
@@ -45,12 +45,10 @@ module_settings_la_SOURCES = \
 	e-settings-message-list.h \
 	e-settings-name-selector-entry.c \
 	e-settings-name-selector-entry.h \
+	e-settings-spell-checker.c \
+	e-settings-spell-checker.h \
 	e-settings-spell-entry.c \
 	e-settings-spell-entry.h \
-	e-settings-web-view.c \
-	e-settings-web-view.h \
-	e-settings-web-view-gtkhtml.c \
-	e-settings-web-view-gtkhtml.h \
 	e-settings-weekday-chooser.c \
 	e-settings-weekday-chooser.h \
 	$(NULL)
@@ -64,10 +62,9 @@ module_settings_la_LIBADD = \
 	$(top_builddir)/calendar/gui/libevolution-calendar.la \
 	$(EVOLUTION_DATA_SERVER_LIBS) \
 	$(GNOME_PLATFORM_LIBS) \
-	$(GTKHTML_LIBS) \
 	$(NULL)
 
 module_settings_la_LDFLAGS = \
-	-avoid-version -module $(NO_UNDEFINED)
+	-avoid-version -module $(NO_UNDEFINED) $(CODE_COVERAGE_LDFLAGS)
 
 -include $(top_srcdir)/git.mk

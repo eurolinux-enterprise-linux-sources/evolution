@@ -874,6 +874,7 @@ subscription_editor_subscribe_popup_cb (EMSubscriptionEditor *editor)
 			G_CALLBACK (subscription_editor_subscribe_all),
 			editor));
 
+	gtk_menu_attach_to_widget (GTK_MENU (menu), GTK_WIDGET (editor), NULL);
 	gtk_menu_popup (
 		GTK_MENU (menu), NULL, NULL,
 		position_below_widget_cb,
@@ -988,6 +989,7 @@ subscription_editor_unsubscribe_popup_cb (EMSubscriptionEditor *editor)
 			G_CALLBACK (subscription_editor_unsubscribe_all),
 			editor));
 
+	gtk_menu_attach_to_widget (GTK_MENU (menu), GTK_WIDGET (editor), NULL);
 	gtk_menu_popup (
 		GTK_MENU (menu), NULL, NULL,
 		position_below_widget_cb,
@@ -1314,6 +1316,41 @@ subscription_editor_selection_changed_cb (GtkTreeSelection *selection,
 }
 
 static void
+em_subscription_editor_get_unread_total_text_cb (GtkTreeViewColumn *tree_column,
+						 GtkCellRenderer *cell,
+						 GtkTreeModel *tree_model,
+						 GtkTreeIter *iter,
+						 gpointer user_data)
+{
+	CamelFolderInfo *folder_info = NULL;
+	GString *text = NULL;
+
+	g_return_if_fail (GTK_IS_CELL_RENDERER_TEXT (cell));
+	g_return_if_fail (GTK_IS_TREE_MODEL (tree_model));
+	g_return_if_fail (iter != NULL);
+
+	gtk_tree_model_get (tree_model, iter, COL_FOLDER_INFO, &folder_info, -1);
+
+	if (folder_info && folder_info->total > 0 && folder_info->unread >= 0 && folder_info->unread <= folder_info->total) {
+		text = g_string_new ("");
+
+		if (folder_info->unread > 0)
+			g_string_append_printf (
+				text, ngettext ("%d unread, ",
+				"%d unread, ", folder_info->unread), folder_info->unread);
+
+		g_string_append_printf (
+			text, ngettext ("%d total", "%d total",
+			folder_info->total), folder_info->total);
+	}
+
+	g_object_set (G_OBJECT (cell), "text", text ? text->str : NULL, NULL);
+
+	if (text)
+		g_string_free (text, TRUE);
+}
+
+static void
 subscription_editor_add_store (EMSubscriptionEditor *editor,
                                CamelStore *store)
 {
@@ -1403,6 +1440,14 @@ subscription_editor_add_store (EMSubscriptionEditor *editor,
 	gtk_tree_view_column_pack_start (column, renderer, TRUE);
 	gtk_tree_view_column_add_attribute (
 		column, renderer, "text", COL_FOLDER_NAME);
+
+	column = gtk_tree_view_column_new ();
+	gtk_tree_view_append_column (GTK_TREE_VIEW (widget), column);
+
+	renderer = gtk_cell_renderer_text_new ();
+	gtk_tree_view_column_pack_start (column, renderer, FALSE);
+	gtk_tree_view_column_set_cell_data_func (column, renderer,
+		em_subscription_editor_get_unread_total_text_cb, NULL, NULL);
 
 	selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (widget));
 
@@ -1642,6 +1687,12 @@ subscription_editor_realize (GtkWidget *widget)
 
 	combo_box = GTK_COMBO_BOX (editor->priv->combo_box);
 	gtk_combo_box_set_active (combo_box, initial_index);
+
+	g_signal_connect (
+		combo_box, "changed",
+		G_CALLBACK (subscription_editor_combo_box_changed_cb), editor);
+
+	subscription_editor_combo_box_changed_cb (combo_box, editor);
 }
 
 static void
@@ -1736,10 +1787,6 @@ em_subscription_editor_init (EMSubscriptionEditor *editor)
 	editor->priv->combo_box = widget;
 	gtk_widget_show (widget);
 
-	g_signal_connect (
-		widget, "changed",
-		G_CALLBACK (subscription_editor_combo_box_changed_cb), editor);
-
 	widget = gtk_label_new_with_mnemonic (_("_Account:"));
 	gtk_label_set_mnemonic_widget (
 		GTK_LABEL (widget), editor->priv->combo_box);
@@ -1792,7 +1839,7 @@ em_subscription_editor_init (EMSubscriptionEditor *editor)
 	editor->priv->notebook = widget;
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		editor->priv->combo_box, "active",
 		editor->priv->notebook, "page",
 		G_BINDING_BIDIRECTIONAL |

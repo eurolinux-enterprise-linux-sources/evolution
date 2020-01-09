@@ -51,6 +51,7 @@ G_BEGIN_DECLS
 
 typedef struct _EDateTimeList EDateTimeList;
 typedef struct _EDateTimeListClass EDateTimeListClass;
+typedef struct _EDateTimeListPrivate EDateTimeListPrivate;
 
 typedef enum {
 	E_DATE_TIME_LIST_COLUMN_DESCRIPTION,
@@ -60,14 +61,7 @@ typedef enum {
 struct _EDateTimeList {
 	GObject parent;
 
-	/* Private */
-
-	gint     stamp;
-	GList   *list;
-
-	guint    columns_dirty : 1;
-
-	gboolean use_24_hour_format;
+	EDateTimeListPrivate *priv;
 };
 
 struct _EDateTimeListClass {
@@ -76,20 +70,24 @@ struct _EDateTimeListClass {
 
 GType		e_date_time_list_get_type	(void);
 EDateTimeList *	e_date_time_list_new		(void);
-const ECalComponentDateTime *
-		e_date_time_list_get_date_time	(EDateTimeList *date_time_list,
+struct icaltimetype *
+		e_date_time_list_get_date_time
+						(EDateTimeList *date_time_list,
 						 GtkTreeIter *iter);
 void		e_date_time_list_set_date_time	(EDateTimeList *date_time_list,
 						 GtkTreeIter *iter,
-						 const ECalComponentDateTime *datetime);
+						 const struct icaltimetype itt);
 gboolean	e_date_time_list_get_use_24_hour_format
 						(EDateTimeList *date_time_list);
 void		e_date_time_list_set_use_24_hour_format
 						(EDateTimeList *date_time_list,
 						 gboolean use_24_hour_format);
+icaltimezone *	e_date_time_list_get_timezone	(EDateTimeList *date_time_list);
+void		e_date_time_list_set_timezone	(EDateTimeList *date_time_list,
+						 icaltimezone *zone);
 void		e_date_time_list_append		(EDateTimeList *date_time_list,
 						 GtkTreeIter *iter,
-						 const ECalComponentDateTime *datetime);
+						 const struct icaltimetype itt);
 void		e_date_time_list_remove		(EDateTimeList *date_time_list,
 						 GtkTreeIter *iter);
 void		e_date_time_list_clear		(EDateTimeList *date_time_list);

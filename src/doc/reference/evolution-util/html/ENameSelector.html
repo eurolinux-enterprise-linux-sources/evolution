@@ -2,13 +2,13 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Evolution Utilities Reference Manual: ENameSelector</title>
-<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<title>ENameSelector: Evolution Utilities Reference Manual</title>
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
 <link rel="home" href="index.html" title="Evolution Utilities Reference Manual">
-<link rel="up" href="ch16.html" title="(Unsorted Sections)">
+<link rel="up" href="ch17.html" title="(Unsorted Sections)">
 <link rel="prev" href="ENameSelectorModel.html" title="ENameSelectorModel">
 <link rel="next" href="EOnlineButton.html" title="EOnlineButton">
-<meta name="generator" content="GTK-Doc V1.21 (XML mode)">
+<meta name="generator" content="GTK-Doc V1.25 (XML mode)">
 <link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
@@ -20,7 +20,7 @@
                   <a href="#ENameSelector.properties" class="shortcut">Properties</a></span>
 </td>
 <td><a accesskey="h" href="index.html"><img src="home.png" width="16" height="16" border="0" alt="Home"></a></td>
-<td><a accesskey="u" href="ch16.html"><img src="up.png" width="16" height="16" border="0" alt="Up"></a></td>
+<td><a accesskey="u" href="ch17.html"><img src="up.png" width="16" height="16" border="0" alt="Up"></a></td>
 <td><a accesskey="p" href="ENameSelectorModel.html"><img src="left.png" width="16" height="16" border="0" alt="Prev"></a></td>
 <td><a accesskey="n" href="EOnlineButton.html"><img src="right.png" width="16" height="16" border="0" alt="Next"></a></td>
 </tr></table>
@@ -35,7 +35,7 @@
 </tr></table></div>
 <div class="refsect1">
 <a name="ENameSelector.functions"></a><h2>Functions</h2>
-<div class="informaltable"><table width="100%" border="0">
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="functions_return">
 <col class="functions_name">
@@ -118,7 +118,7 @@
 </div>
 <div class="refsect1">
 <a name="ENameSelector.properties"></a><h2>Properties</h2>
-<div class="informaltable"><table border="0">
+<div class="informaltable"><table class="informaltable" border="0">
 <colgroup>
 <col width="150px" class="properties_type">
 <col width="300px" class="properties_name">
@@ -133,21 +133,8 @@
 </table></div>
 </div>
 <div class="refsect1">
-<a name="ENameSelector.other"></a><h2>Types and Values</h2>
-<div class="informaltable"><table width="100%" border="0">
-<colgroup>
-<col width="150px" class="name">
-<col class="description">
-</colgroup>
-<tbody><tr>
-<td class="datatype_keyword">struct</td>
-<td class="function_name"><a class="link" href="ENameSelector.html#ENameSelector-struct" title="struct ENameSelector">ENameSelector</a></td>
-</tr></tbody>
-</table></div>
-</div>
-<div class="refsect1">
 <a name="ENameSelector.object-hierarchy"></a><h2>Object Hierarchy</h2>
-<pre class="screen">    <a href="https://developer.gnome.org/gobject/unstable/gobject-The-Base-Object-Type.html#GObject">GObject</a>
+<pre class="screen">    <a href="/usr/share/gtk-doc/html/gobjectgobject-The-Base-Object-Type.html#GObject-struct">GObject</a>
     <span class="lineart">╰──</span> ENameSelector
 </pre>
 </div>
@@ -162,8 +149,8 @@
 e_name_selector_new (<em class="parameter"><code><a class="link" href="EClientCache.html" title="EClientCache"><span class="type">EClientCache</span></a> *client_cache</code></em>);</pre>
 <p>Creates a new <a class="link" href="ENameSelector.html" title="ENameSelector"><span class="type">ENameSelector</span></a>.</p>
 <div class="refsect3">
-<a name="id-1.17.26.8.2.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-name-selector-new.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -177,9 +164,8 @@ e_name_selector_new (<em class="parameter"><code><a class="link" href="EClientCa
 </table></div>
 </div>
 <div class="refsect3">
-<a name="id-1.17.26.8.2.6"></a><h4>Returns</h4>
+<a name="e-name-selector-new.returns"></a><h4>Returns</h4>
 <p> A new <a class="link" href="ENameSelector.html" title="ENameSelector"><span class="type">ENameSelector</span></a>.</p>
-<p></p>
 </div>
 </div>
 <hr>
@@ -189,10 +175,10 @@ e_name_selector_new (<em class="parameter"><code><a class="link" href="EClientCa
 e_name_selector_ref_client_cache (<em class="parameter"><code><a class="link" href="ENameSelector.html" title="ENameSelector"><span class="type">ENameSelector</span></a> *name_selector</code></em>);</pre>
 <p>Returns the <a class="link" href="EClientCache.html" title="EClientCache"><span class="type">EClientCache</span></a> passed to <a class="link" href="ENameSelector.html#e-name-selector-new" title="e_name_selector_new ()"><code class="function">e_name_selector_new()</code></a>.</p>
 <p>The returned <a class="link" href="EClientCache.html" title="EClientCache"><span class="type">EClientCache</span></a> is referenced for thread-safety and must be
-unreferenced with <a href="https://developer.gnome.org/gobject/unstable/gobject-The-Base-Object-Type.html#g-object-unref"><code class="function">g_object_unref()</code></a> when finished with it.</p>
+unreferenced with <a href="/usr/share/gtk-doc/html/gobjectgobject-The-Base-Object-Type.html#g-object-unref"><code class="function">g_object_unref()</code></a> when finished with it.</p>
 <div class="refsect3">
-<a name="id-1.17.26.8.3.6"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-name-selector-ref-client-cache.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -206,11 +192,10 @@ unreferenced with <a href="https://developer.gnome.org/gobject/unstable/gobject-
 </table></div>
 </div>
 <div class="refsect3">
-<a name="id-1.17.26.8.3.7"></a><h4>Returns</h4>
+<a name="e-name-selector-ref-client-cache.returns"></a><h4>Returns</h4>
 <p> an <a class="link" href="EClientCache.html" title="EClientCache"><span class="type">EClientCache</span></a></p>
-<p></p>
 </div>
-<p class="since">Since 3.8</p>
+<p class="since">Since: <a class="link" href="api-index-3.8.html" title="Index of new symbols in 3.8">3.8</a></p>
 </div>
 <hr>
 <div class="refsect2">
@@ -220,8 +205,8 @@ e_name_selector_peek_model (<em class="parameter"><code><a class="link" href="EN
 <p>Gets the <a class="link" href="ENameSelectorModel.html" title="ENameSelectorModel"><span class="type">ENameSelectorModel</span></a> used by <em class="parameter"><code>name_selector</code></em>
 .</p>
 <div class="refsect3">
-<a name="id-1.17.26.8.4.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-name-selector-peek-model.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -235,10 +220,9 @@ e_name_selector_peek_model (<em class="parameter"><code><a class="link" href="EN
 </table></div>
 </div>
 <div class="refsect3">
-<a name="id-1.17.26.8.4.6"></a><h4>Returns</h4>
+<a name="e-name-selector-peek-model.returns"></a><h4>Returns</h4>
 <p> The <a class="link" href="ENameSelectorModel.html" title="ENameSelectorModel"><span class="type">ENameSelectorModel</span></a> used by <em class="parameter"><code>name_selector</code></em>
 .</p>
-<p></p>
 </div>
 </div>
 <hr>
@@ -249,8 +233,8 @@ e_name_selector_peek_dialog (<em class="parameter"><code><a class="link" href="E
 <p>Gets the <a class="link" href="ENameSelectorDialog.html" title="ENameSelectorDialog"><span class="type">ENameSelectorDialog</span></a> used by <em class="parameter"><code>name_selector</code></em>
 .</p>
 <div class="refsect3">
-<a name="id-1.17.26.8.5.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-name-selector-peek-dialog.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -264,10 +248,9 @@ e_name_selector_peek_dialog (<em class="parameter"><code><a class="link" href="E
 </table></div>
 </div>
 <div class="refsect3">
-<a name="id-1.17.26.8.5.6"></a><h4>Returns</h4>
+<a name="e-name-selector-peek-dialog.returns"></a><h4>Returns</h4>
 <p> The <a class="link" href="ENameSelectorDialog.html" title="ENameSelectorDialog"><span class="type">ENameSelectorDialog</span></a> used by <em class="parameter"><code>name_selector</code></em>
 .</p>
-<p></p>
 </div>
 </div>
 <hr>
@@ -275,12 +258,12 @@ e_name_selector_peek_dialog (<em class="parameter"><code><a class="link" href="E
 <a name="e-name-selector-peek-section-entry"></a><h3>e_name_selector_peek_section_entry ()</h3>
 <pre class="programlisting"><a class="link" href="ENameSelectorEntry.html" title="ENameSelectorEntry"><span class="returnvalue">ENameSelectorEntry</span></a> *
 e_name_selector_peek_section_entry (<em class="parameter"><code><a class="link" href="ENameSelector.html" title="ENameSelector"><span class="type">ENameSelector</span></a> *name_selector</code></em>,
-                                    <em class="parameter"><code>const <a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *name</code></em>);</pre>
+                                    <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *name</code></em>);</pre>
 <p>Gets the <a class="link" href="ENameSelectorEntry.html" title="ENameSelectorEntry"><span class="type">ENameSelectorEntry</span></a> for the section specified by <em class="parameter"><code>name</code></em>
 .</p>
 <div class="refsect3">
-<a name="id-1.17.26.8.6.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-name-selector-peek-section-entry.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -301,10 +284,9 @@ e_name_selector_peek_section_entry (<em class="parameter"><code><a class="link" 
 </table></div>
 </div>
 <div class="refsect3">
-<a name="id-1.17.26.8.6.6"></a><h4>Returns</h4>
-<p> The <a class="link" href="ENameSelectorEntry.html" title="ENameSelectorEntry"><span class="type">ENameSelectorEntry</span></a> for the named section, or <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a> if it
+<a name="e-name-selector-peek-section-entry.returns"></a><h4>Returns</h4>
+<p> The <a class="link" href="ENameSelectorEntry.html" title="ENameSelectorEntry"><span class="type">ENameSelectorEntry</span></a> for the named section, or <a href="/usr/share/gtk-doc/html/glibglib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a> if it
 doesn't exist in the <a class="link" href="ENameSelectorModel.html" title="ENameSelectorModel"><span class="type">ENameSelectorModel</span></a>.</p>
-<p></p>
 </div>
 </div>
 <hr>
@@ -312,12 +294,12 @@ doesn't exist in the <a class="link" href="ENameSelectorModel.html" title="EName
 <a name="e-name-selector-peek-section-list"></a><h3>e_name_selector_peek_section_list ()</h3>
 <pre class="programlisting"><a class="link" href="ENameSelectorList.html" title="ENameSelectorList"><span class="returnvalue">ENameSelectorList</span></a> *
 e_name_selector_peek_section_list (<em class="parameter"><code><a class="link" href="ENameSelector.html" title="ENameSelector"><span class="type">ENameSelector</span></a> *name_selector</code></em>,
-                                   <em class="parameter"><code>const <a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *name</code></em>);</pre>
+                                   <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *name</code></em>);</pre>
 <p>Gets the <a class="link" href="ENameSelectorList.html" title="ENameSelectorList"><span class="type">ENameSelectorList</span></a> for the section specified by <em class="parameter"><code>name</code></em>
 .</p>
 <div class="refsect3">
-<a name="id-1.17.26.8.7.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-name-selector-peek-section-list.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -338,10 +320,9 @@ e_name_selector_peek_section_list (<em class="parameter"><code><a class="link" h
 </table></div>
 </div>
 <div class="refsect3">
-<a name="id-1.17.26.8.7.6"></a><h4>Returns</h4>
-<p> The <a class="link" href="ENameSelectorList.html" title="ENameSelectorList"><span class="type">ENameSelectorList</span></a> for the named section, or <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a> if it
+<a name="e-name-selector-peek-section-list.returns"></a><h4>Returns</h4>
+<p> The <a class="link" href="ENameSelectorList.html" title="ENameSelectorList"><span class="type">ENameSelectorList</span></a> for the named section, or <a href="/usr/share/gtk-doc/html/glibglib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a> if it
 doesn't exist in the <a class="link" href="ENameSelectorModel.html" title="ENameSelectorModel"><span class="type">ENameSelectorModel</span></a>.</p>
-<p></p>
 </div>
 </div>
 <hr>
@@ -349,12 +330,12 @@ doesn't exist in the <a class="link" href="ENameSelectorModel.html" title="EName
 <a name="e-name-selector-show-dialog"></a><h3>e_name_selector_show_dialog ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 e_name_selector_show_dialog (<em class="parameter"><code><a class="link" href="ENameSelector.html" title="ENameSelector"><span class="type">ENameSelector</span></a> *name_selector</code></em>,
-                             <em class="parameter"><code><a href="http://developer.gnome.org/gtk2/GtkWidget.html"><span class="type">GtkWidget</span></a> *for_transient_widget</code></em>);</pre>
+                             <em class="parameter"><code><a href="/usr/share/gtk-doc/html/gtk3GtkWidget.html#GtkWidget-struct"><span class="type">GtkWidget</span></a> *for_transient_widget</code></em>);</pre>
 <p>Shows the associated dialog, and sets the transient parent to the
 GtkWindow top-level of "for_transient_widget if set (it should be)</p>
 <div class="refsect3">
-<a name="id-1.17.26.8.8.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-name-selector-show-dialog.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -368,13 +349,13 @@ GtkWindow top-level of "for_transient_widget if set (it should be)</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>for_transient_widget</p></td>
-<td class="parameter_description"><p>a widget parent or <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a></p></td>
+<td class="parameter_description"><p>a widget parent or <a href="/usr/share/gtk-doc/html/glibglib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a></p></td>
 <td class="parameter_annotations"> </td>
 </tr>
 </tbody>
 </table></div>
 </div>
-<p class="since">Since 2.32</p>
+<p class="since">Since: <a class="link" href="api-index-2.32.html" title="Index of new symbols in 2.32">2.32</a></p>
 </div>
 <hr>
 <div class="refsect2">
@@ -386,8 +367,8 @@ e_name_selector_load_books (<em class="parameter"><code><a class="link" href="EN
 This can be called only once and it can be cancelled
 by <a class="link" href="ENameSelector.html#e-name-selector-cancel-loading" title="e_name_selector_cancel_loading ()"><code class="function">e_name_selector_cancel_loading()</code></a>.</p>
 <div class="refsect3">
-<a name="id-1.17.26.8.9.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-name-selector-load-books.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -400,7 +381,7 @@ by <a class="link" href="ENameSelector.html#e-name-selector-cancel-loading" titl
 </tr></tbody>
 </table></div>
 </div>
-<p class="since">Since 3.2</p>
+<p class="since">Since: <a class="link" href="api-index-3.2.html" title="Index of new symbols in 3.2">3.2</a></p>
 </div>
 <hr>
 <div class="refsect2">
@@ -411,8 +392,8 @@ e_name_selector_cancel_loading (<em class="parameter"><code><a class="link" href
 before an owner unrefs this <em class="parameter"><code>name_selector</code></em>
 .</p>
 <div class="refsect3">
-<a name="id-1.17.26.8.10.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-name-selector-cancel-loading.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -425,15 +406,11 @@ before an owner unrefs this <em class="parameter"><code>name_selector</code></em
 </tr></tbody>
 </table></div>
 </div>
-<p class="since">Since 3.2</p>
+<p class="since">Since: <a class="link" href="api-index-3.2.html" title="Index of new symbols in 3.2">3.2</a></p>
 </div>
 </div>
 <div class="refsect1">
 <a name="ENameSelector.other_details"></a><h2>Types and Values</h2>
-<div class="refsect2">
-<a name="ENameSelector-struct"></a><h3>struct ENameSelector</h3>
-<pre class="programlisting">struct ENameSelector;</pre>
-</div>
 </div>
 <div class="refsect1">
 <a name="ENameSelector.property-details"></a><h2>Property Details</h2>
@@ -446,7 +423,6 @@ before an owner unrefs this <em class="parameter"><code>name_selector</code></em
 </div>
 </div>
 <div class="footer">
-<hr>
-          Generated by GTK-Doc V1.21</div>
+<hr>Generated by GTK-Doc V1.25</div>
 </body>
 </html>

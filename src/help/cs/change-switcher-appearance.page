@@ -16,34 +16,42 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Changing the display of the window buttons in the lower left
-    corner.</desc>
+    <desc>Změna zobrazení okna s tlačítky v levém dolním rohu.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Changing the Switcher appearance</title>
+  <title>Změna vzhledu přepínače</title>
 
-  <p>The display of the window buttons in the lower left corner (Mail,
-  Contacts, Calendar, Tasks and Memos) can be changed via
-  <guiseq><gui>View</gui><gui>Switcher Appearance</gui></guiseq>. This can be
-  helpful if you have a small display. You can also completely hide them.</p>
+  <p>Zobrazení okna s tlačítky v levém dolním rohu (Pošta, Kontakty, Kalendář, Úkoly, Poznámky) můžete změnit přes <guiseq><gui>Zobrazit</gui> <gui>Vzhled přepínače</gui></guiseq>. To může být užitečné, když máte malou obrazovku. Můžete jej i úplně skrýt.</p>
 
-  <p>The available options are:</p>
+  <p>K dispozici jsou následující volby:</p>
 
   <list>
     <item>
-      <p>Icons and Text</p>
+      <p>Ikony a text</p>
     </item>
     <item>
-      <p>Icons Only</p>
+      <p>Jen ikony</p>
     </item>
     <item>
-      <p>Text Only</p>
+      <p>Jen text</p>
     </item>
     <item>
-      <p>Toolbar Style</p>
+      <p>Styl nástrojové lišty</p>
     </item>
     <item>
-      <p>Show Buttons</p>
+      <p>Zobrazovat tlačítka</p>
     </item>
   </list>
 

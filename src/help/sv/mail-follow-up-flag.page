@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-follow-up-flag" xml:lang="sv">
 
   <info>
-    <desc>Using flags to remind you of actions.</desc>
+    <desc>Användning av flaggor för att påminna dig om åtgärder.</desc>
     
     <link type="guide" xref="mail-organizing#advanced"/>
 
@@ -18,28 +18,40 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-<title>Follow up flags for emails</title>
+<title>Uppföljningsflaggor för meddelande</title>
 
-<p>To make sure you do not forget about a message, you can use the follow-up feature.</p>
+<p>För att säkerställa att du inte glömmer ett meddelande kan du använda uppföljningsfunktionen.</p>
 <steps>
-<item><p>Select one or more messages.</p></item>
-<item><p>Right-click one of the messages.</p></item>
-<item><p>Click <gui>Mark for Follow Up...</gui>.</p></item>
+<item><p>Markera ett eller flera meddelanden.</p></item>
+<item><p>Högerklicka på ett av meddelandena.</p></item>
+<item><p>Klicka på <gui>Markera för uppföljning...</gui>.</p></item>
 </steps>
-<p>You can also do this by selecting the message(s) and clicking <guiseq><gui>Message</gui><gui>Mark as</gui><gui>Follow Up...</gui></guiseq> or by pressing <keyseq><key>Shift</key><key>Ctrl</key><key>G</key></keyseq>.</p>
+<p>Du kan också göra detta genom att markera meddelandena och klicka på <guiseq><gui>Meddelande</gui><gui>Markera som </gui><gui>Följ upp…</gui></guiseq> eller genom att trycka <keyseq><key>Skift</key><key>Ctrl</key><key>G</key></keyseq>.</p>
 
-<p>A window opens to allow you to set the type of flag and the due date.</p>
+<p>Ett fönster öppnas för att låta dig ställa in flaggtypen och förfallodatumet.</p>
 
-<p>The flag itself is the action you want to remind yourself about, such as Call, Forward and Reply.</p>
+<p>Flaggan i sig är åtgärden du vill påminna dig själv om, så som Ring, Vidarebefordra och Svara.</p>
 
-<p>After you have added a flag, you can mark it as complete or remove it entirely by right-clicking the message and clicking either <gui>Flag Completed</gui> or <gui>Clear Flag</gui>.</p>
+<p>Efter att du har lagt till en flagga kan du markera den som färdig eller ta bort den helt genom att högerklicka på meddelandet och klicka antingen <gui>Flagga som färdig</gui> eller <gui>Ta bort flagga</gui>.</p>
 
-<p>When you read a flagged message, its flag status is displayed at the top, before the message headers. An overdue message might tell you "Overdue: Call by April 07, 2012, 5:00 PM."</p>
+<p>När du läser ett flaggat meddelande kommer dess flaggstatus att visas längst upp innan meddelanderubrikerna. För ett försenat meddelande kanske det står ”Skulle ha genomförts: Ring innan 7 april 2012, 17:00.”</p>
 
-<p>Flags can help you organize your work in a number of ways. For example, you might <link xref="mail-change-columns-in-message-list">add a Flag Status column</link> to your message list and sort that way. Alternately, you could create a <link xref="mail-search-folders">search folder</link> that displays all your flagged messages, then clear the flags when you're done, so the search folder contains only messages with upcoming deadlines.</p>
+<p>Flaggor kan hjälpa dig att organisera ditt arbete på ett flertal sätt. Du kan till exempel <link xref="mail-change-columns-in-message-list">lägga till en flaggstatuskolumn</link> i din meddelandelista och sortera på det sättet. Alternativ kan du skapa en <link xref="mail-search-folders">sökmapp</link> som visar alla dina flaggade meddelanden och sedan ta bort flaggorna när du är klar så att sökmappen bara innehåller meddelanden med kommande tidsfrister.</p>
 
-<note style="tip"><p>If you prefer a simpler way to remind yourself about messages, you can mark them as important by right-clicking the message, then click <gui>Mark as Important</gui>, or by selecting <guiseq><gui>Message</gui><gui>Mark as</gui><gui>Important</gui></guiseq> from the menubar.</p></note>
+<note style="tip"><p>Om du föredrar ett enklare sätt att påminna sig själv om meddelanden kan du markera dem som viktiga genom att högerklicka på meddelanden och sedan klicka på <gui>Markera som viktigt</gui> eller genom att välja <guiseq><gui>Meddelande</gui><gui>Markera som</gui><gui>Viktigt</gui></guiseq> från menyfältet.</p></note>
 
 </page>

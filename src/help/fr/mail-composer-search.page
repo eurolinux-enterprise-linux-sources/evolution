@@ -50,7 +50,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -59,14 +59,15 @@
 <p>L'éditeur de messages met à votre disposition plusieurs fonctions de recherche de texte dans le menu <gui>Édition</gui>.</p>
 
 <list>
-<item><p><gui>Rechercher</gui> :</p><p>Saisissez un mot ou une phrase et Evolution le recherche dans votre message.</p></item>
+<item><p><gui>Rechercher</gui> :</p><p>
+Enter a word or phrase, and <app>Evolution</app> finds it in your message.</p></item>
 
 <item><p><gui>Rechercher de nouveau</gui> :</p><p>Sélectionnez cet élément pour répéter la recherche que vous venez de faire.</p></item>
 
 <item><p><gui>Remplacer</gui> :</p><p>Recherche un mot ou une phrase et le remplace par quelque chose d'autre.</p></item>
 </list>
 
-<p>Pour tous ces éléments de menu, vous pouvez choisir d'effectuer une recherche en arrière par rapport à la position de votre curseur. Vous pouvez aussi déterminer si la recherche doit tenir compte de la casse dans la recherche d'une correspondance.</p>
-<p>If you have a technical background you can also select the option to use <link href="https://en.wikipedia.org/wiki/Regular_expression">Regular expressions</link> for searching.</p>
+<p>For all of these menu items you can choose whether to search backwards in the document from the point where your cursor is. You can also determine whether the search is to be case sensitive in determining a match.</p>
+<p>Si vous avez suffisamment de connaissances techniques, vous pouvez aussi choisir l'option permettant d'utiliser des <link href="https://en.wikipedia.org/wiki/Regular_expression">expressions régulières</link> pour la recherche.</p>
 
 </page>

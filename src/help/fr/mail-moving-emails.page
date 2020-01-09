@@ -53,13 +53,13 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
 <title>Les courriels déplacés figurent toujours dans le dossier d'origine</title>
 
-<p>If your IMAP mail server does not yet support <link href="http://tools.ietf.org/html/rfc6851">IMAP's "move" feature</link> which was introduced in January 2013, Evolution "moves" messages by copying and deleting emails. Deleting means "marking messages for deletion" so all the original messages are retained until you expunge the emails marked for deletion.</p>
+<p>If your IMAP mail server does not yet support <link href="http://tools.ietf.org/html/rfc6851">IMAP's "move" feature</link> which was introduced in January 2013, <app>Evolution</app> "moves" messages by copying and deleting emails. Deleting means "marking messages for deletion" so all the original messages are retained until you expunge the emails marked for deletion.</p>
 
 <p>Consultez la rubrique sur la <link xref="mail-delete-and-undelete">suppression des courriels</link> pour apprendre comment nettoyer les messages. Notez que cela s'applique également aux autres types de comptes.</p>
 

@@ -20,9 +20,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -59,11 +65,11 @@
 <p>Para enviar una nota compartida,</p>
 <steps>
 <item><p>Pulse <guiseq><gui>Archivo</gui><gui>Nuevo</gui><gui>Nota compartida</gui></guiseq>, o pulse <keyseq><key>Mayús</key><key>Ctrl</key><key>H</key></keyseq>.</p></item>
-<item><p>Seleccione el nombre de la cuenta del Organizador de la lista desplegable proporcionada junto al campo Organizador.</p></item>
-<item><p>En el campo Para escriba un nombre de usuario, después pulse Intro. Repita la operación para añadir usuarios adicionales.</p></item>
+<item><p>Seleccione el nombre de la cuenta del Organizador de la lista desplegable proporcionada junto al campo <gui>Organizador</gui>.</p></item>
+<item><p>En el campo <gui>Para</gui> escriba un nombre de usuario, después pulse <key>Intro</key>. Repita la operación para añadir usuarios adicionales.</p></item>
 <item><p>Seleccione la lista de tareas (bajo <gui>Lista</gui>) en la que quiere crear la entrada.</p></item>
-<item><p>Escriba un breve resumen para la tarea en el campo Resumen.</p></item>
-<item><p>En el campo Fecha de inicio escriba la fecha en la que esta nota compartida debería aparecer en los calendarios de los destinatarios.</p></item>
+<item><p>Escriba un breve resumen en el campo <gui>Resumen</gui>.</p></item>
+<item><p>En el campo <gui>Fecha de inicio</gui> escriba la fecha en la que esta nota compartida debería aparecer en los calendarios de los destinatarios.</p></item>
 <item><p>Pulse el botón <gui style="button">Guardar</gui> o <guiseq><gui>Archivo</gui><gui>Guardar</gui></guiseq>.</p></item>
 </steps>
 </section>

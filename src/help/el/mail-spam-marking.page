@@ -27,9 +27,27 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
@@ -39,7 +57,7 @@
 
 <section id="marking-junk">
 <title>Χειροκίνητη σημείωση μηνύματος ως ανεπιθύμητου</title>
-<p>Εάν το Evolution χάσει ανεπιθύμητη αλληλογραφία, δεξί κλικ στο μήνυμα, έπειτα κλικ στο <gui>σημείωση ως ανεπιθύμητο</gui> ή σημειώστε το μήνυμα και πατήστε <keyseq><key>Ctrl</key><key>J</key></keyseq> ή κλικ στο κουμπί <gui>ανεπιθύμητα</gui> στη γραμμή εργαλείων. Όταν το διορθώσετε, το φίλτρο μπορεί να αναγνωρίσει παρόμοια μηνύματα στο μέλλον και γίνεται πιο ακριβές καθώς περνά ο χρόνος.</p>
+<p>If <app>Evolution</app> misses junk mail, right-click the message, then click <gui>Mark as Junk</gui>, or mark the message and press <keyseq><key>Ctrl</key><key>J</key></keyseq> or click the <gui>Junk</gui> button in the tool bar. When you correct it, the filter can recognize similar messages in the future, and becomes more accurate as time goes on.</p>
 <p>Εάν κανονικό μήνυμα επισημαίνεται λαθεμένα, αφαιρέστε το από τον φάκελο <gui>ανεπιθύμητα</gui> με δεξί κλικ του και επιλέξτε <gui>σημείωση ως μη ανεπιθύμητο</gui> ή πατήστε <keyseq><key>Shift</key><key>Ctrl</key><key>J</key></keyseq>, ή σημειώστε το μήνυμα και κλικ στο κουμπί <gui>όχι ανεπιθύμητο</gui>.</p>
 
 </section>

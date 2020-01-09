@@ -20,9 +20,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -45,7 +51,7 @@
 <p>Si la solicitud de reunión ya incluye un <link xref="calendar-alarms-and-reminders">recordatorio</link> puede importar el recordatorio a su calendario activando <gui>Heredar recordatorio</gui>.</p>
 
 <p>Si pulsa <gui>Aceptar</gui> el acontecimiento se añadirá automáticamente al calendario que haya elegido.</p>
-<p>Después de que haya añadido la reunión a su calendario puede hacer cambios en la reunión, pero si el organizador original envía otra actualización, sus cambios se sobrescribirán.</p>
+<p>Después de que haya añadido la reunión a su calendario puede hacer cambios en la reunión, pero si el organizador original envía otra actualización, sus cambios se sobreescribirán.</p>
 
 <note style="tip"><p>Bajo <guiseq><gui>Editar</gui><gui>Preferencias</gui><gui>Calendario y tareas</gui><gui>Invitaciones a reuniones</gui><gui>Búsqueda de conflictos</gui></guiseq> puede definir qué calendarios se usan para avisarle de sus conflictos en reuniones.</p></note> <!-- This is the location since 3.1.5, see bug https://bugzilla.gnome.org/show_bug.cgi?id=655494 -->
 </page>

@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="exporting-data-contacts" xml:lang="cs">
 
   <info>
-    <desc>How to export contacts data from <app>Evolution</app>.</desc>
+    <desc>Jak exportovat data kontaktů z aplikace <app>Evolution</app>.</desc>
 
     <link type="guide" xref="exporting-data"/>
 
@@ -18,12 +18,24 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Exporting contacts data</title>
+<title>Export kontaktních dat</title>
 
-<p>Contacts files are stored in a database, but can be saved as a vCard file.</p>
-<p>To export a complete address book, click <guiseq><gui>File</gui><gui>Save Address Book As vCard</gui></guiseq>.</p>
-<p>If you want to export only one contact, click <guiseq><gui>File</gui><gui>Save as vCard</gui></guiseq> or right-click on the contact and click <gui>Save as vCard</gui>.</p>
+<p>Soubory kontaktů jsou uloženy v databázi, ale mohou být přeuloženy jako soubor vCard.</p>
+<p>Když chcete exportovat celý adresář, klikněte na <guiseq><gui>Soubor</gui> <gui>Uložit adresář jako vCard</gui></guiseq>.</p>
+<p>Pokud chcete exportovat jen jeden kontakt, klikněte na <guiseq><gui>Soubor</gui> <gui>Uložit jako vCard</gui></guiseq> nebo klikněte na kontakt pravým tlačítkem a klikněte na <gui>Uložit jako vCard</gui>.</p>
 
 </page>

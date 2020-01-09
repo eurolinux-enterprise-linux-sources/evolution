@@ -377,6 +377,7 @@ source_add (GtkWidget *widget,
 {
 	EMFolderTree *folder_tree;
 	EMFolderTreeModel *model;
+	EMFolderSelector *selector;
 	GtkTreeSelection *selection;
 	GtkWidget *dialog;
 	gpointer parent;
@@ -386,13 +387,15 @@ source_add (GtkWidget *widget,
 
 	model = em_folder_tree_model_get_default ();
 
-	dialog = em_folder_selector_new (
-		parent, model,
-		EM_FOLDER_SELECTOR_CAN_CREATE,
-		_("Add Folder"), NULL, _("_Add"));
+	dialog = em_folder_selector_new (parent, model);
 
-	folder_tree = em_folder_selector_get_folder_tree (
-		EM_FOLDER_SELECTOR (dialog));
+	gtk_window_set_title (GTK_WINDOW (dialog), _("Add Folder"));
+
+	selector = EM_FOLDER_SELECTOR (dialog);
+	em_folder_selector_set_can_create (selector, TRUE);
+	em_folder_selector_set_default_button_label (selector, _("_Add"));
+
+	folder_tree = em_folder_selector_get_folder_tree (selector);
 
 	em_folder_tree_set_excluded (folder_tree, EMFT_EXCLUDE_NOSELECT);
 

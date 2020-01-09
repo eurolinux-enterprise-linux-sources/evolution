@@ -99,6 +99,9 @@ gchar *		e_ascii_dtostr			(gchar *buffer,
 						 gdouble d);
 
 gchar *		e_str_without_underscores	(const gchar *string);
+GString *	e_str_replace_string		(const gchar *text,
+						 const gchar *find,
+						 const gchar *replace);
 gint		e_str_compare			(gconstpointer x,
 						 gconstpointer y);
 gint		e_str_case_compare		(gconstpointer x,
@@ -164,6 +167,11 @@ gsize		e_utf8_strftime_fix_am_pm	(gchar *str,
 						 gsize max,
 						 const gchar *fmt,
 						 const struct tm *tm);
+gsize		e_utf8_strftime_match_lc_messages
+						(gchar *string,
+						 gsize max,
+						 const gchar *fmt,
+						 const struct tm *tm);
 const gchar *	e_get_month_name		(GDateMonth month,
 						 gboolean abbreviated);
 const gchar *	e_get_weekday_name		(GDateWeekday weekday,
@@ -189,7 +197,27 @@ gchar *		e_util_guess_mime_type		(const gchar *filename,
 
 GSList *	e_util_get_category_filter_options
 						(void);
-GList *		e_util_get_searchable_categories (void);
+GList *		e_util_dup_searchable_categories (void);
+
+gboolean	e_util_get_open_source_job_info	(const gchar *extension_name,
+						 const gchar *source_display_name,
+						 gchar **description,
+						 gchar **alert_ident,
+						 gchar **alert_arg_0);
+struct _EAlertSinkThreadJobData;
+void		e_util_propagate_open_source_job_error
+						(struct _EAlertSinkThreadJobData *job_data,
+						 const gchar *extension_name,
+						 GError *local_error,
+						 GError **error);
+struct _EClientCache;
+EClient *	e_util_open_client_sync		(struct _EAlertSinkThreadJobData *job_data,
+						 struct _EClientCache *client_cache,
+						 const gchar *extension_name,
+						 ESource *source,
+						 guint32 wait_for_connected_seconds,
+						 GCancellable *cancellable,
+						 GError **error);
 
 /* Useful GBinding transform functions */
 gboolean	e_binding_transform_color_to_string
@@ -246,6 +274,64 @@ gulong		e_signal_connect_notify_object	(gpointer instance,
 void		e_signal_disconnect_notify_handler
 						(gpointer instance,
 						 gulong *handler_id);
+
+GSettings *	e_util_ref_settings		(const gchar *schema_id);
+void		e_util_cleanup_settings		(void);
+gboolean	e_util_prompt_user		(GtkWindow *parent,
+						 const gchar *settings_schema,
+						 const gchar *promptkey,
+						 const gchar *tag,
+						 ...);
+void		e_util_run_simple_async_result_in_thread
+						(GSimpleAsyncResult *simple,
+						 GSimpleAsyncThreadFunc func,
+						 GCancellable *cancellable);
+gboolean	e_util_is_running_gnome		(void);
+void		e_util_set_entry_issue_hint	(GtkWidget *entry,
+						 const gchar *hint);
+
+guint		e_util_normalize_font_size	(GtkWidget *widget,
+						 gdouble font_size);
+void		e_util_init_main_thread		(GThread *thread);
+gboolean	e_util_is_main_thread		(GThread *thread);
+gchar *		e_util_save_image_from_clipboard
+						(GtkClipboard *clipboard);
+gboolean	e_util_check_gtk_bindings_in_key_press_event_cb
+						(GtkWidget *widget,
+						 GdkEvent *event);
+void		e_util_claim_dbus_proxy_call_error
+						(GDBusProxy *dbus_proxy,
+						 const gchar *method_name,
+						 const GError *in_error);
+void		e_util_invoke_g_dbus_proxy_call_with_error_check
+						(GDBusProxy *dbus_proxy,
+						 const gchar *method_name,
+						 GVariant *parameters,
+						 GCancellable *cancellable);
+void		e_util_invoke_g_dbus_proxy_call_with_error_check_full
+						(GDBusProxy *dbus_proxy,
+						 const gchar *method_name,
+						 GVariant *parameters,
+						 GDBusCallFlags flags,
+						 gint timeout_msec,
+						 GCancellable *cancellable);
+GVariant *	e_util_invoke_g_dbus_proxy_call_sync_wrapper_with_error_check
+						(GDBusProxy *dbus_proxy,
+						 const gchar *method_name,
+						 GVariant *parameters,
+						 GCancellable *cancellable);
+GVariant *	e_util_invoke_g_dbus_proxy_call_sync_wrapper_full
+						(GDBusProxy *dbus_proxy,
+						 const gchar *method_name,
+						 GVariant *parameters,
+						 GDBusCallFlags flags,
+						 gint timeout_msec,
+						 GCancellable *cancellable,
+						 GError **error);
+void		e_util_save_file_chooser_folder	(GtkFileChooser *file_chooser);
+void		e_util_load_file_chooser_folder	(GtkFileChooser *file_chooser);
+gboolean	e_util_get_webkit_developer_mode_enabled
+						(void);
 
 G_END_DECLS
 

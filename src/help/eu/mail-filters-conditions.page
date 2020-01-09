@@ -32,7 +32,7 @@ included by XInclude. See http://blogs.gnome.org/shaunm/2011/07/21/understanding
 <p>Mezuak zein zerbitzaritatik hartu dituzun aztertzen du iragazkiak. Oso erabilgarria da, POP posta-kontu bat baino gehiago erabiltzen badituzu.</p></item>
 
 <item><p>Kanalizatu programara:</p>
-<p>Evolution-ek kanpoko komando bat erabil dezake mezu bat prozesatzeko, eta gero itzulitako balioan oinarrituta prozesatu. Horrela erabilitako komandoek osoko bat itzuli behar dute. Hori maizago erabiltzen da mezu baztergarrien kanpoko iragazki bat gehitzeko.</p></item>
+<p><app>Evolution</app> can use an external command to process a message, then process it based on the return value. Commands used in this way must return an integer. This is most commonly used to add an external junk mail filter.</p></item>
 
 <item><p>Mezu baztergarrien proba:</p>
 <p>Filters based on the results of the <link xref="mail-spam">junk mail</link> test.</p></item>

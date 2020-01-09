@@ -18,9 +18,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -41,7 +47,7 @@
 <p>Bajo el menú <gui>Editar</gui> en el editor de mensajes existen diversas características de búsqueda de texto disponibles.</p>
 
 <list>
-<item><p><gui>Buscar</gui>:</p><p>Escriba una palabra o frase y Evolution la encontrará en el mensaje.</p></item>
+<item><p><gui>Buscar</gui>:</p><p>Escriba una palabra o frase y <app>Evolution</app> la encontrará en el mensaje.</p></item>
 
 <item><p><gui>Buscar de nuevo</gui>:</p><p>Seleccione este elemento para repetir la última búsqueda que haya realizado.</p></item>
 

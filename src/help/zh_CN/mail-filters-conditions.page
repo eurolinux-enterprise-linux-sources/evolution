@@ -32,7 +32,7 @@ included by XInclude. See http://blogs.gnome.org/shaunm/2011/07/21/understanding
 <p>根据邮件来源的服务器过滤邮件。如果您使用多个POP邮件账户，这很有用。</p></item>
 
 <item><p>管道到程序：</p>
-<p>Evolution能使用外部命令操作邮件，然后根据返回状态处理它。使用的命令必须能返回一个整数值。这在添加外部的垃圾邮件过滤器中很有用。</p></item>
+<p><app>Evolution</app> can use an external command to process a message, then process it based on the return value. Commands used in this way must return an integer. This is most commonly used to add an external junk mail filter.</p></item>
 
 <item><p>垃圾测试：</p>
 <p>Filters based on the results of the <link xref="mail-spam">junk mail</link> test.</p></item>

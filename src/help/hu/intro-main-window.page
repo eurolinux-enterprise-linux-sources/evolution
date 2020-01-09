@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="intro-main-window" xml:lang="hu">
 
   <info>
-    <desc>Az Evolution ablakban látható területek ismertetése.</desc>
+    <desc>Az <app>Evolution</app> ablakban látható területek ismertetése.</desc>
 
     <link type="guide" xref="index#getting-started"/>
     <link type="seealso" xref="calendar-layout"/>
@@ -24,18 +24,42 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
   <title>Az <app>Evolution</app> főablaka</title>
 
 <!-- This section fixes https://bugzilla.gnome.org/show_bug.cgi?id=657028 -->
-<p>Az Evolution e-mail, naptár, névjegy, feladat és feljegyzés funkciókat biztosít. A bal alsó sarokban lévő váltógombok segítségével válthat az egyes funkciók között. A megjelenített funkciótól függően az ablakban megjelenített elemek eltérnek.</p>
+<p>Az <app>Evolution</app> e-mail, naptár, névjegy, feladat és feljegyzés funkciókat biztosít. A bal alsó sarokban lévő váltógombok segítségével válthat az egyes funkciók között. A megjelenített funkciótól függően az ablakban megjelenített elemek eltérnek.</p>
 
 <section id="e-mail">
-<title>E-mail</title>
+<title>Levelezés</title>
 
 <media type="image" src="./figures/window-overview-layers.png" width="600">
-  <p>Az Evolution levelező főablaka</p>
+  <p>Az <app>Evolution</app> levelező főablaka</p>
 </media>
 
 <p>A levelező főablak elemei:</p>
@@ -74,7 +98,7 @@
 </item>
 <item>
 <title>Váltógombok</title>
-<p>Az oldalsáv alján lévő váltógombok segítségével átválthat az Evolution eszközei között: Levelek, Névjegyek, Naptár, Feljegyzések és Feladatok.</p><p>További információkért lásd a <link xref="change-switcher-appearance">Váltógombok megjelenésének megváltoztatása</link> szakaszt.</p>
+<p>Az oldalsáv alján lévő váltógombok segítségével átválthat az <app>Evolution</app> eszközei között: Levelek, Névjegyek, Naptár, Feljegyzések és Feladatok.</p><p>További információkért lásd a <link xref="change-switcher-appearance">Váltógombok megjelenésének megváltoztatása</link> szakaszt.</p>
 <note style="tip"><p>A <guiseq><gui>Nézet</gui><gui>Elrendezés</gui><gui>Oldalsáv megjelenítése</gui></guiseq> menüpont kiválasztásával vagy az <key>F9</key> megnyomásával kikapcsolhatja a mappalista és a váltógombok megjelenítését.</p></note>
 </item>
 <item>

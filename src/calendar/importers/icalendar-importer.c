@@ -36,6 +36,7 @@
 
 #include <libecal/libecal.h>
 #include <libical/icalvcal.h>
+#include <libical/vcc.h>
 
 #include "shell/e-shell.h"
 
@@ -94,13 +95,14 @@ is_icalcomp_usable (icalcomponent *icalcomp)
 }
 
 static void
-ivcal_import_done (ICalImporter *ici)
+ivcal_import_done (ICalImporter *ici,
+		   const GError *error)
 {
 	if (ici->cal_client)
 		g_object_unref (ici->cal_client);
 	icalcomponent_free (ici->icalcomp);
 
-	e_import_complete (ici->import, ici->target);
+	e_import_complete (ici->import, ici->target, error);
 	g_object_unref (ici->import);
 	g_object_unref (ici->cancellable);
 	g_free (ici);
@@ -168,7 +170,7 @@ prepare_tasks (icalcomponent *icalcomp,
 
 struct UpdateObjectsData
 {
-	void (*done_cb) (gpointer user_data);
+	void (*done_cb) (gpointer user_data, const GError *error);
 	gpointer user_data;
 };
 
@@ -185,15 +187,10 @@ receive_objects_ready_cb (GObject *source_object,
 
 	e_cal_client_receive_objects_finish (cal_client, result, &error);
 
-	if (error != NULL) {
-		g_warning (
-			"%s: Failed to receive objects: %s",
-			G_STRFUNC, error->message);
-		g_error_free (error);
-	}
-
 	if (uod->done_cb)
-		uod->done_cb (uod->user_data);
+		uod->done_cb (uod->user_data, error);
+	g_clear_error (&error);
+
 	g_free (uod);
 }
 
@@ -201,7 +198,7 @@ static void
 update_objects (ECalClient *cal_client,
                 icalcomponent *icalcomp,
                 GCancellable *cancellable,
-                void (*done_cb) (gpointer user_data),
+                void (*done_cb) (gpointer user_data, const GError *error),
                 gpointer user_data)
 {
 	icalcomponent_kind kind;
@@ -222,7 +219,7 @@ update_objects (ECalClient *cal_client,
 			icalcomponent_set_method (vcal, ICAL_METHOD_PUBLISH);
 	} else {
 		if (done_cb)
-			done_cb (user_data);
+			done_cb (user_data, NULL);
 		return;
 	}
 
@@ -281,6 +278,42 @@ primary_selection_changed_cb (ESourceSelector *selector,
 		source, (GDestroyNotify) g_object_unref);
 }
 
+static void
+create_calendar_clicked_cb (GtkWidget *button,
+			    ESourceSelector *selector)
+{
+	ESourceRegistry *registry;
+	ECalClientSourceType source_type;
+	GtkWidget *config;
+	GtkWidget *dialog;
+	GtkWidget *toplevel;
+	GtkWindow *window;
+
+	toplevel = gtk_widget_get_toplevel (button);
+	if (!GTK_IS_WINDOW (toplevel))
+		toplevel = NULL;
+
+	registry = e_shell_get_registry (e_shell_get_default ());
+	source_type = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (button), "source-type"));
+	config = e_cal_source_config_new (registry, NULL, source_type);
+
+	dialog = e_source_config_dialog_new (E_SOURCE_CONFIG (config));
+	window = GTK_WINDOW (dialog);
+
+	if (toplevel)
+		gtk_window_set_transient_for (window, GTK_WINDOW (toplevel));
+
+	if (source_type == E_CAL_CLIENT_SOURCE_TYPE_EVENTS) {
+		gtk_window_set_icon_name (window, "x-office-calendar");
+		gtk_window_set_title (window, _("New Calendar"));
+	} else {
+		gtk_window_set_icon_name (window, "stock_todo");
+		gtk_window_set_title (window, _("New Task List"));
+	}
+
+	gtk_widget_show (dialog);
+}
+
 static GtkWidget *
 ivcal_getwidget (EImport *ei,
                  EImportTarget *target,
@@ -308,19 +341,20 @@ ivcal_getwidget (EImport *ei,
 
 	/* Type of icalendar items */
 	for (i = 0; import_type_map[i] != -1; i++) {
-		GtkWidget *selector, *rb;
-		ESource *source = NULL;
+		GtkWidget *selector, *rb, *create_button, *vbox;
 		GtkWidget *scrolled;
 		struct _selector_data *sd;
 		const gchar *extension_name;
-		GList *list;
+		const gchar *create_label;
 
 		switch (import_type_map[i]) {
 			case E_CAL_CLIENT_SOURCE_TYPE_EVENTS:
 				extension_name = E_SOURCE_EXTENSION_CALENDAR;
+				create_label = _("Cre_ate new calendar");
 				break;
 			case E_CAL_CLIENT_SOURCE_TYPE_TASKS:
 				extension_name = E_SOURCE_EXTENSION_TASK_LIST;
+				create_label = _("Cre_ate new task list");
 				break;
 			default:
 				g_warn_if_reached ();
@@ -328,22 +362,28 @@ ivcal_getwidget (EImport *ei,
 		}
 
 		selector = e_source_selector_new (registry, extension_name);
-		e_source_selector_set_show_toggles (
-			E_SOURCE_SELECTOR (selector), FALSE);
+		e_source_selector_set_show_toggles (E_SOURCE_SELECTOR (selector), FALSE);
+
+		vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 4);
+
+		gtk_notebook_append_page (GTK_NOTEBOOK (nb), vbox, NULL);
+
 		scrolled = gtk_scrolled_window_new (NULL, NULL);
 		gtk_scrolled_window_set_policy ((GtkScrolledWindow *) scrolled, GTK_POLICY_AUTOMATIC, GTK_POLICY_ALWAYS);
 		gtk_container_add ((GtkContainer *) scrolled, selector);
-		gtk_notebook_append_page (GTK_NOTEBOOK (nb), scrolled, NULL);
+		gtk_box_pack_start (GTK_BOX (vbox), scrolled, TRUE, TRUE, 0);
 
-		list = e_source_registry_list_sources (registry, extension_name);
-		if (list != NULL) {
-			source = E_SOURCE (list->data);
-			e_source_selector_set_primary_selection (
-				E_SOURCE_SELECTOR (selector), source);
-		}
+		create_button = gtk_button_new_with_mnemonic (create_label);
+		g_object_set_data (G_OBJECT (create_button), "source-type", GINT_TO_POINTER (import_type_map[i]));
+		g_object_set (G_OBJECT (create_button),
+			"hexpand", FALSE,
+			"halign", GTK_ALIGN_END,
+			"vexpand", FALSE,
+			"valign", GTK_ALIGN_START,
+			NULL);
+		gtk_box_pack_start (GTK_BOX (vbox), create_button, FALSE, FALSE, 0);
 
-		g_list_free_full (list, (GDestroyNotify) g_object_unref);
-
+		g_signal_connect (create_button, "clicked", G_CALLBACK (create_calendar_clicked_cb), selector);
 		g_signal_connect (
 			selector, "primary_selection_changed",
 			G_CALLBACK (primary_selection_changed_cb), target);
@@ -363,8 +403,9 @@ ivcal_getwidget (EImport *ei,
 
 		if (!group)
 			group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (rb));
-		if (first == NULL && source != NULL) {
-			g_datalist_set_data_full (&target->data, "primary-source", g_object_ref (source), g_object_unref);
+		if (first == NULL) {
+			/* Set primary-source */
+			primary_selection_changed_cb (E_SOURCE_SELECTOR (selector), target);
 			g_datalist_set_data (&target->data, "primary-type", GINT_TO_POINTER (import_type_map[i]));
 			first = rb;
 		}
@@ -378,9 +419,10 @@ ivcal_getwidget (EImport *ei,
 }
 
 static void
-ivcal_call_import_done (gpointer user_data)
+ivcal_call_import_done (gpointer user_data,
+			const GError *error)
 {
-	ivcal_import_done (user_data);
+	ivcal_import_done (user_data, error);
 }
 
 static gboolean
@@ -401,7 +443,7 @@ ivcal_import_items (gpointer d)
 		g_warn_if_reached ();
 
 		ici->idle_id = 0;
-		ivcal_import_done (ici);
+		ivcal_import_done (ici, NULL);
 		return FALSE;
 	}
 
@@ -429,9 +471,8 @@ ivcal_connect_cb (GObject *source_object,
 		((client == NULL) && (error != NULL)));
 
 	if (error != NULL) {
-		g_warning ("%s: %s", G_STRFUNC, error->message);
+		ivcal_import_done (ici, error);
 		g_error_free (error);
-		ivcal_import_done (ici);
 		return;
 	}
 
@@ -463,7 +504,7 @@ ivcal_import (EImport *ei,
 
 	e_cal_client_connect (
 		g_datalist_get_data (&target->data, "primary-source"),
-		type, ici->cancellable, ivcal_connect_cb, ici);
+		type, 30, ici->cancellable, ivcal_connect_cb, ici);
 }
 
 static void
@@ -534,17 +575,20 @@ ical_import (EImport *ei,
 	gchar *filename;
 	gchar *contents;
 	icalcomponent *icalcomp;
+	GError *error = NULL;
 	EImportTargetURI *s = (EImportTargetURI *) target;
 
-	filename = g_filename_from_uri (s->uri_src, NULL, NULL);
+	filename = g_filename_from_uri (s->uri_src, NULL, &error);
 	if (!filename) {
-		e_import_complete (ei, target);
+		e_import_complete (ei, target, error);
+		g_clear_error (&error);
 		return;
 	}
 
-	if (!g_file_get_contents (filename, &contents, NULL, NULL)) {
+	if (!g_file_get_contents (filename, &contents, NULL, &error)) {
 		g_free (filename);
-		e_import_complete (ei, target);
+		e_import_complete (ei, target, error);
+		g_clear_error (&error);
 		return;
 	}
 	g_free (filename);
@@ -555,7 +599,7 @@ ical_import (EImport *ei,
 	if (icalcomp)
 		ivcal_import (ei, target, icalcomp);
 	else
-		e_import_complete (ei, target);
+		e_import_complete (ei, target, error);
 }
 
 static GtkWidget *
@@ -727,10 +771,11 @@ vcal_import (EImport *ei,
 	gchar *filename;
 	icalcomponent *icalcomp;
 	EImportTargetURI *s = (EImportTargetURI *) target;
+	GError *error = NULL;
 
-	filename = g_filename_from_uri (s->uri_src, NULL, NULL);
+	filename = g_filename_from_uri (s->uri_src, NULL, &error);
 	if (!filename) {
-		e_import_complete (ei, target);
+		e_import_complete (ei, target, error);
 		return;
 	}
 
@@ -739,7 +784,7 @@ vcal_import (EImport *ei,
 	if (icalcomp)
 		ivcal_import (ei, target, icalcomp);
 	else
-		e_import_complete (ei, target);
+		e_import_complete (ei, target, error);
 }
 
 static GtkWidget *
@@ -901,20 +946,21 @@ open_default_source (ICalIntelligentImporter *ici,
 	e_import_status (ici->ei, ici->target, _("Opening calendar"), 0);
 
 	e_cal_client_connect (
-		source, source_type, ici->cancellable,
+		source, source_type, 30, ici->cancellable,
 		default_client_connect_cb, odsd);
 
 	g_object_unref (source);
 }
 
 static void
-continue_done_cb (gpointer user_data)
+continue_done_cb (gpointer user_data,
+		  const GError *error)
 {
 	ICalIntelligentImporter *ici = user_data;
 
 	g_return_if_fail (ici != NULL);
 
-	e_import_complete (ici->ei, ici->target);
+	e_import_complete (ici->ei, ici->target, error);
 }
 
 static void
@@ -925,10 +971,7 @@ gc_import_tasks (ECalClient *cal_client,
 	g_return_if_fail (ici != NULL);
 
 	if (error != NULL) {
-		g_warning (
-			"%s: Failed to open tasks: %s",
-			G_STRFUNC, error->message);
-		e_import_complete (ici->ei, ici->target);
+		e_import_complete (ici->ei, ici->target, error);
 		return;
 	}
 
@@ -942,13 +985,17 @@ gc_import_tasks (ECalClient *cal_client,
 }
 
 static void
-continue_tasks_cb (gpointer user_data)
+continue_tasks_cb (gpointer user_data,
+		   const GError *error)
 {
 	ICalIntelligentImporter *ici = user_data;
 
 	g_return_if_fail (ici != NULL);
 
-	open_default_source (ici, E_CAL_CLIENT_SOURCE_TYPE_TASKS, gc_import_tasks);
+	if (error)
+		continue_done_cb (ici, error);
+	else
+		open_default_source (ici, E_CAL_CLIENT_SOURCE_TYPE_TASKS, gc_import_tasks);
 }
 
 static void
@@ -959,15 +1006,12 @@ gc_import_events (ECalClient *cal_client,
 	g_return_if_fail (ici != NULL);
 
 	if (error != NULL) {
-		g_warning (
-			"%s: Failed to open events calendar: %s",
-			G_STRFUNC, error->message);
 		if (ici->tasks)
 			open_default_source (
 				ici, E_CAL_CLIENT_SOURCE_TYPE_TASKS,
 				gc_import_tasks);
 		else
-			e_import_complete (ici->ei, ici->target);
+			e_import_complete (ici->ei, ici->target, error);
 		return;
 	}
 
@@ -1026,7 +1070,7 @@ gnome_calendar_import (EImport *ei,
 		}
 	}
 
-	e_import_complete (ei, target);
+	e_import_complete (ei, target, NULL);
 }
 
 static void
@@ -1052,7 +1096,7 @@ gnome_calendar_getwidget (EImport *ei,
 	GSettings *settings;
 	gboolean done_cal, done_tasks;
 
-	settings = g_settings_new ("org.gnome.evolution.importer");
+	settings = e_util_ref_settings ("org.gnome.evolution.importer");
 	done_cal = g_settings_get_boolean (settings, "gnome-calendar-done-calendar");
 	done_tasks = g_settings_get_boolean (settings, "gnome-calendar-done-tasks");
 	g_object_unref (settings);
@@ -1105,7 +1149,7 @@ static EImportImporter gnome_calendar_importer = {
 EImportImporter *
 gnome_calendar_importer_peek (void)
 {
-	gnome_calendar_importer.name = _("Gnome Calendar");
+	gnome_calendar_importer.name = _("GNOME Calendar");
 	gnome_calendar_importer.description = _("Evolution Calendar intelligent importer");
 
 	return &gnome_calendar_importer;
@@ -1405,7 +1449,7 @@ get_users_timezone (void)
 	icaltimezone *zone = NULL;
 	gchar *location;
 
-	settings = g_settings_new ("org.gnome.evolution.calendar");
+	settings = e_util_ref_settings ("org.gnome.evolution.calendar");
 
 	if (g_settings_get_boolean (settings, "use-system-timezone")) {
 		location = e_cal_util_get_system_timezone_location ();

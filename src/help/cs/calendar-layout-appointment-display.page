@@ -4,7 +4,7 @@
   <info>
     <link type="guide" xref="calendar-layout"/>
 
-    <revision pkgversion="3.0.2" version="0.4" date="2012-02-18" status="final"/>
+    <revision pkgversion="3.13.90" version="0.5" date="2015-03-10" status="final"/>
 
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
@@ -19,22 +19,29 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Define the displaying of appointments in the calendar.</desc>
+    <desc>Jak definovat zobrazení událostí v kalendáři.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Appearance of Appointments</title>
+  <title>Vzhled událostí</title>
 
   <!-- TODO:POST-3-8: Just listing the partially busted UI options (also see
        calendar-layout-general-formatting) here is very poor and not
        task-oriented, but that's it for the time being. Better ideas welcome.
        -->
 
-  <!-- TODO: Recheck once https://bugzilla.gnome.org/show_bug.cgi?id=657233 is
-       fixed, as the current UI is a huge mess. -->
-
-  <p>The following calendar-related options are available under
-  <guiseq><gui>Edit</gui><gui>Preferences</gui>
-  <gui>Calendar and Tasks</gui><gui>Display</gui></guiseq>.</p>
+  <p>Následující volby týkající se kalendáře jsou dostupné pod <guiseq><gui>Upravit</gui> <gui>Předvolby</gui> <gui>Kalendář a úkoly</gui><gui>Úkoly</gui> <gui>Zobrazení</gui></guiseq>.</p>
 
 <section id="general">
   <title>Obecné</title>
@@ -45,20 +52,19 @@
       <p>Nastavuje časové úseky zobrazené jako tenké čáry v zobrazení dne v kalendáři.</p>
     </item>
     <item>
-      <p>Zobrazovat konce konce událostí v zobrazení týdne a měsíce:</p>
-      <p>If there is space, <app>Evolution</app> shows the end times in the
-      week and month views for each appointment.</p>
+      <p>Zobrazovat konce událostí v zobrazení týdne a měsíce:</p>
+      <p>Pokud je na to místo, zobrazí <app>Evolution</app> v týdenním a měsíčním zobrazení pro každou událost čas ukončení.</p>
     </item>
     <item>
       <p>Komprimovat víkendy v zobrazení měsíce:</p>
       <p>Vyberte tuto volbu, chcete-li zobrazit víkendy v jednom rámečku místo dvou v zobrazení měsíce.</p>
     </item>
     <item>
-      <p>Show week numbers:</p>
+      <p>Zobrazovat čísla týdnů:</p>
       <p>Zobrazuje čísla týdnů vedle příslušných týdnů v kalendáři.</p>
     </item>
     <item>
-      <p>Show recurring events in italic in bottom left calendar.</p>
+      <p>Zobrazit opakující se události kurzívou v kalendáři vlevo dole.</p>
     </item>
     <item>
       <p>Posouvat zobrazení měsíce po týdnech</p>
@@ -67,15 +73,10 @@
 
 </section>
 
-<section id="date-time">
-  <title>Formát data a času</title>
+<section id="alerts">
+  <title>Výstrahy</title>
 
-  <p>You can change the format of the <gui>Date</gui> column by setting your
-  preferred format.</p>
-
-  <p>The placeholders in the format expression are strftime formats. For a
-  complete list of available strftime formats, run <cmd>date --help</cmd> in
-  the <app>Terminal</app> application.</p>
+  <p>Chcete-li být varováni před tím, než smažete událost, vyberte tuto volbu.</p>
 
 </section>
 

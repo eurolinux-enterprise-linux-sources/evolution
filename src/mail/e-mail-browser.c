@@ -62,6 +62,7 @@ struct _EMailBrowserPrivate {
 	gulong close_on_reply_response_handler_id;
 
 	guint show_deleted : 1;
+	guint show_junk : 1;
 };
 
 enum {
@@ -73,7 +74,9 @@ enum {
 	PROP_FORWARD_STYLE,
 	PROP_GROUP_BY_THREADS,
 	PROP_REPLY_STYLE,
+	PROP_MARK_SEEN_ALWAYS,
 	PROP_SHOW_DELETED,
+	PROP_SHOW_JUNK,
 	PROP_UI_MANAGER
 };
 
@@ -275,20 +278,23 @@ mail_browser_message_selected_cb (EMailBrowser *browser,
 	info = camel_folder_get_message_info (folder, uid);
 
 	if (info != NULL) {
+		GSettings *settings;
 		EMailDisplay *display;
 		const gchar *title;
 
 		display = e_mail_reader_get_mail_display (reader);
 
-		title = camel_message_info_subject (info);
+		title = camel_message_info_get_subject (info);
 		if (title == NULL || *title == '\0')
 			title = _("(No Subject)");
 
 		gtk_window_set_title (GTK_WINDOW (browser), title);
 		gtk_widget_grab_focus (GTK_WIDGET (display));
 
-		camel_message_info_set_flags (
-			info, CAMEL_MESSAGE_SEEN, CAMEL_MESSAGE_SEEN);
+		settings = e_util_ref_settings ("org.gnome.evolution.mail");
+		if (g_settings_get_boolean (settings, "mark-seen"))
+			camel_message_info_set_flags (info, CAMEL_MESSAGE_SEEN, CAMEL_MESSAGE_SEEN);
+		g_clear_object (&settings);
 
 		camel_message_info_unref (info);
 	}
@@ -319,12 +325,14 @@ mail_browser_message_list_built_cb (EMailBrowser *browser,
 
 static gboolean
 mail_browser_popup_event_cb (EMailBrowser *browser,
-                             const gchar *uri)
+                             const gchar *uri,
+                             GdkEvent *event)
 {
 	EMailReader *reader;
 	EWebView *web_view;
 	GtkMenu *menu;
 	guint32 state;
+	guint button;
 
 	if (uri != NULL)
 		return FALSE;
@@ -340,9 +348,12 @@ mail_browser_popup_event_cb (EMailBrowser *browser,
 	state = e_mail_reader_check_state (reader);
 	e_mail_reader_update_actions (reader, state);
 
+	if (!event || !gdk_event_get_button (event, &button))
+		button = 0;
+
 	gtk_menu_popup (
 		menu, NULL, NULL, NULL, NULL,
-		0, gtk_get_current_event_time ());
+		button, event ? gdk_event_get_time (event) : gtk_get_current_event_time ());
 
 	return TRUE;
 }
@@ -453,6 +464,18 @@ mail_browser_set_property (GObject *object,
 				E_MAIL_BROWSER (object),
 				g_value_get_boolean (value));
 			return;
+
+		case PROP_SHOW_JUNK:
+			e_mail_browser_set_show_junk (
+				E_MAIL_BROWSER (object),
+				g_value_get_boolean (value));
+			return;
+
+		case PROP_MARK_SEEN_ALWAYS:
+			e_mail_reader_set_mark_seen_always (
+				E_MAIL_READER (object),
+				g_value_get_boolean (value));
+			return;
 	}
 
 	G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -521,11 +544,25 @@ mail_browser_get_property (GObject *object,
 				E_MAIL_BROWSER (object)));
 			return;
 
+		case PROP_SHOW_JUNK:
+			g_value_set_boolean (
+				value,
+				e_mail_browser_get_show_junk (
+				E_MAIL_BROWSER (object)));
+			return;
+
 		case PROP_UI_MANAGER:
 			g_value_set_object (
 				value,
 				e_mail_browser_get_ui_manager (
 				E_MAIL_BROWSER (object)));
+			return;
+
+		case PROP_MARK_SEEN_ALWAYS:
+			g_value_set_boolean (
+				value,
+				e_mail_reader_get_mark_seen_always (
+				E_MAIL_READER (object)));
 			return;
 	}
 
@@ -558,7 +595,7 @@ mail_browser_dispose (GObject *object)
 	if (priv->message_list != NULL) {
 		/* This will cancel a regen operation. */
 		gtk_widget_destroy (priv->message_list);
-		priv->message_list = NULL;
+		g_clear_object (&priv->message_list);
 	}
 
 	/* Chain up to parent's dispose() method. */
@@ -575,6 +612,7 @@ mail_browser_constructed (GObject *object)
 	EShellBackend *shell_backend;
 	EShell *shell;
 	EFocusTracker *focus_tracker;
+	EAttachmentStore *attachment_store;
 	GtkAccelGroup *accel_group;
 	GtkActionGroup *action_group;
 	GtkAction *action;
@@ -619,7 +657,7 @@ mail_browser_constructed (GObject *object)
 		browser->priv->message_list, "message-list-built",
 		G_CALLBACK (mail_browser_message_list_built_cb), object);
 
-	display = e_mail_display_new ();
+	display = e_mail_display_new (e_mail_backend_get_remote_content (backend));
 
 	e_mail_display_set_mode (
 		E_MAIL_DISPLAY (display),
@@ -676,6 +714,8 @@ mail_browser_constructed (GObject *object)
 		ui_manager, "connect-proxy",
 		G_CALLBACK (mail_browser_connect_proxy_cb), object);
 
+	e_mail_reader_connect_remote_content (reader);
+
 	/* Configure an EFocusTracker to manage selection actions. */
 
 	focus_tracker = e_focus_tracker_new (GTK_WINDOW (object));
@@ -720,6 +760,18 @@ mail_browser_constructed (GObject *object)
 		GTK_BOX (container),
 		browser->priv->preview_pane,
 		TRUE, TRUE, 0);
+
+	attachment_store = e_mail_display_get_attachment_store (E_MAIL_DISPLAY (display));
+	widget = GTK_WIDGET (e_mail_display_get_attachment_view (E_MAIL_DISPLAY (display)));
+	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
+	gtk_widget_show (widget);
+
+	e_binding_bind_property_full (
+		attachment_store, "num-attachments",
+		widget, "visible",
+		G_BINDING_SYNC_CREATE,
+		e_attachment_store_transform_num_attachments_to_visible_boolean,
+		NULL, NULL, NULL);
 
 	id = "org.gnome.evolution.mail.browser";
 	e_plugin_ui_register_manager (ui_manager, id, object);
@@ -861,7 +913,7 @@ mail_browser_set_message (EMailReader *reader,
 	if (info != NULL) {
 		gtk_window_set_title (
 			GTK_WINDOW (reader),
-			camel_message_info_subject (info));
+			camel_message_info_get_subject (info));
 		camel_message_info_unref (info);
 	}
 
@@ -986,6 +1038,12 @@ e_mail_browser_class_init (EMailBrowserClass *class)
 		PROP_REPLY_STYLE,
 		"reply-style");
 
+	/* Inherited from EMailReader */
+	g_object_class_override_property (
+		object_class,
+		PROP_MARK_SEEN_ALWAYS,
+		"mark-seen-always");
+
 	g_object_class_install_property (
 		object_class,
 		PROP_SHOW_DELETED,
@@ -993,6 +1051,17 @@ e_mail_browser_class_init (EMailBrowserClass *class)
 			"show-deleted",
 			"Show Deleted",
 			"Show deleted messages",
+			FALSE,
+			G_PARAM_READWRITE |
+			G_PARAM_STATIC_STRINGS));
+
+	g_object_class_install_property (
+		object_class,
+		PROP_SHOW_JUNK,
+		g_param_spec_boolean (
+			"show-junk",
+			"Show Junk",
+			"Show junk messages",
 			FALSE,
 			G_PARAM_READWRITE |
 			G_PARAM_STATIC_STRINGS));
@@ -1152,6 +1221,28 @@ e_mail_browser_set_show_deleted (EMailBrowser *browser,
 	browser->priv->show_deleted = show_deleted;
 
 	g_object_notify (G_OBJECT (browser), "show-deleted");
+}
+
+gboolean
+e_mail_browser_get_show_junk (EMailBrowser *browser)
+{
+	g_return_val_if_fail (E_IS_MAIL_BROWSER (browser), FALSE);
+
+	return browser->priv->show_junk;
+}
+
+void
+e_mail_browser_set_show_junk (EMailBrowser *browser,
+			      gboolean show_junk)
+{
+	g_return_if_fail (E_IS_MAIL_BROWSER (browser));
+
+	if (browser->priv->show_junk == show_junk)
+		return;
+
+	browser->priv->show_junk = show_junk;
+
+	g_object_notify (G_OBJECT (browser), "show-junk");
 }
 
 GtkUIManager *

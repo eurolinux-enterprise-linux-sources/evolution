@@ -13,8 +13,9 @@ module_tnef_attachment_la_CPPFLAGS =			\
 	-DG_LOG_DOMAIN=\"evolution-module-tnef-attachment\"		\
 	$(EVOLUTION_DATA_SERVER_CFLAGS)					\
 	$(GNOME_PLATFORM_CFLAGS)					\
-	$(GTKHTML_CFLAGS)						\
-	$(TNEF_CFLAGS)
+	$(TNEF_CFLAGS)							\
+	$(CODE_COVERAGE_CFLAGS)						\
+	$(NULL)
 
 module_tnef_attachment_la_SOURCES =			\
 	e-mail-parser-tnef-attachment.c					\
@@ -26,10 +27,10 @@ module_tnef_attachment_la_LIBADD =				\
 	$(top_builddir)/em-format/libevolution-mail-formatter.la	\
 	$(EVOLUTION_DATA_SERVER_LIBS)					\
 	$(GNOME_PLATFORM_LIBS)						\
-	$(GTKHTML_LIBS)							\
-	-lytnef
+	-lytnef								\
+	$(NULL)
 
 module_tnef_attachment_la_LDFLAGS =			\
-	-avoid-version -module $(NO_UNDEFINED)
+	-avoid-version -module $(NO_UNDEFINED) $(CODE_COVERAGE_LDFLAGS)
 
 -include $(top_srcdir)/git.mk

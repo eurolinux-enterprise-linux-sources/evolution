@@ -49,7 +49,7 @@ settings_mail_reader_idle_cb (EExtension *extension)
 
 	extensible = e_extension_get_extensible (extension);
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 	g_settings_bind (
 		settings, "forward-style-name",
@@ -59,6 +59,11 @@ settings_mail_reader_idle_cb (EExtension *extension)
 	g_settings_bind (
 		settings, "reply-style-name",
 		extensible, "reply-style",
+		G_SETTINGS_BIND_GET);
+
+	g_settings_bind (
+		settings, "mark-seen-always",
+		extensible, "mark-seen-always",
 		G_SETTINGS_BIND_GET);
 
 	g_object_unref (settings);
@@ -72,7 +77,7 @@ settings_mail_reader_idle_cb (EExtension *extension)
 
 	source = e_source_registry_ref_source (registry, "vfolder");
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		source, "enabled",
 		action_group, "visible",
 		G_BINDING_SYNC_CREATE);

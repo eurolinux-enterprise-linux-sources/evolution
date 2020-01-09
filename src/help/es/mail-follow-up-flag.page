@@ -20,9 +20,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -44,9 +50,9 @@
 <steps>
 <item><p>Seleccione uno o más mensajes.</p></item>
 <item><p>Pulse con el botón derecho sobre uno de los mensajes.</p></item>
-<item><p>Pulse <gui>Marca para seguimiento...</gui>.</p></item>
+<item><p>Pulse <gui>Marca para seguimiento…</gui>.</p></item>
 </steps>
-<p>También puede hacerlo seleccionando el o los mensajes y pulsando <guiseq><gui>Mensaje</gui><gui>Marcar como</gui><gui>Seguimiento...</gui></guiseq> o pulsando <keyseq><key>Mayús</key><key>Ctrl</key><key>G</key></keyseq>.</p>
+<p>También puede hacerlo seleccionando el o los mensajes y pulsando <guiseq><gui>Mensaje</gui><gui>Marcar como</gui><gui>Seguimiento…</gui></guiseq> o pulsando <keyseq><key>Mayús</key><key>Ctrl</key><key>G</key></keyseq>.</p>
 
 <p>Se abrirá una ventana para permitirle establecer el tipo de marca y la fecha de vencimiento.</p>
 

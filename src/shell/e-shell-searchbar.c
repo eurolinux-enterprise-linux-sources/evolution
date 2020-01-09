@@ -237,15 +237,11 @@ shell_searchbar_update_search_widgets (EShellSearchbar *searchbar)
 		(e_shell_view_get_search_rule (shell_view) != NULL);
 
 	if (sensitive) {
-		GtkStyleContext *style;
 		GdkRGBA bg, fg;
 		gchar *css;
 
-		style = gtk_widget_get_style_context (widget);
-		gtk_style_context_get_background_color (
-			style, GTK_STATE_FLAG_SELECTED, &bg);
-		gtk_style_context_get_color (
-			style, GTK_STATE_FLAG_SELECTED, &fg);
+		e_utils_get_theme_color (widget, "theme_selected_bg_color", E_UTILS_DEFAULT_THEME_SELECTED_BG_COLOR, &bg);
+		e_utils_get_theme_color (widget, "theme_selected_fg_color", E_UTILS_DEFAULT_THEME_SELECTED_FG_COLOR, &fg);
 
 		css = g_strdup_printf (
 			"GtkEntry#searchbar_searchentry_active { "
@@ -268,7 +264,7 @@ shell_searchbar_update_search_widgets (EShellSearchbar *searchbar)
 	gtk_action_set_sensitive (action, sensitive);
 
 	action = E_SHELL_WINDOW_ACTION_SEARCH_SAVE (shell_window);
-	gtk_action_set_sensitive (action, sensitive);
+	gtk_action_set_visible (action, sensitive && e_shell_view_get_search_rule (shell_view) != NULL);
 }
 
 static void
@@ -716,30 +712,30 @@ shell_searchbar_constructed (GObject *object)
 
 	action = E_SHELL_WINDOW_ACTION_SEARCH_CLEAR (shell_window);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		action, "sensitive",
 		widget, "secondary-icon-sensitive",
 		G_BINDING_SYNC_CREATE);
-	g_object_bind_property (
+	e_binding_bind_property (
 		action, "icon-name",
 		widget, "secondary-icon-name",
 		G_BINDING_SYNC_CREATE);
-	g_object_bind_property (
+	e_binding_bind_property (
 		action, "tooltip",
 		widget, "secondary-icon-tooltip-text",
 		G_BINDING_SYNC_CREATE);
 
 	action = E_SHELL_WINDOW_ACTION_SEARCH_OPTIONS (shell_window);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		action, "sensitive",
 		widget, "primary-icon-sensitive",
 		G_BINDING_SYNC_CREATE);
-	g_object_bind_property (
+	e_binding_bind_property (
 		action, "icon-name",
 		widget, "primary-icon-name",
 		G_BINDING_SYNC_CREATE);
-	g_object_bind_property (
+	e_binding_bind_property (
 		action, "tooltip",
 		widget, "primary-icon-tooltip-text",
 		G_BINDING_SYNC_CREATE);
@@ -916,7 +912,7 @@ e_shell_searchbar_init (EShellSearchbar *searchbar)
 	widget = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 3);
 	gtk_box_pack_start (box, widget, FALSE, FALSE, 0);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		searchbar, "filter-visible",
 		widget, "visible",
 		G_BINDING_SYNC_CREATE);
@@ -1011,7 +1007,7 @@ e_shell_searchbar_init (EShellSearchbar *searchbar)
 	widget = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 3);
 	gtk_box_pack_start (box, widget, FALSE, FALSE, 0);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		searchbar, "scope-visible",
 		widget, "visible",
 		G_BINDING_SYNC_CREATE);

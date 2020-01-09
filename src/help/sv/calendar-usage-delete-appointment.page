@@ -13,16 +13,23 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Deleting an appointment in your calendar.</desc>
+    <desc>Ta bort ett möte i din kalender.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Deleting an Appointment</title>
+  <title>Ta bort ett möte</title>
 
-  <p>If you want to delete an appointment in your calendars, right-click on the
-  appointment in the calendar and select <gui>Delete Appointment</gui>, or
-  click on the appointment and click <gui>Delete</gui> in the tool bar or press
-  <keyseq><key>Ctrl</key><key>D</key></keyseq>. If you are in the
-  <link xref="calendar-layout-views">list view</link> you can also use
-  <guiseq><gui>Edit</gui><gui>Delete Appointment</gui></guiseq>.</p>
+  <p>Om du vill ta bort ett möte i dina kalendrar, högerklicka på mötet i kalendern och välj <gui>Ta bort möte</gui>, eller klicka på mötet och klicka på <gui>Ta bort</gui> i verktygsfältet eller tryck <keyseq><key>Ctrl</key><key>D</key></keyseq>. Om du är i <link xref="calendar-layout-views">listvyn</link> kan du också använda <guiseq><gui>Redigera</gui><gui>Ta bort möte</gui></guiseq>.</p>
 
 </page>

@@ -49,7 +49,6 @@ typedef enum {
 	E_MAIL_FORMATTER_MODE_NORMAL = 0,
 	E_MAIL_FORMATTER_MODE_SOURCE,
 	E_MAIL_FORMATTER_MODE_RAW,
-	E_MAIL_FORMATTER_MODE_CID,
 	E_MAIL_FORMATTER_MODE_PRINTING,
 	E_MAIL_FORMATTER_MODE_ALL_HEADERS
 } EMailFormatterMode;
@@ -59,24 +58,6 @@ typedef enum { /*< flags >*/
 	E_MAIL_FORMATTER_QUOTE_FLAG_HEADERS = 1 << 1,
 	E_MAIL_FORMATTER_QUOTE_FLAG_KEEP_SIG	= 1 << 2  /* do not strip signature */
 } EMailFormatterQuoteFlags;
-
-/**
- * EMailImageLoadingPolicy:
- * @E_MAIL_IMAGE_LOADING_POLICY_NEVER:
- *   Never load images from a remote server.
- * @E_MAIL_IMAGE_LOADING_POLICY_SOMETIMES:
- *   Only load images from a remote server if the sender is a known contact.
- * @E_MAIL_IMAGE_LOADING_POLICY_ALWAYS:
- *   Always load images from a remote server.
- *
- * Policy for loading remote image URLs in email.  Allowing images to be
- * loaded from a remote server may have privacy implications.
- **/
-typedef enum {
-	E_MAIL_IMAGE_LOADING_POLICY_NEVER,
-	E_MAIL_IMAGE_LOADING_POLICY_SOMETIMES,
-	E_MAIL_IMAGE_LOADING_POLICY_ALWAYS
-} EMailImageLoadingPolicy;
 
 /**
  * EMailParserExtensionFlags:

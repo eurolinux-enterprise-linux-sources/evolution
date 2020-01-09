@@ -16,6 +16,30 @@
     
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
 <title>Szövegformázás egyszerű szöveges formátumban</title>
@@ -26,7 +50,7 @@
 <section id="headers-and-lists">
  <title>Fejlécek és listák:</title>
  <p>A felső eszköztár bal oldalán kiválaszthatja a <gui>Normál</gui> alapértelmezett szövegstílust, vagy a <gui>Fejléc 1</gui> és <gui>Fejléc 6</gui> közötti értékek egyikét eltérő méretű fejlécek használatához: az 1 a nagyon nagyot, a 6 a nagyon kicsit jelenti. A további stílusok közé tartozik az <gui>Előre formázott</gui>, amely az előre formázott szövegblokkokat jelentő HTML-címkét használja, valamint három, listákhoz használható felsorolásjel.</p>
- <p>A felsorolások jelölésére csillagok helyett például használhatja a <gui>Felsorolás</gui> stílust a legördülő dobozból. Az Evolution különböző felsorolásstílusokat használ, és képes a sortörések és többszintű behúzás kezelésére.</p>
+ <p>A felsorolások jelölésére csillagok helyett például használhatja a <gui>Felsorolás</gui> stílust a legördülő dobozból. Az <app>Evolution</app> különböző felsorolásstílusokat használ, és képes a sortörések és többszintű behúzás kezelésére.</p>
 </section>
 
 <section id="alignment">

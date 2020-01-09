@@ -20,9 +20,27 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
@@ -47,11 +65,11 @@
 <p>Αποστολή κοινόχρηστης υπενθύμισης,</p>
 <steps>
 <item><p>Κλικ στο <guiseq><gui>αρχείο</gui><gui>νέο</gui><gui>κοινόχρηστη υπενθύμιση</gui></guiseq>, ή πατήστε <keyseq><key>Shift</key><key>Ctrl</key><key>Η</key></keyseq>.</p></item>
-<item><p>Επιλέξτε το όνομα λογαριασμού του Διοργανωτή από τον αναδιπλούμενο κατάλογο που δίνεται δίπλα από το πεδίο Διοργανωτής.</p></item>
-<item><p>Στο πεδίο προς, πληκτρολογήστε ένα όνομα χρήστη και μετά πατήστε εισαγωγή. Επαναλάβετε για πρόσθετους χρήστες.</p></item>
+<item><p>Επιλέξτε το όνομα λογαριασμού του Διοργανωτή από τον αναδιπλούμενο κατάλογο που δίνεται δίπλα από το πεδίο <gui>Διοργανωτής</gui>.</p></item>
+<item><p>Στο πεδίο <gui>Προς</gui>, πληκτρολογήστε ένα όνομα χρήστη και μετά πατήστε <key>Εισαγωγή</key>. Επαναλάβετε το για πρόσθετους χρήστες.</p></item>
 <item><p>Επιλέξτε τον κατάλογο εργασιών (στο <gui>Κατάλογος</gui>) στον οποίο θέλετε να δημιουργήσετε την καταχώριση.</p></item>
-<item><p>Εισάγετε μια σύντομη περιγραφή στο πεδίο Περίληψη.</p></item>
-<item><p>Στο πεδίο ημερομηνία έναρξης, εισάγετε την ημερομηνία στην οποία αυτή η κοινόχρηστη υπενθύμιση θα πρέπει να εμφανιστεί στα ημερολόγια των παραληπτών.</p></item>
+<item><p>Εισάγετε μια σύντομη περιγραφή στο πεδίο <gui>περίληψη</gui>.</p></item>
+<item><p>Στο πεδίο <gui>Ημερομηνία έναρξης</gui>, πληκτρολογήστε την ημερομηνία στην οποία αυτή η κοινόχρηστη υπενθύμιση θα πρέπει να εμφανιστεί στα ημερολόγια των παραληπτών.</p></item>
 <item><p>Κλικ στο κουμπί <gui style="button">αποθήκευση</gui>, ή <guiseq><gui>αρχείο</gui><gui>αποθήκευση</gui></guiseq>.</p></item>
 </steps>
 </section>

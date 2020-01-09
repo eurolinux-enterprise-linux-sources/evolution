@@ -25,9 +25,15 @@
     
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -45,7 +51,7 @@
 
   <title>Usar las carpetas</title>
   
-<p>Evolution, al igual que muchos otros sistemas de correo, almacena el correo en carpetas. Al comenzar a usar Evolution existen unas pocas carpetas, como la Bandeja de entrada y la carpeta Borradores, pero puede crear tantas como desee.</p>
+<p><app>Evolution</app>, al igual que muchos otros sistemas de correo, almacena el correo en carpetas. Al comenzar a usar <app>Evolution</app> existen unas pocas carpetas, como la Bandeja de entrada y la carpeta Borradores, pero puede crear tantas como desee.</p>
 
 <section id="create-folder">
 <title>Crear una carpeta</title>
@@ -58,7 +64,7 @@
 <p>La carpeta nueva se mostrará en la vista de carpetas. Entonces podrá mover mensajes dentro de la carpeta.</p>
 
 <note style="warning">
-<p>El Buzón de entrada de la mayoría de los servidores IMAP no puede contener a la vez subcarpetas y mensajes. Cuando crea carpetas adicionales en su servidor de correo IMAP, debe hacerlas partir de la raíz del árbol de carpetas de cuentas IMAP, y no desde el buzón de entrada. Si crea subcarpetas en el buzón de entrada es posible que no pueda leer los mensajes que existen en esta carpeta. Si esto sucede, mueva las carpetas a la cuenta IMAP.</p>
+<p>El <gui>Buzón de entrada</gui> de la mayoría de los servidores IMAP no puede contener a la vez subcarpetas y mensajes. Cuando crea carpetas adicionales en su servidor de correo IMAP, debe hacerlas partir de la raíz del árbol de carpetas de cuentas IMAP, y no desde el buzón de entrada. Si crea subcarpetas en el buzón de entrada es posible que no pueda leer los mensajes que existen en esta carpeta. Si esto sucede, mueva las carpetas a la cuenta IMAP.</p>
 </note>
 
 </section>

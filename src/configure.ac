@@ -1,7 +1,7 @@
 dnl Evolution Versions
 m4_define([evo_major_version], [3])
-m4_define([evo_minor_version], [12])
-m4_define([evo_micro_version], [11])
+m4_define([evo_minor_version], [22])
+m4_define([evo_micro_version], [6])
 m4_define([evo_version],
 	[evo_major_version.evo_minor_version.evo_micro_version])
 m4_define([evo_stable_version],
@@ -13,13 +13,13 @@ dnl Base Version: This is for API/version tracking for things like
 dnl Bonobo server files.  This should always be the major/minor of
 dnl the stable version or stable version to be.  Note, this is set
 dnl the way it is so that GETTEXT_PACKAGE will be parsed correctly.
-BASE_VERSION=3.12
-m4_define([base_version], [3.12])
+BASE_VERSION=3.22
+m4_define([base_version], [3.22])
 
 dnl Autoconf / Automake Initialization
 AC_PREREQ([2.64])
 AC_INIT([evolution],[evo_version],[http://bugzilla.gnome.org/enter_bug.cgi?product=Evolution],[evolution],[http://wiki.gnome.org/Apps/Evolution/])
-AM_INIT_AUTOMAKE([1.10 dist-xz no-dist-gzip -Wall -Wno-portability foreign tar-ustar])
+AM_INIT_AUTOMAKE([1.10 dist-xz no-dist-gzip subdir-objects -Wall -Wno-portability foreign tar-ustar])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_SRCDIR(README)
@@ -33,26 +33,24 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 dnl Required Packages
 
 dnl Keep these two definitions in agreement.
-m4_define([glib_minimum_version], [2.36.0])
-m4_define([glib_encoded_version], [GLIB_VERSION_2_36])
+m4_define([glib_minimum_version], [2.46.0])
+m4_define([glib_encoded_version], [GLIB_VERSION_2_46])
 
 dnl Keep these two definitions in agreement.
-m4_define([gdk_minimum_version], [3.8.0])
-m4_define([gdk_encoded_version], [GDK_VERSION_3_4])
+m4_define([gdk_minimum_version], [3.10.0])
+m4_define([gdk_encoded_version], [GDK_VERSION_3_10])
 
 dnl Keep these two definitions in agreement.
 m4_define([soup_minimum_version], [2.42])
 m4_define([soup_encoded_version], [SOUP_VERSION_2_42])
 
 m4_define([eds_minimum_version], [evo_version])
-m4_define([gtkhtml_minimum_version], [4.5.2])
 m4_define([gdk_pixbuf_minimum_version], [2.24.0])
 m4_define([gcr_minimum_version], [3.4])
+m4_define([enchant_minimum_version], [1.1.7])
 m4_define([gnome_desktop_minimum_version], [2.91.3])
-m4_define([gnome_icon_theme_minimum_version], [2.30.2.1])
 m4_define([gsettings_desktop_schemas_minimum_version], [2.91.92])
-m4_define([webkitgtk_minimum_version], [2.0.1])
-m4_define([libgdata_minimum_version], [0.10])
+m4_define([webkit2gtk_minimum_version], [2.13.90])
 m4_define([libxml_minimum_version], [2.7.3])
 m4_define([shared_mime_info_minimum_version], [0.22])
 m4_define([libpst_minimum_version], [0.6.54])
@@ -62,34 +60,45 @@ m4_define([champlain_minimum_version], [0.12])
 m4_define([clutter_gtk_minimum_version], [0.90])
 m4_define([geocode_glib_minimum_version], [3.10])
 m4_define([gladeui_minimum_version], [3.10.0])
-m4_define([gweather_minimum_version], [3.8])
+m4_define([gweather_minimum_version], [3.10])
+m4_define([gnome_autoar_minimum_version], [0.1.1])
 m4_define([libcanberra_gtk_minimum_version], [0.25])
 m4_define([libnotify_minimum_version], [0.7])
 
-dnl XXX These versions don't yet exist.  The latest releases
-dnl     link to gtk+-2.0 so we've bumped the versions to some
-dnl     bogus value to force some plugins to be disabled.
-m4_define([gtkimageview_minimum_version], [2.0])
+dnl ******************************
+dnl Initialize maintainer mode
+dnl ******************************
+AM_MAINTAINER_MODE([enable])
 
 dnl ******************************
 dnl Compiler Warning Flags
 dnl ******************************
+proposed_warning_flags=
+append_warning_flags=
+
+if test "x$enable_maintainer_mode" = "xyes" ; then
+	proposed_warning_flags="-Wall -Wextra -Wdeprecated-declarations"
+else
+	proposed_warning_flags="-Wno-deprecated-declarations"
+fi
+
+if test "$CC" = "clang" ; then
+	append_warning_flags="-Wno-parentheses-equality -Wno-format-nonliteral"
+fi
+
 AS_COMPILER_FLAGS(WARNING_FLAGS,
-	"-Wall -Wextra
-	-Wdeprecated-declarations
+	"$proposed_warning_flags
 	-Wno-missing-field-initializers
 	-Wno-sign-compare
 	-Wno-unused-parameter
 	-Wdeclaration-after-statement
 	-Werror-implicit-function-declaration
-	-Wformat-security -Winit-self
+	-Wformat -Wformat-security -Winit-self
 	-Wmissing-declarations -Wmissing-include-dirs
 	-Wmissing-noreturn -Wnested-externs -Wpointer-arith
-	-Wredundant-decls -Wundef -Wwrite-strings")
+	-Wredundant-decls -Wundef -Wwrite-strings
+	$append_warning_flags")
 AC_SUBST(WARNING_FLAGS)
-
-dnl Need to stop using e-passwords.h before we can restore
-dnl -DEDS_DISABLE_DEPRECATED
 
 dnl Other useful compiler warnings for test builds only.
 dnl These may produce warnings we have no control over,
@@ -101,6 +110,10 @@ dnl	-Wformat-nonliteral
 dnl	-Wstrict-aliasing=2
 
 AM_CPPFLAGS="$WARNING_FLAGS -fno-strict-aliasing"
+
+if test "x$enable_maintainer_mode" = "xyes" ; then
+	 AM_CPPFLAGS="$AM_CPPFLAGS -DEDS_DISABLE_DEPRECATED"
+fi
 
 dnl Warn about API usage that violates our minimum requirements.
 AM_CPPFLAGS="$AM_CPPFLAGS -DGLIB_VERSION_MAX_ALLOWED=glib_encoded_version"
@@ -122,8 +135,8 @@ AC_DEFINE_UNQUOTED(VERSION_COMMENT, "", [Define if you want a comment appended t
 
 dnl This must stay after AC_CANONICAL_HOST, which defines $host.
 case "$host" in
-*openbsd*|*freebsd*)
-	dnl Do not set '-Wl,--no-undefined' on freebsd/openbsd
+*openbsd*|*freebsd*|*darwin*)
+	dnl Do not set '-Wl,--no-undefined' on freebsd/openbsd/darwin
 	;;
 *)
 	LDFLAGS="$LDFLAGS -Wl,--no-undefined"
@@ -135,11 +148,6 @@ dnl *************************************
 dnl Put the ACLOCAL flags in the Makefile
 dnl *************************************
 ACLOCAL="$ACLOCAL $ACLOCAL_FLAGS"
-
-dnl ******************************
-dnl Initialize maintainer mode
-dnl ******************************
-AM_MAINTAINER_MODE([enable])
 
 if test "$evo_version" != "$evo_stable_version"; then
 	AC_DEFINE(STABLE_VERSION, ["evo_stable_version"],
@@ -196,6 +204,8 @@ LT_INIT(disable-static win32-dll)
 
 PKG_PROG_PKG_CONFIG
 
+GNOME_CODE_COVERAGE
+
 dnl ********************************************
 dnl User / Developer Documentation
 dnl ********************************************
@@ -214,6 +224,7 @@ case "$host" in
 	DL_LIB=''
 	SOFTOKN3_LIB=''
 	CHAMPLAIN_REQUIREMENT=''
+	GIO_UNIX_REQUIREMENT=''
 	;;
 *openbsd*|*freebsd*)
 	os_win32=no
@@ -223,6 +234,7 @@ case "$host" in
 	BF_JUNK_PLUGIN=bogo-junk-plugin
 	DL_LIB=''
 	SOFTOKN3_LIB='-lsoftokn3'
+	GIO_UNIX_REQUIREMENT='gio-unix-2.0'
 	;;
 *)
 	os_win32=no
@@ -230,6 +242,7 @@ case "$host" in
 	SOEXT='.so'
 	DL_LIB='-ldl'
 	SOFTOKN3_LIB='-lsoftokn3'
+	GIO_UNIX_REQUIREMENT='gio-unix-2.0'
 	;;
 esac
 AC_MSG_RESULT([$os_win32])
@@ -274,7 +287,8 @@ PKG_CHECK_MODULES([GNOME_PLATFORM],
 	 libxml-2.0 >= libxml_minimum_version
 	 shared-mime-info >= shared_mime_info_minimum_version
 	 gsettings-desktop-schemas >= gsettings_desktop_schemas_minimum_version
-	 webkitgtk-3.0 >= webkitgtk_minimum_version])
+	 webkit2gtk-4.0 >= webkit2gtk_minimum_version
+	 $GIO_UNIX_REQUIREMENT])
 
 GNOME_DESKTOP_DEPENDENCY=""
 AC_ARG_ENABLE([gnome-desktop],
@@ -298,9 +312,24 @@ PKG_CHECK_MODULES([EVOLUTION_DATA_SERVER],
 	 libebook-1.2 >= eds_minimum_version
 	 libecal-1.2 >= eds_minimum_version
 	 libedataserver-1.2 >= eds_minimum_version
+	 libedataserverui-1.2 >= eds_minimum_version
 	 libebackend-1.2 >= eds_minimum_version])
 AC_SUBST(EVOLUTION_DATA_SERVER_CFLAGS)
 AC_SUBST(EVOLUTION_DATA_SERVER_LIBS)
+
+dnl **************************************************
+dnl wait.h is not available on win32
+dnl **************************************************
+
+AC_CHECK_HEADERS(sys/wait.h, AC_DEFINE(HAVE_SYS_WAIT_H, 1, [Have <sys/wait.h>]))
+
+dnl ****************
+dnl Enchant Library
+dnl ****************
+PKG_CHECK_MODULES([ENCHANT],
+	[enchant >= enchant_minimum_version])
+AC_SUBST(ENCHANT_CFLAGS)
+AC_SUBST(ENCHANT_LIBS)
 
 dnl ******************************
 dnl Canberra / Canberra-GTK Sound
@@ -327,6 +356,34 @@ if test $enable_canberra = yes; then
 fi
 AC_SUBST(CANBERRA_CFLAGS)
 AC_SUBST(CANBERRA_LIBS)
+
+dnl ***********************************
+dnl Archives Integration / gnome-autoar
+dnl ***********************************
+AC_ARG_ENABLE([autoar],
+	[AS_HELP_STRING([--enable-autoar],
+	[Enable archives support in attachments @<:@default=yes@:>@])],
+	[enable_autoar="$enableval"], [enable_autoar=yes])
+
+if test x"$enable_autoar" = xyes; then
+	PKG_CHECK_MODULES(
+		[AUTOAR],
+		[gnome-autoar-0 >= gnome_autoar_minimum_version
+		 gnome-autoar-gtk-0 >= gnome_autoar_minimum_version],,
+		[AC_MSG_ERROR([
+
+	gnome-autoar or gnome-autoar-gtk not found
+	(or version < gnome_autoar_minimum_version)
+
+	If you want to disable support for automatic archives handling,
+	please append --disable-autoar to configure.
+
+	])])
+
+	AC_DEFINE(HAVE_AUTOAR, 1, [Define if gnome-autoar is enabled])
+fi
+AC_SUBST(AUTOAR_CFLAGS)
+AC_SUBST(AUTOAR_LIBS)
 
 dnl ******************
 dnl User Documentation
@@ -494,32 +551,44 @@ else
 	fi
 fi
 
-dnl **************************************************
-dnl wait.h is not available on win32
-dnl **************************************************
-
-AC_CHECK_HEADERS(sys/wait.h, AC_DEFINE(HAVE_SYS_WAIT_H, 1, [Have <sys/wait.h>]))
 
 AC_CHECK_FUNCS(mkdtemp)
 
 dnl **************************************************
-dnl Gnome Icon Theme
+dnl iso-codes
 dnl **************************************************
-AC_MSG_CHECKING(for icon theme)
-PKG_CHECK_EXISTS([gnome-icon-theme >= gnome_icon_theme_minimum_version],
-		 have_icon_theme=yes, have_icon_theme=no)
-if test "x$have_icon_theme" != "xyes"; then
-	PKG_CHECK_EXISTS([adwaita-icon-theme],
-		 have_icon_theme=yes, have_icon_theme=no)
-fi
-
-if test "x$have_icon_theme" != "xyes"; then
-   AC_MSG_RESULT(no)
-   AC_MSG_FAILURE([You need to have gnome-icon-theme or adwaita-icon-theme installed.])
+AC_MSG_CHECKING([for iso-codes package])
+have_iso_codes=no
+if $PKG_CONFIG --exists iso-codes; then
+	if $PKG_CONFIG iso-codes --atleast-version=0.49; then
+		have_iso_codes=yes
+		AC_MSG_RESULT([$have_iso_codes])
+	else
+		AC_MSG_WARN([iso-codes detected, but version 0.49 or later is required due to licensing])
+	fi
 else
-   AC_MSG_RESULT(yes)
+	AC_MSG_RESULT([$have_iso_codes])
 fi
 
+if test "x$have_iso_codes" = "xyes"; then
+	AC_MSG_CHECKING([whether iso-codes has iso-639 and iso-3166 domains])
+	if $PKG_CONFIG --variable=domains iso-codes | grep 639 >/dev/null 2>&1 && \
+		$PKG_CONFIG --variable=domains iso-codes | grep 3166 >/dev/null 2>&1 ; then
+			result=yes
+	else
+		result=no
+		have_iso_codes=no
+	fi
+	AC_MSG_RESULT([$result])
+fi
+
+if test "x$have_iso_codes" = "xyes"; then
+	AC_DEFINE_UNQUOTED([ISO_CODES_PREFIX],
+		["`$PKG_CONFIG --variable=prefix iso-codes`"],
+		[ISO codes prefix])
+	AC_DEFINE([HAVE_ISO_CODES], [1],
+		[Define if you have the iso-codes package])
+fi
 
 dnl **************************************************
 dnl Accessibility support
@@ -606,16 +675,6 @@ fi
 AM_CONDITIONAL(SUNLDAP, [test x$with_sunldap != xno])
 
 AC_DEFINE(HANDLE_LIBICAL_MEMORY, 1, [Define it once memory returned by libical is free'ed properly])
-
-dnl *************************
-dnl GTKHTML check
-dnl XXX Drop the version from the package name?
-dnl *************************
-PKG_CHECK_MODULES([GTKHTML],
-	[libgtkhtml-4.0 >= gtkhtml_minimum_version
-	 gtkhtml-editor-4.0])
-AC_SUBST(GTKHTML_CFLAGS)
-AC_SUBST(GTKHTML_LIBS)
 
 dnl ********************************************************************************
 dnl security extension support (SSL and S/MIME)
@@ -889,6 +948,34 @@ AC_SUBST(MANUAL_NSPR_LIBS)
 AC_SUBST(MANUAL_NSS_CFLAGS)
 AC_SUBST(MANUAL_NSS_LIBS)
 
+dnl ******************************
+dnl libcryptui, aka Seahorse
+dnl ******************************
+AC_ARG_ENABLE([libcryptui],
+	[AS_HELP_STRING([--enable-libcryptui],
+	[Enable libcryptui usage @<:@default=yes@:>@])],
+	[enable_libcryptui="$enableval"], [enable_libcryptui=yes])
+
+if test "x$enable_libcryptui" = "xyes"; then
+	PKG_CHECK_MODULES(
+		[LIBCRYPTUI],
+		[cryptui-0.0],,
+		[AC_MSG_ERROR([
+
+	cryptui-0.0 not found
+
+	If you want to disable support libcryptui usage,
+	please append --disable-libcryptui to configure.
+
+	])])
+
+	AC_DEFINE(HAVE_LIBCRYPTUI, 1, [Define if using libcryptui])
+else
+	enable_libcryptui=no
+fi
+AC_SUBST(LIBCRYPTUI_CFLAGS)
+AC_SUBST(LIBCRYPTUI_LIBS)
+
 dnl *****************
 dnl killall or pkill?
 dnl *****************
@@ -971,88 +1058,78 @@ fi
 dnl **********************************
 dnl Check for Bogofilter (spam filter)
 dnl **********************************
-AC_ARG_ENABLE([bogofilter],
-	[AS_HELP_STRING([--enable-bogofilter],
+AC_ARG_WITH([bogofilter],
+	[AS_HELP_STRING([--with-bogofilter=yes/no/COMMAND],
 	[enable spam filtering using Bogofilter (default=yes)])],
-	[enable_bogofilter=$enableval], [enable_bogofilter=yes])
+	[with_bogofilter=$withval], [with_bogofilter=yes])
+if test "x$with_bogofilter" != "xyes" -a "x$with_bogofilter" != "xno" ; then
+	BOGOFILTER=$with_bogofilter
+	with_bogofilter=yes
+fi
 AC_MSG_CHECKING([if Bogofilter support is enabled])
-AC_MSG_RESULT([$enable_bogofilter])
-msg_bogofilter="$enable_bogofilter"
-if test "x$enable_bogofilter" = "xyes"; then
+AC_MSG_RESULT([$with_bogofilter])
+msg_bogofilter="$with_bogofilter"
+if test "x$with_bogofilter" = "xyes"; then
 	AC_ARG_VAR([BOGOFILTER], [Bogofilter spam filtering program])
-	AC_PATH_PROG([BOGOFILTER], [bogofilter])
-	if test "x$BOGOFILTER" = "x"; then
-		AC_MSG_ERROR([
-
-	Bogofilter spam filtering program not found.
-
-	If you want to disable spam filtering using Bogofilter,
-	please append --disable-bogofilter to configure.
-
-	])
+	if test "x$BOGOFILTER" = "x" ; then
+		BOGOFILTER="/usr/bin/bogofilter"
 	fi
 	AC_DEFINE_UNQUOTED(
 		BOGOFILTER_COMMAND, "$BOGOFILTER",
 		[Bogofilter spam filtering program])
 	msg_bogofilter="$msg_bogofilter ($BOGOFILTER)"
 fi
-AM_CONDITIONAL([ENABLE_BOGOFILTER], [test "x$enable_bogofilter" = "xyes"])
+AM_CONDITIONAL([WITH_BOGOFILTER], [test "x$with_bogofilter" = "xyes"])
 
 dnl ************************************
 dnl Check for SpamAssassin (spam filter)
 dnl ************************************
-AC_ARG_ENABLE([spamassassin],
-	[AS_HELP_STRING([--enable-spamassassin],
+AC_ARG_WITH([spamassassin],
+	[AS_HELP_STRING([--with-spamassassin=yes/no/COMMAND],
 	[enable spam filtering using SpamAssassin (default=yes)])],
-	[enable_spamassassin=$enableval], [enable_spamassassin=yes])
+	[with_spamassassin=$withval], [with_spamassassin=yes])
+if test "x$with_spamassassin" != "xyes" -a "x$with_spamassassin" != "xno" ; then
+	SPAMASSASSIN=$with_spamassassin
+	with_spamassassin=yes
+fi
 AC_MSG_CHECKING([if SpamAssassin support is enabled])
-AC_MSG_RESULT([$enable_spamassassin])
-msg_spamassassin="$enable_spamassassin"
-if test "x$enable_spamassassin" = "xyes"; then
+AC_MSG_RESULT([$with_spamassassin])
+msg_spamassassin="$with_spamassassin"
+if test "x$with_spamassassin" = "xyes"; then
 	AC_ARG_VAR([SPAMASSASSIN], [SpamAssassin spam filtering program])
-	AC_PATH_PROG([SPAMASSASSIN], [spamassassin])
-	if test "x$SPAMASSASSIN" = "x"; then
-		AC_MSG_ERROR([
-
-	SpamAssassin spam filtering program not found.
-
-	If you want to disable spam filtering using SpamAssassin,
-	please append --disable-spamassassin to configure.
-
-	])
+	if test "x$SPAMASSASSIN" = "x" ; then
+		SPAMASSASSIN="/usr/bin/spamassassin"
 	fi
 	AC_DEFINE_UNQUOTED(
 		SPAMASSASSIN_COMMAND, "$SPAMASSASSIN",
 		[SpamAssassin spam filtering program])
 
+	AC_ARG_WITH([sa-learn],
+		AS_HELP_STRING([--with-sa-learn=COMMAND],
+		[Full path command where sa-learn is located; (default=/usr/bin/sa-learn)]),
+		[with_sa_learn="$withval"], [with_sa_learn=""])
+
 	AC_ARG_VAR([SA_LEARN], [SpamAssassin spam training program])
-	AC_PATH_PROG([SA_LEARN], [sa-learn])
-	if test "x$SA_LEARN" = "x"; then
-		AC_MSG_ERROR([
-
-	SpamAssassin training program (sa-learn) not found.
-
-	If you want to disable spam filtering using SpamAssassin,
-	please append --disable-spamassassin to configure.
-
-	])
+	if test "x$with_sa_learn" != "x" ; then
+		SA_LEARN="$with_sa_learn"
+	elif test "x$SA_LEARN" = "x" ; then
+		SA_LEARN="/usr/bin/sa-learn"
 	fi
 	AC_DEFINE_UNQUOTED(
 		SA_LEARN_COMMAND, "$SA_LEARN",
 		[SpamAssassin spam training program])
 
-	msg_spamassassin="$msg_spamassassin ($SPAMASSASSIN)"
+	msg_spamassassin="$msg_spamassassin ($SPAMASSASSIN $SA_LEARN)"
 fi
-AM_CONDITIONAL([ENABLE_SPAMASSASSIN], [test "x$enable_spamassassin" = "xyes"])
+AM_CONDITIONAL([WITH_SPAMASSASSIN], [test "x$with_spamassassin" = "xyes"])
 
 dnl ******************************
 dnl CERT_UI Flags
 dnl ******************************
 dnl
 dnl Here we want the Mozilla flags to go *before* the other ones,
-dnl especially the mozilla-nss -I flags to go before the gnutls ones
-dnl (which are dragged in through libedataserverui), as both
-dnl gnutls and mozilla-nss have a header called "pkcs12.h" which is
+dnl especially the mozilla-nss -I flags to go before the gnutls ones,
+dnl as both gnutls and mozilla-nss have a header called "pkcs12.h" which is
 dnl included in smime/lib/e-pkcs12.c. It wants the Mozilla NSS one.
 dnl
 CERT_UI_CFLAGS="$MANUAL_NSS_CFLAGS $MOZILLA_NSS_CFLAGS"
@@ -1082,17 +1159,6 @@ PKG_CHECK_MODULES([LIBSOUP], [libsoup-2.4 >= soup_minimum_version])
 AC_SUBST(LIBSOUP_CFLAGS)
 AC_SUBST(LIBSOUP_LIBS)
 
-PKG_CHECK_MODULES([GDATA], [libgdata >= libgdata_minimum_version])
-AC_SUBST(GDATA_CFLAGS)
-AC_SUBST(GDATA_LIBS)
-
-dnl ***********************************
-dnl GTasks require more latest libgdata
-dnl ***********************************
-if `$PKG_CONFIG --atleast-version=0.15.1 libgdata`; then
-	AC_DEFINE(HAVE_GDATA_0_15_1, 1, [Define to 1 if you have the libgdata package >= 0.15.1])
-fi
-
 dnl ****************************
 dnl Check for ical_set_unknown_token_handling_setting function
 dnl ****************************
@@ -1106,6 +1172,20 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 CFLAGS=$save_cflags
 LIBS=$save_libs
 AC_MSG_RESULT([$ac_cv_have_iuth])
+
+dnl ****************************
+dnl Check for icaltzutil_set_exact_vtimezones_support function
+dnl ****************************
+AC_MSG_CHECKING([icaltzutil_set_exact_vtimezones_support function])
+save_cflags=$CFLAGS; CFLAGS="$EVOLUTION_DATA_SERVER_CFLAGS"
+save_libs=$LIBS; LIBS="$EVOLUTION_DATA_SERVER_LIBS"
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+	[[#include <libical/ical.h>]],
+	[[icaltzutil_set_exact_vtimezones_support (0)]])],
+	[AC_DEFINE(HAVE_ICALTZUTIL_SET_EXACT_VTIMEZONES_SUPPORT, 1, [libical provides icaltzutil_set_exact_vtimezones_support function]) ac_cv_have_isevs=yes],[ac_cv_have_isevs=no])
+CFLAGS=$save_cflags
+LIBS=$save_libs
+AC_MSG_RESULT([$ac_cv_have_isevs])
 
 dnl ****************************
 dnl Check for gtkspell
@@ -1138,16 +1218,16 @@ dnl *******************
 dnl If you add something here, consider whether or not you also need to add it to one or more .pc.in
 dnl files (for Connector, etc)
 
-privlibdir='${libdir}'/evolution/$BASE_VERSION
+privlibdir='${libdir}'/evolution
 AC_SUBST(privlibdir)
 
-privlibexecdir='${libexecdir}'/evolution/$BASE_VERSION
+privlibexecdir='${libexecdir}'/evolution
 AC_SUBST(privlibexecdir)
 
-privdatadir='${datadir}'/evolution/$BASE_VERSION
+privdatadir='${datadir}'/evolution
 AC_SUBST(privdatadir)
 
-privincludedir='${includedir}'/evolution-$BASE_VERSION
+privincludedir='${includedir}'/evolution
 AC_SUBST(privincludedir)
 
 moduledir="$privlibdir/modules"
@@ -1189,6 +1269,18 @@ AC_SUBST(viewsdir)
 dnl For evolution-alarm-notify.desktop
 AS_AC_EXPAND(PRIVLIBEXECDIR, "$privlibexecdir")
 
+dnl **********************************
+dnl WebKit2 Web Extensions
+dnl **********************************
+webextensionsdir="$privlibdir/web-extensions"
+webextensionswebkiteditordir="$privlibdir/web-extensions/webkit-editor"
+AC_SUBST(webextensionsdir)
+AC_SUBST(webextensionswebkiteditordir)
+
+PKG_CHECK_MODULES(WEB_EXTENSION, [webkit2gtk-4.0 >= webkit2gtk_minimum_version])
+AC_SUBST(WEB_EXTENSIONS_CFLAGS)
+AC_SUBST(WEB_EXTENSIONS_LIBS)
+
 dnl ************************
 dnl Plugins
 dnl ************************
@@ -1213,7 +1305,7 @@ dist_plugins_base="$plugins_base_always"
 plugins_standard_always="bbdb save-calendar mail-to-task mailing-list-actions mail-notification attachment-reminder email-custom-header face templates dbx-import external-editor"
 
 plugins_standard="$plugins_standard_always"
-dist_plugins_standard="$plugins_standard image-inline pst-import"
+dist_plugins_standard="$plugins_standard pst-import"
 
 dnl ******************************************************************
 dnl The following plugins have additional library dependencies.
@@ -1321,33 +1413,6 @@ if test "x$enable_contact_maps" = "xyes"; then
 	AC_DEFINE(WITH_CONTACT_MAPS, 1, [When defined contacts preview will contain maps])
 fi
 
-dnl *****************************************
-dnl image-inline plugin requires gtkimageview
-dnl *****************************************
-AC_ARG_ENABLE([image-inline],
-	[AS_HELP_STRING([--enable-image-inline],
-	[Enable image-inline plugin @<:@default=no@:>@])],
-	[enable_image_inline="$enableval"], [enable_image_inline=no])
-
-if test "x$enable_image_inline" = "xyes"; then
-	PKG_CHECK_MODULES(GTKIMAGEVIEW, gtkimageview >= gtkimageview_minimum_version, have_imageview=yes, have_imageview=no)
-	AC_SUBST(GTKIMAGEVIEW_CFLAGS)
-	AC_SUBST(GTKIMAGEVIEW_LIBS)
-
-	if test "x$have_imageview" = "xyes"; then
-		plugins_standard="$plugins_standard image-inline"
-	else
-		AC_MSG_ERROR([
-
-	gtkimageview not found (or version < gtkimageview_minimum_version)
-
-	If you want to disable the image-inline plugin,
-	please append --disable-image-inline to configure.
-
-	])
-	fi
-fi
-
 dnl *********************************
 dnl pst-import plugin requires libpst
 dnl *********************************
@@ -1420,6 +1485,11 @@ if test "$with_catalog" = "yes"; then
 fi
 AM_CONDITIONAL(GLADE_CATALOG, test "x$with_catalog" != "xno")
 
+dnl ********************************************
+dnl Installed tests
+dnl ********************************************
+BEHAVE_INSTALLED_TESTS
+
 dnl ******************************
 dnl Makefiles
 dnl ******************************
@@ -1441,8 +1511,6 @@ addressbook/gui/contact-list-editor/Makefile
 addressbook/gui/widgets/Makefile
 addressbook/importers/Makefile
 addressbook/printing/Makefile
-addressbook/tools/Makefile
-addressbook/tools/csv2vcard
 addressbook/util/Makefile
 art/Makefile
 data/Makefile
@@ -1489,7 +1557,6 @@ calendar/Makefile
 calendar/alarm-notify/Makefile
 calendar/importers/Makefile
 calendar/gui/Makefile
-calendar/gui/dialogs/Makefile
 composer/Makefile
 m4/Makefile
 mail/Makefile
@@ -1537,7 +1604,7 @@ modules/composer-autosave/Makefile
 modules/contact-photos/Makefile
 modules/gravatar/Makefile
 modules/itip-formatter/Makefile
-modules/itip-formatter/plugin/Makefile
+modules/itip-formatter/web-extension/Makefile
 modules/mail-config/Makefile
 modules/mail/Makefile
 modules/mailto-handler/Makefile
@@ -1553,7 +1620,9 @@ modules/startup-wizard/Makefile
 modules/text-highlight/Makefile
 modules/tnef-attachment/Makefile
 modules/vcard-inline/Makefile
-modules/web-inspector/Makefile
+modules/webkit-editor/Makefile
+modules/webkit-editor/web-extension/Makefile
+modules/webkit-inspector/Makefile
 plugins/Makefile
 plugins/attachment-reminder/Makefile
 plugins/bbdb/Makefile
@@ -1561,7 +1630,6 @@ plugins/dbx-import/Makefile
 plugins/email-custom-header/Makefile
 plugins/external-editor/Makefile
 plugins/face/Makefile
-plugins/image-inline/Makefile
 plugins/mail-notification/Makefile
 plugins/mail-to-task/Makefile
 plugins/mailing-list-actions/Makefile
@@ -1569,6 +1637,7 @@ plugins/pst-import/Makefile
 plugins/publish-calendar/Makefile
 plugins/save-calendar/Makefile
 plugins/templates/Makefile
+web-extensions/Makefile
 smime/Makefile
 smime/lib/Makefile
 smime/gui/Makefile
@@ -1591,6 +1660,8 @@ fi
 echo "
 	LDAP support:		$msg_ldap
 	Contact Maps:		$enable_contact_maps
+	Libcryptui:		$enable_libcryptui
+	Archives support:       $enable_autoar
 	Libnotify:		$HAVE_LIBNOTIFY
 	SSL support:		$msg_ssl
 	SMIME support:		$msg_smime
@@ -1599,4 +1670,6 @@ echo "
 	Highlight support:	$msg_text_highlight
 	Plugins:		$msg_plugins
 	User documentation:	$with_help
+	Code coverage (gcov):	$enable_code_coverage
+	Installed tests:	$enable_installed_tests
 "

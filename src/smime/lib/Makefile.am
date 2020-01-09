@@ -14,8 +14,9 @@ libessmime_la_CPPFLAGS =				\
 	-DPREFIX=\""$(prefix)"\"			\
 	$(EVOLUTION_DATA_SERVER_CFLAGS)			\
 	$(GNOME_PLATFORM_CFLAGS)			\
-	$(GTKHTML_CFLAGS)				\
-	$(CERT_UI_CFLAGS)
+	$(CERT_UI_CFLAGS)				\
+	$(CODE_COVERAGE_CFLAGS)				\
+	$(NULL)
 
 libessmime_la_SOURCES = 	\
 	e-cert.c		\
@@ -31,9 +32,9 @@ libessmime_la_LIBADD =				\
 	$(top_builddir)/e-util/libevolution-util.la \
 	$(EVOLUTION_DATA_SERVER_LIBS)		\
 	$(GNOME_PLATFORM_LIBS)			\
-	$(GTKHTML_LIBS)				\
-	$(CERT_UI_LIBS)
+	$(CERT_UI_LIBS)				\
+	$(NULL)
 
-libessmime_la_LDFLAGS = -avoid-version $(NO_UNDEFINED)
+libessmime_la_LDFLAGS = -avoid-version $(NO_UNDEFINED) $(CODE_COVERAGE_LDFLAGS)
 
 -include $(top_srcdir)/git.mk

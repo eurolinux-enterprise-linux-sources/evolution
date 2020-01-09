@@ -22,9 +22,6 @@ GType e_mail_formatter_mode_get_type	(void) G_GNUC_CONST;
 #define E_TYPE_MAIL_FORMATTER_QUOTE_FLAGS	(e_mail_formatter_quote_flags_get_type())
 GType e_mail_formatter_quote_flags_get_type	(void) G_GNUC_CONST;
 
-#define E_TYPE_MAIL_IMAGE_LOADING_POLICY	(e_mail_image_loading_policy_get_type())
-GType e_mail_image_loading_policy_get_type	(void) G_GNUC_CONST;
-
 #define E_TYPE_MAIL_PARSER_EXTENSION_FLAGS	(e_mail_parser_extension_flags_get_type())
 GType e_mail_parser_extension_flags_get_type	(void) G_GNUC_CONST;
 

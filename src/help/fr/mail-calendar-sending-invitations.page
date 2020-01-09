@@ -50,13 +50,13 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
 <title>Envoi d'invitations par courriel</title>
 
-<p>Si vous créez un événement dans le composant Agendas, vous pouvez envoyer des invitations à la liste des participants par le composant Courriel d'Evolution. La carte d'invitation est envoyée comme pièce jointe au format iCal.</p>
+<p>If you create an event in the calendar component, you can then send invitations to the attendee list through the <app>Evolution</app> email tool. The invitation card is sent as an attachment in iCal format.</p>
 
 <p>Pour envoyer une invitation, faites un clic-droit sur l'élément d'agenda et  choisissez <gui>Faire suivre comme iCalendar</gui>.</p>
 

@@ -47,6 +47,8 @@
 
 #include <libgnomecanvas/libgnomecanvas.h>
 
+#include "gal-a11y-e-cell-registry.h"
+#include "gal-a11y-e-cell-text.h"
 #include "e-canvas.h"
 #include "e-cell-text.h"
 #include "e-table-item.h"
@@ -82,6 +84,8 @@ enum {
 	PROP_UNDERLINE_COLUMN,
 	PROP_BOLD_COLUMN,
 	PROP_COLOR_COLUMN,
+	PROP_ITALIC_COLUMN,
+	PROP_STRIKEOUT_COLOR_COLUMN,
 	PROP_EDITABLE,
 	PROP_BG_COLOR_COLUMN
 };
@@ -411,7 +415,8 @@ build_attr_list (ECellTextView *text_view,
 	ECellView *ecell_view = (ECellView *) text_view;
 	ECellText *ect = E_CELL_TEXT (ecell_view->ecell);
 	PangoAttrList *attrs = pango_attr_list_new ();
-	gboolean bold, strikeout, underline;
+	gboolean bold, strikeout, underline, italic;
+	gint strikeout_color = 0;
 
 	bold = ect->bold_column >= 0 &&
 		row >= 0 &&
@@ -422,30 +427,53 @@ build_attr_list (ECellTextView *text_view,
 	underline = ect->underline_column >= 0 &&
 		row >= 0 &&
 		e_table_model_value_at (ecell_view->e_table_model, ect->underline_column, row);
+	italic = ect->italic_column >= 0 &&
+		row >= 0 &&
+		e_table_model_value_at (ecell_view->e_table_model, ect->italic_column, row);
 
-	if (bold || strikeout || underline) {
-		if (bold) {
-			PangoAttribute *attr = pango_attr_weight_new (PANGO_WEIGHT_BOLD);
-			attr->start_index = 0;
-			attr->end_index = text_length;
+	if (ect->strikeout_color_column >= 0 && row >= 0)
+		strikeout_color = GPOINTER_TO_UINT (e_table_model_value_at (ecell_view->e_table_model, ect->strikeout_color_column, row));
 
-			pango_attr_list_insert_before (attrs, attr);
-		}
-		if (strikeout) {
-			PangoAttribute *attr = pango_attr_strikethrough_new (TRUE);
-			attr->start_index = 0;
-			attr->end_index = text_length;
+	if (bold) {
+		PangoAttribute *attr = pango_attr_weight_new (PANGO_WEIGHT_BOLD);
+		attr->start_index = 0;
+		attr->end_index = text_length;
 
-			pango_attr_list_insert_before (attrs, attr);
-		}
-		if (underline) {
-			PangoAttribute *attr = pango_attr_underline_new (TRUE);
-			attr->start_index = 0;
-			attr->end_index = text_length;
-
-			pango_attr_list_insert_before (attrs, attr);
-		}
+		pango_attr_list_insert_before (attrs, attr);
 	}
+	if (strikeout) {
+		PangoAttribute *attr = pango_attr_strikethrough_new (TRUE);
+		attr->start_index = 0;
+		attr->end_index = text_length;
+
+		pango_attr_list_insert_before (attrs, attr);
+	}
+	if (underline) {
+		PangoAttribute *attr = pango_attr_underline_new (TRUE);
+		attr->start_index = 0;
+		attr->end_index = text_length;
+
+		pango_attr_list_insert_before (attrs, attr);
+	}
+	if (italic) {
+		PangoAttribute *attr = pango_attr_style_new (PANGO_STYLE_ITALIC);
+		attr->start_index = 0;
+		attr->end_index = text_length;
+
+		pango_attr_list_insert_before (attrs, attr);
+	}
+	if (strikeout_color) {
+		PangoAttribute *attr = pango_attr_strikethrough_color_new (
+			((strikeout_color >> 16) & 0xFF) * 0xFF,
+			((strikeout_color >> 8) & 0xFF) * 0xFF,
+			(strikeout_color & 0xFF) * 0xFF);
+
+		attr->start_index = 0;
+		attr->end_index = text_length;
+
+		pango_attr_list_insert_before (attrs, attr);
+	}
+
 	return attrs;
 }
 
@@ -745,7 +773,7 @@ ect_draw (ECellView *ecell_view,
 		}
 
 		if (!color_overwritten && ect->bg_color_column != -1) {
-			GdkColor bg_color;
+			GdkRGBA bg_rgba;
 			gchar *color_spec;
 
 			/* if the background color is overwritten and the text color is not, then
@@ -755,27 +783,20 @@ ect_draw (ECellView *ecell_view,
 				ecell_view->e_table_model,
 				ect->bg_color_column, row);
 
-			if (color_spec && gdk_color_parse (color_spec, &bg_color)) {
-				guint16 red, green, blue;
-				gdouble	cc = 65535.0;
-				GdkRGBA rgba;
+			if (color_spec && gdk_rgba_parse (&bg_rgba, color_spec)) {
+				bg_rgba.alpha = 1.0;
 
-				red = bg_color.red;
-				green = bg_color.green;
-				blue = bg_color.blue;
-				rgba.alpha = 1.0;
-
-				if ((red / cc > 0.7) || (green / cc > 0.7) || (blue / cc > 0.7)) {
-					rgba.red = 0.0;
-					rgba.green = 0.0;
-					rgba.blue = 0.0;
+				if ((bg_rgba.red > 0.7) || (bg_rgba.green > 0.7) || (bg_rgba.blue > 0.7)) {
+					bg_rgba.red = 0.0;
+					bg_rgba.green = 0.0;
+					bg_rgba.blue = 0.0;
 				} else {
-					rgba.red = 1.0;
-					rgba.green = 1.0;
-					rgba.blue = 1.0;
+					bg_rgba.red = 1.0;
+					bg_rgba.green = 1.0;
+					bg_rgba.blue = 1.0;
 				}
 
-				gdk_cairo_set_source_rgba (cr, &rgba);
+				gdk_cairo_set_source_rgba (cr, &bg_rgba);
 			}
 
 			if (color_spec)
@@ -1566,6 +1587,14 @@ ect_set_property (GObject *object,
 		text->bold_column = g_value_get_int (value);
 		break;
 
+	case PROP_ITALIC_COLUMN:
+		text->italic_column = g_value_get_int (value);
+		break;
+
+	case PROP_STRIKEOUT_COLOR_COLUMN:
+		text->strikeout_color_column = g_value_get_int (value);
+		break;
+
 	case PROP_COLOR_COLUMN:
 		text->color_column = g_value_get_int (value);
 		break;
@@ -1605,6 +1634,14 @@ ect_get_property (GObject *object,
 
 	case PROP_BOLD_COLUMN:
 		g_value_set_int (value, text->bold_column);
+		break;
+
+	case PROP_ITALIC_COLUMN:
+		g_value_set_int (value, text->italic_column);
+		break;
+
+	case PROP_STRIKEOUT_COLOR_COLUMN:
+		g_value_set_int (value, text->strikeout_color_column);
 		break;
 
 	case PROP_COLOR_COLUMN:
@@ -1722,6 +1759,26 @@ e_cell_text_class_init (ECellTextClass *class)
 
 	g_object_class_install_property (
 		object_class,
+		PROP_ITALIC_COLUMN,
+		g_param_spec_int (
+			"italic-column",
+			"Italic Column",
+			NULL,
+			-1, G_MAXINT, -1,
+			G_PARAM_READWRITE));
+
+	g_object_class_install_property (
+		object_class,
+		PROP_STRIKEOUT_COLOR_COLUMN,
+		g_param_spec_int (
+			"strikeout-color-column",
+			"Strikeout Color Column",
+			NULL,
+			-1, G_MAXINT, -1,
+			G_PARAM_READWRITE));
+
+	g_object_class_install_property (
+		object_class,
 		PROP_COLOR_COLUMN,
 		g_param_spec_int (
 			"color_column",
@@ -1761,6 +1818,8 @@ e_cell_text_class_init (ECellTextClass *class)
 			use_ellipsis_default = FALSE;
 		}
 	}
+
+	gal_a11y_e_cell_registry_add_cell_type (NULL, E_TYPE_CELL_TEXT, gal_a11y_e_cell_text_new);
 }
 
 /* IM Context Callbacks */
@@ -1916,6 +1975,8 @@ e_cell_text_init (ECellText *ect)
 	ect->strikeout_column = -1;
 	ect->underline_column = -1;
 	ect->bold_column = -1;
+	ect->italic_column = -1;
+	ect->strikeout_color_column = -1;
 	ect->color_column = -1;
 	ect->bg_color_column = -1;
 	ect->editable = TRUE;

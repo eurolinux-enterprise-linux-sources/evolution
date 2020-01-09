@@ -728,6 +728,63 @@ exit:
 	g_clear_object (&store);
 }
 
+static void
+folder_tree_render_store_icon (GtkTreeViewColumn *column,
+			       GtkCellRenderer *renderer,
+			       GtkTreeModel *model,
+			       GtkTreeIter *iter,
+			       gpointer text_renderer)
+{
+	GtkTreeIter parent;
+	gboolean expanded = TRUE, children_has_unread_mismatch = FALSE;
+
+	/* The first prerequisite: it's a root node and has children. */
+	if (gtk_tree_model_iter_parent (model, &parent, iter) ||
+	    !gtk_tree_model_iter_has_child (model, iter)) {
+		g_object_set (renderer, "visible", FALSE, NULL);
+		return;
+	}
+
+	g_object_get (text_renderer, "is-expanded", &expanded, NULL);
+
+	/* The second prerequisite: it's not expanded and children has unread mismatch. */
+	if (!expanded) {
+		guint unread, unread_last_sel;
+
+		gtk_tree_model_get (model, iter,
+			COL_UINT_UNREAD, &unread,
+			COL_UINT_UNREAD_LAST_SEL, &unread_last_sel,
+			-1);
+
+		children_has_unread_mismatch = unread != unread_last_sel;
+	}
+
+	g_object_set (renderer, "visible", !expanded && children_has_unread_mismatch, NULL);
+}
+
+static void
+folder_tree_reset_store_unread_value_cb (GtkTreeView *tree_view,
+					 GtkTreeIter *iter,
+					 GtkTreePath *path,
+					 gpointer user_data)
+{
+	GtkTreeIter parent;
+	GtkTreeModel *model;
+
+	g_return_if_fail (GTK_IS_TREE_VIEW (tree_view));
+
+	model = gtk_tree_view_get_model (tree_view);
+	if (!model)
+		return;
+
+	if (!gtk_tree_model_iter_parent (model, &parent, iter)) {
+		gtk_tree_store_set (GTK_TREE_STORE (model), iter,
+			COL_UINT_UNREAD_LAST_SEL, 0,
+			COL_UINT_UNREAD, 0,
+			-1);
+	}
+}
+
 static gboolean
 subdirs_contain_unread (GtkTreeModel *model,
                         GtkTreeIter *root)
@@ -945,10 +1002,11 @@ folder_tree_selection_changed_cb (EMFolderTree *folder_tree,
 		COL_UINT_UNREAD_LAST_SEL, &old_unread, -1);
 
 	/* Sync unread counts to distinguish new incoming mail. */
-	if (unread != old_unread)
+	if (unread != old_unread) {
 		gtk_tree_store_set (
 			GTK_TREE_STORE (model), &iter,
 			COL_UINT_UNREAD_LAST_SEL, unread, -1);
+	}
 
 exit:
 	g_signal_emit (
@@ -1272,13 +1330,22 @@ folder_tree_constructed (GObject *object)
 		column, renderer, (GtkTreeCellDataFunc)
 		folder_tree_render_icon, NULL, NULL);
 
-	renderer = gtk_cell_renderer_text_new ();
+	renderer = gtk_cell_renderer_pixbuf_new ();
+	g_object_set (G_OBJECT (renderer), "icon-name", "mail-unread", NULL);
+	gtk_tree_view_column_pack_start (column, renderer, FALSE);
+
+	priv->text_renderer = g_object_ref (gtk_cell_renderer_text_new ());
+
+	gtk_tree_view_column_set_cell_data_func (
+		column, renderer, folder_tree_render_store_icon,
+		g_object_ref (priv->text_renderer), g_object_unref);
+
+	renderer = priv->text_renderer;
 	g_object_set (renderer, "ellipsize", PANGO_ELLIPSIZE_END, NULL);
 	gtk_tree_view_column_pack_start (column, renderer, TRUE);
 	gtk_tree_view_column_set_cell_data_func (
 		column, renderer, (GtkTreeCellDataFunc)
 		folder_tree_render_display_name, NULL, NULL);
-	priv->text_renderer = g_object_ref (renderer);
 
 	g_signal_connect_swapped (
 		renderer, "edited",
@@ -1315,6 +1382,12 @@ folder_tree_constructed (GObject *object)
 
 	folder_tree_copy_state (EM_FOLDER_TREE (object));
 	gtk_widget_show (GTK_WIDGET (object));
+
+	g_signal_connect (tree_view, "row-expanded",
+		G_CALLBACK (folder_tree_reset_store_unread_value_cb), NULL);
+
+	g_signal_connect (tree_view, "row-collapsed",
+		G_CALLBACK (folder_tree_reset_store_unread_value_cb), NULL);
 }
 
 static gboolean
@@ -1950,7 +2023,7 @@ tree_drag_data_get (GtkWidget *widget,
 	GtkTreeModel *model;
 	GtkTreePath *src_path;
 	CamelFolder *folder;
-	CamelStore *store;
+	CamelStore *store = NULL;
 	GtkTreeIter iter;
 	gchar *folder_name = NULL;
 	gchar *folder_uri;
@@ -2032,7 +2105,7 @@ ask_drop_folder (EMFolderTree *folder_tree,
 	g_return_val_if_fail (src_folder_uri != NULL, FALSE);
 	g_return_val_if_fail (des_full_name != NULL || des_store != NULL, FALSE);
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 	set_value = g_settings_get_string (settings, key);
 
 	if (g_strcmp0 (set_value, "never") == 0) {
@@ -2616,17 +2689,17 @@ folder_tree_drop_target (EMFolderTree *folder_tree,
 			targets = targets->next;
 		}
 	} else {
-		gint i;
+		GList *link;
+		gint ii;
 
-		while (targets != NULL) {
-			for (i = 0; i < NUM_DROP_TYPES; i++) {
-				if (targets->data == (gpointer) drop_atoms[i]) {
-					atom = drop_atoms[i];
+		/* The drop_atoms[] is sorted in the preference order. */
+		for (ii = 0; ii < NUM_DROP_TYPES; ii++) {
+			for (link = targets; link; link = g_list_next (link)) {
+				if (link->data == (gpointer) drop_atoms[ii]) {
+					atom = drop_atoms[ii];
 					goto done;
 				}
 			}
-
-			targets = targets->next;
 		}
 	}
 

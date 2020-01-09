@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-refresh-folders" xml:lang="fr">
 
   <info>
-    <desc>Différentes façons de mettre à jour vos dossiers Evolution.</desc>
+    <desc>Ways to update your <app>Evolution</app> folders.</desc>
     
     <link type="guide" xref="index#common-mail-problems"/>
 
@@ -49,13 +49,13 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
-<title>Mise à jour/actualisation des dossiers sur le serveur de courriel</title>
+<title>Mise à jour/actualisation des dossiers sur le serveur de messagerie</title>
 
-<p>Pour être sûr que vos dossiers de courriels locaux sont actualisés, allez dans <guiseq><gui>Dossier</gui><gui>Actualiser</gui></guiseq>. Cela vous permet d'être sûr que tous vos courriels ont été téléchargés à partir du serveur de courriel sur l'ordinateur afin que vous puissiez les lire tous et que le statut de lecture soit synchronisé avec le serveur de courriel.</p>
+<p>Pour être sûr que vos dossiers de courriels locaux sont actualisés, allez dans <guiseq><gui>Dossier</gui><gui>Actualiser</gui></guiseq>. Cela vous permet d'être sûr que tous vos courriels ont été téléchargés à partir du serveur de messagerie sur l'ordinateur afin que vous puissiez les lire tous et que le statut de lecture soit synchronisé avec le serveur de messagerie.</p>
 
 <p>Vous pouvez faire un double-clic sur le dossier pour le mettre à jour, ou bien appuyer sur <key>F5</key>.</p>
 

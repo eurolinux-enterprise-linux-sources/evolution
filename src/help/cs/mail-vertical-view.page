@@ -17,11 +17,23 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
   <title>Svislé zobrazení</title>
 
-<p>Evolution vám nabízí kromě klasického zobrazení také svislé. Ve svislém zobrazení je panel náhledu zpráv umístěn napravo seznamu zpráv, zatímco v klasickém zobrazení je panel náhledu zpráv umístěn pod seznamem zpráv. Svislé zobrazení vám umožňuje využít šířku na širokoúhlých monitorech.</p>
+<p><app>Evolution</app> vám nabízí kromě klasického zobrazení také svislé. Ve svislém zobrazení je panel náhledu zpráv umístěn napravo od seznamu zpráv, zatímco v klasickém zobrazení je panel náhledu zpráv umístěn pod seznamem zpráv. Svislé zobrazení vám umožňuje využít šířku na širokoúhlých monitorech.</p>
 
 <p>Chcete-li přepnout do svislého zobrazení, klikněte na <guiseq><gui>Zobrazit</gui><gui>Náhled</gui><gui>Svislé zobrazení</gui></guiseq>.</p>
 

@@ -52,16 +52,16 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
 <title>En-têtes de message réductibles</title>
 
-<p>Evolution réduit les en-têtes À, Cc et Cci des messages reçus et n'affiche que cinq adresses dans l'aperçu du message.</p>
+<p><app>Evolution</app> compresses the To, Cc and Bcc headers of received mail and shows only five addresses in the message preview.</p>
 
-<p>To see all recipients, click the <media type="image" its:translate="no" src="./figures/plus-icon.png"/> icon next to the <gui>To:</gui> or <gui>Cc:</gui> line, or click the ellipsis (...) at the end of the five displayed addresses.</p>
+<p>Pour voir tous les destinataires, cliquez sur l'icône <media type="image" its:translate="no" src="./figures/plus-icon.png"/> à côté de la ligne <gui>À :</gui> ou <gui>Cc :</gui>, ou cliquez sur les points de suspension (...) à la fin des cinq adresses affichées.</p>
 
-<p>To collapse all of the message headers and just display the subject and sender in one line, click the icon <media type="image" its:translate="no" src="./figures/minus-icon.png"/> next to the <gui>From:</gui> line. This is helpful on small screens.</p>
+<p>Pour réduire tous les en-têtes de message et n'afficher que le sujet et l'expéditeur sur une ligne, cliquez sur l'icône <media type="image" its:translate="no" src="./figures/minus-icon.png"/> à côté de la ligne <gui>De :</gui>. C'est très utile pour les petits écrans.</p>
  
 </page>

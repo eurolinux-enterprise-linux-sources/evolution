@@ -25,9 +25,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -47,7 +53,7 @@
 
 <section id="search-single">
 <title>Buscar una única nota</title>
-<p>Para buscar texto en la nota mostrada, seleccione <guiseq><gui>Editar</gui><gui>Buscar en la nota...</gui></guiseq> en el menú principal.</p>
+<p>Para buscar texto en la nota mostrada, seleccione <guiseq><gui>Editar</gui><gui>Buscar en la nota…</gui></guiseq> en el menú principal.</p>
 </section>
 
 <section id="search-many">
@@ -61,13 +67,13 @@
 <item><p>Pulse el icono de búsqueda <media type="image" mime="image/png" its:translate="no" src="figures/search-icon.png"/> para expandir la dista desplegable.</p></item>
 <item><p>Seleccione el criterio de búsqueda de la lista.</p></item>
 <item><p>Escriba el texto que quiere buscar y pulse <key>Intro</key>.</p></item>
-<item><p>Evolution muestra los resultados de la búsqueda.</p></item>
+<item><p><app>Evolution</app> muestra los resultados de la búsqueda.</p></item>
 </steps>
 <p>Buscar por categoría:</p>
 <steps>
 <item><p>Pulse la lista desplegable <gui>Mostrar</gui>.</p></item>
 <item><p>Seleccione la categoría de la lista.</p></item>
-<item><p>Evolution muestra los resultados de la búsqueda.</p></item>
+<item><p><app>Evolution</app> muestra los resultados de la búsqueda.</p></item>
 </steps>
 <p>Si quiere establecer varias condiciones de búsqueda debe usar la Búsqueda avanzada, descrita debajo.</p>
 </section>

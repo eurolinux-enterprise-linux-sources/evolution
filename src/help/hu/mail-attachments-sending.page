@@ -19,6 +19,30 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
 <title>Mellékletek csatolása az e-mailhez</title>
@@ -27,7 +51,7 @@
 <title>Fájlok csatolása</title>
 <p>Tegye a következőket egy fájl e-mailhez csatolásához a szerkesztőben:</p>
 <steps>
-<item><p>Kattintson a <gui>Melléklet hozzáadása</gui> gombra, vagy válassza a <guiseq><gui>Beszúrás</gui><gui>Melléklet</gui></guiseq> menüpontot, vagy nyomja meg a <keyseq><key>Ctrl</key><key>M</key></keyseq> kombinációt.</p></item>
+<item><p>Kattintson a <gui>Melléklet hozzáadása…</gui> gombra, vagy válassza a <guiseq><gui>Beszúrás</gui><gui>Melléklet</gui></guiseq> menüpontot, vagy nyomja meg a <keyseq><key>Ctrl</key><key>M</key></keyseq> kombinációt.</p></item>
 <item><p>Válassza ki a csatolni kívánt fájlt.</p></item>
 <item><p>Nyomja meg az <gui style="button">OK</gui> gombot.</p></item>
 </steps>
@@ -39,7 +63,7 @@
 <section id="reminders">
 <title>Mellékletemlékeztető</title>
 
-<p>Az Evolution rendelkezik egy mellékletemlékeztető bővítménnyel, amely emlékezteti a fájl csatolására. Ha ez úgy találja, hogy noha említi a levélben, de nem csatolt fájlt, akkor az e-mail elküldése előtt megjelenít egy figyelmeztetést.</p>
+<p>Az <app>Evolution</app> rendelkezik egy mellékletemlékeztető bővítménnyel, amely emlékezteti a fájl csatolására. Ha ez úgy találja, hogy noha említi a levélben, de nem csatolt fájlt, akkor az e-mail elküldése előtt megjelenít egy figyelmeztetést.</p>
 
 <p>A Mellékletemlékeztető engedélyezéséhez:</p>
 <steps>
@@ -48,7 +72,7 @@
 <item><p>Lépjen a <gui>Beállítás</gui> lapra.</p></item>
 <item><p>Nyomja meg a <gui style="button">Hozzáadás</gui> gombot, majd adja meg a nyelvnek megfelelő kulcsszavakat, például „Mellékelve” vagy „Csatolom”.</p></item>
 </steps>
-<p>Az itt felvett kulcsszavakat az Evolution minden elküldeni kívánt levél szövegében megkeresi. Ha megtalálja valamelyik kulcsszót, de nincs csatolva fájl, akkor megjelenik az emlékeztető ablak.</p>
+<p>Az itt felvett kulcsszavakat az <app>Evolution</app> minden elküldeni kívánt levél szövegében megkeresi. Ha megtalálja valamelyik kulcsszót, de nincs csatolva fájl, akkor megjelenik az emlékeztető ablak.</p>
 
 </section>
 

@@ -7,7 +7,7 @@
     <link type="guide" xref="mail-spam"/>
     <link type="seealso" xref="mail-spam-marking"/>
 
-    <revision pkgversion="3.8.1" version="0.9" date="2013-06-22" status="final"/>
+    <revision pkgversion="3.12.9" version="0.11" date="2015-03-15" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -31,9 +31,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -53,7 +59,7 @@
 
 <section id="junk-tools">
 <title>Herramientas</title>
-<p><app>Evolution</app> le permite comprobar si hay mensajes spam usando las herramientas <app>Bogofilter</app> o <app>SpamAssassin</app>. Para usar estas herramientas debe asegurarse de que están instaladas a través de la herramienta de gestión de software de su distribución.</p>
+<p><app>Evolution</app> le permite comprobar si hay mensajes de spam usando las herramientas <app>Bogofilter</app> o <app>SpamAssassin</app>. Para usar estas herramientas debe asegurarse de que están instaladas a través de la herramienta de gestión de software de su distribución.</p>
 
 <note style="info package">
   <p>Puede querer instalar<app>Bogofilter</app> o <app>SpamAssassin</app> para realizar estos pasos.</p>
@@ -75,19 +81,17 @@
 
 <section id="preferences">
 <title>Opciones de correo spam</title>
-<note style="tip"><p>Las opciones de SPAM comentadas en esta página sólo se refieren a las cuentas POP y Entrega local. Para gestionar correos SPAM en cuentas IMAP consulte la configuración de Evolution en <guiseq><gui>Editar</gui><gui>Preferencias</gui><gui>Cuentas de correo</gui><gui style="button">Editar</gui><gui>Opciones de recepción</gui></guiseq>.</p></note>
-<p>Puede modificar cómo Evolution gestiona el SPAM cambiando las Opciones de SPAM:</p>
+<note style="tip"><p>Las opciones de SPAM comentadas en esta página sólo se refieren a las cuentas POP y Entrega local. Para gestionar correos SPAM en cuentas IMAP consulte la configuración de <app>Evolution</app> en <guiseq><gui>Editar</gui><gui>Preferencias</gui><gui>Cuentas de correo</gui><gui style="button">Editar</gui><gui>Opciones de recepción</gui></guiseq>.</p></note>
+<p>Puede modificar cómo <app>Evolution</app> gestiona el SPAM cambiando las Opciones de SPAM:</p>
 <steps>
 <item><p>Pulse <guiseq><gui>Editar</gui><gui>Preferencias</gui></guiseq> o pulse <keyseq><key>Mayús</key><key>Ctrl</key><key>S</key></keyseq>.</p></item>
 <item><p>Seleccione <gui>Opciones de correo</gui>.</p></item>
 <item><p>Pulse en la pestaña <gui>SPAM</gui>. Aquí podrá especificar lo siguiente:</p>
 <list>
-<item><p>Comprobar si el correo entrante es SPAM.</p></item>
+<item><p>Comprobar si los mensajes entrantes son spam.</p></item>
 <item><p>Eliminar correo basura al salir y con qué frecuencia se eliminan los correos basura.</p></item>
-<item><p>Comprobar las cabeceras personalizadas contra SPAM.</p></item>
 <item><p>Marcar mensajes como no SPAM si el remitente está en la libreta de direcciones.</p></item>
-<item><p>El filtro predeterminado para SPAM.</p></item>
-<item><p>Opciones de Bogofilter y de SpamAssassin.</p></item>
+<item><p>Comprobar si las cabeceras personalizadas (añadidas por su servidor de correo) son spam.</p></item>
 </list>
 </item>
 </steps>

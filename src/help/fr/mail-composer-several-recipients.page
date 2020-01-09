@@ -55,7 +55,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -74,7 +74,7 @@
 
 <section id="autocompletion">
 <title>Complétion automatique</title>
-<p>Il est recommandé d'utiliser la fonctionnalité de <link xref="contacts-autocompletion">complétion automatique</link> du carnet d'adresse d'Evolution pour la saisie des adresses. En l'utilisant vous évitez les erreurs typographiques et gagnez du temps.</p>
+<p>It is recommended to use the <link xref="contacts-autocompletion">Autocompletion</link> feature of the <app>Evolution</app> address book for entering addresses. By using this you avoid typos and save time.</p>
 </section>
 
 <section id="to-cc-bcc-buttons">

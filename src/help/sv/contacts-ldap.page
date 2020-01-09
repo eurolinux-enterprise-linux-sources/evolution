@@ -4,7 +4,7 @@
   <info>
     <link type="guide" xref="contacts-using-several-addressbooks"/>
 
-    <revision pkgversion="3.1.5" version="0.3" date="2011-07-28" status="final"/>
+    <revision pkgversion="3.1.5" version="0.4" date="2015-03-09" status="final"/>
 
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
@@ -21,132 +21,115 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Use shared address books on a local network.</desc>
+    <desc>Använd delade adressböcker på ett lokalt nätverk.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Adding LDAP access</title>
+  <title>Lägga till LDAP-åtkomst</title>
 
-  <p>The LDAP protocol was created to let users share contact information over
-  a network by sharing access to a central directory. LDAP allows a company to
-  maintain a shared set of contact information. Many companies keep a common
-  LDAP address book for all their employees or for client contacts.</p>
+  <p>LDAP-protokollet skapades för att låta användare dela kontaktinformation över ett nätverk genom att dela tillgång till ett centralt register. LDAP låter ett företag underhålla en delad uppsättning kontaktinformation. Många företag har en gemensam LDAP-adressbok för alla sina anställda eller för klientkontakter.</p>
 
 <section id="add-ldap-addressbook">
-  <title>Adding an LDAP address book</title>
+  <title>Lägga till en LDAP-adressbok</title>
 
   <steps>
     <item>
-      <p>Click <guiseq><gui>File</gui><gui>New</gui>
-      <gui>Address Book</gui></guiseq>.</p>
+      <p>Klicka på <guiseq><gui>Arkiv</gui><gui>Nytt</gui> <gui>Adressbok</gui></guiseq>.</p>
     </item>
     <item>
-      <p>In the <gui>General</gui> tab, select the type
-      <gui>On LDAP Servers</gui>.</p>
+      <p>I fliken <gui>Allmänt</gui>, välj typen <gui>På LDAP-servrar</gui>.</p>
     </item>
     <item>
-      <p>Enter a name that you prefer.</p>
+      <p>Ange ett namn du föredrar.</p>
     </item>
     <item>
-      <p>Enter the address of the server, the port number (the default number
-      is 389) and whether you want to connect securely.</p>
+      <p>Skriv in adressen till servern, portnumret (standardnumret är 389) och huruvida du vill ansluta säkert.</p>
     </item>
     <item>
-      <p>Define the login method and your user name.</p>
+      <p>Definiera inloggningsmetod och ditt användarnamn.</p>
     </item>
     <item>
-      <p>Click <gui style="button">Apply</gui>.</p>
+      <p>Klicka på <gui style="button">Verkställ</gui>.</p>
     </item>
     <item>
-      <p>In the <gui>Details</gui> tab you can define the following
-      settings:</p>
+      <p>I fliken <gui>Detaljer</gui> kan du definiera följande inställningar:</p>
       <list>
         <item>
-	  <p>Search Base: The search base is the starting point for a directory
-	  search. Contact your system administrator for information about the
-	  correct settings.</p>
+	  <p>Sökbas: Sökbasen som är startpunkten för en registersökning. Kontakta din systemadministratör för information om korrekta inställningar.</p>
         </item>
         <item>
-	  <p>Search Scope: The search scope is the breadth of a given search.
-	  The following options are available:</p>
+	  <p>Sökomfattning: Sökomfattningen är bredden på en given sökning.</p>
+	  <p>Följande alternativ är tillgängliga:</p>
           <list>
             <item>
-	      <p>One: Searches the Search Base and one entry below it.</p>
+	      <p>En: Genomsöker sökbasen och en nivå under den.</p>
 	    </item>
             <item>
-	      <p>Sub: Searches the Search Base and all entries below it.</p>
+	      <p>Under: Genomsöker sökbasen och alla poster under den.</p>
             </item>
           </list>
         </item>
         <item>
-	  <p>Search Filter: The search filter can be set here for all the LDAP
-	  queries. For example:</p>
+	  <p>Sökfilter: Sökfiltret kan ställas in här för alla LDAP-förfrågningar. Till exempel:</p>
           <list>
             <item>
-              <p><code>ObjectClass=*</code>: Lists all the objects from the
-              server.</p>
+              <p><code>ObjectClass=*</code>: Listar alla objekt på servern.</p>
 	    </item>
             <item>
-	      <p><code>ObjectClass=User</code>: Lists only the users.</p>
+	      <p><code>ObjectClass=User</code>: Listar bara användarna.</p>
 	    </item>
             <item>
-	      <p><code>Filter (|(ObjectClass=User)(ObjectClass=groupOfNames))</code>:
-	      Retrieves the User and Contact List objects.</p>
+	      <p><code>Filter (|(ObjectClass=User)(ObjectClass=groupOfNames))</code>: Hämtar användar- och kontaktlist-objekten.</p>
 	    </item>
             <item>
-	      <p><code>(&amp;(mail=*)(ObjectClass=*))</code>: Lists the objects
-	      associated with the email addresses.</p>
+	      <p><code>(&amp;(mail=*)(ObjectClass=*))</code>: Listar alla objekt som är associerade med e-postadresserna.</p>
 	    </item>
           </list>
         </item>
         <item>
-	  <p>Timeout (minutes): The maximum time <app>Evolution</app> attempts
-	  to download data from the server before giving up.</p>
+	  <p>Tidsgräns (minuter): Den längsta tiden <app>Evolution</app> försöker hämta data från servern innan det ger upp.</p>
         </item>
         <item>
-	  <p>Download Limit: The maximum number of results for a given search.
-	  Most servers refuse to send more than 500 contacts, but you can set
-	  the number lower if you want to shorten downloads for very broad
-	  searches.</p>
+	  <p>Hämtningsbegränsning: Maximalt antal resultat för en given sökning. De flesta servrar vägrar att skicka fler än 500 kontakter, men du kan ställa in antalet lägre om du vill korta ner hämtningarna för väldigt breda sökningar.</p>
         </item>
       </list>
     </item>
   </steps>
 
   <note style="tip">
-    <p>If you are unsure about some settings, ask your system
-    administrator.</p>
+    <p>Om du är osäker på vad vissa inställningar är, fråga din systemadministratör.</p>
   </note>
 
 </section>
 
 <section id="ldap-vs-local-addressbooks">
-  <title>Differences to local address books</title>
+  <title>Skillnaden mot lokala adressböcker</title>
 
-  <p>LDAP address books work like local address books on your computer, with
-  the following exceptions:</p>
+  <p>LDAP-adressböcker fungerar som lokala adressböcker på din dator, med följande undantag:</p>
 
   <list>
     <item>
-      <p>Network folders are only available when you are connected to the
-      network. If you use a laptop or have a modem connection, you might want
-      to copy or cache some of the network directory. You do this by dragging
-      and dropping your desired contacts into the local address books.</p>
+      <p>Nätverksmappar är bara tillgängliga när du är ansluten till nätverket. Om du använder en bärbar dator eller har en modemanslutning kanske du vill kopiera eller cacha vissa av nätverksregistret. Du kan göra detta genom att dra och släppa dina önskade kontakter i den lokala adressboken.</p>
     </item>
     <item>
-      <p>You can also mark the network folder for offline usage. To mark the
-      folder, right-click the folder, click Properties and select Copy Folder
-      Content Locally for Offline Operation.</p>
+      <p>Du kan också markera nätverksmappen för frånkopplad användning. För att markera mappen, högerklicka på mappen, klicka på <gui>Egenskaper</gui> och välj <gui>Kopiera mappinnehåll lokalt för frånkopplad användning</gui>.</p>
     </item>
     <item>
-      <p>To prevent excess network traffic, <app>Evolution</app> does not
-      normally load data from the LDAP server upon opening.</p>
+      <p>För att förhindra onödig nätverkstrafik hämtar <app>Evolution</app> inte normalt data från LDAP-servern vid uppstart.</p>
     </item>
     <item>
-      <p>Depending on your server settings, you might not be able to edit all
-      the fields in a contact stored on an LDAP server. Some servers prohibit
-      some or all changes, and others use a smaller set of fields than
-      <app>Evolution</app> allows. Check with your system administrator if you
-      need different settings.</p>
+      <p>Beroende på dina server-inställningar kan du komma att inte kunna redigera alla fält i en kontakt som är sparad på LDAP-servern. Vissa servrar förhindrar vissa eller alla ändringar och andra använder en mindre uppsättning fält än <app>Evolution</app> tillåter. Kolla med din systemadministratör om du behöver andra inställningar.</p>
     </item>
   </list>
 

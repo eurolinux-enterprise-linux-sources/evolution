@@ -6,7 +6,7 @@
 
     <link type="guide" xref="mail-receiving-options#local-account-server-types"/>
     <link type="guide" xref="mail-account-manage-unix-mbox-spool-file#receiving-email"/>
-    <revision pkgversion="3.1.90" version="0.3" date="2011-08-25" status="final"/>
+    <revision pkgversion="3.12.9" version="0.4" date="2015-02-15" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -17,9 +17,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -54,8 +60,8 @@
 <p>En la página <gui>Recepción de correo</gui> (accesible a través de <guiseq><gui>Editar</gui><gui>Preferencias</gui><gui>Cuentas de correo</gui><gui style="button">Editar</gui><gui>Recepción de correo</gui></guiseq>):</p>
 
 <list>
-<item><p>Si quiere que Evolution compruebe automáticamente si hay correo nuevo, seleccione la opción <gui>Comprobar si hay mensajes nuevos cada ... minutos</gui> y seleccione la frecuencia en minutos.</p></item>
-<item><p>Si quiere que los <link xref="mail-filters">Filtros</link> se usen automáticamente para los correos nuevos en su Bandeja de entrada, active <gui>Aplicar filtros a los mensajes nuevos en la bandeja de entrada</gui></p></item>
+<item><p>Si quiere que <app>Evolution</app> compruebe automáticamente si hay correo nuevo, seleccione la opción <gui>Comprobar si hay mensajes nuevos cada … minutos</gui> y seleccione la frecuencia en minutos.</p></item>
+<item><p>Si quiere que los <link xref="mail-filters">Filtros</link> se usen automáticamente para los correos nuevos en su Bandeja de entrada, active <gui>Aplicar filtros a los mensajes nuevos en la bandeja de entrada</gui>.</p></item>
 </list>
 
 </section>

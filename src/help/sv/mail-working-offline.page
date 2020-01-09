@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-working-offline" xml:lang="sv">
 
   <info>
-    <desc>Work with your mail while not being connected to the network.</desc>
+    <desc>Arbeta med din e-post medan du inte är ansluten till nätverket.</desc>
 <!-- TODO:POST-3-8: Offline work for web calendars etc also exists => create index page for Offline working? -->
     <link type="guide" xref="index#mail-basic"/>
 
@@ -18,34 +18,46 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
 <title>Arbeta frånkopplad</title>
 
-<p>Forced offline mode helps you communicate with remote mail storage systems like GroupWise, IMAP or Exchange, in situations where you are not connected to the network at all times. Evolution keeps a local copy of one or more folders to allow you to compose messages, storing them in your Outbox to be sent the next time you connect.</p>
+<p>Frånkopplat läge hjälper dig att kommunicera med fjärrlagringssystem för e-post såsom GroupWise, IMAP eller Exchange, i situationer där du inte är ansluten till nätverket hela tiden. <app>Evolution</app> håller en lokal kopia av en eller flera mappar för att du ska kunna skriva meddelanden, lagra dem i din utkorg och sedan skicka dem nästa gång som du ansluter till nätverket.</p>
 
-<note style="warning"><p>Evolution's forced offline mode only refers to mail and does not apply to contacts and calendars.</p></note>
+<note style="warning"><p><app>Evolutions</app> påtvingade frånkopplade läge gäller endast för e-post och gäller inte för kontakter eller kalendrar.</p></note>
 
-<p>POP mail downloads all messages to your local system, but other connections usually download just the headers, and get the rest only when you want to read the message. Before you force Evolution to be offline, Evolution downloads the unread messages from the folders you have chosen to store.</p>
+<p>POP-e-post hämtar ner alla meddelanden till ditt lokala system, men andra anslutningar hämtar vanligtvis bara rubrikerna och hämtar resten först när du vill läsa meddelandet. Innan du tvingar <app>Evolution</app> att vara frånkopplat, kommer <app>Evolution</app> att hämta de olästa meddelandena från de mappar du har valt att lagra.</p>
 
 <section id="mark-folders">
-<title>Marking folders for offline usage</title>
-<p>To mark a mail folder for offline use,</p>
+<title>Markera mappar för frånkopplad användning</title>
+<p>För att markera en e-postmeddelandemapp för användning i frånkopplat läge använd,</p>
 <steps>
-<item><p>Right-click the folder, then click <gui>Properties</gui>.</p></item>
-<item><p>Click <gui>Copy folder content locally for offline operation</gui>.</p></item>
+<item><p>Högerklicka på mappen, klicka sedan på <gui>Inställningar</gui>.</p></item>
+<item><p>Klicka på <gui>Kopiera mappinnehåll lokalt för frånkopplad användning</gui>.</p></item>
 </steps>
 </section>
 
 <section id="sync-for-offline">
-<title>Syncing messages for offline usage</title>
-<p>Your connection status is shown by the small icon in the lower left corner of the Evolution main window. When you are online, it displays two connected cables. When you force offline mode via clicking the icon or via <guiseq><gui>File</gui><gui>Work Offline</gui></guiseq>, the cables separate. You will be asked whether you want to go offline immediately or synchronize folders locally before you go offline.</p>
-<p>To download Messages for Offline Operations without immediately going offline, select <guiseq><gui>File</gui><gui>Download Messages for Offline Usage</gui></guiseq>.</p>
+<title>Synkronisera meddelanden för frånkopplad användning</title>
+<p>Din anslutningsstatus visas som en liten ikon i det nedre vänstra hörnet i <app>Evolutions</app> huvudfönster. När du är ansluten visar den två anslutna kablar. När du påtvingar frånkopplat läge genom att klicka på ikonen eller via <guiseq><gui>Arkiv</gui><gui>Arbeta frånkopplad</gui></guiseq>, så separeras kablarna. Du kommer att tillfrågas om huruvida du vill frånkopplas omedelbart eller om du vill synkronisera mappar lokalt innan du blir frånkopplad.</p>
+<p>För att hämta meddelanden för frånkopplade åtgärder utan att omedelbart koppla ifrån, välj <guiseq><gui>Arkiv</gui><gui>Hämta ner meddelanden för frånkopplad användning</gui></guiseq>.</p>
 </section>
 
 <section id="network-manager-integration">
-<title>Automatisk hantering av nätverkstillstånd </title>
-<p>Evolution automatically understands the network state and acts accordingly. For instance, Evolution switches to offline mode when the network goes down and automatically switches on when the network is up again.</p>
+<title>Automatisk hantering av nätverkstillstånd</title>
+<p><app>Evolution</app> förstår automatiskt nätverkstillståndet och agerar därefter. <app>Evolution</app> växlar till exempel till frånkopplat läge när nätverket går ner och ansluter automatiskt när nätverket är uppe igen.</p>
 </section>
 
 </page>

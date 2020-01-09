@@ -46,7 +46,8 @@
       <p>Escriba o seu nome de usuario de Google.</p>
     </item>
     <item>
-      <p>Seleccione <gui>Usar conexión segura</gui> se quere conectarse de forma segura.</p>
+      <p>Choose <gui>Use a secure connection</gui> if you want to connect
+      securely.</p>
     </item>
     <item>
       <p>Prema <gui style="button">Aplicar</gui>.</p>

@@ -20,9 +20,15 @@
     
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -75,13 +81,13 @@
 <p>Hace que el sistema pite.</p></item>
 
 <item><p>Reproducir un sonido:</p>
-<p>Seleccione un archivo de sonido para que Evolution lo reproduzca.</p></item>
+<p>Seleccione un archivo de sonido para que <app>Evolution</app> lo reproduzca.</p></item>
 
 <item><p>Ejecutar programa:</p>
-<p>Evolution ejecutar una aplicación.</p></item>
+<p><app>Evolution</app> ejecutar una aplicación.</p></item>
 
 <item><p>Encauzar al programa:</p>
-<p>Envía el mensaje al programa que elija. No se espera que devuelva ningún valor. Esta característica se puede usar para crear entradas automáticas en una web desde mensajes de correo o para realizar procesados posteriores adicionales que no estén soportados por Evolution.</p></item>
+<p>Envía el mensaje al programa que elija. No se espera que devuelva ningún valor. Esta característica se puede usar para crear entradas automáticas en una web desde mensajes de correo o para realizar procesados posteriores adicionales que no estén soportados por <app>Evolution</app>.</p></item>
 
 <item><p>Reenviar a:</p>
 <p>Reenvía el correo a otra dirección de correo-e.</p></item>

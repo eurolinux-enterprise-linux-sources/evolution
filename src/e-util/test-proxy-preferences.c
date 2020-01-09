@@ -58,7 +58,7 @@ main (gint argc,
 		g_error (
 			"Failed to load ESource registry: %s",
 			local_error->message);
-		g_assert_not_reached ();
+		g_return_val_if_reached (-1);
 	}
 
 	window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
@@ -79,6 +79,8 @@ main (gint argc,
 	g_object_unref (registry);
 
 	gtk_main ();
+
+	e_util_cleanup_settings ();
 
 	return 0;
 }

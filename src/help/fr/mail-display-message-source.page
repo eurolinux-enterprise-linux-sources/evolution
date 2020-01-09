@@ -49,13 +49,13 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
 <title>Source du message :</title>
 
-<p>Pour afficher les données du message, cliquez sur  <guiseq><gui>View</gui><gui>Source du message</gui></guiseq> ou appuyez sur <keyseq><key>Ctrl</key><key>U</key></keyseq>. Les données du message seront ainsi affichées dans une nouvelle fenêtre.</p>
+<p>Pour afficher les données du message, cliquez sur  <guiseq><gui>Affichage</gui><gui>Source du message</gui></guiseq> ou appuyez sur <keyseq><key>Ctrl</key><key>U</key></keyseq>. Les données du message seront ainsi affichées dans une nouvelle fenêtre.</p>
 
 <p>Pour ne visualiser que l'ensemble des en-têtes  d'un message, cliquez sur <guiseq><gui>Affichage</gui><gui>Tous les en-têtes du message</gui></guiseq>. L'ensemble des en-têtes s'affichera dans le panneau d'affichage.</p> 
 

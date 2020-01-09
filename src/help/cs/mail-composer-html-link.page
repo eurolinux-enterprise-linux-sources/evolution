@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-composer-html-link" xml:lang="cs">
 
   <info>
-    <desc>Insert a link to a website in the mail composer.</desc>
+    <desc>Jak vložit odkaz na web do editoru zpráv.</desc>
     <link type="guide" xref="mail-composer-html#formatting-options-html"/>
 
     <revision pkgversion="3.5.90" version="0.4" date="2012-08-16" status="final"/>
@@ -16,20 +16,32 @@
     
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Inserting a Link in HTML</title>
+<title>Vložení odkazu do HTML</title>
 
 
-<p>You can insert links into the email:</p>
+<p>Do e-mailu můžete vložit odkaz:</p>
 <steps>
-<item><p>Select the text that you want to turn into a link.</p></item>
-<item><p>Either click <guiseq><gui>Insert</gui><gui>Link...</gui></guiseq> in the menubar, or right-click on the selected text and click <gui>Insert Link</gui>.</p></item>
-<item><p>Enter the address in the <gui>URL</gui> field.</p></item>
+<item><p>Vyberte text, který chcete změnit na odkaz.</p></item>
+<item><p>Buď klikněte na nabídkové liště na <guiseq><gui>Vložit</gui> <gui>Odkaz…</gui></guiseq> nebo klikněte pravým tlačítkem na vybraný text a pak klikněte na <gui>Vložit odkaz</gui>.</p></item>
+<item><p>Zadejte adresu do pole <gui>Adresa URL</gui>.</p></item>
 <item><p>Klikněte na <gui>Zavřít</gui>.</p></item>
 </steps>
 
-<p>Alternately, you can also use the <media type="image" its:translate="no" src="./figures/html-composer-insert-link.png"/> icon in the second bar below the <gui>Subject</gui> line.</p>
+<p>Případně můžete také použít ikonu <media type="image" its:translate="no" src="./figures/html-composer-insert-link.png"/> ve druhé liště pod řádkem <gui>Předmět</gui>.</p>
 
-<p>If you do not want a special link text you can just enter the address of the link directly. It will be automatically recognized as a link.</p>
+<p>V případě, že nechcete k odkazu nějaký speciální text, stačí jen přímo zadat adresu. Že se jedná o odkaz bude zjištěno automaticky.</p>
 </page>

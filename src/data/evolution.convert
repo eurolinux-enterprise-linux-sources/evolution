@@ -128,7 +128,6 @@ composer-show-post-from = /apps/evolution/mail/composer/show_post_from
 composer-show-post-reply-to = /apps/evolution/mail/composer/show_post_reply_to
 composer-show-reply-to = /apps/evolution/mail/composer/show_mail_reply_to
 composer-sign-reply-if-signed = /apps/evolution/mail/composer/sign_reply_if_signed
-composer-spell-color = /apps/evolution/mail/composer/spell_color
 composer-spell-languages = /apps/evolution/mail/composer/spell_languages
 composer-top-signature = /apps/evolution/mail/composer/top_signature
 default-account = /apps/evolution/mail/default_account
@@ -196,7 +195,6 @@ trash-empty-on-exit = /apps/evolution/mail/trash/empty_on_exit
 trash-empty-on-exit-days = /apps/evolution/mail/trash/empty_on_exit_days
 use-custom-font = /apps/evolution/mail/display/fonts/use_custom
 variable-width-font = /apps/evolution/mail/display/fonts/variable
-vertical-view-fonts = /apps/evolution/mail/display/vertical_view_fonts
 
 [org.gnome.evolution.window:/org/gnome/evolution/mail/browser-window/]
 height = /apps/evolution/mail/mail_browser_height

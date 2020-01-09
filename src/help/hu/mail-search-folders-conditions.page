@@ -18,9 +18,33 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
     
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Használható keresőmappa-feltételek</title>
+  <title>Használható <gui>keresőmappa</gui>-feltételek</title>
 
 <list>
 
@@ -29,7 +53,7 @@ included by XInclude. See http://blogs.gnome.org/shaunm/2011/07/21/understanding
 <include xmlns="http://www.w3.org/2001/XInclude" href="xinclude-filter-vfolder-conditions.xml" xpointer="xmlns(mal=http://projectmallard.org/1.0/)xpointer(/mal:info/mal:item)"/>
 
 <item><p>Üzenet helye:</p>
-<p>Ellenőrzi, hogy a levél egy adott mappában van-e.</p><p>Ne feledje, hogy alapesetben az Evolution <gui>Kuka</gui> és <gui>Levélszemét</gui> mappái <link xref="mail-search-folders">keresőmappák</link>, így itt nem választhatók ki.</p></item>
+<p>Ellenőrzi, hogy a levél egy adott mappában van-e.</p><p>Ne feledje, hogy alapesetben az <app>Evolution</app> <gui>Kuka</gui> és <gui>Levélszemét</gui> mappái <link xref="mail-search-folders"><gui>keresőmappák</gui></link>, így itt nem választhatók ki.</p></item>
 
 <item><p>Összes illesztése:</p>
 <p>Mindig alkalmaz egy műveletet minden üzenetre, feltétel nélkül. Ez a keresőmappák listájának végén lehet hasznos, azon üzenetek feldolgozására, amelyeket a listában előrébb lévő keresőmappák nem dolgoztak fel.</p></item>

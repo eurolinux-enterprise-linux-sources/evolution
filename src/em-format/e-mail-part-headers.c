@@ -97,6 +97,11 @@ mail_part_headers_build_print_model (EMailPartHeaders *part)
 		if (g_ascii_strncasecmp (header->name, "Subject", 7) == 0)
 			continue;
 
+		/* Also skip the 'Face' header, which includes only
+		   base64 encoded data anyway. */
+		if (g_ascii_strcasecmp (header->name, "Face") == 0)
+			continue;
+
 		/* Arrange default headers first and select them to be
 		 * included in the final printout.  All other headers
 		 * are excluded by default in the final printout. */
@@ -213,29 +218,19 @@ mail_part_headers_constructed (GObject *object)
 
 static void
 mail_part_headers_bind_dom_element (EMailPart *part,
-                                    WebKitDOMElement *element)
+                                    EWebView *web_view,
+                                    guint64 page_id,
+                                    const gchar *element_id)
 {
-	WebKitDOMDocument *document;
-	WebKitDOMElement *photo;
-	gchar *addr, *uri;
+	GDBusProxy *web_extension = e_web_view_get_web_extension_proxy (web_view);
 
-	document = webkit_dom_node_get_owner_document (
-		WEBKIT_DOM_NODE (element));
-	photo = webkit_dom_document_get_element_by_id (
-		document, "__evo-contact-photo");
-
-	/* Contact photos disabled, the <img> tag is not there. */
-	if (photo == NULL)
-		return;
-
-	addr = webkit_dom_element_get_attribute (photo, "data-mailaddr");
-	uri = g_strdup_printf ("mail://contact-photo?mailaddr=%s", addr);
-
-	webkit_dom_html_image_element_set_src (
-		WEBKIT_DOM_HTML_IMAGE_ELEMENT (photo), uri);
-
-	g_free (addr);
-	g_free (uri);
+	if (web_extension) {
+		e_util_invoke_g_dbus_proxy_call_with_error_check (
+			web_extension,
+			"EMailPartHeadersBindDOMElement",
+			g_variant_new ("(ts)", page_id, element_id),
+			NULL);
+	}
 }
 
 static void

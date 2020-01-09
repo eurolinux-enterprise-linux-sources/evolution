@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-default-folder-locations" xml:lang="fr">
 
   <info>
-    <desc>Modifier l'emplacement des dossiers Brouillons, Envoyés, Corbeille et Pourriels.</desc>
+    <desc>Changing the location of <gui>Draft</gui>, <gui>Sent</gui>, <gui>Trash</gui> and <gui>Junk</gui> folders.</desc>
 
     <link type="guide" xref="mail-account-manage-imap-plus#defaults"/>
     <link type="guide" xref="mail-account-manage-local-delivery#defaults"/>
@@ -15,7 +15,7 @@
     <link type="guide" xref="mail-account-manage-microsoft-exchange-evo-mapi#defaults"/>
     <link type="guide" xref="mail-account-manage-microsoft-exchange-evo-ews#defaults"/>
 
-    <revision pkgversion="3.7.4" version="0.2" date="2013-01-23" status="draft"/>
+    <revision pkgversion="3.13.90" version="0.3" date="2015-03-09" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -58,13 +58,14 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
   <title>Emplacements des dossiers de courriels</title>
 
-<p>Vous pouvez définir un emplacement différent pour enregistrer les messages de vos dossiers Brouillons et Envoyés dans la section <gui>Par défaut</gui> de l'éditeur de comptes de messagerie (<guiseq><gui>Édition</gui><gui>Préférences</gui><gui>Comptes de messagerie</gui><gui style="button">Modifier</gui><gui>Valeurs par défaut</gui></guiseq>).</p>
-<p>Pour les types de comptes distants (comptes de type IMAP), vous pouvez également utiliser des dossiers sur le serveur de messagerie pour Brouillons et Pourriels en sélectionnant l'option <gui>Utiliser un vrai dossier</gui>  correspondante. Dans ce cas, les <link xref="mail-search-folders">dossiers virtuels</link> locaux d'Evolution ne seront pas utilisés.</p>
+<p>You can set a different place where to store messages in your <gui>Draft</gui> folder and <gui>Sent</gui> folder in the <gui>Defaults</gui> section of the mail account editor (<guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Mail Accounts</gui><gui style="button">Edit</gui><gui>Defaults</gui></guiseq>).</p>
+<p>Vous pouvez définir un <gui>Dossier d'archive</gui>, par exemple pour y placer les messages anciens. Le fait de choisir <guiseq><gui>Message</gui><gui>Archiver</gui></guiseq> dans la fenêtre principale déplace le message sélectionné dans le dossier spécifique.</p>
+<p>For remote account types (accounts such as IMAP) you can also use folders on the mail server for Junk and Trash by selecting the corresponding <gui>Use a Real Folder</gui> option. In this case, <app>Evolution</app>'s local <link xref="mail-search-folders">virtual folders</link> will not be used.</p>
 
 </page>

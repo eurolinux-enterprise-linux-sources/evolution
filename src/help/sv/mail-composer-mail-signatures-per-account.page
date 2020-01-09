@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-composer-mail-signatures-per-account" xml:lang="sv">
 
   <info>
-    <desc>Setting a default signature for an email account.</desc>
+    <desc>Att ställa in en standardsignatur för ett e-postkonto.</desc>
     
     <link type="guide" xref="mail-composer-mail-signatures"/>
     <link type="guide" xref="mail-account-manage-imap-plus#identity"/>
@@ -24,12 +24,24 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-<title>Default account signature</title>
+<title>Kontots standardsignatur</title>
 
-<p>You can define a default <link xref="mail-composer-mail-signatures">signature</link> for each of your mail accounts. This can be edited under <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Mail Accounts</gui><gui style="button">Edit</gui><gui>Identity</gui><gui>Optional Information</gui></guiseq>.</p>
+<p>Du kan definiera en standard<link xref="mail-composer-mail-signatures">signatur</link> för vart och ett av dina e-postkonton. Denna kan redigeras under <guiseq><gui>Redigera</gui><gui>Inställningar</gui><gui>E-postkonton</gui><gui style="button">Redigera</gui><gui>Identitet</gui><gui>Valfri information</gui></guiseq>.</p>
 
-<p>If you have a signature for your account defined but exceptionally do not want to use it for one message, or want to use a different signature, you can change it via the dropdown menu in the right upper corner in the email composer window.</p>
+<p>Om du redan har en signatur definierad för ditt konto men i undantagsfall inte vill använda den för ett meddelande, eller vill använda en annan signatur, kan du ändra den via rullgardinsmenyn i övre högra hörnet i fönstret för meddelanderedigering.</p>
 
 </page>

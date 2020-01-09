@@ -64,6 +64,8 @@
 struct _EABContactFormatterPrivate {
 	EABContactDisplayMode mode;
 	gboolean render_maps;
+	gboolean supports_tel;
+	gboolean supports_sip;
 };
 
 enum {
@@ -85,6 +87,9 @@ G_DEFINE_TYPE (
 	EABContactFormatter,
 	eab_contact_formatter,
 	G_TYPE_OBJECT);
+
+#define E_CREATE_TEL_URL	(E_TEXT_TO_HTML_LAST_FLAG << 0)
+#define E_CREATE_SIP_URL	(E_TEXT_TO_HTML_LAST_FLAG << 1)
 
 static gboolean
 icon_available (const gchar *icon)
@@ -258,7 +263,7 @@ render_table_row (GString *buffer,
 		value = (gchar *) str;
 
 	if (icon && icon_available (icon)) {
-		icon_html = g_strdup_printf ("<img src=\"gtk-stock://%s\" width=\"16\" height=\"16\" />", icon);
+		icon_html = g_strdup_printf ("<img src=\"gtk-stock://%s\" width=\"16px\" height=\"16px\" />", icon);
 	} else {
 		icon_html = "";
 	}
@@ -285,6 +290,36 @@ render_table_row (GString *buffer,
 		g_free (value);
 }
 
+/* Returns NULL if no replace had been done (and
+   original 'str' should be used instead). Otherwise
+   free the returned pointer with g_free().
+*/
+static gchar *
+maybe_create_url (const gchar *str,
+		  guint html_flags)
+{
+	gchar *tmp = NULL;
+	const gchar *url = NULL;
+
+	g_return_val_if_fail (str != NULL, NULL);
+
+	if ((html_flags & E_CREATE_TEL_URL) != 0) {
+		/* RFC 3966 requires either the phone number begins with '+',
+		   or the URL contains a 'phone-context' parameter, but that
+		   also requires changing phone number for some countries, thus
+		   rather mandate the '+' at the beginning. */
+		if (*str == '+')
+			url = "tel:";
+	} else if ((html_flags & E_CREATE_SIP_URL) != 0) {
+		url = "sip:";
+	}
+
+	if (url && g_ascii_strncasecmp (str, url, strlen (url)) != 0)
+		tmp = g_strconcat (url, str, NULL);
+
+	return tmp;
+}
+
 static void
 accum_attribute (GString *buffer,
                  EContact *contact,
@@ -297,8 +332,17 @@ accum_attribute (GString *buffer,
 
 	str = e_contact_get_const (contact, field);
 
-	if (str != NULL && *str != '\0')
+	if (str != NULL && *str != '\0') {
+		gchar *tmp = NULL;
+
+		tmp = maybe_create_url (str, html_flags);
+		if (tmp)
+			str = tmp;
+
 		render_table_row (buffer, html_label, str, icon, html_flags);
+
+		g_free (tmp);
+	}
 }
 
 static void
@@ -336,22 +380,123 @@ accum_attribute_multival (GString *buffer,
 {
 	GList *val_list, *l;
 	GString *val = g_string_new ("");
+	const gchar *str;
+	gchar *tmp;
 
 	val_list = e_contact_get (contact, field);
 
 	for (l = val_list; l; l = l->next) {
+		str = l->data;
+
 		if (l != val_list)
 			g_string_append (val, "<br>");
 
-		g_string_append (val, l->data);
+		tmp = maybe_create_url (str, html_flags);
+		if (tmp)
+			str = tmp;
+
+		if ((html_flags & E_TEXT_TO_HTML_CONVERT_URLS) != 0) {
+			gchar *value = e_text_to_html (str, html_flags);
+
+			if (value && *value)
+				g_string_append (val, value);
+
+			g_free (value);
+		} else {
+			g_string_append (val, str);
+		}
+
+		g_free (tmp);
 	}
 
-	if (val->str && *val->str)
+	if (val->str && *val->str) {
+		if ((html_flags & E_TEXT_TO_HTML_CONVERT_URLS) != 0)
+			html_flags = 0;
+
 		render_table_row (buffer, html_label, val->str, icon, html_flags);
+	}
 
 	g_string_free (val, TRUE);
 	g_list_foreach (val_list, (GFunc) g_free, NULL);
 	g_list_free (val_list);
+}
+
+typedef enum {
+	EAB_CONTACT_FORMATTER_SIP_TYPE_HOME,
+	EAB_CONTACT_FORMATTER_SIP_TYPE_WORK,
+	EAB_CONTACT_FORMATTER_SIP_TYPE_OTHER
+} EABContactFormatterSIPType;
+
+static void
+accum_sip (GString *buffer,
+	   EContact *contact,
+	   EABContactFormatterSIPType use_sip_type,
+	   const gchar *icon,
+	   guint html_flags)
+{
+	const gchar *html_label = _("SIP");
+	GList *sip_attr_list, *l;
+	GString *val = g_string_new ("");
+	gchar *tmp;
+
+	sip_attr_list = e_contact_get_attributes (contact, E_CONTACT_SIP);
+	for (l = sip_attr_list; l; l = g_list_next (l)) {
+		EVCardAttribute *attr = l->data;
+		gchar *sip;
+		const gchar *str;
+		EABContactFormatterSIPType sip_type;
+
+		if (e_vcard_attribute_has_type (attr, "HOME"))
+			sip_type = EAB_CONTACT_FORMATTER_SIP_TYPE_HOME;
+		else if (e_vcard_attribute_has_type (attr, "WORK"))
+			sip_type = EAB_CONTACT_FORMATTER_SIP_TYPE_WORK;
+		else
+			sip_type = EAB_CONTACT_FORMATTER_SIP_TYPE_OTHER;
+
+		if (sip_type != use_sip_type)
+			continue;
+
+		sip = e_vcard_attribute_get_value (attr);
+		if (!sip || !*sip) {
+			g_free (sip);
+			continue;
+		}
+
+		tmp = maybe_create_url (sip, html_flags);
+		if (tmp)
+			str = tmp;
+		else
+			str = sip;
+
+		if ((html_flags & E_TEXT_TO_HTML_CONVERT_URLS) != 0) {
+			gchar *value = e_text_to_html (str, html_flags);
+
+			if (value && *value) {
+				if (val->len)
+					g_string_append (val, "<br>");
+				g_string_append (val, value);
+			}
+
+			g_free (value);
+		} else {
+			if (val->len)
+				g_string_append (val, "<br>");
+			g_string_append (val, str);
+		}
+
+		g_free (tmp);
+		g_free (sip);
+	}
+
+	if (val->str && *val->str) {
+		if ((html_flags & E_TEXT_TO_HTML_CONVERT_URLS) != 0)
+			html_flags = 0;
+
+		render_table_row (buffer, html_label, val->str, icon, html_flags);
+	}
+
+	g_string_free (val, TRUE);
+	g_list_free_full (sip_attr_list, (GDestroyNotify) e_vcard_attribute_free);
 }
 
 static const gchar *
@@ -401,7 +546,7 @@ render_title_block (EABContactFormatter *formatter,
 		const gchar *uri = photo->data.uri;
 		/* WebKit 2.2.x doesn't re-escape URIs, thus do this for versions before and after this */
 		#if !(WEBKIT_MAJOR_VERSION == 2 && WEBKIT_MINOR_VERSION == 2)
-		gchar *unescaped = g_uri_unescape_string (photo->data.uri, NULL);
+		gchar *unescaped = g_uri_unescape_string (uri, NULL);
 		uri = unescaped;
 		#endif
 		g_string_append_printf (
@@ -416,7 +561,7 @@ render_title_block (EABContactFormatter *formatter,
 		e_contact_photo_free (photo);
 
 	if (e_contact_get (contact, E_CONTACT_IS_LIST)) {
-		g_string_append_printf (buffer, "<img src=\"gtk-stock://%s\">", CONTACT_LIST_ICON);
+		g_string_append_printf (buffer, "<img src=\"gtk-stock://%s\" width=\"16px\" height=\"16px\">", CONTACT_LIST_ICON);
 	}
 
 	g_string_append_printf (
@@ -465,7 +610,7 @@ render_contact_list_row (EABContactFormatter *formatter,
 		g_string_append_printf (
 			buffer,
 			"<td width=" IMAGE_COL_WIDTH " valign=\"top\" align=\"left\">"
-			"<img src=\"evo-file://%s/minus.png\" "
+			"<img src=\"evo-file://%s/minus.png\" width=\"16px\" height=\"16px\" "
 			"id=\"%s\" "
 			"class=\"navigable _evo_collapse_button\">"
 			"</td><td width=\"100%%\" align=\"left\">%s",
@@ -555,6 +700,13 @@ render_contact_column (EABContactFormatter *formatter,
 	GList *email_list, *l, *email_attr_list, *al;
 	gint email_num = 0;
 	const gchar *nl;
+	guint32 sip_flags = 0;
+
+	if (formatter->priv->supports_sip)
+		sip_flags = E_TEXT_TO_HTML_CONVERT_URLS |
+			    E_TEXT_TO_HTML_HIDE_URL_SCHEME |
+			    E_TEXT_TO_HTML_URL_IS_WHOLE_TEXT |
+			    E_CREATE_SIP_URL;
 
 	email = g_string_new ("");
 	nl = "";
@@ -595,6 +747,8 @@ render_contact_column (EABContactFormatter *formatter,
 
 	if (email->len)
 		render_table_row (accum, _("Email"), email->str, NULL, 0);
+
+	accum_sip (accum, contact, EAB_CONTACT_FORMATTER_SIP_TYPE_OTHER, NULL, sip_flags);
 
 	accum_attribute (accum, contact, _("Nickname"), E_CONTACT_NICKNAME, NULL, 0);
 	accum_attribute_multival (accum, contact, _("AIM"), E_CONTACT_IM_AIM, AIM_ICON, 0);
@@ -648,6 +802,19 @@ render_work_column (EABContactFormatter *formatter,
                     GString *buffer)
 {
 	GString *accum = g_string_new ("");
+	guint32 phone_flags = 0, sip_flags = 0;
+
+	if (formatter->priv->supports_tel)
+		phone_flags = E_TEXT_TO_HTML_CONVERT_URLS |
+			      E_TEXT_TO_HTML_HIDE_URL_SCHEME |
+			      E_TEXT_TO_HTML_URL_IS_WHOLE_TEXT |
+			      E_CREATE_TEL_URL;
+
+	if (formatter->priv->supports_sip)
+		sip_flags = E_TEXT_TO_HTML_CONVERT_URLS |
+			    E_TEXT_TO_HTML_HIDE_URL_SCHEME |
+			    E_TEXT_TO_HTML_URL_IS_WHOLE_TEXT |
+			    E_CREATE_SIP_URL;
 
 	accum_attribute (accum, contact, _("Company"), E_CONTACT_ORG, NULL, 0);
 	accum_attribute (accum, contact, _("Department"), E_CONTACT_ORG_UNIT, NULL, 0);
@@ -659,8 +826,9 @@ render_work_column (EABContactFormatter *formatter,
 	accum_attribute (accum, contact, _("Video Chat"), E_CONTACT_VIDEO_URL, VIDEOCONF_ICON, E_TEXT_TO_HTML_CONVERT_URLS);
 	accum_attribute (accum, contact, _("Calendar"), E_CONTACT_CALENDAR_URI, NULL, E_TEXT_TO_HTML_CONVERT_URLS);
 	accum_attribute (accum, contact, _("Free/Busy"), E_CONTACT_FREEBUSY_URL, NULL, E_TEXT_TO_HTML_CONVERT_URLS);
-	accum_attribute (accum, contact, _("Phone"), E_CONTACT_PHONE_BUSINESS, NULL, 0);
+	accum_attribute (accum, contact, _("Phone"), E_CONTACT_PHONE_BUSINESS, NULL, phone_flags);
 	accum_attribute (accum, contact, _("Fax"), E_CONTACT_PHONE_BUSINESS_FAX, NULL, 0);
+	accum_sip       (accum, contact, EAB_CONTACT_FORMATTER_SIP_TYPE_WORK, NULL, sip_flags);
 	accum_address   (accum, contact, _("Address"), E_CONTACT_ADDRESS_WORK, E_CONTACT_ADDRESS_LABEL_WORK);
 	if (formatter->priv->render_maps)
 		accum_address_map (accum, contact, E_CONTACT_ADDRESS_WORK);
@@ -683,11 +851,25 @@ render_personal_column (EABContactFormatter *formatter,
                         GString *buffer)
 {
 	GString *accum = g_string_new ("");
+	guint32 phone_flags = 0, sip_flags = 0;
+
+	if (formatter->priv->supports_tel)
+		phone_flags = E_TEXT_TO_HTML_CONVERT_URLS |
+			      E_TEXT_TO_HTML_HIDE_URL_SCHEME |
+			      E_TEXT_TO_HTML_URL_IS_WHOLE_TEXT |
+			      E_CREATE_TEL_URL;
+
+	if (formatter->priv->supports_sip)
+		sip_flags = E_TEXT_TO_HTML_CONVERT_URLS |
+			    E_TEXT_TO_HTML_HIDE_URL_SCHEME |
+			    E_TEXT_TO_HTML_URL_IS_WHOLE_TEXT |
+			    E_CREATE_SIP_URL;
 
 	accum_attribute (accum, contact, _("Home Page"), E_CONTACT_HOMEPAGE_URL, NULL, E_TEXT_TO_HTML_CONVERT_URLS);
 	accum_attribute (accum, contact, _("Web Log"), E_CONTACT_BLOG_URL, NULL, E_TEXT_TO_HTML_CONVERT_URLS);
-	accum_attribute (accum, contact, _("Phone"), E_CONTACT_PHONE_HOME, NULL, 0);
-	accum_attribute (accum, contact, _("Mobile Phone"), E_CONTACT_PHONE_MOBILE, NULL, 0);
+	accum_attribute (accum, contact, _("Phone"), E_CONTACT_PHONE_HOME, NULL, phone_flags);
+	accum_attribute (accum, contact, _("Mobile Phone"), E_CONTACT_PHONE_MOBILE, NULL, phone_flags);
+	accum_sip       (accum, contact, EAB_CONTACT_FORMATTER_SIP_TYPE_HOME, NULL, sip_flags);
 	accum_address   (accum, contact, _("Address"), E_CONTACT_ADDRESS_HOME, E_CONTACT_ADDRESS_LABEL_HOME);
 	accum_time_attribute (accum, contact, _("Birthday"), E_CONTACT_BIRTH_DATE, NULL, 0);
 	accum_time_attribute (accum, contact, _("Anniversary"), E_CONTACT_ANNIVERSARY, NULL, 0);
@@ -882,12 +1064,12 @@ render_compact (EABContactFormatter *formatter,
 			const gchar *uri = photo->data.uri;
 			/* WebKit 2.2.x doesn't re-escape URIs, thus do this for versions before and after this */
 			#if !(WEBKIT_MAJOR_VERSION == 2 && WEBKIT_MINOR_VERSION == 2)
-			gchar *unescaped = g_uri_unescape_string (photo->data.uri, NULL);
+			gchar *unescaped = g_uri_unescape_string (uri, NULL);
 			uri = unescaped;
 			#endif
 			g_string_append_printf (
 				buffer,
-				"<img id=\"__evo-contact-photo\" width=\"%d\" height=\"%d\" src=\"%s%s\">",
+				"<img id=\"__evo-contact-photo\" width=\"%dpx\" height=\"%dpx\" src=\"%s%s\">",
 				calced_width, calced_height,
 				is_local ? "evo-" : "", uri);
 			#if !(WEBKIT_MAJOR_VERSION == 2 && WEBKIT_MINOR_VERSION == 2)
@@ -902,7 +1084,7 @@ render_compact (EABContactFormatter *formatter,
 			g_string_append_printf (
 				buffer,
 				"<img id=\"__evo-contact-photo\" border=\"1\" src=\"data:%s;base64,%s\" "
-					"width=\"%d\" height=\"%d\">",
+					"width=\"%dpx\" height=\"%dpx\">",
 				photo->data.inlined.mime_type,
 				photo_data,
 				calced_width, calced_height);
@@ -1023,6 +1205,21 @@ render_compact (EABContactFormatter *formatter,
 	g_string_append (buffer, "</body></html>\n");
 }
 
+static gboolean
+eab_contact_formatter_scheme_supported (const gchar *scheme)
+{
+	GAppInfo *app_info;
+	gboolean supported;
+
+	app_info = g_app_info_get_default_for_uri_scheme (scheme);
+	supported = app_info != NULL;
+
+	if (app_info && g_app_info_can_delete (app_info))
+		g_app_info_delete (app_info);
+
+	return supported;
+}
+
 static void
 eab_contact_formatter_set_property (GObject *object,
                                     guint property_id,
@@ -1116,6 +1313,8 @@ eab_contact_formatter_init (EABContactFormatter *formatter)
 
 	formatter->priv->mode = EAB_CONTACT_DISPLAY_RENDER_NORMAL;
 	formatter->priv->render_maps = FALSE;
+	formatter->priv->supports_tel = eab_contact_formatter_scheme_supported ("tel");
+	formatter->priv->supports_sip = eab_contact_formatter_scheme_supported ("sip");
 }
 
 EABContactFormatter *
@@ -1183,70 +1382,4 @@ eab_contact_formatter_format_contact (EABContactFormatter *formatter,
 		render_normal (formatter, contact, output_buffer);
 	else
 		render_compact (formatter, contact, output_buffer);
-}
-
-static void
-collapse_contacts_list (WebKitDOMEventTarget *event_target,
-                        WebKitDOMEvent *event,
-                        gpointer user_data)
-{
-	WebKitDOMDocument *document;
-	WebKitDOMElement *list;
-	gchar *id, *list_id;
-	gchar *imagesdir, *src;
-	gboolean hidden;
-
-	document = user_data;
-#if WEBKIT_CHECK_VERSION(2,2,0)  /* XXX should really be (2,1,something) */
-	id = webkit_dom_element_get_id (
-		WEBKIT_DOM_ELEMENT (event_target));
-#else
-	id = webkit_dom_html_element_get_id (
-		WEBKIT_DOM_HTML_ELEMENT (event_target));
-#endif
-
-	list_id = g_strconcat ("list-", id, NULL);
-	list = webkit_dom_document_get_element_by_id (document, list_id);
-	g_free (id);
-	g_free (list_id);
-
-	if (list == NULL)
-		return;
-
-	imagesdir = g_filename_to_uri (EVOLUTION_IMAGESDIR, NULL, NULL);
-	hidden = webkit_dom_html_element_get_hidden (WEBKIT_DOM_HTML_ELEMENT (list));
-
-	if (hidden)
-		src = g_strdup_printf ("evo-file://%s/minus.png", imagesdir);
-	else
-		src = g_strdup_printf ("evo-file://%s/plus.png", imagesdir);
-
-	webkit_dom_html_element_set_hidden (
-		WEBKIT_DOM_HTML_ELEMENT (list), !hidden);
-	webkit_dom_html_image_element_set_src (
-		WEBKIT_DOM_HTML_IMAGE_ELEMENT (event_target), src);
-
-	g_free (src);
-	g_free (imagesdir);
-}
-
-void
-eab_contact_formatter_bind_dom (WebKitDOMDocument *document)
-{
-	WebKitDOMNodeList *nodes;
-	gulong ii, length;
-
-	nodes = webkit_dom_document_get_elements_by_class_name (
-		document, "_evo_collapse_button");
-
-	length = webkit_dom_node_list_get_length (nodes);
-	for (ii = 0; ii < length; ii++) {
-
-		WebKitDOMNode *node;
-
-		node = webkit_dom_node_list_item (nodes, ii);
-		webkit_dom_event_target_add_event_listener (
-			WEBKIT_DOM_EVENT_TARGET (node), "click",
-			G_CALLBACK (collapse_contacts_list), FALSE, document);
-	}
 }

@@ -35,17 +35,12 @@
 
 #include "libgnomecanvas/libgnomecanvas.h"
 
-#include "dialogs/delete-comp.h"
-#include "dialogs/delete-error.h"
-#include "dialogs/send-comp.h"
-#include "dialogs/cancel-comp.h"
-#include "dialogs/recur-comp.h"
-#include "dialogs/goto-dialog.h"
-#include "dialogs/save-comp.h"
+#include "e-cal-dialogs.h"
 #include "e-util/e-util.h"
 
 #include "calendar-config.h"
 #include "comp-util.h"
+#include "e-cal-ops.h"
 #include "e-cal-model-calendar.h"
 #include "e-day-view-layout.h"
 #include "e-day-view-main-item.h"
@@ -106,6 +101,20 @@ struct _EDayViewPrivate {
 	gulong notify_work_day_start_minute_handler_id;
 	gulong notify_work_day_end_hour_handler_id;
 	gulong notify_work_day_end_minute_handler_id;
+	gulong notify_work_day_start_mon_handler_id;
+	gulong notify_work_day_end_mon_handler_id;
+	gulong notify_work_day_start_tue_handler_id;
+	gulong notify_work_day_end_tue_handler_id;
+	gulong notify_work_day_start_wed_handler_id;
+	gulong notify_work_day_end_wed_handler_id;
+	gulong notify_work_day_start_thu_handler_id;
+	gulong notify_work_day_end_thu_handler_id;
+	gulong notify_work_day_start_fri_handler_id;
+	gulong notify_work_day_end_fri_handler_id;
+	gulong notify_work_day_start_sat_handler_id;
+	gulong notify_work_day_end_sat_handler_id;
+	gulong notify_work_day_start_sun_handler_id;
+	gulong notify_work_day_end_sun_handler_id;
 	gulong time_range_changed_handler_id;
 	gulong model_row_changed_handler_id;
 	gulong model_cell_changed_handler_id;
@@ -158,6 +167,11 @@ struct _EDayViewPrivate {
 	gboolean marcus_bains_show_line;
 	gchar *marcus_bains_day_view_color;
 	gchar *marcus_bains_time_bar_color;
+
+	GtkWidget *timezone_name_1_label; /* not referenced */
+	GtkWidget *timezone_name_2_label; /* not referenced */
+
+	GdkDragContext *drag_context;
 };
 
 typedef struct {
@@ -339,7 +353,8 @@ static void e_day_view_foreach_event_with_uid (EDayView *day_view,
 static void e_day_view_free_events (EDayView *day_view);
 static void e_day_view_free_event_array (EDayView *day_view,
 					 GArray *array);
-static gint e_day_view_add_event (ESourceRegistry *registry,
+static void e_day_view_add_event (ESourceRegistry *registry,
+				 ECalClient *client,
 				 ECalComponent *comp,
 				 time_t	  start,
 				 time_t	  end,
@@ -367,6 +382,7 @@ static void e_day_view_start_editing_event (EDayView *day_view,
 					    gint event_num,
 					    GdkEventKey *key_event);
 static void e_day_view_stop_editing_event (EDayView *day_view);
+static void cancel_editing (EDayView *day_view);
 static gboolean e_day_view_on_text_item_event (GnomeCanvasItem *item,
 					       GdkEvent *event,
 					       EDayView *day_view);
@@ -462,6 +478,11 @@ static time_t e_day_view_find_work_week_start	(EDayView	*day_view,
 static void e_day_view_recalc_work_week		(EDayView	*day_view);
 static void e_day_view_recalc_work_week_days_shown	(EDayView	*day_view);
 
+static void e_day_view_precalc_visible_time_range (ECalendarView *cal_view,
+						   time_t in_start_time,
+						   time_t in_end_time,
+						   time_t *out_start_time,
+						   time_t *out_end_time);
 static void e_day_view_queue_layout (EDayView *day_view);
 static void e_day_view_cancel_layout (EDayView *day_view);
 static gboolean e_day_view_layout_timeout_cb (gpointer data);
@@ -534,17 +555,73 @@ day_view_notify_work_day_cb (ECalModel *model,
 }
 
 static void
-e_day_view_recalc_main_canvas_size (EDayView *day_view)
+e_day_view_get_work_day_range_for_day (EDayView *day_view,
+				       gint day,
+				       gint *start_hour,
+				       gint *start_minute,
+				       gint *end_hour,
+				       gint *end_minute)
 {
 	ECalModel *model;
-	gint work_day_start_hour;
-	gint work_day_start_minute;
-	gint day, scroll_y;
-	gboolean need_reshape;
+
+	g_return_if_fail (E_IS_DAY_VIEW (day_view));
+	g_return_if_fail (start_hour != NULL);
+	g_return_if_fail (start_minute != NULL);
+	g_return_if_fail (end_hour != NULL);
+	g_return_if_fail (end_minute != NULL);
 
 	model = e_calendar_view_get_model (E_CALENDAR_VIEW (day_view));
-	work_day_start_hour = e_cal_model_get_work_day_start_hour (model);
-	work_day_start_minute = e_cal_model_get_work_day_start_minute (model);
+
+	if (day >= 0 && day < e_day_view_get_days_shown (day_view)) {
+		GDateWeekday weekday;
+		struct icaltimetype tt;
+
+		tt = icaltime_from_timet_with_zone (day_view->day_starts[day], FALSE,
+			e_calendar_view_get_timezone (E_CALENDAR_VIEW (day_view)));
+
+		switch (icaltime_day_of_week (tt)) {
+			case 1:
+				weekday = G_DATE_SUNDAY;
+				break;
+			case 2:
+				weekday = G_DATE_MONDAY;
+				break;
+			case 3:
+				weekday = G_DATE_TUESDAY;
+				break;
+			case 4:
+				weekday = G_DATE_WEDNESDAY;
+				break;
+			case 5:
+				weekday = G_DATE_THURSDAY;
+				break;
+			case 6:
+				weekday = G_DATE_FRIDAY;
+				break;
+			case 7:
+				weekday = G_DATE_SATURDAY;
+				break;
+			default:
+				weekday = G_DATE_BAD_WEEKDAY;
+				break;
+		}
+
+		e_cal_model_get_work_day_range_for (model, weekday,
+			start_hour, start_minute,
+			end_hour, end_minute);
+	} else {
+		*start_hour = e_cal_model_get_work_day_start_hour (model);
+		*start_minute = e_cal_model_get_work_day_start_minute (model);
+		*end_hour = e_cal_model_get_work_day_end_hour (model);
+		*end_minute = e_cal_model_get_work_day_end_minute (model);
+	}
+}
+
+static void
+e_day_view_recalc_main_canvas_size (EDayView *day_view)
+{
+	gint day, scroll_y;
+	gboolean need_reshape;
 
 	/* Set the scroll region of the top canvas */
 	e_day_view_update_top_scroll (day_view, TRUE);
@@ -556,6 +633,15 @@ e_day_view_recalc_main_canvas_size (EDayView *day_view)
 	/* Scroll to the start of the working day, if this is the initial
 	 * allocation. */
 	if (day_view->scroll_to_work_day) {
+		gint work_day_start_hour;
+		gint work_day_start_minute;
+		gint work_day_end_hour;
+		gint work_day_end_minute;
+
+		e_day_view_get_work_day_range_for_day (day_view, 0,
+			&work_day_start_hour, &work_day_start_minute,
+			&work_day_end_hour, &work_day_end_minute);
+
 		scroll_y = e_day_view_convert_time_to_position (
 			day_view, work_day_start_hour, work_day_start_minute);
 		gnome_canvas_scroll_to (
@@ -579,21 +665,20 @@ e_day_view_get_text_color (EDayView *day_view,
                            EDayViewEvent *event)
 {
 	GdkColor color;
-	guint16 red, green, blue;
-	gdouble	cc = 65535.0;
+	GdkRGBA rgba;
 
-	red = day_view->colors[E_DAY_VIEW_COLOR_EVENT_BACKGROUND].red;
-	green = day_view->colors[E_DAY_VIEW_COLOR_EVENT_BACKGROUND].green;
-	blue = day_view->colors[E_DAY_VIEW_COLOR_EVENT_BACKGROUND].blue;
+	if (is_comp_data_valid (event) &&
+	    e_cal_model_get_rgba_for_component (e_calendar_view_get_model (E_CALENDAR_VIEW (day_view)), event->comp_data, &rgba)) {
+	} else {
+		gdouble	cc = 65535.0;
 
-	if (is_comp_data_valid (event) && gdk_color_parse (e_cal_model_get_color_for_component (e_calendar_view_get_model (E_CALENDAR_VIEW (day_view)), event->comp_data),
-	     &color)) {
-		red = color.red;
-		green = color.green;
-		blue = color.blue;
+		rgba.red = day_view->colors[E_DAY_VIEW_COLOR_EVENT_BACKGROUND].red / cc;
+		rgba.green = day_view->colors[E_DAY_VIEW_COLOR_EVENT_BACKGROUND].green / cc;
+		rgba.blue = day_view->colors[E_DAY_VIEW_COLOR_EVENT_BACKGROUND].blue / cc;
+		rgba.alpha = 1.0;
 	}
 
-	if ((red / cc > 0.7) || (green / cc > 0.7) || (blue / cc > 0.7)) {
+	if ((rgba.red > 0.7) || (rgba.green > 0.7) || (rgba.blue > 0.7)) {
 		color.red = 0.0;
 		color.green = 0.0;
 		color.blue = 0.0;
@@ -602,6 +687,8 @@ e_day_view_get_text_color (EDayView *day_view,
 		color.green = 65535.0f;
 		color.blue = 65535.0f;
 	}
+
+	color.pixel = 0;
 
 	return color;
 }
@@ -648,52 +735,62 @@ day_view_get_selected_time_range (ECalendarView *cal_view,
 	return TRUE;
 }
 
-static gboolean
-e_day_view_add_new_event_in_selected_range (EDayView *day_view,
-                                            GdkEventKey *key_event)
+typedef struct {
+	EDayView *day_view;
+	GdkEventKey *key_event;
+	time_t dtstart, dtend;
+	gboolean in_top_canvas;
+	gboolean paste_clipboard;
+} NewEventInRangeData;
+
+static void
+new_event_in_rage_data_free (gpointer ptr)
 {
-	icalcomponent *icalcomp;
-	ECalClient *client;
-	ECalModel *model;
+	NewEventInRangeData *ned = ptr;
+
+	if (ned) {
+		g_clear_object (&ned->day_view);
+		g_free (ned->key_event);
+		g_free (ned);
+	}
+}
+
+static void
+day_view_new_event_in_selected_range_cb (ECalModel *model,
+					 ECalClient *client,
+					 icalcomponent *default_component,
+					 gpointer user_data)
+{
+	NewEventInRangeData *ned = user_data;
 	ECalComponent *comp = NULL;
 	gint day, event_num;
-	time_t dtstart, dtend;
 	ECalComponentDateTime start_dt, end_dt;
 	struct icaltimetype start_tt, end_tt;
 	const gchar *uid;
 	AddEventData add_event_data;
 	ESourceRegistry *registry;
-	gboolean success = FALSE;
+	icaltimezone *zone;
 
-	model = e_calendar_view_get_model (E_CALENDAR_VIEW (day_view));
-
-	registry = e_cal_model_get_registry (model);
-	client = e_cal_model_ref_default_client (model);
+	g_return_if_fail (ned != NULL);
+	g_return_if_fail (E_IS_CAL_MODEL (model));
+	g_return_if_fail (E_IS_CAL_CLIENT (client));
+	g_return_if_fail (default_component != NULL);
 
 	/* Check if the client is read only */
 	if (e_client_is_readonly (E_CLIENT (client)))
-		goto exit;
+		return;
 
-	icalcomp = e_cal_model_create_component_with_defaults (model, day_view->selection_in_top_canvas);
-	if (!icalcomp)
-		goto exit;
+	registry = e_cal_model_get_registry (model);
+	zone = e_cal_model_get_timezone (model);
+	uid = icalcomponent_get_uid (default_component);
 
-	uid = icalcomponent_get_uid (icalcomp);
+	comp = e_cal_component_new_from_icalcomponent (icalcomponent_new_clone (default_component));
+	g_return_if_fail (comp != NULL);
 
-	comp = e_cal_component_new ();
-	e_cal_component_set_icalcomponent (comp, icalcomp);
+	start_tt = icaltime_from_timet_with_zone (ned->dtstart, FALSE, zone);
+	end_tt = icaltime_from_timet_with_zone (ned->dtend, FALSE, zone);
 
-	day_view_get_selected_time_range ((ECalendarView *) day_view, &dtstart, &dtend);
-
-	start_tt = icaltime_from_timet_with_zone (
-		dtstart, FALSE,
-		e_calendar_view_get_timezone (E_CALENDAR_VIEW (day_view)));
-
-	end_tt = icaltime_from_timet_with_zone (
-		dtend, FALSE,
-		e_calendar_view_get_timezone (E_CALENDAR_VIEW (day_view)));
-
-	if (day_view->selection_in_top_canvas) {
+	if (ned->in_top_canvas) {
 		start_dt.tzid = NULL;
 		start_tt.is_date = 1;
 		end_tt.is_date = 1;
@@ -701,7 +798,7 @@ e_day_view_add_new_event_in_selected_range (EDayView *day_view,
 		/* Editor default in day/work-week view - top canvas */
 		e_cal_component_set_transparency (comp, E_CAL_COMPONENT_TRANSP_TRANSPARENT);
 	} else {
-		start_dt.tzid = icaltimezone_get_tzid (e_calendar_view_get_timezone (E_CALENDAR_VIEW (day_view)));
+		start_dt.tzid = icaltimezone_get_tzid (zone);
 
 		/* Editor default in day/work-week view - main canvas */
 		e_cal_component_set_transparency (comp, E_CAL_COMPONENT_TRANSP_OPAQUE);
@@ -713,32 +810,77 @@ e_day_view_add_new_event_in_selected_range (EDayView *day_view,
 	e_cal_component_set_dtstart (comp, &start_dt);
 	e_cal_component_set_dtend (comp, &end_dt);
 
-	e_cal_component_set_categories (
-		comp, e_calendar_view_get_default_category (E_CALENDAR_VIEW (day_view)));
-
 	/* We add the event locally and start editing it. We don't send it
 	 * to the server until the user finishes editing it. */
-	add_event_data.day_view = day_view;
+	add_event_data.day_view = ned->day_view;
 	add_event_data.comp_data = NULL;
-	e_day_view_add_event (registry, comp, dtstart, dtend, &add_event_data);
-	e_day_view_check_layout (day_view);
-	gtk_widget_queue_draw (day_view->top_canvas);
-	gtk_widget_queue_draw (day_view->main_canvas);
+	e_day_view_add_event (registry, client, comp, ned->dtstart, ned->dtend, &add_event_data);
+	e_day_view_check_layout (ned->day_view);
+	gtk_widget_queue_draw (ned->day_view->top_canvas);
+	gtk_widget_queue_draw (ned->day_view->main_canvas);
 
-	if (!e_day_view_find_event_from_uid (day_view, client, uid, NULL, &day, &event_num)) {
+	if (!e_day_view_find_event_from_uid (ned->day_view, client, uid, NULL, &day, &event_num)) {
 		g_warning ("Couldn't find event to start editing.\n");
-		goto exit;
+	} else {
+		e_day_view_start_editing_event (ned->day_view, day, event_num, ned->key_event);
+
+		if (ned->paste_clipboard) {
+			EDayViewEvent *event;
+
+			g_clear_object (&comp);
+
+			if (ned->day_view->editing_event_day == E_DAY_VIEW_LONG_EVENT) {
+				if (!is_array_index_in_bounds (ned->day_view->long_events, ned->day_view->editing_event_num))
+					goto out;
+
+				event = &g_array_index (ned->day_view->long_events,
+							EDayViewEvent,
+							ned->day_view->editing_event_num);
+			} else {
+				if (!is_array_index_in_bounds (ned->day_view->events[ned->day_view->editing_event_day], ned->day_view->editing_event_num))
+					goto out;
+
+				event = &g_array_index (ned->day_view->events[ned->day_view->editing_event_day],
+							EDayViewEvent,
+							ned->day_view->editing_event_num);
+			}
+
+			if (event->canvas_item &&
+			    E_IS_TEXT (event->canvas_item) &&
+			    E_TEXT (event->canvas_item)->editing) {
+				e_text_paste_clipboard (E_TEXT (event->canvas_item));
+			}
+		}
 	}
 
-	e_day_view_start_editing_event (day_view, day, event_num, key_event);
-
-	success = TRUE;
-
-exit:
+ out:
 	g_clear_object (&comp);
-	g_clear_object (&client);
+}
 
-	return success;
+static void
+e_day_view_add_new_event_in_selected_range (EDayView *day_view,
+                                            GdkEventKey *key_event,
+					    gboolean paste_clipboard)
+{
+	NewEventInRangeData *ned;
+	ECalModel *model;
+	const gchar *source_uid;
+
+	ned = g_new0 (NewEventInRangeData, 1);
+	ned->day_view = g_object_ref (day_view);
+	if (key_event) {
+		ned->key_event = g_new0 (GdkEventKey, 1);
+		*ned->key_event = *key_event;
+	}
+	day_view_get_selected_time_range (E_CALENDAR_VIEW (day_view), &ned->dtstart, &ned->dtend);
+	ned->in_top_canvas = day_view->selection_in_top_canvas;
+	ned->paste_clipboard = paste_clipboard;
+
+	model = e_calendar_view_get_model (E_CALENDAR_VIEW (day_view));
+	source_uid = e_cal_model_get_default_source_uid (model);
+
+	e_cal_ops_get_default_component	 (model, source_uid, ned->in_top_canvas,
+		day_view_new_event_in_selected_range_cb, ned, new_event_in_rage_data_free);
 }
 
 static void
@@ -866,131 +1008,47 @@ day_view_dispose (GObject *object)
 		day_view->grabbed_pointer = NULL;
 	}
 
-	if (day_view->priv->notify_work_day_monday_handler_id > 0) {
-		g_signal_handler_disconnect (
-			day_view->priv->model,
-			day_view->priv->notify_work_day_monday_handler_id);
-		day_view->priv->notify_work_day_monday_handler_id = 0;
-	}
+	#define disconnect_model_handler(x) G_STMT_START { \
+		if ((x) > 0) { \
+			g_signal_handler_disconnect (day_view->priv->model, (x)); \
+			(x) = 0; \
+		} \
+	} G_STMT_END
 
-	if (day_view->priv->notify_work_day_tuesday_handler_id > 0) {
-		g_signal_handler_disconnect (
-			day_view->priv->model,
-			day_view->priv->notify_work_day_tuesday_handler_id);
-		day_view->priv->notify_work_day_tuesday_handler_id = 0;
-	}
+	disconnect_model_handler (day_view->priv->notify_work_day_monday_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_tuesday_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_wednesday_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_thursday_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_friday_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_saturday_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_sunday_handler_id);
+	disconnect_model_handler (day_view->priv->notify_week_start_day_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_start_hour_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_start_minute_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_end_hour_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_end_minute_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_start_mon_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_end_mon_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_start_tue_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_end_tue_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_start_wed_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_end_wed_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_start_thu_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_end_thu_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_start_fri_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_end_fri_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_start_sat_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_end_sat_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_start_sun_handler_id);
+	disconnect_model_handler (day_view->priv->notify_work_day_end_sun_handler_id);
+	disconnect_model_handler (day_view->priv->time_range_changed_handler_id);
+	disconnect_model_handler (day_view->priv->model_row_changed_handler_id);
+	disconnect_model_handler (day_view->priv->model_cell_changed_handler_id);
+	disconnect_model_handler (day_view->priv->model_rows_inserted_handler_id);
+	disconnect_model_handler (day_view->priv->comps_deleted_handler_id);
+	disconnect_model_handler (day_view->priv->timezone_changed_handler_id);
 
-	if (day_view->priv->notify_work_day_wednesday_handler_id > 0) {
-		g_signal_handler_disconnect (
-			day_view->priv->model,
-			day_view->priv->notify_work_day_wednesday_handler_id);
-		day_view->priv->notify_work_day_wednesday_handler_id = 0;
-	}
-
-	if (day_view->priv->notify_work_day_thursday_handler_id > 0) {
-		g_signal_handler_disconnect (
-			day_view->priv->model,
-			day_view->priv->notify_work_day_thursday_handler_id);
-		day_view->priv->notify_work_day_thursday_handler_id = 0;
-	}
-
-	if (day_view->priv->notify_work_day_friday_handler_id > 0) {
-		g_signal_handler_disconnect (
-			day_view->priv->model,
-			day_view->priv->notify_work_day_friday_handler_id);
-		day_view->priv->notify_work_day_friday_handler_id = 0;
-	}
-
-	if (day_view->priv->notify_work_day_saturday_handler_id > 0) {
-		g_signal_handler_disconnect (
-			day_view->priv->model,
-			day_view->priv->notify_work_day_saturday_handler_id);
-		day_view->priv->notify_work_day_saturday_handler_id = 0;
-	}
-
-	if (day_view->priv->notify_work_day_sunday_handler_id > 0) {
-		g_signal_handler_disconnect (
-			day_view->priv->model,
-			day_view->priv->notify_work_day_sunday_handler_id);
-		day_view->priv->notify_work_day_sunday_handler_id = 0;
-	}
-
-	if (day_view->priv->notify_week_start_day_handler_id > 0) {
-		g_signal_handler_disconnect (
-			day_view->priv->model,
-			day_view->priv->notify_week_start_day_handler_id);
-		day_view->priv->notify_week_start_day_handler_id = 0;
-	}
-
-	if (day_view->priv->notify_work_day_start_hour_handler_id > 0) {
-		g_signal_handler_disconnect (
-			day_view->priv->model,
-			day_view->priv->notify_work_day_start_hour_handler_id);
-		day_view->priv->notify_work_day_start_hour_handler_id = 0;
-	}
-
-	if (day_view->priv->notify_work_day_start_minute_handler_id > 0) {
-		g_signal_handler_disconnect (
-			day_view->priv->model,
-			day_view->priv->notify_work_day_start_minute_handler_id);
-		day_view->priv->notify_work_day_start_minute_handler_id = 0;
-	}
-
-	if (day_view->priv->notify_work_day_end_hour_handler_id > 0) {
-		g_signal_handler_disconnect (
-			day_view->priv->model,
-			day_view->priv->notify_work_day_end_hour_handler_id);
-		day_view->priv->notify_work_day_end_hour_handler_id = 0;
-	}
-
-	if (day_view->priv->notify_work_day_end_minute_handler_id > 0) {
-		g_signal_handler_disconnect (
-			day_view->priv->model,
-			day_view->priv->notify_work_day_end_minute_handler_id);
-		day_view->priv->notify_work_day_end_minute_handler_id = 0;
-	}
-
-	if (day_view->priv->time_range_changed_handler_id > 0) {
-		g_signal_handler_disconnect (
-			day_view->priv->model,
-			day_view->priv->time_range_changed_handler_id);
-		day_view->priv->time_range_changed_handler_id = 0;
-	}
-
-	if (day_view->priv->model_row_changed_handler_id > 0) {
-		g_signal_handler_disconnect (
-			day_view->priv->model,
-			day_view->priv->model_row_changed_handler_id);
-		day_view->priv->model_row_changed_handler_id = 0;
-	}
-
-	if (day_view->priv->model_cell_changed_handler_id > 0) {
-		g_signal_handler_disconnect (
-			day_view->priv->model,
-			day_view->priv->model_cell_changed_handler_id);
-		day_view->priv->model_cell_changed_handler_id = 0;
-	}
-
-	if (day_view->priv->model_rows_inserted_handler_id > 0) {
-		g_signal_handler_disconnect (
-			day_view->priv->model,
-			day_view->priv->model_rows_inserted_handler_id);
-		day_view->priv->model_rows_inserted_handler_id = 0;
-	}
-
-	if (day_view->priv->comps_deleted_handler_id > 0) {
-		g_signal_handler_disconnect (
-			day_view->priv->model,
-			day_view->priv->comps_deleted_handler_id);
-		day_view->priv->comps_deleted_handler_id = 0;
-	}
-
-	if (day_view->priv->timezone_changed_handler_id > 0) {
-		g_signal_handler_disconnect (
-			day_view->priv->model,
-			day_view->priv->timezone_changed_handler_id);
-		day_view->priv->timezone_changed_handler_id = 0;
-	}
+	#undef disconnect_model_handler
 
 	if (day_view->priv->top_canvas_button_press_event_handler_id > 0) {
 		g_signal_handler_disconnect (
@@ -1150,6 +1208,7 @@ day_view_dispose (GObject *object)
 	g_clear_object (&day_view->main_canvas);
 	g_clear_object (&day_view->time_canvas);
 	g_clear_object (&day_view->priv->model);
+	g_clear_object (&day_view->priv->drag_context);
 
 	g_free (day_view->priv->marcus_bains_day_view_color);
 	day_view->priv->marcus_bains_day_view_color = NULL;
@@ -1249,6 +1308,78 @@ day_view_constructed (GObject *object)
 		model, "notify::work-day-end-minute",
 		G_CALLBACK (gtk_widget_queue_draw), day_view->main_canvas);
 	day_view->priv->notify_work_day_end_minute_handler_id = handler_id;
+
+	handler_id = e_signal_connect_notify_swapped (
+		model, "notify::work-day-start-mon",
+		G_CALLBACK (gtk_widget_queue_draw), day_view->main_canvas);
+	day_view->priv->notify_work_day_start_mon_handler_id = handler_id;
+
+	handler_id = e_signal_connect_notify_swapped (
+		model, "notify::work-day-end-mon",
+		G_CALLBACK (gtk_widget_queue_draw), day_view->main_canvas);
+	day_view->priv->notify_work_day_end_mon_handler_id = handler_id;
+
+	handler_id = e_signal_connect_notify_swapped (
+		model, "notify::work-day-start-tue",
+		G_CALLBACK (gtk_widget_queue_draw), day_view->main_canvas);
+	day_view->priv->notify_work_day_start_tue_handler_id = handler_id;
+
+	handler_id = e_signal_connect_notify_swapped (
+		model, "notify::work-day-end-tue",
+		G_CALLBACK (gtk_widget_queue_draw), day_view->main_canvas);
+	day_view->priv->notify_work_day_end_tue_handler_id = handler_id;
+
+	handler_id = e_signal_connect_notify_swapped (
+		model, "notify::work-day-start-wed",
+		G_CALLBACK (gtk_widget_queue_draw), day_view->main_canvas);
+	day_view->priv->notify_work_day_start_wed_handler_id = handler_id;
+
+	handler_id = e_signal_connect_notify_swapped (
+		model, "notify::work-day-end-wed",
+		G_CALLBACK (gtk_widget_queue_draw), day_view->main_canvas);
+	day_view->priv->notify_work_day_end_wed_handler_id = handler_id;
+
+	handler_id = e_signal_connect_notify_swapped (
+		model, "notify::work-day-start-thu",
+		G_CALLBACK (gtk_widget_queue_draw), day_view->main_canvas);
+	day_view->priv->notify_work_day_start_thu_handler_id = handler_id;
+
+	handler_id = e_signal_connect_notify_swapped (
+		model, "notify::work-day-end-thu",
+		G_CALLBACK (gtk_widget_queue_draw), day_view->main_canvas);
+	day_view->priv->notify_work_day_end_thu_handler_id = handler_id;
+
+	handler_id = e_signal_connect_notify_swapped (
+		model, "notify::work-day-start-fri",
+		G_CALLBACK (gtk_widget_queue_draw), day_view->main_canvas);
+	day_view->priv->notify_work_day_start_fri_handler_id = handler_id;
+
+	handler_id = e_signal_connect_notify_swapped (
+		model, "notify::work-day-end-fri",
+		G_CALLBACK (gtk_widget_queue_draw), day_view->main_canvas);
+	day_view->priv->notify_work_day_end_fri_handler_id = handler_id;
+
+	handler_id = e_signal_connect_notify_swapped (
+		model, "notify::work-day-start-sat",
+		G_CALLBACK (gtk_widget_queue_draw), day_view->main_canvas);
+	day_view->priv->notify_work_day_start_sat_handler_id = handler_id;
+
+	handler_id = e_signal_connect_notify_swapped (
+		model, "notify::work-day-end-sat",
+		G_CALLBACK (gtk_widget_queue_draw), day_view->main_canvas);
+	day_view->priv->notify_work_day_end_sat_handler_id = handler_id;
+
+	handler_id = e_signal_connect_notify_swapped (
+		model, "notify::work-day-start-sun",
+		G_CALLBACK (gtk_widget_queue_draw), day_view->main_canvas);
+	day_view->priv->notify_work_day_start_sun_handler_id = handler_id;
+
+	handler_id = e_signal_connect_notify_swapped (
+		model, "notify::work-day-end-sun",
+		G_CALLBACK (gtk_widget_queue_draw), day_view->main_canvas);
+	day_view->priv->notify_work_day_end_sun_handler_id = handler_id;
+
+	e_day_view_update_timezone_name_labels (day_view);
 }
 
 static void
@@ -1705,17 +1836,15 @@ day_view_set_selected_time_range (ECalendarView *cal_view,
                                   time_t start_time,
                                   time_t end_time)
 {
-	ECalModel *model;
 	EDayView *day_view;
 	gint work_day_start_hour;
 	gint work_day_start_minute;
+	gint work_day_end_hour;
+	gint work_day_end_minute;
 	gint start_row, start_col, end_row, end_col;
 	gboolean need_redraw = FALSE, start_in_grid, end_in_grid;
 
 	day_view = E_DAY_VIEW (cal_view);
-	model = e_calendar_view_get_model (cal_view);
-	work_day_start_hour = e_cal_model_get_work_day_start_hour (model);
-	work_day_start_minute = e_cal_model_get_work_day_start_minute (model);
 
 	if (start_time == end_time)
 		end_time += e_calendar_view_get_time_divisions (cal_view) * 60;
@@ -1731,6 +1860,10 @@ day_view_set_selected_time_range (ECalendarView *cal_view,
 		end_time - 60,
 		&end_col,
 		&end_row);
+
+	e_day_view_get_work_day_range_for_day (day_view, start_col,
+		&work_day_start_hour, &work_day_start_minute,
+		&work_day_end_hour, &work_day_end_minute);
 
 	/* If either of the times isn't in the grid, or the selection covers
 	 * an entire day, we set the selection to 1 row from the start of the
@@ -1765,6 +1898,8 @@ day_view_set_selected_time_range (ECalendarView *cal_view,
 		gtk_widget_queue_draw (day_view->top_canvas);
 		gtk_widget_queue_draw (day_view->top_dates_canvas);
 		gtk_widget_queue_draw (day_view->main_canvas);
+
+		e_day_view_ensure_rows_visible (day_view, day_view->selection_start_row, day_view->selection_end_row);
 	}
 }
 
@@ -1801,9 +1936,10 @@ day_view_paste_text (ECalendarView *cal_view)
 
 	day_view = E_DAY_VIEW (cal_view);
 
-	if (day_view->editing_event_num == -1 &&
-	    !e_day_view_add_new_event_in_selected_range (day_view, NULL))
+	if (day_view->editing_event_num == -1) {
+		e_day_view_add_new_event_in_selected_range (day_view, NULL, TRUE);
 		return;
+	}
 
 	if (day_view->editing_event_day == E_DAY_VIEW_LONG_EVENT) {
 		if (!is_array_index_in_bounds (day_view->long_events, day_view->editing_event_num))
@@ -1860,6 +1996,7 @@ e_day_view_class_init (EDayViewClass *class)
 	view_class->get_selected_time_range = day_view_get_selected_time_range;
 	view_class->set_selected_time_range = day_view_set_selected_time_range;
 	view_class->get_visible_time_range = day_view_get_visible_time_range;
+	view_class->precalc_visible_time_range = e_day_view_precalc_visible_time_range;
 	view_class->paste_text = day_view_paste_text;
 
 	/* XXX Should these be constructor properties? */
@@ -1978,14 +2115,13 @@ e_day_view_init (EDayView *day_view)
 	day_view->selection_is_being_dragged = FALSE;
 	day_view->selection_drag_pos = E_DAY_VIEW_DRAG_END;
 	day_view->selection_in_top_canvas = FALSE;
+	day_view->drag_last_day = -1;
 	day_view->drag_event_day = -1;
 	day_view->drag_event_num = -1;
 	day_view->resize_drag_pos = E_CALENDAR_VIEW_POS_NONE;
+	day_view->priv->drag_context = NULL;
 
 	day_view->pressed_event_day = -1;
-
-	day_view->drag_event_day = -1;
-	day_view->drag_last_day = -1;
 
 	day_view->auto_scroll_timeout_id = 0;
 
@@ -2002,19 +2138,58 @@ e_day_view_init (EDayView *day_view)
 	day_view->before_click_dtstart = 0;
 	day_view->before_click_dtend = 0;
 
-	widget = gtk_label_new ("");
-	gtk_table_attach (
-		GTK_TABLE (day_view), widget,
-		0, 1, 0, 1, GTK_FILL, GTK_FILL, 0, 0);
-	day_view->week_number_label = widget;
+	gtk_widget_set_margin_top (GTK_WIDGET (day_view), 1);
+
+	day_view->week_number_label = gtk_label_new ("");
+
+	widget = gtk_label_new (NULL);
+	gtk_label_set_ellipsize (GTK_LABEL (widget), PANGO_ELLIPSIZE_END);
+	gtk_misc_set_alignment (GTK_MISC (widget), 0.0, 1.0);
+	day_view->priv->timezone_name_1_label = widget;
+
+	widget = gtk_label_new (NULL);
+	gtk_label_set_ellipsize (GTK_LABEL (widget), PANGO_ELLIPSIZE_END);
+	gtk_misc_set_alignment (GTK_MISC (widget), 0.0, 1.0);
+	day_view->priv->timezone_name_2_label = widget;
+
+	widget = gtk_box_new (GTK_ORIENTATION_VERTICAL, 2);
+
+	gtk_grid_attach (GTK_GRID (day_view), widget, 0, 0, 1, 1);
+	g_object_set (G_OBJECT (widget),
+		"hexpand", FALSE,
+		"vexpand", FALSE,
+		"halign", GTK_ALIGN_FILL,
+		"valign", GTK_ALIGN_FILL,
+		NULL);
+
+	container = widget;
+
+	gtk_box_pack_start (GTK_BOX (container), day_view->week_number_label, TRUE, TRUE, 2);
+
+	widget = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
+	gtk_box_pack_end (GTK_BOX (container), widget, TRUE, TRUE, 2);
+
+	gtk_widget_show_all (container);
+
+	container = widget;
+
+	gtk_box_set_homogeneous (GTK_BOX (container), TRUE);
+	gtk_box_pack_start (GTK_BOX (container), day_view->priv->timezone_name_1_label, TRUE, TRUE, 2);
+	gtk_box_pack_start (GTK_BOX (container), day_view->priv->timezone_name_2_label, TRUE, TRUE, 2);
+
+	gtk_widget_show_all (container);
 
 	/*
 	 * Top Canvas
 	 */
 	widget = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
-	gtk_table_attach (
-		GTK_TABLE (day_view), widget,
-		1, 2, 0, 1, GTK_EXPAND | GTK_FILL, GTK_FILL, 0, 0);
+	gtk_grid_attach (GTK_GRID (day_view), widget, 1, 0, 1, 1);
+	g_object_set (G_OBJECT (widget),
+		"hexpand", TRUE,
+		"vexpand", FALSE,
+		"halign", GTK_ALIGN_FILL,
+		"valign", GTK_ALIGN_FILL,
+		NULL);
 	gtk_widget_show (widget);
 
 	container = widget;
@@ -2129,9 +2304,13 @@ e_day_view_init (EDayView *day_view)
 	/* Keep our own canvas reference so we can
 	 * disconnect signal handlers in dispose(). */
 	widget = e_canvas_new ();
-	gtk_table_attach (
-		GTK_TABLE (day_view), widget, 1, 2, 1, 2,
-		GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
+	gtk_grid_attach (GTK_GRID (day_view), widget, 1, 1, 1, 1);
+	g_object_set (G_OBJECT (widget),
+		"hexpand", TRUE,
+		"vexpand", TRUE,
+		"halign", GTK_ALIGN_FILL,
+		"valign", GTK_ALIGN_FILL,
+		NULL);
 	day_view->main_canvas = g_object_ref (widget);
 	gtk_widget_show (widget);
 
@@ -2238,9 +2417,13 @@ e_day_view_init (EDayView *day_view)
 	adjustment = gtk_scrollable_get_vadjustment (scrollable);
 	scrollable = GTK_SCROLLABLE (widget);
 	gtk_scrollable_set_vadjustment (scrollable, adjustment);
-	gtk_table_attach (
-		GTK_TABLE (day_view), widget, 0, 1, 1, 2,
-		GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
+	gtk_grid_attach (GTK_GRID (day_view), widget, 0, 1, 1, 1);
+	g_object_set (G_OBJECT (widget),
+		"hexpand", FALSE,
+		"vexpand", TRUE,
+		"halign", GTK_ALIGN_FILL,
+		"valign", GTK_ALIGN_FILL,
+		NULL);
 	day_view->time_canvas = g_object_ref (widget);
 	gtk_widget_show (widget);
 
@@ -2265,25 +2448,39 @@ e_day_view_init (EDayView *day_view)
 	adjustment = gtk_scrollable_get_hadjustment (scrollable);
 	day_view->mc_hscrollbar = gtk_scrollbar_new (
 		GTK_ORIENTATION_HORIZONTAL, adjustment);
-	gtk_table_attach (GTK_TABLE (day_view), day_view->mc_hscrollbar, 1, 2, 2, 3, GTK_FILL, 0, 0, 0);
+	gtk_grid_attach (GTK_GRID (day_view), day_view->mc_hscrollbar, 1, 2, 1, 1);
+	g_object_set (G_OBJECT (day_view->mc_hscrollbar),
+		"hexpand", FALSE,
+		"vexpand", FALSE,
+		"halign", GTK_ALIGN_FILL,
+		"valign", GTK_ALIGN_START,
+		NULL);
 	gtk_widget_show (day_view->mc_hscrollbar);
 
 	scrollable = GTK_SCROLLABLE (day_view->top_canvas);
 	adjustment = gtk_scrollable_get_vadjustment (scrollable);
 	day_view->tc_vscrollbar = gtk_scrollbar_new (
 		GTK_ORIENTATION_VERTICAL, adjustment);
-	gtk_table_attach (
-		GTK_TABLE (day_view), day_view->tc_vscrollbar,
-		2, 3, 0, 1, 0, GTK_FILL, 0, 0);
+	gtk_grid_attach (GTK_GRID (day_view), day_view->tc_vscrollbar, 2, 0, 1, 1);
+	g_object_set (G_OBJECT (day_view->tc_vscrollbar),
+		"hexpand", FALSE,
+		"vexpand", FALSE,
+		"halign", GTK_ALIGN_START,
+		"valign", GTK_ALIGN_FILL,
+		NULL);
 	/* gtk_widget_show (day_view->tc_vscrollbar); */
 
 	scrollable = GTK_SCROLLABLE (day_view->main_canvas);
 	adjustment = gtk_scrollable_get_vadjustment (scrollable);
 	day_view->vscrollbar = gtk_scrollbar_new (
 		GTK_ORIENTATION_VERTICAL, adjustment);
-	gtk_table_attach (
-		GTK_TABLE (day_view), day_view->vscrollbar,
-		2, 3, 1, 2, 0, GTK_EXPAND | GTK_FILL, 0, 0);
+	gtk_grid_attach (GTK_GRID (day_view), day_view->vscrollbar, 2, 1, 1, 1);
+	g_object_set (G_OBJECT (day_view->vscrollbar),
+		"hexpand", FALSE,
+		"vexpand", TRUE,
+		"halign", GTK_ALIGN_START,
+		"valign", GTK_ALIGN_FILL,
+		NULL);
 	gtk_widget_show (day_view->vscrollbar);
 
 	/* Create the cursors. */
@@ -2310,6 +2507,52 @@ e_day_view_init (EDayView *day_view)
 	e_drag_dest_add_calendar_targets (day_view->main_canvas);
 
 	day_view->requires_update = FALSE;
+}
+
+static void
+e_day_view_precalc_visible_time_range (ECalendarView *cal_view,
+				       time_t in_start_time,
+				       time_t in_end_time,
+				       time_t *out_start_time,
+				       time_t *out_end_time)
+{
+	EDayView *day_view;
+	gint days_shown;
+	time_t lower;
+	icaltimezone *zone;
+
+	g_return_if_fail (E_IS_DAY_VIEW (cal_view));
+	g_return_if_fail (out_start_time != NULL);
+	g_return_if_fail (out_end_time != NULL);
+
+	day_view = E_DAY_VIEW (cal_view);
+	days_shown = e_day_view_get_days_shown (day_view);
+	zone = e_calendar_view_get_timezone (cal_view);
+
+	/* Calculate the first day that should be shown, based on start_time
+	 * and the days_shown setting. If we are showing 1 day it is just the
+	 * start of the day given by start_time, otherwise it is the previous
+	 * work-week start day. */
+	if (!e_day_view_get_work_week_view (day_view)) {
+		lower = time_day_begin_with_zone (in_start_time, zone);
+	} else {
+		lower = e_day_view_find_work_week_start (day_view, in_start_time);
+	}
+
+	/* See if we need to change the days shown. */
+	if (lower == day_view->lower) {
+		*out_start_time = day_view->lower;
+		*out_end_time = day_view->upper;
+	} else {
+		gint day;
+
+		*out_start_time = lower;
+		*out_end_time = lower;
+
+		for (day = 1; day <= days_shown; day++) {
+			*out_end_time = time_add_day_with_zone (*out_end_time, 1, zone);
+		}
+	}
 }
 
 static void
@@ -2397,7 +2640,7 @@ process_component (EDayView *day_view,
 	add_event_data.day_view = day_view;
 	add_event_data.comp_data = comp_data;
 	e_day_view_add_event (
-		registry, comp, comp_data->instance_start,
+		registry, comp_data->client, comp, comp_data->instance_start,
 		comp_data->instance_end, &add_event_data);
 
 	g_object_unref (comp);
@@ -2406,7 +2649,8 @@ process_component (EDayView *day_view,
 
 static void
 update_row (EDayView *day_view,
-            gint row)
+	    gint row,
+	    gboolean do_cancel_editing)
 {
 	ECalModelComponent *comp_data;
 	ECalModel *model;
@@ -2414,7 +2658,10 @@ update_row (EDayView *day_view,
 	const gchar *uid = NULL;
 	gchar *rid = NULL;
 
-	e_day_view_stop_editing_event (day_view);
+	if (do_cancel_editing)
+		cancel_editing (day_view);
+	else
+		e_day_view_stop_editing_event (day_view);
 
 	model = e_calendar_view_get_model (E_CALENDAR_VIEW (day_view));
 	comp_data = e_cal_model_get_component_at (model, row);
@@ -2454,7 +2701,7 @@ model_row_changed_cb (ETableModel *etm,
 		return;
 	}
 
-	update_row (day_view, row);
+	update_row (day_view, row, TRUE);
 }
 
 static void
@@ -2471,7 +2718,7 @@ model_cell_changed_cb (ETableModel *etm,
 		return;
 	}
 
-	update_row (day_view, row);
+	update_row (day_view, row, FALSE);
 }
 
 static void
@@ -2585,6 +2832,7 @@ timezone_changed_cb (ECalModel *cal_model,
 
 	e_day_view_recalc_day_starts (day_view, lower);
 	e_day_view_update_query (day_view);
+	e_day_view_update_timezone_name_labels (day_view);
 }
 
 static void
@@ -2957,19 +3205,68 @@ e_day_view_remove_event_cb (EDayView *day_view,
 	/* If we were editing this event, set editing_event_day to -1 so
 	 * on_editing_stopped doesn't try to update the event. */
 	if (day_view->editing_event_num == event_num && day_view->editing_event_day == day) {
+		cancel_editing (day_view);
 		day_view->editing_event_num = -1;
 		day_view->editing_event_day = -1;
 		g_object_notify (G_OBJECT (day_view), "is-editing");
+	} else if (day_view->editing_event_num > event_num && day_view->editing_event_day == day) {
+		day_view->editing_event_num--;
 	}
 
 	if (day_view->popup_event_num == event_num && day_view->popup_event_day == day) {
 		day_view->popup_event_num = -1;
 		day_view->popup_event_day = -1;
+	} else if (day_view->popup_event_num > event_num && day_view->popup_event_day == day) {
+		day_view->popup_event_num--;
 	}
 
 	if (event->timeout > 0) {
 		g_source_remove (event->timeout);
 		event->timeout = -1;
+	}
+
+	if (day_view->resize_bars_event_num >= event_num && day_view->resize_bars_event_day == day) {
+		if (day_view->resize_bars_event_num == event_num) {
+			day_view->resize_bars_event_num = -1;
+			day_view->resize_bars_event_day = -1;
+		} else {
+			day_view->resize_bars_event_num--;
+		}
+	}
+
+	if (day_view->resize_event_num >= event_num && day_view->resize_event_day == day) {
+		if (day_view->resize_event_num == event_num) {
+			e_day_view_abort_resize (day_view);
+			day_view->resize_event_num = -1;
+			day_view->resize_event_day = -1;
+		} else {
+			day_view->resize_event_num--;
+		}
+	}
+
+	if (day_view->pressed_event_num >= event_num && day_view->pressed_event_day == day) {
+		if (day_view->pressed_event_num == event_num) {
+			day_view->pressed_event_num = -1;
+			day_view->pressed_event_day = -1;
+		} else {
+			day_view->pressed_event_num--;
+		}
+	}
+
+	if (day_view->drag_event_num >= event_num && day_view->drag_event_day == day) {
+		if (day_view->drag_event_num == event_num) {
+			day_view->drag_event_num = -1;
+			day_view->drag_event_day = -1;
+			if (day_view->priv->drag_context) {
+				#if GTK_CHECK_VERSION(3,16,0)
+				gtk_drag_cancel (day_view->priv->drag_context);
+				#else
+				gdk_drag_abort (day_view->priv->drag_context, gtk_get_current_event_time ());
+				#endif
+			}
+		} else {
+			day_view->drag_event_num--;
+		}
 	}
 
 	if (event->canvas_item)
@@ -2988,13 +3285,14 @@ e_day_view_remove_event_cb (EDayView *day_view,
 		day_view->need_layout[day] = TRUE;
 		gtk_widget_grab_focus (GTK_WIDGET (day_view->main_canvas));
 	}
+
 	return TRUE;
 }
 
 /* Checks if the users participation status is NEEDS-ACTION and shows the summary as bold text */
 static void
-set_text_as_bold (EDayViewEvent *event,
-                  ESourceRegistry *registry)
+set_style_from_attendee (EDayViewEvent *event,
+			 ESourceRegistry *registry)
 {
 	ECalComponent *comp;
 	GSList *attendees = NULL, *l;
@@ -3024,6 +3322,12 @@ set_text_as_bold (EDayViewEvent *event,
 	 * In that case, we never show the meeting as bold even if it is unaccepted. */
 	if (at && (at->status == ICAL_PARTSTAT_NEEDSACTION))
 		gnome_canvas_item_set (event->canvas_item, "bold", TRUE, NULL);
+	else if (at && at->status == ICAL_PARTSTAT_DECLINED)
+		gnome_canvas_item_set (event->canvas_item, "strikeout", TRUE, NULL);
+	else if (at && at->status == ICAL_PARTSTAT_TENTATIVE)
+		gnome_canvas_item_set (event->canvas_item, "italic", TRUE, NULL);
+	else if (at && at->status == ICAL_PARTSTAT_DELEGATED)
+		gnome_canvas_item_set (event->canvas_item, "italic", TRUE, "strikeout", TRUE, NULL);
 
 	e_cal_component_free_attendee_list (attendees);
 	g_free (address);
@@ -3083,13 +3387,19 @@ e_day_view_update_event_label (EDayView *day_view,
 
 	if (!editing_event) {
 		if (!short_event) {
-			const gchar *location;
+			const gchar *description, *location;
 			gint days_shown;
 
 			days_shown = e_day_view_get_days_shown (day_view);
+			description = icalcomponent_get_description (event->comp_data->icalcomp);
 			location = icalcomponent_get_location (event->comp_data->icalcomp);
 
-			if (location && *location)
+			if (description && *description) {
+				if (location && *location)
+					text = g_strdup_printf (" \n%s%c(%s)\n\n%s", text, days_shown == 1 ? ' ' : '\n', location, description);
+				else
+					text = g_strdup_printf (" \n%s\n\n%s", text, description);
+			} else if (location && *location)
 				text = g_strdup_printf (" \n%s%c(%s)", text, days_shown == 1 ? ' ' : '\n', location);
 			else
 				text = g_strdup_printf (" \n%s", text);
@@ -3103,9 +3413,8 @@ e_day_view_update_event_label (EDayView *day_view,
 		"text", text,
 		NULL);
 
-	if (e_client_check_capability (E_CLIENT (event->comp_data->client), CAL_STATIC_CAPABILITY_HAS_UNACCEPTED_MEETING)
-				&& e_cal_util_component_has_attendee (event->comp_data->icalcomp))
-		set_text_as_bold (event, registry);
+	if (e_cal_util_component_has_attendee (event->comp_data->icalcomp))
+		set_style_from_attendee (event, registry);
 
 	if (free_text)
 		g_free (text);
@@ -3147,9 +3456,8 @@ e_day_view_update_long_event_label (EDayView *day_view,
 	if (free_text)
 		g_free ((gchar *) summary);
 
-	if (e_client_check_capability (E_CLIENT (event->comp_data->client), CAL_STATIC_CAPABILITY_HAS_UNACCEPTED_MEETING)
-				&& e_cal_util_component_has_attendee (event->comp_data->icalcomp))
-		set_text_as_bold (event, registry);
+	if (e_cal_util_component_has_attendee (event->comp_data->icalcomp))
+		set_style_from_attendee (event, registry);
 }
 
 /* Finds the day and index of the event with the given canvas item.
@@ -3329,17 +3637,14 @@ e_day_view_set_selected_time_range_visible (EDayView *day_view,
                                             time_t start_time,
                                             time_t end_time)
 {
-	ECalModel *model;
 	gint work_day_start_hour;
 	gint work_day_start_minute;
+	gint work_day_end_hour;
+	gint work_day_end_minute;
 	gint start_row, start_col, end_row, end_col;
 	gboolean need_redraw = FALSE, start_in_grid, end_in_grid;
 
 	g_return_if_fail (E_IS_DAY_VIEW (day_view));
-
-	model = e_calendar_view_get_model (E_CALENDAR_VIEW (day_view));
-	work_day_start_hour = e_cal_model_get_work_day_start_hour (model);
-	work_day_start_minute = e_cal_model_get_work_day_start_minute (model);
 
 	/* Set the selection. */
 	start_in_grid = e_day_view_convert_time_to_grid_position (
@@ -3349,9 +3654,13 @@ e_day_view_set_selected_time_range_visible (EDayView *day_view,
 		&start_row);
 	end_in_grid = e_day_view_convert_time_to_grid_position (
 		day_view,
-								end_time - 60,
-								&end_col,
-								&end_row);
+		end_time - 60,
+		&end_col,
+		&end_row);
+
+	e_day_view_get_work_day_range_for_day (day_view, start_col,
+		&work_day_start_hour, &work_day_start_minute,
+		&work_day_end_hour, &work_day_end_minute);
 
 	/* If either of the times isn't in the grid, or the selection covers
 	 * an entire day, we set the selection to 1 row from the start of the
@@ -3871,10 +4180,9 @@ e_day_view_on_top_canvas_button_press (GtkWidget *widget,
 				day_view_set_selected_time_range ((ECalendarView *) day_view, dtstart, dtend);
 			}
 
-			e_calendar_view_new_appointment_for (
-				E_CALENDAR_VIEW (day_view),
-				dtstart, dtend, TRUE,
-				calendar_config_get_prefer_meeting ());
+			e_cal_ops_new_component_editor_from_model (
+				e_calendar_view_get_model (E_CALENDAR_VIEW (day_view)), NULL,
+				dtstart, dtend, calendar_config_get_prefer_meeting (), TRUE);
 			return TRUE;
 		}
 
@@ -4035,10 +4343,9 @@ e_day_view_on_main_canvas_button_press (GtkWidget *widget,
 				dtend = day_view->before_click_dtend;
 				day_view_set_selected_time_range ((ECalendarView *) day_view, dtstart, dtend);
 			}
-			e_calendar_view_new_appointment_for (
-				E_CALENDAR_VIEW (day_view),
-				dtstart, dtend, FALSE,
-				calendar_config_get_prefer_meeting ());
+			e_cal_ops_new_component_editor_from_model (
+				e_calendar_view_get_model (E_CALENDAR_VIEW (day_view)), NULL,
+				dtstart, dtend, calendar_config_get_prefer_meeting (), FALSE);
 			return TRUE;
 		}
 
@@ -4709,11 +5016,15 @@ e_day_view_on_top_canvas_motion (GtkWidget *widget,
 			target_list = gtk_target_list_new (
 				target_table, G_N_ELEMENTS (target_table));
 			e_target_list_add_calendar_targets (target_list, 0);
-			gtk_drag_begin (
+			g_clear_object (&day_view->priv->drag_context);
+			day_view->priv->drag_context = gtk_drag_begin (
 				widget, target_list,
 				GDK_ACTION_COPY | GDK_ACTION_MOVE,
 				1, (GdkEvent *) mevent);
 			gtk_target_list_unref (target_list);
+
+			if (day_view->priv->drag_context)
+				g_object_ref (day_view->priv->drag_context);
 		}
 	} else {
 		cursor = day_view->normal_cursor;
@@ -4818,11 +5129,15 @@ e_day_view_on_main_canvas_motion (GtkWidget *widget,
 			target_list = gtk_target_list_new (
 				target_table, G_N_ELEMENTS (target_table));
 			e_target_list_add_calendar_targets (target_list, 0);
-			gtk_drag_begin (
+			g_clear_object (&day_view->priv->drag_context);
+			day_view->priv->drag_context = gtk_drag_begin (
 				widget, target_list,
 				GDK_ACTION_COPY | GDK_ACTION_MOVE,
 				1, (GdkEvent *) mevent);
 			gtk_target_list_unref (target_list);
+
+			if (day_view->priv->drag_context)
+				g_object_ref (day_view->priv->drag_context);
 		}
 	} else {
 		cursor = day_view->normal_cursor;
@@ -5053,8 +5368,7 @@ e_day_view_finish_long_event_resize (EDayView *day_view)
 	ECalModel *model;
 	ECalClient *client;
 	ESourceRegistry *registry;
-	CalObjModType mod = CALOBJ_MOD_ALL;
-	GtkWindow *toplevel;
+	ECalObjModType mod = E_CAL_OBJ_MOD_ALL;
 	gint is_date;
 
 	model = e_calendar_view_get_model (E_CALENDAR_VIEW (day_view));
@@ -5119,15 +5433,12 @@ e_day_view_finish_long_event_resize (EDayView *day_view)
 
 	e_cal_component_commit_sequence (comp);
 	if (e_cal_component_has_recurrences (comp)) {
-		if (!recur_component_dialog (client, comp, &mod, NULL, FALSE)) {
+		if (!e_cal_dialogs_recur_component (client, comp, &mod, NULL, FALSE)) {
 			gtk_widget_queue_draw (day_view->top_canvas);
 			goto out;
 		}
 
-		if (mod == CALOBJ_MOD_ALL)
-			comp_util_sanitize_recurrence_master (comp, client);
-
-		if (mod == CALOBJ_MOD_THIS) {
+		if (mod == E_CAL_OBJ_MOD_THIS) {
 			/* set the correct DTSTART/DTEND on the individual recurrence */
 			if (day_view->resize_drag_pos == E_CALENDAR_VIEW_POS_TOP_EDGE) {
 				*date.value = icaltime_from_timet_with_zone (
@@ -5145,17 +5456,14 @@ e_day_view_finish_long_event_resize (EDayView *day_view)
 			e_cal_component_set_rrule_list (comp, NULL);
 			e_cal_component_set_exdate_list (comp, NULL);
 			e_cal_component_set_exrule_list (comp, NULL);
-
-			e_cal_component_commit_sequence (comp);
 		}
 	} else if (e_cal_component_is_instance (comp))
-		mod = CALOBJ_MOD_THIS;
+		mod = E_CAL_OBJ_MOD_THIS;
 
-	toplevel = GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (day_view)));
+	e_cal_component_commit_sequence (comp);
 
-	e_calendar_view_modify_and_send (
-		E_CALENDAR_VIEW (day_view),
-		comp, client, mod, toplevel, TRUE);
+	e_cal_ops_modify_component (model, client, e_cal_component_get_icalcomponent (comp),
+		mod, E_CAL_OPS_SEND_FLAG_ASK | E_CAL_OPS_SEND_FLAG_IS_NEW_COMPONENT);
 
  out:
 	day_view->resize_drag_pos = E_CALENDAR_VIEW_POS_NONE;
@@ -5177,10 +5485,9 @@ e_day_view_finish_resize (EDayView *day_view)
 	ECalModel *model;
 	ECalClient *client;
 	ESourceRegistry *registry;
-	CalObjModType mod = CALOBJ_MOD_ALL;
+	ECalObjModType mod = E_CAL_OBJ_MOD_ALL;
 	GtkWindow *toplevel;
 	GtkResponseType send = GTK_RESPONSE_NO;
-	gboolean modified;
 	gboolean only_new_attendees = FALSE;
 	gboolean strip_alarms = TRUE;
 
@@ -5221,7 +5528,7 @@ e_day_view_finish_resize (EDayView *day_view)
 
 	if ((itip_organizer_is_user (registry, comp, client) ||
 	     itip_sentby_is_user (registry, comp, client)))
-		send = send_dragged_or_resized_component_dialog (
+		send = e_cal_dialogs_send_dragged_or_resized_component (
 				toplevel, client, comp, &strip_alarms, &only_new_attendees);
 
 	if (send == GTK_RESPONSE_CANCEL) {
@@ -5260,15 +5567,12 @@ e_day_view_finish_resize (EDayView *day_view)
 	day_view->resize_drag_pos = E_CALENDAR_VIEW_POS_NONE;
 
 	if (e_cal_component_has_recurrences (comp)) {
-		if (!recur_component_dialog (client, comp, &mod, NULL, FALSE)) {
+		if (!e_cal_dialogs_recur_component (client, comp, &mod, NULL, FALSE)) {
 			gtk_widget_queue_draw (day_view->main_canvas);
 			goto out;
 		}
 
-		if (mod == CALOBJ_MOD_ALL)
-			comp_util_sanitize_recurrence_master (comp, client);
-
-		if (mod == CALOBJ_MOD_THIS) {
+		if (mod == E_CAL_OBJ_MOD_THIS) {
 			/* set the correct DTSTART/DTEND on the individual recurrence */
 			if (day_view->resize_drag_pos == E_CALENDAR_VIEW_POS_TOP_EDGE) {
 				*date.value = icaltime_from_timet_with_zone (
@@ -5288,16 +5592,14 @@ e_day_view_finish_resize (EDayView *day_view)
 			e_cal_component_set_exrule_list (comp, NULL);
 		}
 	} else if (e_cal_component_is_instance (comp))
-		mod = CALOBJ_MOD_THIS;
+		mod = E_CAL_OBJ_MOD_THIS;
 
 	e_cal_component_commit_sequence (comp);
 
-	modified = e_calendar_view_modify (E_CALENDAR_VIEW (day_view), comp, client, mod);
-
-	if (modified && send == GTK_RESPONSE_YES)
-		e_calendar_view_send (
-				E_CALENDAR_VIEW (day_view),
-				comp, client, mod, toplevel, strip_alarms, only_new_attendees);
+	e_cal_ops_modify_component (model, client, e_cal_component_get_icalcomponent (comp), mod,
+		(send == GTK_RESPONSE_YES ? E_CAL_OPS_SEND_FLAG_SEND : E_CAL_OPS_SEND_FLAG_DONT_SEND) |
+		(strip_alarms ? E_CAL_OPS_SEND_FLAG_STRIP_ALARMS : 0) |
+		(only_new_attendees ? E_CAL_OPS_SEND_FLAG_ONLY_NEW_ATTENDEES : 0));
 
  out:
 	g_object_unref (comp);
@@ -5351,6 +5653,8 @@ e_day_view_free_events (EDayView *day_view)
 	day_view->editing_event_num = -1;
 	day_view->popup_event_num = -1;
 
+	g_clear_object (&day_view->priv->drag_context);
+
 	e_day_view_free_event_array (day_view, day_view->long_events);
 
 	for (day = 0; day < E_DAY_VIEW_MAX_DAYS; day++)
@@ -5385,8 +5689,9 @@ e_day_view_free_event_array (EDayView *day_view,
 }
 
 /* This adds one event to the view, adding it to the appropriate array. */
-static gboolean
+static void
 e_day_view_add_event (ESourceRegistry *registry,
+		      ECalClient *client,
                       ECalComponent *comp,
                       time_t start,
                       time_t end,
@@ -5398,6 +5703,7 @@ e_day_view_add_event (ESourceRegistry *registry,
 	gint days_shown;
 	struct icaltimetype start_tt, end_tt;
 	AddEventData *add_event_data;
+	icaltimezone *zone;
 
 	add_event_data = data;
 
@@ -5410,23 +5716,22 @@ e_day_view_add_event (ESourceRegistry *registry,
 	}*/
 
 	/* Check that the event times are valid. */
-	g_return_val_if_fail (start <= end, TRUE);
-	g_return_val_if_fail (start < add_event_data->day_view->upper, TRUE);
-	g_return_val_if_fail (end > add_event_data->day_view->lower, TRUE);
+	g_return_if_fail (start <= end);
+	g_return_if_fail (start < add_event_data->day_view->upper);
 
-	start_tt = icaltime_from_timet_with_zone (
-		start, FALSE,
-		e_calendar_view_get_timezone (E_CALENDAR_VIEW (add_event_data->day_view)));
-	end_tt = icaltime_from_timet_with_zone (
-		end, FALSE,
-		e_calendar_view_get_timezone (E_CALENDAR_VIEW (add_event_data->day_view)));
+	if (end != start || end < add_event_data->day_view->lower)
+		g_return_if_fail (end > add_event_data->day_view->lower);
+
+	zone = e_calendar_view_get_timezone (E_CALENDAR_VIEW (add_event_data->day_view));
+	start_tt = icaltime_from_timet_with_zone (start, FALSE, zone);
+	end_tt = icaltime_from_timet_with_zone (end, FALSE, zone);
 
 	if (add_event_data->comp_data) {
 		event.comp_data = g_object_ref (add_event_data->comp_data);
 	} else {
 		event.comp_data = g_object_new (E_TYPE_CAL_MODEL_COMPONENT, NULL);
-
-		event.comp_data->client = e_cal_model_ref_default_client (e_calendar_view_get_model (E_CALENDAR_VIEW (add_event_data->day_view)));
+		event.comp_data->is_new_component = TRUE;
+		event.comp_data->client = g_object_ref (client);
 		e_cal_component_abort_sequence (comp);
 		event.comp_data->icalcomp = icalcomponent_new_clone (e_cal_component_get_icalcomponent (comp));
 	}
@@ -5451,9 +5756,7 @@ e_day_view_add_event (ESourceRegistry *registry,
 	event.num_columns = 0;
 
 	event.different_timezone = FALSE;
-	if (!cal_comp_util_compare_event_timezones (comp,
-						    event.comp_data->client,
-						    e_calendar_view_get_timezone (E_CALENDAR_VIEW (add_event_data->day_view))))
+	if (!cal_comp_util_compare_event_timezones (comp, event.comp_data->client, zone))
 		event.different_timezone = TRUE;
 
 	if (!e_cal_component_has_attendees (comp) ||
@@ -5470,9 +5773,12 @@ e_day_view_add_event (ESourceRegistry *registry,
 		if (start >= add_event_data->day_view->day_starts[day]
 		    && end <= add_event_data->day_view->day_starts[day + 1]) {
 
+			if (start == end && start == add_event_data->day_view->day_starts[day + 1])
+				continue;
+
 			/* Special case for when the appointment ends at
 			 * midnight, i.e. the start of the next day. */
-			if (end == add_event_data->day_view->day_starts[day + 1]) {
+			if (end == add_event_data->day_view->day_starts[day + 1] && start != end) {
 
 				/* If the event last the entire day, then we
 				 * skip it here so it gets added to the top
@@ -5486,7 +5792,7 @@ e_day_view_add_event (ESourceRegistry *registry,
 			g_array_append_val (add_event_data->day_view->events[day], event);
 			add_event_data->day_view->events_sorted[day] = FALSE;
 			add_event_data->day_view->need_layout[day] = TRUE;
-			return TRUE;
+			return;
 		}
 	}
 
@@ -5495,7 +5801,7 @@ e_day_view_add_event (ESourceRegistry *registry,
 	g_array_append_val (add_event_data->day_view->long_events, event);
 	add_event_data->day_view->long_events_sorted = FALSE;
 	add_event_data->day_view->long_events_need_layout = TRUE;
-	return TRUE;
+	return;
 }
 
 /* This lays out the short (less than 1 day) events in the columns.
@@ -5700,6 +6006,8 @@ e_day_view_reshape_long_event (EDayView *day_view,
 		g_signal_emit_by_name (day_view, "event_added", event);
 
 		e_day_view_update_long_event_label (day_view, event_num);
+	} else if (GPOINTER_TO_INT (g_object_get_data (G_OBJECT (event->canvas_item), "event-num")) != event_num) {
+		g_object_set_data (G_OBJECT (event->canvas_item), "event-num", GINT_TO_POINTER (event_num));
 	}
 
 	/* Calculate its position. We first calculate the ideal position which
@@ -5884,6 +6192,8 @@ e_day_view_reshape_day_event (EDayView *day_view,
 			g_signal_emit_by_name (day_view, "event_added", event);
 
 			e_day_view_update_event_label (day_view, day, event_num);
+		} else if (GPOINTER_TO_INT (g_object_get_data (G_OBJECT (event->canvas_item), "event-num")) != event_num) {
+			g_object_set_data (G_OBJECT (event->canvas_item), "event-num", GINT_TO_POINTER (event_num));
 		}
 
 		item_w = MAX (item_w, 0);
@@ -6132,28 +6442,32 @@ e_day_view_do_key_press (GtkWidget *widget,
 		return FALSE;
 	}
 
-	return e_day_view_add_new_event_in_selected_range (day_view, event);
+	e_day_view_add_new_event_in_selected_range (day_view, event, FALSE);
+
+	return TRUE;
 }
 
 /* Select the time that begins a work day*/
 static void
 e_day_view_goto_start_of_work_day (EDayView *day_view)
 {
-	ECalModel *model;
 	gint work_day_start_hour;
 	gint work_day_start_minute;
-
-	model = e_calendar_view_get_model (E_CALENDAR_VIEW (day_view));
-	work_day_start_hour = e_cal_model_get_work_day_start_hour (model);
-	work_day_start_minute = e_cal_model_get_work_day_start_minute (model);
+	gint work_day_end_hour;
+	gint work_day_end_minute;
 
 	if (day_view->selection_in_top_canvas)
 		return;
-	else
-		day_view->selection_start_row =
-			e_day_view_convert_time_to_row (
-			day_view, work_day_start_hour, work_day_start_minute);
+
+	e_day_view_get_work_day_range_for_day (day_view, day_view->selection_start_day,
+		&work_day_start_hour, &work_day_start_minute,
+		&work_day_end_hour, &work_day_end_minute);
+
+	day_view->selection_start_row =
+		e_day_view_convert_time_to_row (
+		day_view, work_day_start_hour, work_day_start_minute);
 	day_view->selection_end_row = day_view->selection_start_row;
+	day_view->selection_end_day = day_view->selection_start_day;
 
 	e_day_view_ensure_rows_visible (
 		day_view,
@@ -6171,21 +6485,23 @@ e_day_view_goto_start_of_work_day (EDayView *day_view)
 static void
 e_day_view_goto_end_of_work_day (EDayView *day_view)
 {
-	ECalModel *model;
+	gint work_day_start_hour;
+	gint work_day_start_minute;
 	gint work_day_end_hour;
 	gint work_day_end_minute;
 
-	model = e_calendar_view_get_model (E_CALENDAR_VIEW (day_view));
-	work_day_end_hour = e_cal_model_get_work_day_end_hour (model);
-	work_day_end_minute = e_cal_model_get_work_day_end_minute (model);
-
 	if (day_view->selection_in_top_canvas)
 		return;
-	else
-		day_view->selection_start_row =
-			e_day_view_convert_time_to_row (
-			day_view, work_day_end_hour - 1, work_day_end_minute + 30);
+
+	e_day_view_get_work_day_range_for_day (day_view, day_view->selection_end_day,
+		&work_day_start_hour, &work_day_start_minute,
+		&work_day_end_hour, &work_day_end_minute);
+
+	day_view->selection_start_row =
+		e_day_view_convert_time_to_row (
+		day_view, work_day_end_hour - 1, work_day_end_minute + 30);
 	day_view->selection_end_row = day_view->selection_start_row;
+	day_view->selection_start_day = day_view->selection_end_day;
 
 	e_day_view_ensure_rows_visible (
 		day_view,
@@ -6203,29 +6519,27 @@ e_day_view_goto_end_of_work_day (EDayView *day_view)
 static void
 e_day_view_change_duration_to_start_of_work_day (EDayView *day_view)
 {
-	ECalModel *model;
+	gint work_start_row;
 	gint work_day_start_hour;
 	gint work_day_start_minute;
+	gint work_day_end_hour;
+	gint work_day_end_minute;
 
 	g_return_if_fail (day_view != NULL);
 
-	model = e_calendar_view_get_model (E_CALENDAR_VIEW (day_view));
-	work_day_start_hour = e_cal_model_get_work_day_start_hour (model);
-	work_day_start_minute = e_cal_model_get_work_day_start_minute (model);
-
 	if (day_view->selection_in_top_canvas)
 		return;
-	else {
-		/* These are never used after being set? */
-		gint work_start_row,selection_start_row;
 
-		work_start_row = e_day_view_convert_time_to_row (
-			day_view, work_day_start_hour, work_day_start_minute);
-		selection_start_row = day_view->selection_start_row;
-		if (selection_start_row < work_start_row)
-			day_view->selection_end_row = work_start_row - 1;
-		else day_view->selection_start_row = work_start_row;
-	}
+	e_day_view_get_work_day_range_for_day (day_view, day_view->selection_start_day,
+		&work_day_start_hour, &work_day_start_minute,
+		&work_day_end_hour, &work_day_end_minute);
+
+	work_start_row = e_day_view_convert_time_to_row (day_view, work_day_start_hour, work_day_start_minute);
+
+	if (day_view->selection_start_row < work_start_row)
+		day_view->selection_end_row = work_start_row - 1;
+	else
+		day_view->selection_start_row = work_start_row;
 
 	e_day_view_ensure_rows_visible (
 		day_view,
@@ -6243,30 +6557,30 @@ e_day_view_change_duration_to_start_of_work_day (EDayView *day_view)
 static void
 e_day_view_change_duration_to_end_of_work_day (EDayView *day_view)
 {
-	ECalModel *model;
+	gint selection_start_row, work_end_row;
+	gint work_day_start_hour;
+	gint work_day_start_minute;
 	gint work_day_end_hour;
 	gint work_day_end_minute;
 
 	g_return_if_fail (day_view != NULL);
 
-	model = e_calendar_view_get_model (E_CALENDAR_VIEW (day_view));
-	work_day_end_hour = e_cal_model_get_work_day_end_hour (model);
-	work_day_end_minute = e_cal_model_get_work_day_end_minute (model);
-
 	if (day_view->selection_in_top_canvas)
 		return;
-	else {
-		gint work_end_row,selection_start_row;
 
-		work_end_row = e_day_view_convert_time_to_row (
-			day_view, work_day_end_hour - 1, work_day_end_minute + 30);
-		selection_start_row = day_view->selection_start_row;
-		if (selection_start_row <= work_end_row)
-			day_view->selection_end_row = work_end_row;
-		else {
-			day_view->selection_start_row = work_end_row + 1;
-			day_view->selection_end_row = selection_start_row;
-		}
+	e_day_view_get_work_day_range_for_day (day_view, day_view->selection_start_day,
+		&work_day_start_hour, &work_day_start_minute,
+		&work_day_end_hour, &work_day_end_minute);
+
+	work_end_row = e_day_view_convert_time_to_row (
+		day_view, work_day_end_hour - 1, work_day_end_minute + 30);
+	selection_start_row = day_view->selection_start_row;
+
+	if (selection_start_row <= work_end_row) {
+		day_view->selection_end_row = work_end_row;
+	} else {
+		day_view->selection_start_row = work_end_row + 1;
+		day_view->selection_end_row = selection_start_row;
 	}
 
 	e_day_view_ensure_rows_visible (
@@ -6692,7 +7006,7 @@ e_day_view_cursor_key_left (EDayView *day_view,
                             GdkEventKey *event)
 {
 	if (day_view->selection_start_day == 0) {
-		gnome_calendar_previous (e_calendar_view_get_calendar (E_CALENDAR_VIEW (day_view)));
+		e_calendar_view_move_view_range (E_CALENDAR_VIEW (day_view), E_CALENDAR_VIEW_MOVE_PREVIOUS, 0);
 	} else {
 		day_view->selection_start_day--;
 		day_view->selection_end_day--;
@@ -6715,7 +7029,7 @@ e_day_view_cursor_key_right (EDayView *day_view,
 	days_shown = e_day_view_get_days_shown (day_view);
 
 	if (day_view->selection_end_day == days_shown - 1) {
-		gnome_calendar_next (e_calendar_view_get_calendar (E_CALENDAR_VIEW (day_view)));
+		e_calendar_view_move_view_range (E_CALENDAR_VIEW (day_view), E_CALENDAR_VIEW_MOVE_NEXT, 0);
 	} else {
 		day_view->selection_start_day++;
 		day_view->selection_end_day++;
@@ -6916,10 +7230,8 @@ cancel_editing (EDayView *day_view)
 	day = day_view->editing_event_day;
 	event_num = day_view->editing_event_num;
 
-	if (day == -1) {
-		g_warn_if_reached ();
+	if (day == -1)
 		return;
-	}
 
 	if (day == E_DAY_VIEW_LONG_EVENT) {
 		if (!is_array_index_in_bounds (day_view->long_events, event_num))
@@ -6985,9 +7297,12 @@ tooltip_destroy (EDayView *day_view,
 
 	if (item) {
 		EDayViewEvent *pevent;
-		gint event_num = GPOINTER_TO_INT (g_object_get_data ((GObject *) item, "event-num"));
-		gint day = GPOINTER_TO_INT (g_object_get_data ((GObject *) item, "event-day"));
+		gint event_num, day;
 
+		e_day_view_check_layout (day_view);
+
+		event_num = GPOINTER_TO_INT (g_object_get_data ((GObject *) item, "event-num"));
+		day = GPOINTER_TO_INT (g_object_get_data ((GObject *) item, "event-day"));
 		pevent = tooltip_get_view_event (day_view, day, event_num);
 		if (pevent) {
 			pevent->tooltip = NULL;
@@ -7157,8 +7472,12 @@ e_day_view_on_text_item_event (GnomeCanvasItem *item,
 	case GDK_MOTION_NOTIFY:
 		{
 			EDayViewEvent *pevent;
-			gint event_num = GPOINTER_TO_INT (g_object_get_data ((GObject *) item, "event-num"));
-			gint day = GPOINTER_TO_INT (g_object_get_data ((GObject *) item, "event-day"));
+			gint event_num, day;
+
+			e_day_view_check_layout (day_view);
+
+			event_num = GPOINTER_TO_INT (g_object_get_data ((GObject *) item, "event-num"));
+			day = GPOINTER_TO_INT (g_object_get_data ((GObject *) item, "event-day"));
 
 			pevent = tooltip_get_view_event (day_view, day, event_num);
 			if (!pevent)
@@ -7237,8 +7556,8 @@ e_day_view_event_move (ECalendarView *cal_view,
 			return TRUE;
 		start_dt = e_day_view_convert_grid_position_to_time (day_view, day, resize_start_row);
 		end_dt = e_day_view_convert_grid_position_to_time (day_view, day, resize_end_row + 1);
-		start_time = icaltime_from_timet (start_dt, 0);
-		end_time = icaltime_from_timet (end_dt, 0);
+		start_time = icaltime_from_timet_with_zone (start_dt, 0, NULL);
+		end_time = icaltime_from_timet_with_zone (end_dt, 0, NULL);
 		icaltime_adjust (&start_time ,-1,0,0,0);
 		icaltime_adjust (&end_time ,-1,0,0,0);
 		start_dt = icaltime_as_timet (start_time);
@@ -7249,8 +7568,8 @@ e_day_view_event_move (ECalendarView *cal_view,
 			return TRUE;
 		start_dt = e_day_view_convert_grid_position_to_time (day_view, day, resize_start_row);
 		end_dt = e_day_view_convert_grid_position_to_time (day_view, day, resize_end_row + 1);
-		start_time = icaltime_from_timet (start_dt, 0);
-		end_time = icaltime_from_timet (end_dt, 0);
+		start_time = icaltime_from_timet_with_zone (start_dt, 0, NULL);
+		end_time = icaltime_from_timet_with_zone (end_dt, 0, NULL);
 		icaltime_adjust (&start_time ,1,0,0,0);
 		icaltime_adjust (&end_time ,1,0,0,0);
 		start_dt = icaltime_as_timet (start_time);
@@ -7279,8 +7598,7 @@ e_day_view_change_event_time (EDayView *day_view,
 	ECalModel *model;
 	ECalClient *client;
 	ESourceRegistry *registry;
-	CalObjModType mod = CALOBJ_MOD_ALL;
-	GtkWindow *toplevel;
+	ECalObjModType mod = E_CAL_OBJ_MOD_ALL;
 
 	day = day_view->editing_event_day;
 	event_num = day_view->editing_event_num;
@@ -7335,30 +7653,24 @@ e_day_view_change_event_time (EDayView *day_view,
 	day_view->resize_drag_pos = E_CALENDAR_VIEW_POS_NONE;
 
 	if (e_cal_component_has_recurrences (comp)) {
-		if (!recur_component_dialog (client, comp, &mod, NULL, FALSE)) {
+		if (!e_cal_dialogs_recur_component (client, comp, &mod, NULL, FALSE)) {
 			gtk_widget_queue_draw (day_view->top_canvas);
 			goto out;
 		}
 
-		if (mod == CALOBJ_MOD_ALL)
-			comp_util_sanitize_recurrence_master (comp, client);
-
-		if (mod == CALOBJ_MOD_THIS) {
+		if (mod == E_CAL_OBJ_MOD_THIS) {
 			e_cal_component_set_rdate_list (comp, NULL);
 			e_cal_component_set_rrule_list (comp, NULL);
 			e_cal_component_set_exdate_list (comp, NULL);
 			e_cal_component_set_exrule_list (comp, NULL);
 		}
 	} else if (e_cal_component_is_instance (comp))
-		mod = CALOBJ_MOD_THIS;
-
-	toplevel = GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (day_view)));
+		mod = E_CAL_OBJ_MOD_THIS;
 
 	e_cal_component_commit_sequence (comp);
 
-	e_calendar_view_modify_and_send (
-		E_CALENDAR_VIEW (day_view),
-		comp, client, mod, toplevel, TRUE);
+	e_cal_ops_modify_component (model, client, e_cal_component_get_icalcomponent (comp),
+		mod, E_CAL_OPS_SEND_FLAG_ASK | E_CAL_OPS_SEND_FLAG_IS_NEW_COMPONENT);
 
 out:
 	g_object_unref (comp);
@@ -7558,7 +7870,7 @@ e_day_view_on_editing_stopped (EDayView *day_view,
 	e_cal_component_set_icalcomponent (comp, icalcomponent_new_clone (event->comp_data->icalcomp));
 
 	client = event->comp_data->client;
-	on_server = cal_comp_is_on_server (comp, client);
+	on_server = !event->comp_data->is_new_component;
 
 	if (string_is_empty (text) && !on_server) {
 		const gchar *uid;
@@ -7591,40 +7903,20 @@ e_day_view_on_editing_stopped (EDayView *day_view,
 		e_cal_component_commit_sequence (comp);
 
 		if (!on_server) {
-			gchar *uid = NULL;
-			GError *error = NULL;
-
-			e_cal_client_create_object_sync (
-				client, icalcomp, &uid, NULL, &error);
-
-			if (error != NULL) {
-				uid = NULL;
-				g_warning (
-					"%s: Could not create the object! %s",
-					G_STRFUNC, error->message);
-				g_error_free (error);
-			} else {
-				icalcomponent_set_uid (icalcomp, uid);
-				e_calendar_view_emit_user_created (
-					E_CALENDAR_VIEW (day_view), client);
-			}
-
-			g_free (uid);
+			e_cal_ops_create_component (e_calendar_view_get_model (E_CALENDAR_VIEW (day_view)), client, icalcomp,
+				e_calendar_view_component_created_cb, g_object_ref (day_view), g_object_unref);
 
 			/* we remove the object since we either got the update from the server or failed */
 			e_day_view_remove_event_cb (day_view, day, event_num, NULL);
 		} else {
-			CalObjModType mod = CALOBJ_MOD_ALL;
-			GtkWindow *toplevel;
+			ECalObjModType mod = E_CAL_OBJ_MOD_ALL;
+
 			if (e_cal_component_has_recurrences (comp)) {
-				if (!recur_component_dialog (client, comp, &mod, NULL, FALSE)) {
+				if (!e_cal_dialogs_recur_component (client, comp, &mod, NULL, FALSE)) {
 					goto out;
 				}
 
-				if (mod == CALOBJ_MOD_ALL)
-					comp_util_sanitize_recurrence_master (comp, client);
-
-				if (mod == CALOBJ_MOD_THIS) {
+				if (mod == E_CAL_OBJ_MOD_THIS) {
 					ECalComponentDateTime olddt, dt;
 					icaltimetype itt;
 
@@ -7672,14 +7964,10 @@ e_day_view_on_editing_stopped (EDayView *day_view,
 					e_cal_component_commit_sequence (comp);
 				}
 			} else if (e_cal_component_is_instance (comp))
-				mod = CALOBJ_MOD_THIS;
+				mod = E_CAL_OBJ_MOD_THIS;
 
-			/* FIXME When sending here, what exactly should we send? */
-			toplevel = GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (day_view)));
-
-			e_calendar_view_modify_and_send (
-				E_CALENDAR_VIEW (day_view),
-				comp, client, mod, toplevel, FALSE);
+			e_cal_ops_modify_component (e_calendar_view_get_model (E_CALENDAR_VIEW (day_view)),
+				client, e_cal_component_get_icalcomponent (comp), mod, E_CAL_OPS_SEND_FLAG_ASK);
 		}
 
 	}
@@ -8666,6 +8954,7 @@ e_day_view_on_drag_end (GtkWidget *widget,
 
 	day_view->drag_event_day = -1;
 	day_view->drag_event_num = -1;
+	g_clear_object (&day_view->priv->drag_context);
 }
 
 static void
@@ -8765,7 +9054,6 @@ e_day_view_on_top_canvas_drag_data_received (GtkWidget *widget,
 	gint format, length;
 	gint days_shown;
 	GtkResponseType send = GTK_RESPONSE_NO;
-	gboolean modified;
 	gboolean only_new_attendees = FALSE;
 	gboolean strip_alarms = TRUE;
 
@@ -8794,7 +9082,7 @@ e_day_view_on_top_canvas_drag_data_received (GtkWidget *widget,
 			x, y, &day,
 			NULL);
 		if (pos != E_CALENDAR_VIEW_POS_OUTSIDE) {
-			CalObjModType mod = CALOBJ_MOD_ALL;
+			ECalObjModType mod = E_CAL_OBJ_MOD_ALL;
 			ECalClient *client;
 			GtkWindow *toplevel;
 
@@ -8859,7 +9147,7 @@ e_day_view_on_top_canvas_drag_data_received (GtkWidget *widget,
 
 			if ((itip_organizer_is_user (registry, comp, client) ||
 			     itip_sentby_is_user (registry, comp, client)))
-				send = send_dragged_or_resized_component_dialog (
+				send = e_cal_dialogs_send_dragged_or_resized_component (
 						toplevel, client, comp, &strip_alarms, &only_new_attendees);
 
 			if (send == GTK_RESPONSE_CANCEL) {
@@ -8910,6 +9198,7 @@ e_day_view_on_top_canvas_drag_data_received (GtkWidget *widget,
 
 			/* Reset this since it will be invalid. */
 			day_view->drag_event_day = -1;
+			g_clear_object (&day_view->priv->drag_context);
 
 			/* Show the text item again, just in case it hasn't
 			 * moved. If we don't do this it may not appear. */
@@ -8918,30 +9207,27 @@ e_day_view_on_top_canvas_drag_data_received (GtkWidget *widget,
 
 			e_cal_component_commit_sequence (comp);
 			if (e_cal_component_has_recurrences (comp)) {
-				if (!recur_component_dialog (client, comp, &mod, NULL, FALSE)) {
+				if (!e_cal_dialogs_recur_component (client, comp, &mod, NULL, FALSE)) {
 					gtk_widget_queue_draw (day_view->top_canvas);
 					g_object_unref (comp);
 					return;
 				}
 
-				if (mod == CALOBJ_MOD_ALL)
-					comp_util_sanitize_recurrence_master (comp, client);
-
-				if (mod == CALOBJ_MOD_THIS) {
+				if (mod == E_CAL_OBJ_MOD_THIS) {
 					e_cal_component_set_rdate_list (comp, NULL);
 					e_cal_component_set_rrule_list (comp, NULL);
 					e_cal_component_set_exdate_list (comp, NULL);
 					e_cal_component_set_exrule_list (comp, NULL);
 				}
 			} else if (e_cal_component_is_instance (comp))
-				mod = CALOBJ_MOD_THIS;
+				mod = E_CAL_OBJ_MOD_THIS;
 
-			modified = e_calendar_view_modify (E_CALENDAR_VIEW (day_view), comp, client, mod);
+			e_cal_component_commit_sequence (comp);
 
-			if (modified && send == GTK_RESPONSE_YES)
-				e_calendar_view_send (
-					E_CALENDAR_VIEW (day_view),
-					comp, client, mod, toplevel, strip_alarms, only_new_attendees);
+			e_cal_ops_modify_component (model, client, e_cal_component_get_icalcomponent (comp), mod,
+				(send == GTK_RESPONSE_YES ? E_CAL_OPS_SEND_FLAG_SEND : E_CAL_OPS_SEND_FLAG_DONT_SEND) |
+				(strip_alarms ? E_CAL_OPS_SEND_FLAG_STRIP_ALARMS : 0) |
+				(only_new_attendees ? E_CAL_OPS_SEND_FLAG_ONLY_NEW_ATTENDEES : 0));
 
 			g_object_unref (comp);
 
@@ -8950,14 +9236,9 @@ e_day_view_on_top_canvas_drag_data_received (GtkWidget *widget,
 	}
 
 	if (length >= 0 && format == 8 && !drag_from_same_window) {
-		ECalClient *client;
-
 		/* We are dragging between different window */
-
 		icalcomponent *icalcomp;
 		icalcomponent_kind kind;
-		time_t dtstart;
-		icaltimezone *default_zone;
 
 		pos = e_day_view_convert_position_in_top_canvas (
 			day_view,
@@ -8970,49 +9251,14 @@ e_day_view_on_top_canvas_drag_data_received (GtkWidget *widget,
 		if (!icalcomp)
 			goto error;
 
-		default_zone = e_cal_model_get_timezone (model);
-
 		/* check the type of the component */
 		kind = icalcomponent_isa (icalcomp);
+		icalcomponent_free (icalcomp);
+
 		if (kind != ICAL_VCALENDAR_COMPONENT && kind != ICAL_VEVENT_COMPONENT)
 			goto error;
 
-		dtstart = day_view->day_starts[day];
-
-		client = e_cal_model_ref_default_client (model);
-
-		if (kind == ICAL_VCALENDAR_COMPONENT) {
-			icalcomponent_kind child_kind;
-			icalcomponent *subcomp;
-
-			subcomp = icalcomponent_get_first_component (icalcomp, ICAL_ANY_COMPONENT);
-			while (subcomp) {
-				child_kind = icalcomponent_isa (subcomp);
-				if (child_kind == ICAL_VEVENT_COMPONENT)
-					e_calendar_view_add_event (
-						E_CALENDAR_VIEW (day_view), client, dtstart,
-						default_zone, subcomp, TRUE);
-				else if (child_kind == ICAL_VTIMEZONE_COMPONENT) {
-					icaltimezone *zone;
-
-					zone = icaltimezone_new ();
-					icaltimezone_set_component (zone, subcomp);
-					e_cal_client_add_timezone_sync (client, zone, NULL, NULL);
-
-					icaltimezone_free (zone, 1);
-				}
-
-				subcomp = icalcomponent_get_next_component (
-					icalcomp, ICAL_ANY_COMPONENT);
-			}
-
-			icalcomponent_free (icalcomp);
-
-		} else {
-			e_calendar_view_add_event (E_CALENDAR_VIEW (day_view), client, dtstart, default_zone, icalcomp, TRUE);
-		}
-
-		g_object_unref (client);
+		e_cal_ops_paste_components (model, (const gchar *) data);
 
 		gtk_drag_finish (context, TRUE, TRUE, time);
 		return;
@@ -9048,7 +9294,6 @@ e_day_view_on_main_canvas_drag_data_received (GtkWidget *widget,
 	const guchar *data;
 	gint format, length;
 	GtkResponseType send = GTK_RESPONSE_NO;
-	gboolean modified;
 	gboolean only_new_attendees = FALSE;
 	gboolean strip_alarms = TRUE;
 
@@ -9082,7 +9327,7 @@ e_day_view_on_main_canvas_drag_data_received (GtkWidget *widget,
 			x, y, &day,
 			&row, NULL);
 		if (pos != E_CALENDAR_VIEW_POS_OUTSIDE) {
-			CalObjModType mod = CALOBJ_MOD_ALL;
+			ECalObjModType mod = E_CAL_OBJ_MOD_ALL;
 			ECalClient *client;
 			GtkWindow *toplevel;
 
@@ -9145,7 +9390,7 @@ e_day_view_on_main_canvas_drag_data_received (GtkWidget *widget,
 
 			if ((itip_organizer_is_user (registry, comp, client) ||
 			     itip_sentby_is_user (registry, comp, client)))
-				send = send_dragged_or_resized_component_dialog (
+				send = e_cal_dialogs_send_dragged_or_resized_component (
 						toplevel, client, comp, &strip_alarms, &only_new_attendees);
 
 			if (send == GTK_RESPONSE_CANCEL) {
@@ -9171,6 +9416,7 @@ e_day_view_on_main_canvas_drag_data_received (GtkWidget *widget,
 
 			/* Reset this since it will be invalid. */
 			day_view->drag_event_day = -1;
+			g_clear_object (&day_view->priv->drag_context);
 
 			/* Show the text item again, just in case it hasn't
 			 * moved. If we don't do this it may not appear. */
@@ -9179,30 +9425,27 @@ e_day_view_on_main_canvas_drag_data_received (GtkWidget *widget,
 
 			e_cal_component_commit_sequence (comp);
 			if (e_cal_component_has_recurrences (comp)) {
-				if (!recur_component_dialog (client, comp, &mod, NULL, FALSE)) {
+				if (!e_cal_dialogs_recur_component (client, comp, &mod, NULL, FALSE)) {
 					gtk_widget_queue_draw (day_view->main_canvas);
 					g_object_unref (comp);
 					return;
 				}
 
-				if (mod == CALOBJ_MOD_ALL)
-					comp_util_sanitize_recurrence_master (comp, client);
-
-				if (mod == CALOBJ_MOD_THIS) {
+				if (mod == E_CAL_OBJ_MOD_THIS) {
 					e_cal_component_set_rdate_list (comp, NULL);
 					e_cal_component_set_rrule_list (comp, NULL);
 					e_cal_component_set_exdate_list (comp, NULL);
 					e_cal_component_set_exrule_list (comp, NULL);
 				}
 			} else if (e_cal_component_is_instance (comp))
-				mod = CALOBJ_MOD_THIS;
+				mod = E_CAL_OBJ_MOD_THIS;
 
-			modified = e_calendar_view_modify (E_CALENDAR_VIEW (day_view), comp, client, mod);
+			e_cal_component_commit_sequence (comp);
 
-			if (modified && send == GTK_RESPONSE_YES)
-				e_calendar_view_send (
-					E_CALENDAR_VIEW (day_view),
-					comp, client, mod, toplevel, strip_alarms, only_new_attendees);
+			e_cal_ops_modify_component (model, client, e_cal_component_get_icalcomponent (comp), mod,
+				(send == GTK_RESPONSE_YES ? E_CAL_OPS_SEND_FLAG_SEND : E_CAL_OPS_SEND_FLAG_DONT_SEND) |
+				(strip_alarms ? E_CAL_OPS_SEND_FLAG_STRIP_ALARMS : 0) |
+				(only_new_attendees ? E_CAL_OPS_SEND_FLAG_ONLY_NEW_ATTENDEES : 0));
 
 			g_object_unref (comp);
 
@@ -9211,14 +9454,9 @@ e_day_view_on_main_canvas_drag_data_received (GtkWidget *widget,
 	}
 
 	if (length >= 0 && format == 8 && !drag_from_same_window) {
-		ECalClient *client;
-
 		/* We are dragging between different window */
-
 		icalcomponent *icalcomp;
 		icalcomponent_kind kind;
-		time_t dtstart;
-		icaltimezone *default_zone;
 
 		pos = e_day_view_convert_position_in_main_canvas (
 			day_view,
@@ -9231,49 +9469,14 @@ e_day_view_on_main_canvas_drag_data_received (GtkWidget *widget,
 		if (!icalcomp)
 			goto error;
 
-		default_zone = e_cal_model_get_timezone (model);
-
 		/* check the type of the component */
 		kind = icalcomponent_isa (icalcomp);
+		icalcomponent_free (icalcomp);
+
 		if (kind != ICAL_VCALENDAR_COMPONENT && kind != ICAL_VEVENT_COMPONENT)
 			goto error;
 
-		dtstart = e_day_view_convert_grid_position_to_time (day_view, day, row);
-
-		client = e_cal_model_ref_default_client (model);
-
-		if (kind == ICAL_VCALENDAR_COMPONENT) {
-			icalcomponent_kind child_kind;
-			icalcomponent *subcomp;
-
-			subcomp = icalcomponent_get_first_component (icalcomp, ICAL_ANY_COMPONENT);
-			while (subcomp) {
-				child_kind = icalcomponent_isa (subcomp);
-				if (child_kind == ICAL_VEVENT_COMPONENT)
-					e_calendar_view_add_event (
-						E_CALENDAR_VIEW (day_view), client, dtstart,
-						default_zone, subcomp, FALSE);
-				else if (child_kind == ICAL_VTIMEZONE_COMPONENT) {
-					icaltimezone *zone;
-
-					zone = icaltimezone_new ();
-					icaltimezone_set_component (zone, subcomp);
-					e_cal_client_add_timezone_sync (client, zone, NULL, NULL);
-
-					icaltimezone_free (zone, 1);
-				}
-
-				subcomp = icalcomponent_get_next_component (
-					icalcomp, ICAL_ANY_COMPONENT);
-			}
-
-			icalcomponent_free (icalcomp);
-
-		} else {
-			e_calendar_view_add_event (E_CALENDAR_VIEW (day_view), client, dtstart, default_zone, icalcomp, FALSE);
-		}
-
-		g_object_unref (client);
+		e_cal_ops_paste_components (model, (const gchar *) data);
 
 		gtk_drag_finish (context, TRUE, TRUE, time);
 		return;
@@ -9384,4 +9587,56 @@ e_day_view_is_editing (EDayView *day_view)
 	g_return_val_if_fail (E_IS_DAY_VIEW (day_view), FALSE);
 
 	return day_view->editing_event_day != -1;
+}
+
+static void
+day_view_update_timezone_name_label (GtkWidget *label,
+				     icaltimezone *zone)
+{
+	const gchar *location, *dash;
+	gchar *markup;
+
+	g_return_if_fail (GTK_IS_LABEL (label));
+
+	if (!zone) {
+		location = NULL;
+	} else {
+		location = icaltimezone_get_location (zone);
+		if (location && *location)
+			location = _(location);
+		if (!location || !*location)
+			location = icaltimezone_get_tzid (zone);
+	}
+
+	if (!location)
+		location = "";
+
+	gtk_widget_set_tooltip_text (label, location);
+
+	dash = strchr (location, '/');
+	if (dash && *dash && dash[1])
+		location = dash + 1;
+
+	markup = g_markup_printf_escaped ("<small>%s</small>", location);
+	gtk_label_set_markup (GTK_LABEL (label), markup);
+	g_free (markup);
+}
+
+void
+e_day_view_update_timezone_name_labels (EDayView *day_view)
+{
+	icaltimezone *zone;
+
+	g_return_if_fail (E_IS_DAY_VIEW (day_view));
+
+	zone = e_cal_model_get_timezone (day_view->priv->model);
+	day_view_update_timezone_name_label (day_view->priv->timezone_name_1_label, zone);
+
+	zone = e_day_view_time_item_get_second_zone (E_DAY_VIEW_TIME_ITEM (day_view->time_canvas_item));
+	if (!zone) {
+		gtk_widget_hide (day_view->priv->timezone_name_2_label);
+	} else {
+		day_view_update_timezone_name_label (day_view->priv->timezone_name_2_label, zone);
+		gtk_widget_show (day_view->priv->timezone_name_2_label);
+	}
 }

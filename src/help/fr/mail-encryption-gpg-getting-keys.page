@@ -6,7 +6,7 @@
 
     <link type="guide" xref="mail-encryption#gpg"/>
 
-    <revision pkgversion="2.32.1" version="0.2" date="2011-07-27" status="final"/>
+    <revision pkgversion="3.13.90" version="0.3" date="2015-03-09" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -52,16 +52,11 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
   <title>Obtention et utilisation de clés publiques GPG</title>
-<!-- TODO:POST-3-8: Update and rewrite using Seahorse. Needs a complete rewrite once https://bugzilla.gnome.org/show_bug.cgi?id=508744 is fixed. -->
 
-<p>Pour envoyer un message chiffré, vous devez utiliser la clé publique du destinataire en combinaison avec votre clé privée. Evolution s'occupe du chiffrement, mais vous devez obtenir la clé publique et l'ajouter à votre trousseau de clés.</p>
-
-<p>Pour obtenir des clés publiques d'un serveur de clés, saisissez la commande <cmd>gpg --recv-keys --keyserver wwwkeys.pgp.net id_clé</cmd>, en remplaçant <code>id_clé</code> par l'identifiant de votre destinataire. Vous devez saisir votre mot de passe, puis l'identifiant est automatiquement ajouté à votre trousseau.</p>
-
-<p>Si quelqu'un vous envoie directement une clé publique, enregistrez-la dans un fichier texte et saisissez la commande <cmd>gpg --import</cmd> pour l'ajouter à votre trousseau.</p>
+<p>To send an encrypted message, you need to use the recipient's public key in combination with your private key. <app>Evolution</app> handles the encryption, but you need to <link xref="help:seahorse/pgp-import" href="https://help.gnome.org/users/seahorse/stable/pgp-import">get the public key and add it to your keyring</link>.</p>
 </page>

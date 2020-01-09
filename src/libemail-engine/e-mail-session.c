@@ -32,7 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <glib/gi18n.h>
+#include <glib/gi18n-lib.h>
 #include <glib/gstdio.h>
 
 #include <gtk/gtk.h>
@@ -42,16 +42,17 @@
 #endif
 
 #include <libebackend/libebackend.h>
+#include <libedataserver/libedataserver.h>
 
 #include "libemail-engine/mail-mt.h"
 
 /* This is our hack, not part of libcamel. */
 #include "camel-null-store.h"
 
-/* This too, though it's less of a hack. */
+/* These too, though it's less of a hack. */
 #include "camel-sasl-xoauth2.h"
+#include "camel-sasl-oauth2-google.h"
 
-#include "e-mail-authenticator.h"
 #include "e-mail-session.h"
 #include "e-mail-folder-utils.h"
 #include "e-mail-utils.h"
@@ -78,6 +79,7 @@ struct _EMailSessionPrivate {
 	gulong source_enabled_handler_id;
 	gulong source_disabled_handler_id;
 	gulong default_mail_account_handler_id;
+	gulong outbox_changed_handler_id;
 
 	CamelService *local_store;
 	CamelService *vfolder_store;
@@ -90,6 +92,7 @@ struct _EMailSessionPrivate {
 	GPtrArray *local_folder_uris;
 
 	guint preparing_flush;
+	guint outbox_flush_id;
 	GMutex preparing_flush_lock;
 
 	GMutex used_services_lock;
@@ -134,6 +137,7 @@ enum {
 	REFRESH_SERVICE,
 	STORE_ADDED,
 	STORE_REMOVED,
+	ALLOW_AUTH_PROMPT,
 	LAST_SIGNAL
 };
 
@@ -158,8 +162,7 @@ session_forward_to_flush_outbox_cb (gpointer user_data)
 	session->priv->preparing_flush = 0;
 	g_mutex_unlock (&session->priv->preparing_flush_lock);
 
-	/* Connect to this and call mail_send in the main email client.*/
-	g_signal_emit (session, signals[FLUSH_OUTBOX], 0);
+	e_mail_session_flush_outbox (session);
 
 	return FALSE;
 }
@@ -640,12 +643,36 @@ mail_session_default_mail_account_cb (ESourceRegistry *registry,
 }
 
 static void
+mail_session_outbox_folder_changed_cb (CamelFolder *folder,
+				       CamelFolderChangeInfo *changes,
+				       EMailSession *session)
+{
+	g_return_if_fail (CAMEL_IS_FOLDER (folder));
+	g_return_if_fail (changes != NULL);
+	g_return_if_fail (E_IS_MAIL_SESSION (session));
+
+	if (changes->uid_added && changes->uid_added->len) {
+		GSettings *settings;
+
+		settings = e_util_ref_settings ("org.gnome.evolution.mail");
+		if (g_settings_get_boolean (settings, "composer-use-outbox")) {
+			gint delay_flush = g_settings_get_int (settings, "composer-delay-outbox-flush");
+
+			if (delay_flush > 0)
+				e_mail_session_schedule_outbox_flush (session, delay_flush);
+		}
+		g_object_unref (settings);
+	}
+}
+
+static void
 mail_session_configure_local_store (EMailSession *session)
 {
 	CamelLocalSettings *local_settings;
 	CamelSession *camel_session;
 	CamelSettings *settings;
 	CamelService *service;
+	CamelFolder *folder;
 	const gchar *data_dir;
 	const gchar *uid;
 	gchar *path;
@@ -676,7 +703,6 @@ mail_session_configure_local_store (EMailSession *session)
 
 	/* Populate the local folder cache. */
 	for (ii = 0; ii < E_MAIL_NUM_LOCAL_FOLDERS; ii++) {
-		CamelFolder *folder;
 		gchar *folder_uri;
 		const gchar *display_name;
 		GError *error = NULL;
@@ -703,6 +729,12 @@ mail_session_configure_local_store (EMailSession *session)
 			g_critical ("%s: %s", G_STRFUNC, error->message);
 			g_error_free (error);
 		}
+	}
+
+	folder = e_mail_session_get_local_folder (session, E_MAIL_LOCAL_FOLDER_OUTBOX);
+	if (folder) {
+		session->priv->outbox_changed_handler_id = g_signal_connect (folder, "changed",
+			G_CALLBACK (mail_session_outbox_folder_changed_cb), session);
 	}
 }
 
@@ -742,7 +774,7 @@ mail_session_force_refresh (EMailSession *session)
 		return;
 
 	/* FIXME EMailSession should define properties for these. */
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 	unconditionally =
 		g_settings_get_boolean (settings, "send-recv-on-start") &&
 		g_settings_get_boolean (settings, "send-recv-all-on-start");
@@ -900,6 +932,16 @@ mail_session_dispose (GObject *object)
 
 	priv = E_MAIL_SESSION_GET_PRIVATE (object);
 
+	if (priv->outbox_changed_handler_id) {
+		CamelFolder *folder;
+
+		folder = e_mail_session_get_local_folder (E_MAIL_SESSION (object), E_MAIL_LOCAL_FOLDER_OUTBOX);
+		if (folder)
+			g_signal_handler_disconnect (folder, priv->outbox_changed_handler_id);
+
+		priv->outbox_changed_handler_id = 0;
+	}
+
 	if (priv->folder_cache != NULL) {
 		g_object_unref (priv->folder_cache);
 		priv->folder_cache = NULL;
@@ -908,10 +950,19 @@ mail_session_dispose (GObject *object)
 	g_ptr_array_set_size (priv->local_folders, 0);
 	g_ptr_array_set_size (priv->local_folder_uris, 0);
 
+	g_mutex_lock (&priv->preparing_flush_lock);
+
 	if (priv->preparing_flush > 0) {
 		g_source_remove (priv->preparing_flush);
 		priv->preparing_flush = 0;
 	}
+
+	if (priv->outbox_flush_id > 0) {
+		g_source_remove (priv->outbox_flush_id);
+		priv->outbox_flush_id = 0;
+	}
+
+	g_mutex_unlock (&priv->preparing_flush_lock);
 
 	if (priv->local_store != NULL) {
 		g_object_unref (priv->local_store);
@@ -994,6 +1045,8 @@ mail_session_constructed (GObject *object)
 
 	/* Chain up to parent's constructed() method. */
 	G_OBJECT_CLASS (e_mail_session_parent_class)->constructed (object);
+
+	camel_session_set_network_monitor (CAMEL_SESSION (session), e_network_monitor_get_default ());
 
 	/* Add available mail accounts. */
 
@@ -1110,7 +1163,7 @@ mail_session_constructed (GObject *object)
 	 * before starting the first mail store refresh. */
 	mail_msg_init ();
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 	/* The application is not yet fully initialized at this point,
 	 * so run the first mail store refresh from an idle callback. */
@@ -1147,6 +1200,7 @@ mail_session_add_service (CamelSession *session,
 	if (CAMEL_IS_SERVICE (service)) {
 		ESource *source;
 		ESource *tmp_source;
+		gboolean is_google = FALSE;
 
 		/* Each CamelService has a corresponding ESource. */
 		source = e_source_registry_ref_source (registry, uid);
@@ -1165,7 +1219,7 @@ mail_session_add_service (CamelSession *session,
 		/* Track the proxy resolver for this service. */
 		mail_session_configure_proxy_resolver (registry, service);
 
-		g_object_bind_property (
+		e_binding_bind_property (
 			source, "display-name",
 			service, "display-name",
 			G_BINDING_SYNC_CREATE);
@@ -1175,7 +1229,35 @@ mail_session_add_service (CamelSession *session,
 		 * if necessary. */
 		camel_service_migrate_files (service);
 
+		if (e_source_has_extension (source, E_SOURCE_EXTENSION_AUTHENTICATION)) {
+			ESourceAuthentication *auth_extension;
+			const gchar *host;
+
+			auth_extension = e_source_get_extension (source, E_SOURCE_EXTENSION_AUTHENTICATION);
+			host = e_source_authentication_get_host (auth_extension);
+
+			is_google = host && (
+				e_util_utf8_strstrcase (host, "gmail.com") != NULL ||
+				e_util_utf8_strstrcase (host, "googlemail.com") != NULL);
+		}
+
 		g_object_unref (source);
+
+		/* Kind of hack for the custom SASL authentication unknown to Camel. */
+		if (is_google) {
+			CamelProvider *provider;
+			CamelSaslOAuth2GoogleClass *oauth2_google_class;
+
+			oauth2_google_class = g_type_class_ref (CAMEL_TYPE_SASL_OAUTH2_GOOGLE);
+			provider = camel_service_get_provider (service);
+
+			if (provider && oauth2_google_class) {
+				CamelServiceAuthType *auth_type = oauth2_google_class->parent_class.auth_type;
+
+				if (!g_list_find (provider->authtypes, auth_type))
+					provider->authtypes = g_list_append (provider->authtypes, auth_type);
+			}
+		}
 	}
 
 	return service;
@@ -1269,190 +1351,6 @@ mail_session_forget_password (CamelSession *session,
 	e_passwords_forget_password (item);
 
 	return TRUE;
-}
-
-static CamelCertTrust
-mail_session_trust_prompt (CamelSession *session,
-                           CamelService *service,
-                           GTlsCertificate *certificate,
-                           GTlsCertificateFlags errors)
-{
-	EUserPrompter *prompter;
-	ENamedParameters *parameters;
-	CamelSettings *settings;
-	CamelCertTrust response;
-	GByteArray *der = NULL;
-	gchar *base64;
-	gchar *errhex;
-	gchar *host;
-	gint button_index;
-
-	prompter = e_user_prompter_new ();
-	parameters = e_named_parameters_new ();
-
-	settings = camel_service_ref_settings (service);
-	g_return_val_if_fail (CAMEL_IS_NETWORK_SETTINGS (settings), 0);
-	host = camel_network_settings_dup_host (
-		CAMEL_NETWORK_SETTINGS (settings));
-	g_object_unref (settings);
-
-	/* XXX No accessor function for this property. */
-	g_object_get (certificate, "certificate", &der, NULL);
-	g_return_val_if_fail (der != NULL, 0);
-	base64 = g_base64_encode (der->data, der->len);
-	g_byte_array_unref (der);
-
-	errhex = g_strdup_printf ("%x", (gint) errors);
-
-	e_named_parameters_set (parameters, "host", host);
-	e_named_parameters_set (parameters, "certificate", base64);
-	e_named_parameters_set (parameters, "certificate-errors", errhex);
-
-	g_free (host);
-	g_free (base64);
-	g_free (errhex);
-
-	button_index = e_user_prompter_extension_prompt_sync (
-		prompter, "ETrustPrompt::trust-prompt",
-		parameters, NULL, NULL, NULL);
-
-	switch (button_index) {
-		case 0:
-			response = CAMEL_CERT_TRUST_NEVER;
-			break;
-		case 1:
-			response = CAMEL_CERT_TRUST_FULLY;
-			break;
-		case 2:
-			response = CAMEL_CERT_TRUST_TEMPORARY;
-			break;
-		default:
-			response = CAMEL_CERT_TRUST_UNKNOWN;
-			break;
-	}
-
-	e_named_parameters_free (parameters);
-	g_object_unref (prompter);
-
-	return response;
-}
-
-static gboolean
-mail_session_authenticate_sync (CamelSession *session,
-                                CamelService *service,
-                                const gchar *mechanism,
-                                GCancellable *cancellable,
-                                GError **error)
-{
-	ESource *source;
-	ESourceRegistry *registry;
-	ESourceAuthenticator *auth;
-	CamelServiceAuthType *authtype = NULL;
-	CamelAuthenticationResult result;
-	const gchar *uid;
-	gboolean authenticated;
-	gboolean try_empty_password = FALSE;
-	GError *local_error = NULL;
-
-	/* Do not chain up.  Camel's default method is only an example for
-	 * subclasses to follow.  Instead we mimic most of its logic here. */
-
-	registry = e_mail_session_get_registry (E_MAIL_SESSION (session));
-
-	/* Treat a mechanism name of "none" as NULL. */
-	if (g_strcmp0 (mechanism, "none") == 0)
-		mechanism = NULL;
-
-	/* APOP is one case where a non-SASL mechanism name is passed, so
-	 * don't bail if the CamelServiceAuthType struct comes back NULL. */
-	if (mechanism != NULL)
-		authtype = camel_sasl_authtype (mechanism);
-
-	/* If the SASL mechanism does not involve a user
-	 * password, then it gets one shot to authenticate. */
-	if (authtype != NULL && !authtype->need_password) {
-		result = camel_service_authenticate_sync (
-			service, mechanism, cancellable, error);
-		if (result == CAMEL_AUTHENTICATION_REJECTED)
-			g_set_error (
-				error, CAMEL_SERVICE_ERROR,
-				CAMEL_SERVICE_ERROR_CANT_AUTHENTICATE,
-				_("%s authentication failed"), mechanism);
-		return (result == CAMEL_AUTHENTICATION_ACCEPTED);
-	}
-
-	/* Some SASL mechanisms can attempt to authenticate without a
-	 * user password being provided (e.g. single-sign-on credentials),
-	 * but can fall back to a user password.  Handle that case next. */
-	if (mechanism != NULL) {
-		CamelProvider *provider;
-		CamelSasl *sasl;
-		const gchar *service_name;
-
-		provider = camel_service_get_provider (service);
-		service_name = provider->protocol;
-
-		/* XXX Would be nice if camel_sasl_try_empty_password_sync()
-		 *     returned the result in an "out" parameter so it's
-		 *     easier to distinguish errors from a "no" answer.
-		 * YYY There are precisely two states. Either we appear to
-		 *     have credentials (although we don't yet know if the
-		 *     server would *accept* them, of course). Or we don't
-		 *     have any credentials, and we can't even try. There
-		 *     is no middle ground.
-		 *     N.B. For 'have credentials', read 'the ntlm_auth
-		 *          helper exists and at first glance seems to
-		 *          be responding sanely'. */
-		sasl = camel_sasl_new (service_name, mechanism, service);
-		if (sasl != NULL) {
-			try_empty_password =
-				camel_sasl_try_empty_password_sync (
-				sasl, cancellable, &local_error);
-			g_object_unref (sasl);
-		}
-	}
-
-	/* Abort authentication if we got cancelled.
-	 * Otherwise clear any errors and press on. */
-	if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
-		return FALSE;
-
-	g_clear_error (&local_error);
-
-	/* Find a matching ESource for this CamelService. */
-	uid = camel_service_get_uid (service);
-	source = e_source_registry_ref_source (registry, uid);
-
-	if (source == NULL) {
-		g_set_error (
-			error, CAMEL_SERVICE_ERROR,
-			CAMEL_SERVICE_ERROR_CANT_AUTHENTICATE,
-			_("No data source found for UID '%s'"), uid);
-		return FALSE;
-	}
-
-	auth = e_mail_authenticator_new (service, mechanism);
-
-	result = CAMEL_AUTHENTICATION_REJECTED;
-
-	if (try_empty_password) {
-		result = camel_service_authenticate_sync (
-			service, mechanism, cancellable, error);
-	}
-
-	if (result == CAMEL_AUTHENTICATION_REJECTED) {
-		/* We need a password, preferrably one cached in
-		 * the keyring or else by interactive user prompt. */
-		authenticated = e_source_registry_authenticate_sync (
-			registry, source, auth, cancellable, error);
-	} else {
-		authenticated = (result == CAMEL_AUTHENTICATION_ACCEPTED);
-	}
-	g_object_unref (auth);
-
-	g_object_unref (source);
-
-	return authenticated;
 }
 
 static gboolean
@@ -1585,7 +1483,7 @@ mail_session_forward_to_sync (CamelSession *session,
 		GSettings *settings;
 		gboolean flush_outbox;
 
-		settings = g_settings_new ("org.gnome.evolution.mail");
+		settings = e_util_ref_settings ("org.gnome.evolution.mail");
 		flush_outbox = g_settings_get_boolean (settings, "flush-outbox");
 		g_object_unref (settings);
 
@@ -1651,8 +1549,6 @@ e_mail_session_class_init (EMailSessionClass *class)
 	session_class->add_service = mail_session_add_service;
 	session_class->get_password = mail_session_get_password;
 	session_class->forget_password = mail_session_forget_password;
-	session_class->trust_prompt = mail_session_trust_prompt;
-	session_class->authenticate_sync = mail_session_authenticate_sync;
 	session_class->forward_to_sync = mail_session_forward_to_sync;
 
 	class->create_vfolder_context = mail_session_create_vfolder_context;
@@ -1768,13 +1664,34 @@ e_mail_session_class_init (EMailSessionClass *class)
 		G_TYPE_NONE, 1,
 		CAMEL_TYPE_STORE);
 
+	/**
+	 * EMailSession::store-removed
+	 * @session: the #EMailSession that emitted the signal
+	 * @source: an #ESource
+	 *
+	 * This signal is emitted with e_mail_session_emit_allow_auth_prompt() to let
+	 * any listeners know to enable credentials prompt for the given @source.
+	 *
+	 * Since: 3.16
+	 **/
+	signals[ALLOW_AUTH_PROMPT] = g_signal_new (
+		"allow-auth-prompt",
+		G_OBJECT_CLASS_TYPE (object_class),
+		G_SIGNAL_RUN_FIRST,
+		G_STRUCT_OFFSET (EMailSessionClass, allow_auth_prompt),
+		NULL, NULL,
+		g_cclosure_marshal_VOID__OBJECT,
+		G_TYPE_NONE, 1,
+		E_TYPE_SOURCE);
+
 	camel_null_store_register_provider ();
 
 	/* Make sure ESourceCamel picks up the "none" provider. */
 	e_source_camel_generate_subtype ("none", CAMEL_TYPE_SETTINGS);
 
-	/* Make sure CamelSasl picks up the XOAUTH2 mechanism. */
+	/* Make sure CamelSasl picks up our mechanisms. */
 	g_type_ensure (CAMEL_TYPE_SASL_XOAUTH2);
+	g_type_ensure (CAMEL_TYPE_SASL_OAUTH2_GOOGLE);
 }
 
 static void
@@ -1894,13 +1811,30 @@ e_mail_session_get_local_folder_uri (EMailSession *session,
 GList *
 e_mail_session_get_available_junk_filters (EMailSession *session)
 {
-	GList *list;
+	GList *list, *link;
+	GQueue trash = G_QUEUE_INIT;
 
 	g_return_val_if_fail (E_IS_MAIL_SESSION (session), NULL);
 
 	list = g_hash_table_get_values (session->priv->junk_filters);
 
-	/* Sort the available junk filters by display name. */
+	/* Discard unavailable junk filters.  (e.g. Junk filter
+	 * requires Bogofilter but Bogofilter is not installed,
+	 * hence the junk filter is unavailable.) */
+
+	for (link = list; link != NULL; link = g_list_next (link)) {
+		EMailJunkFilter *junk_filter;
+
+		junk_filter = E_MAIL_JUNK_FILTER (link->data);
+		if (!e_mail_junk_filter_available (junk_filter))
+			g_queue_push_tail (&trash, link);
+	}
+
+	while ((link = g_queue_pop_head (&trash)) != NULL)
+		list = g_list_delete_link (list, link);
+
+	/* Sort the remaining junk filters by display name. */
+
 	return g_list_sort (list, (GCompareFunc) e_mail_junk_filter_compare);
 }
 
@@ -2330,9 +2264,10 @@ mail_session_flush_filter_log (EMailSession *session)
 const gchar *
 mail_session_get_data_dir (void)
 {
-	if (G_UNLIKELY (mail_data_dir == NULL))
-		mail_data_dir = g_build_filename (
-			e_get_user_data_dir (), "mail", NULL);
+	if (G_UNLIKELY (mail_data_dir == NULL)) {
+		mail_data_dir = g_build_filename (e_get_user_data_dir (), "mail", NULL);
+		g_mkdir_with_parents (mail_data_dir, 0700);
+	}
 
 	return mail_data_dir;
 }
@@ -2340,9 +2275,10 @@ mail_session_get_data_dir (void)
 const gchar *
 mail_session_get_cache_dir (void)
 {
-	if (G_UNLIKELY (mail_cache_dir == NULL))
-		mail_cache_dir = g_build_filename (
-			e_get_user_cache_dir (), "mail", NULL);
+	if (G_UNLIKELY (mail_cache_dir == NULL)) {
+		mail_cache_dir = g_build_filename (e_get_user_cache_dir (), "mail", NULL);
+		g_mkdir_with_parents (mail_cache_dir, 0700);
+	}
 
 	return mail_cache_dir;
 }
@@ -2350,9 +2286,10 @@ mail_session_get_cache_dir (void)
 const gchar *
 mail_session_get_config_dir (void)
 {
-	if (G_UNLIKELY (mail_config_dir == NULL))
-		mail_config_dir = g_build_filename (
-			e_get_user_config_dir (), "mail", NULL);
+	if (G_UNLIKELY (mail_config_dir == NULL)) {
+		mail_config_dir = g_build_filename (e_get_user_config_dir (), "mail", NULL);
+		g_mkdir_with_parents (mail_config_dir, 0700);
+	}
 
 	return mail_config_dir;
 }
@@ -2376,6 +2313,78 @@ e_mail_session_create_vfolder_context (EMailSession *session)
 	g_return_val_if_fail (class->create_vfolder_context != NULL, NULL);
 
 	return class->create_vfolder_context (session);
+}
+
+static gboolean
+mail_session_flush_outbox_timeout_cb (gpointer user_data)
+{
+	EMailSession *session = user_data;
+
+	if (g_source_is_destroyed (g_main_current_source ()))
+		return FALSE;
+
+	g_return_val_if_fail (E_IS_MAIL_SESSION (session), FALSE);
+
+	g_mutex_lock (&session->priv->preparing_flush_lock);
+	if (session->priv->outbox_flush_id == g_source_get_id (g_main_current_source ()))
+		session->priv->outbox_flush_id = 0;
+	g_mutex_unlock (&session->priv->preparing_flush_lock);
+
+	e_mail_session_flush_outbox (session);
+
+	return FALSE;
+}
+
+void
+e_mail_session_flush_outbox (EMailSession *session)
+{
+	g_return_if_fail (E_IS_MAIL_SESSION (session));
+
+	g_mutex_lock (&session->priv->preparing_flush_lock);
+	if (session->priv->outbox_flush_id > 0) {
+		g_source_remove (session->priv->outbox_flush_id);
+		session->priv->outbox_flush_id = 0;
+	}
+	g_mutex_unlock (&session->priv->preparing_flush_lock);
+
+	/* Connect to this and call mail_send in the main email client.*/
+	g_signal_emit (session, signals[FLUSH_OUTBOX], 0);
+}
+
+void
+e_mail_session_schedule_outbox_flush (EMailSession *session,
+				      gint delay_minutes)
+{
+	g_return_if_fail (E_IS_MAIL_SESSION (session));
+	g_return_if_fail (delay_minutes >= 0);
+
+	if (delay_minutes == 0) {
+		e_mail_session_flush_outbox (session);
+		return;
+	}
+
+	g_mutex_lock (&session->priv->preparing_flush_lock);
+	if (session->priv->outbox_flush_id > 0) {
+		g_source_remove (session->priv->outbox_flush_id);
+		session->priv->outbox_flush_id = 0;
+	}
+
+	session->priv->outbox_flush_id = e_named_timeout_add_seconds (60 * delay_minutes, mail_session_flush_outbox_timeout_cb, session);
+
+	g_mutex_unlock (&session->priv->preparing_flush_lock);
+}
+
+void
+e_mail_session_cancel_scheduled_outbox_flush (EMailSession *session)
+{
+	g_return_if_fail (E_IS_MAIL_SESSION (session));
+
+	g_mutex_lock (&session->priv->preparing_flush_lock);
+	if (session->priv->outbox_flush_id > 0) {
+		g_source_remove (session->priv->outbox_flush_id);
+		session->priv->outbox_flush_id = 0;
+	}
+	g_mutex_unlock (&session->priv->preparing_flush_lock);
 }
 
 static void
@@ -2403,7 +2412,7 @@ mail_session_wakeup_used_services_cond (GCancellable *cancenllable,
  *
  * Returns: Whether successfully waited for the @service.
  *
- * Since: 3.12.10
+ * Since: 3.16
  **/
 gboolean
 e_mail_session_mark_service_used_sync (EMailSession *session,
@@ -2411,6 +2420,7 @@ e_mail_session_mark_service_used_sync (EMailSession *session,
 				       GCancellable *cancellable)
 {
 	gulong cancelled_id = 0;
+	gboolean message_pushed = FALSE;
 
 	g_return_val_if_fail (E_IS_MAIL_SESSION (session), FALSE);
 	g_return_val_if_fail (CAMEL_IS_SERVICE (service), FALSE);
@@ -2422,8 +2432,17 @@ e_mail_session_mark_service_used_sync (EMailSession *session,
 
 	while (!g_cancellable_is_cancelled (cancellable) &&
 		g_hash_table_contains (session->priv->used_services, service)) {
+
+		if (!message_pushed) {
+			camel_operation_push_message (cancellable, _("Waiting for '%s'"), camel_service_get_display_name (service));
+			message_pushed = TRUE;
+		}
+
 		g_cond_wait (&session->priv->used_services_cond, &session->priv->used_services_lock);
 	}
+
+	if (message_pushed)
+		camel_operation_pop_message (cancellable);
 
 	if (cancelled_id)
 		g_cancellable_disconnect (cancellable, cancelled_id);
@@ -2444,7 +2463,7 @@ e_mail_session_mark_service_used_sync (EMailSession *session,
  * Frees a "use lock" on the @service, thus it can be used by others. If anything
  * is waiting for it in e_mail_session_mark_service_used_sync(), then it is woken up.
  *
- * Since: 3.12.10
+ * Since: 3.16
  **/
 void
 e_mail_session_unmark_service_used (EMailSession *session,
@@ -2460,4 +2479,24 @@ e_mail_session_unmark_service_used (EMailSession *session,
 	}
 
 	g_mutex_unlock (&session->priv->used_services_lock);
+}
+
+/**
+ * e_mail_session_emit_allow_auth_prompt:
+ * @session: an #EMailSession
+ * @source: an #ESource
+ *
+ * Emits 'allow-auth-prompt' on @session for @source. This lets
+ * any listeners know to enable credentials prompt for this @source.
+ *
+ * Since: 3.16
+ **/
+void
+e_mail_session_emit_allow_auth_prompt (EMailSession *session,
+				       ESource *source)
+{
+	g_return_if_fail (E_IS_MAIL_SESSION (session));
+	g_return_if_fail (E_IS_SOURCE (source));
+
+	g_signal_emit (session, signals[ALLOW_AUTH_PROMPT], 0, source);
 }

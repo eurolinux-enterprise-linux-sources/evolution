@@ -6,7 +6,7 @@
 
     <link type="guide" xref="mail-receiving-options#local-account-server-types"/>
     <link type="guide" xref="mail-account-manage-unix-mbox-spool-directory#receiving-email"/>
-    <revision pkgversion="3.0.2" version="0.2" date="2011-07-30" status="final"/>
+    <revision pkgversion="3.12.9" version="0.3" date="2015-02-15" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -49,7 +49,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -61,7 +61,7 @@
 <p>Dans l'onglet <gui>Réception du courriel</gui> (accessible via <guiseq><gui>Édition</gui><gui>Préférences</gui><gui>Compte de messagerie</gui><gui style="button">Édition</gui><gui>Réception du courriel</gui></guiseq>) :</p>
 
 <list>
-<item><p>Choisissez le répertoire en cliquant sur le bouton à côté de <gui>Chemin</gui> dans la section <gui>Configuration</gui> ce qui ouvre une fenêtre de sélection de fichier. Des dossiers par défaut sont disponibles dans la liste. Si le répertoire n'est pas parmi ces dossiers, choisissez la dernière option <gui>Autre...</gui> ce qui ouvre une fenêtre de sélection de répertoire.</p></item>
+<item><p>Choisissez le répertoire en cliquant sur le bouton à côté de <gui>Chemin</gui> dans la section <gui>Configuration</gui>. Des dossiers par défaut sont disponibles dans la liste. Si le répertoire n'est pas parmi ces dossiers, choisissez la dernière option <gui>Autre...</gui> ce qui ouvre une fenêtre de sélection de répertoire.</p></item>
 </list>
 
 </section>

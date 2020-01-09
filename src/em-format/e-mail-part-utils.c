@@ -54,6 +54,45 @@ e_mail_part_is_secured (CamelMimePart *part)
 		camel_content_type_is (ct, "application", "pkcs7-mime"));
 }
 
+/*
+ * Returns: one of -e-mail-formatter-frame-security-* style classes
+ */
+const gchar *
+e_mail_part_get_frame_security_style (EMailPart *part)
+{
+	const gchar *frame_style = NULL;
+
+	g_return_val_if_fail (part != NULL, "-e-mail-formatter-frame-security-none");
+
+	if (e_mail_part_get_validity_flags (part) == E_MAIL_PART_VALIDITY_NONE) {
+		return "-e-mail-formatter-frame-security-none";
+	} else {
+		GList *head, *link;
+
+		head = g_queue_peek_head_link (&part->validities);
+
+		for (link = head; link != NULL; link = g_list_next (link)) {
+			EMailPartValidityPair *pair = link->data;
+			if (pair->validity->sign.status == CAMEL_CIPHER_VALIDITY_SIGN_BAD) {
+				return "-e-mail-formatter-frame-security-bad";
+			} else if (pair->validity->sign.status == CAMEL_CIPHER_VALIDITY_SIGN_UNKNOWN) {
+				frame_style = "-e-mail-formatter-frame-security-unknown";
+			} else if (frame_style == NULL &&
+				pair->validity->sign.status == CAMEL_CIPHER_VALIDITY_SIGN_NEED_PUBLIC_KEY) {
+				frame_style = "-e-mail-formatter-frame-security-need-key";
+			} else if (frame_style == NULL &&
+				pair->validity->sign.status == CAMEL_CIPHER_VALIDITY_SIGN_GOOD) {
+				frame_style = "-e-mail-formatter-frame-security-good";
+			}
+		}
+	}
+
+	if (frame_style == NULL)
+		frame_style = "-e-mail-formatter-frame-security-none";
+
+	return frame_style;
+}
+
 /**
  * e_mail_part_snoop_type:
  * @part: a #CamelMimePart
@@ -449,6 +488,11 @@ e_mail_part_build_uri (CamelFolder *folder,
 				g_free (escaped);
 				break;
 			}
+			case G_TYPE_POINTER: {
+				gpointer val = va_arg (ap, gpointer);
+				tmp2 = g_strdup_printf ("%s%c%s=%p", tmp, separator, name, val);
+				break;
+			}
 			default:
 				g_warning ("Invalid param type %s", g_type_name (type));
 				va_end (ap);
@@ -545,8 +589,16 @@ e_mail_part_is_inline (CamelMimePart *mime_part,
 
 	disposition = camel_mime_part_get_disposition (mime_part);
 
-	if (disposition != NULL)
+	if (disposition != NULL) {
 		is_inline = (g_ascii_strcasecmp (disposition, "inline") == 0);
+		if (is_inline) {
+			GSettings *settings;
+
+			settings = e_util_ref_settings ("org.gnome.evolution.mail");
+			is_inline = g_settings_get_boolean (settings, "display-content-disposition-inline");
+			g_clear_object (&settings);
+		}
+	}
 
 	if ((extensions == NULL) || g_queue_is_empty (extensions))
 		return is_inline;

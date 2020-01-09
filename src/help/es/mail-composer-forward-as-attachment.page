@@ -18,9 +18,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -38,7 +44,7 @@
 
 <title>Reenviar un mensaje con sus adjuntos</title>
 
-<p>Pulse <guiseq><gui>Mensaje</gui><gui>Reenviar como...</gui></guiseq> y elija <gui>Adjunto</gui> para que el correo reenviado y sus adjuntos se adjunten al correo que quiere enviar.</p>
+<p>Pulse <guiseq><gui>Mensaje</gui><gui>Reenviar como…</gui></guiseq> y elija <gui>Adjunto</gui> para que el correo reenviado y sus adjuntos se adjunten al correo que quiere enviar.</p>
 
 <note style="tip">
 <p>Si quiere que esta opción esté activada de forma predeterminada cambie <guiseq><gui>Editar</gui><gui>Preferencias</gui><gui>Preferencias del editor</gui><gui>Estilo de reenvío</gui></guiseq> a <gui>Adjunto</gui>.</p>

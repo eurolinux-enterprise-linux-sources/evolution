@@ -49,13 +49,13 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
 <title>Utilisation de plusieurs listes de tâches ou de mémos</title>
 
-<p>Vous pouvez avoir plusieurs listes de tâches et de mémos et choisir lesquelles seront affichées. Par exemple, vous pouvez avoir des tâches pour le travail, des tâches pour la maison et des tâches pour le club de chant dont vous êtes membre. La barre latérale affiche ces listes et vous pouvez cocher ou pas n'importe quelle case en face d'elles pour afficher ou masquer les tâches ou mémos correspondants dans la vue.</p>
+<p>Vous pouvez avoir plusieurs listes de tâches et de mémos et choisir lesquelles seront affichées. Par exemple, vous pouvez avoir des tâches pour le travail, des tâches pour la maison et des tâches pour le club de chant dont vous êtes membre. La barre latérale affiche ces listes et vous pouvez cocher ou dé-cocher n'importe quelle case en face de chaque élément de la liste pour afficher ou masquer les tâches ou mémos correspondants dans la vue.</p>
 
 <p>Les tâches et les mémos de chaque liste apparaissent dans une couleur différente.</p>
 

@@ -2,41 +2,57 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-access-gmail-pop-account" xml:lang="cs">
 
   <info>
-    <desc>How to set up a Gmail POP Account.</desc>
+    <desc>Jak nastavit účet Gmail POP.</desc>
     
     <link type="guide" xref="index#common-mail-problems"/>
     <link type="guide" xref="google-services"/>
     <link type="seealso" xref="mail-account-manage-pop"/>
 
-    <revision pkgversion="2.28.3" version="0.1" date="2010-10-16" status="review"/>
+    <revision pkgversion="3.11.92" version="0.2" date="2014-03-23" status="review"/>
     <credit type="author">
       <name its:translate="no">April Gonzales</name>
       <email its:translate="no">loonycookie@gmail.com</email>
+    </credit>
+    <credit type="author">
+      <name its:translate="no">Andre Klapper</name>
+      <email its:translate="no">ak-47@gmx.net</email>
     </credit>
     
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
 
 
-<title>Access a Gmail POP Account via Evolution</title>
+<title>Přístup k účtu Gmail POP přes <app>Evolution</app></title>
 
-<p>Follow these steps to set up your Gmail POP Account in Evolution:</p>
+<p>Podle následujících kroků nastavíte svůj účet Gmail POP pro použití v pošťáku <app>Evolution</app>:</p>
 
 <steps>
-<item><p>Log in to your Gmail account.</p></item>
-<item><p>Go to <guiseq><gui>Settings</gui><gui>Forwarding and POP/IMAP</gui></guiseq>. Refer to the POP Download section.</p></item>
-<item><p>Enable the POP download feature by ticking the radio button that corresponds to either of these options:</p>
+<item><p>Přihlaste se ke svému účtu Gmail.</p></item>
+<item><p>Přejděte do <guiseq><gui>Nastavení</gui> <gui>Přeposílání a protokol POP/IMAP</gui></guiseq>. Další popis se vztahuje k části Stahování přes protokol POP.</p></item>
+<item><p>Zapněte funkci stahování přes protokol POP zaškrtnutím přepínače u jedné z těchto voleb:</p>
     <list>
-    <item><p>Enable POP for all mail (even mail that's already been downloaded)</p></item>
-    <item><p>Enable POP for mail that arrives from now on</p></item>
+    <item><p>Zpřístupnit protokol POP pro veškerou poštu (i pro poštu, která již byla stažena dříve)</p></item>
+    <item><p>Aktivovat protokol POP pro poštu, která přijde od tohoto okamžiku</p></item>
     </list>
 </item>
-<item><p>Specify the other required settings for this Gmail feature.</p></item>
-<item><p>To know the Gmail Account settings, click on <guiseq><gui>Configuration instructions</gui><gui>Other</gui><gui>Standard Instructions</gui></guiseq>.</p></item>
-<item><p>On your Evolution client, go to <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Mail Accounts</gui></guiseq>. Click <gui style="button">Add</gui>. </p></item>
-<item><p>Provide the required information. For the account settings, refer to Step 5 </p></item>
+<item><p>Případně upravte další požadovaná nastavení této funkce Gmailu.</p></item>
+<item><p>Abyste se dozvěděli nastavení účtu Gmail, klikněte na <gui>Pokyny pro konfiguraci</gui>. Zvolte <gui>Chci zapnout POP</gui> a vyberte <gui>Jiný</gui> v seznamu klientů.</p></item>
+<item><p>Ve svém klientu <app>Evolution</app> přejděte do <guiseq><gui>Upravit</gui> <gui>Předvolby</gui> <gui>Poštovní účty</gui></guiseq>. Klikněte na <gui style="button">Přidat</gui>.</p></item>
+<item><p>Zadejte potřebné údaje. Jak je získat, bylo popsáno v kroku 5.</p></item>
 </steps>
 </page>

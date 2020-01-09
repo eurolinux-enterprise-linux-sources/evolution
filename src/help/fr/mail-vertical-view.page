@@ -51,13 +51,13 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
   <title>Affichage vertical</title>
 
-<p>Evolution permet un affichage vertical en plus de l'affichage classique. En affichage vertical, le panneau d'aperçu des messages est situé à droite de la liste des messages, contrairement à l'affichage classique où il se situe en-dessous de la liste des messages. L'affichage vertical vous permet d'exploiter la largeur supplémentaire des écrans au format écran large.</p>
+<p><app>Evolution</app> provides a vertical view in addition to the classical view. In the vertical view, the message preview pane is located at the right side of the message list when compared to the classical view where the message preview pane is placed below the message list. Vertical view enables you to use the extra width of wide screen monitors.</p>
 
 <p>Pour passer à l'affichage vertical, choisissez <guiseq><gui>Affichage</gui><gui>Aperçu</gui><gui>Affichage vertical</gui></guiseq>.</p>
 

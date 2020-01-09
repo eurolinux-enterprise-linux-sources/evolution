@@ -26,6 +26,7 @@
 #endif
 
 #include <string.h>
+#include <e-util/e-util.h>
 #include "config-data.h"
 
 /* Whether we have initied ourselves by reading
@@ -60,7 +61,7 @@ ensure_inited (void)
 	if (calendar_settings)
 		return;
 
-	calendar_settings = g_settings_new ("org.gnome.evolution.calendar");
+	calendar_settings = e_util_ref_settings ("org.gnome.evolution.calendar");
 }
 
 icaltimezone *
@@ -105,6 +106,22 @@ config_data_get_notify_with_tray (void)
 	ensure_inited ();
 
 	return g_settings_get_boolean (calendar_settings, "notify-with-tray");
+}
+
+gboolean
+config_data_get_task_reminder_for_completed (void)
+{
+	ensure_inited ();
+
+	return g_settings_get_boolean (calendar_settings, "task-reminder-for-completed");
+}
+
+gint
+config_data_get_default_snooze_minutes (void)
+{
+	ensure_inited ();
+
+	return g_settings_get_int (calendar_settings, "default-snooze-minutes");
 }
 
 static void

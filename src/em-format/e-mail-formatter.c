@@ -23,6 +23,7 @@
 #include <libebackend/libebackend.h>
 
 #include <e-util/e-util.h>
+#include <shell/e-shell.h>
 
 #include "e-mail-formatter-enumtypes.h"
 #include "e-mail-formatter-extension.h"
@@ -33,7 +34,7 @@
 
 #define E_MAIL_FORMATTER_GET_PRIVATE(obj) \
 	(G_TYPE_INSTANCE_GET_PRIVATE \
-	((obj), E_TYPE_MAIL_FORMATTER, EMailFormatterPrivate))\
+	((obj), E_TYPE_MAIL_FORMATTER, EMailFormatterPrivate))
 
 #define STYLESHEET_URI \
 	"evo-file://" EVOLUTION_PRIVDATADIR "/theme/webview.css"
@@ -41,7 +42,7 @@
 typedef struct _AsyncContext AsyncContext;
 
 struct _EMailFormatterPrivate {
-	EMailImageLoadingPolicy image_loading_policy;
+	EImageLoadingPolicy image_loading_policy;
 
 	gboolean show_sender_photo;
 	gboolean show_real_date;
@@ -62,7 +63,6 @@ struct _AsyncContext {
 
 /* internal formatter extensions */
 GType e_mail_formatter_attachment_get_type (void);
-GType e_mail_formatter_attachment_bar_get_type (void);
 GType e_mail_formatter_audio_get_type (void);
 GType e_mail_formatter_error_get_type (void);
 GType e_mail_formatter_headers_get_type (void);
@@ -73,8 +73,6 @@ GType e_mail_formatter_source_get_type (void);
 GType e_mail_formatter_text_enriched_get_type (void);
 GType e_mail_formatter_text_html_get_type (void);
 GType e_mail_formatter_text_plain_get_type (void);
-
-void e_mail_formatter_internal_extensions_load (EMailExtensionRegistry *ereg);
 
 static gpointer e_mail_formatter_parent_class = 0;
 
@@ -97,6 +95,7 @@ enum {
 
 enum {
 	NEED_REDRAW,
+	CLAIM_ATTACHMENT,
 	LAST_SIGNAL
 };
 
@@ -139,6 +138,17 @@ mail_formatter_free_context (EMailFormatterContext *context)
 		g_object_unref (context->part_list);
 
 	g_free (context);
+}
+
+static void
+shell_gone_cb (gpointer user_data,
+	       GObject *gone_extension_registry)
+{
+	EMailFormatterClass *class = user_data;
+
+	g_return_if_fail (class != NULL);
+
+	g_clear_object (&class->extension_registry);
 }
 
 static void
@@ -441,8 +451,7 @@ mail_formatter_run (EMailFormatter *formatter,
 
 		if (!ok) {
 			/* We don't want to source these */
-			if (e_mail_part_id_has_suffix (part, ".headers") ||
-			    e_mail_part_id_has_suffix (part, "attachment-bar"))
+			if (e_mail_part_id_has_suffix (part, ".headers"))
 				continue;
 
 			e_mail_formatter_format_as (
@@ -489,7 +498,6 @@ mail_formatter_update_style (EMailFormatter *formatter,
 	GtkStyleContext *style_context;
 	GtkWidgetPath *widget_path;
 	GdkRGBA rgba;
-	gboolean backdrop;
 
 	g_object_freeze_notify (G_OBJECT (formatter));
 
@@ -497,15 +505,11 @@ mail_formatter_update_style (EMailFormatter *formatter,
 	widget_path = gtk_widget_path_new ();
 	gtk_widget_path_append_type (widget_path, GTK_TYPE_WINDOW);
 	gtk_style_context_set_path (style_context, widget_path);
-	backdrop = (state & GTK_STATE_FLAG_BACKDROP) != 0;
 
-	if (!gtk_style_context_lookup_color (
-			style_context,
-			backdrop ? "theme_unfocused_bg_color" : "theme_bg_color",
-			&rgba))
+	if (!gtk_style_context_lookup_color (style_context, "theme_bg_color", &rgba))
 		gdk_rgba_parse (&rgba, E_UTILS_DEFAULT_THEME_BG_COLOR);
-	e_mail_formatter_set_color (
-		formatter, E_MAIL_FORMATTER_COLOR_BODY, &rgba);
+
+	e_mail_formatter_set_color (formatter, E_MAIL_FORMATTER_COLOR_BODY, &rgba);
 
 	rgba.red *= 0.8;
 	rgba.green *= 0.8;
@@ -513,29 +517,20 @@ mail_formatter_update_style (EMailFormatter *formatter,
 	e_mail_formatter_set_color (
 		formatter, E_MAIL_FORMATTER_COLOR_FRAME, &rgba);
 
-	if (!gtk_style_context_lookup_color (
-			style_context,
-			backdrop ? "theme_unfocused_fg_color" : "theme_fg_color",
-			&rgba))
+	if (!gtk_style_context_lookup_color (style_context, "theme_fg_color", &rgba))
 		gdk_rgba_parse (&rgba, E_UTILS_DEFAULT_THEME_FG_COLOR);
-	e_mail_formatter_set_color (
-		formatter, E_MAIL_FORMATTER_COLOR_HEADER, &rgba);
 
-	if (!gtk_style_context_lookup_color (
-			style_context,
-			backdrop ? "theme_unfocused_base_color" : "theme_base_color",
-			&rgba))
+	e_mail_formatter_set_color (formatter, E_MAIL_FORMATTER_COLOR_HEADER, &rgba);
+
+	if (!gtk_style_context_lookup_color (style_context, "theme_base_color", &rgba))
 		gdk_rgba_parse (&rgba, E_UTILS_DEFAULT_THEME_BASE_COLOR);
-	e_mail_formatter_set_color  (
-		formatter, E_MAIL_FORMATTER_COLOR_CONTENT, &rgba);
 
-	if (!gtk_style_context_lookup_color (
-			style_context,
-			backdrop ? "theme_unfocused_fg_color" : "theme_fg_color",
-			&rgba))
+	e_mail_formatter_set_color  (formatter, E_MAIL_FORMATTER_COLOR_CONTENT, &rgba);
+
+	if (!gtk_style_context_lookup_color (style_context, "theme_fg_color", &rgba))
 		gdk_rgba_parse (&rgba, E_UTILS_DEFAULT_THEME_FG_COLOR);
-	e_mail_formatter_set_color (
-		formatter, E_MAIL_FORMATTER_COLOR_TEXT, &rgba);
+
+	e_mail_formatter_set_color (formatter, E_MAIL_FORMATTER_COLOR_TEXT, &rgba);
 
 	gtk_widget_path_free (widget_path);
 	g_object_unref (style_context);
@@ -546,9 +541,10 @@ mail_formatter_update_style (EMailFormatter *formatter,
 static void
 e_mail_formatter_base_init (EMailFormatterClass *class)
 {
+	EShell *shell;
+
 	/* Register internal extensions. */
 	g_type_ensure (e_mail_formatter_attachment_get_type ());
-	g_type_ensure (e_mail_formatter_attachment_bar_get_type ());
 	g_type_ensure (e_mail_formatter_audio_get_type ());
 	g_type_ensure (e_mail_formatter_error_get_type ());
 	g_type_ensure (e_mail_formatter_headers_get_type ());
@@ -576,12 +572,9 @@ e_mail_formatter_base_init (EMailFormatterClass *class)
 		CAMEL_MIME_FILTER_TOHTML_CONVERT_SPACES |
 		CAMEL_MIME_FILTER_TOHTML_CONVERT_ADDRESSES |
 		CAMEL_MIME_FILTER_TOHTML_MARK_CITATION;
-}
 
-static void
-e_mail_formatter_base_finalize (EMailFormatterClass *class)
-{
-	g_object_unref (class->extension_registry);
+	shell = e_shell_get_default ();
+	g_object_weak_ref (G_OBJECT (shell), shell_gone_cb, class);
 }
 
 static void
@@ -713,8 +706,8 @@ e_mail_formatter_class_init (EMailFormatterClass *class)
 			"image-loading-policy",
 			"Image Loading Policy",
 			NULL,
-			E_TYPE_MAIL_IMAGE_LOADING_POLICY,
-			E_MAIL_IMAGE_LOADING_POLICY_NEVER,
+			E_TYPE_IMAGE_LOADING_POLICY,
+			E_IMAGE_LOADING_POLICY_NEVER,
 			G_PARAM_READWRITE |
 			G_PARAM_STATIC_STRINGS));
 
@@ -764,6 +757,14 @@ e_mail_formatter_class_init (EMailFormatterClass *class)
 			G_PARAM_READWRITE |
 			G_PARAM_STATIC_STRINGS));
 
+	signals[CLAIM_ATTACHMENT] = g_signal_new (
+		"claim-attachment",
+		E_TYPE_MAIL_FORMATTER,
+		G_SIGNAL_RUN_FIRST,
+		G_STRUCT_OFFSET (EMailFormatterClass, claim_attachment),
+		NULL, NULL, NULL,
+		G_TYPE_NONE, 1, E_TYPE_ATTACHMENT);
+
 	signals[NEED_REDRAW] = g_signal_new (
 		"need-redraw",
 		E_TYPE_MAIL_FORMATTER,
@@ -802,7 +803,7 @@ e_mail_formatter_get_type (void)
 		const GTypeInfo type_info = {
 			sizeof (EMailFormatterClass),
 			(GBaseInitFunc) e_mail_formatter_base_init,
-			(GBaseFinalizeFunc) e_mail_formatter_base_finalize,
+			(GBaseFinalizeFunc) NULL,
 			(GClassInitFunc) e_mail_formatter_class_init,
 			(GClassFinalizeFunc) NULL,
 			NULL,	/* class_data */
@@ -825,6 +826,16 @@ e_mail_formatter_get_type (void)
 	}
 
 	return type;
+}
+
+void
+e_mail_formatter_claim_attachment (EMailFormatter *formatter,
+				   EAttachment *attachment)
+{
+	g_return_if_fail (E_IS_MAIL_FORMATTER (formatter));
+	g_return_if_fail (E_IS_ATTACHMENT (attachment));
+
+	g_signal_emit (formatter, signals[CLAIM_ATTACHMENT], 0, attachment);
 }
 
 void
@@ -996,7 +1007,7 @@ e_mail_formatter_format_as (EMailFormatter *formatter,
 
 	d (
 		printf ("(%d) Formatting for part %s of type %s (found %d formatters)\n",
-		_call_i, part->id, as_mime_type,
+		_call_i, e_mail_part_get_id (part), as_mime_type,
 		formatters ? g_queue_get_length (formatters) : 0));
 
 	if (formatters != NULL) {
@@ -1092,6 +1103,8 @@ e_mail_formatter_format_text (EMailFormatter *formatter,
 
 	filter = camel_mime_filter_charset_new (charset, "UTF-8");
 	if (filter != NULL) {
+		e_mail_part_set_converted_to_utf8 (part, TRUE);
+
 		stream = camel_filter_output_stream_new (stream, filter);
 		g_filter_output_stream_set_close_base_stream (
 			G_FILTER_OUTPUT_STREAM (stream), FALSE);
@@ -1106,7 +1119,6 @@ e_mail_formatter_format_text (EMailFormatter *formatter,
 	g_output_stream_flush (stream, cancellable, NULL);
 
 	g_object_unref (stream);
-
 	g_clear_object (&windows);
 	g_clear_object (&mime_part);
 }
@@ -1120,9 +1132,9 @@ e_mail_formatter_get_sub_html_header (EMailFormatter *formatter)
 		"<meta name=\"generator\" content=\"Evolution Mail\"/>\n"
 		"<title>Evolution Mail Display</title>\n"
 		"<link type=\"text/css\" rel=\"stylesheet\" "
-		"      href=\"" STYLESHEET_URI "\"/>\n"
+		" href=\"" STYLESHEET_URI "\"/>\n"
 		"<style type=\"text/css\">\n"
-		"  table th { font-weight: bold; }\n"
+		" table th { font-weight: bold; }\n"
 		"</style>\n"
 		"</head>"
 		"<body class=\"-e-web-view-background-color -e-web-view-text-color\">";
@@ -1138,9 +1150,9 @@ e_mail_formatter_get_html_header (EMailFormatter *formatter)
 		"<meta name=\"generator\" content=\"Evolution Mail\"/>\n"
 		"<title>Evolution Mail Display</title>\n"
 		"<link type=\"text/css\" rel=\"stylesheet\" "
-		"      href=\"" STYLESHEET_URI "\"/>\n"
+		" href=\"" STYLESHEET_URI "\"/>\n"
 		"<style type=\"text/css\">\n"
-		"  table th { font-weight: bold; }\n"
+		" table th { font-weight: bold; }\n"
 		"</style>\n"
 		"</head>"
 		"<body class=\"-e-mail-formatter-body-color "
@@ -1237,7 +1249,7 @@ e_mail_formatter_update_style (EMailFormatter *formatter,
 	class->update_style (formatter, state);
 }
 
-EMailImageLoadingPolicy
+EImageLoadingPolicy
 e_mail_formatter_get_image_loading_policy (EMailFormatter *formatter)
 {
 	g_return_val_if_fail (E_IS_MAIL_FORMATTER (formatter), 0);
@@ -1247,7 +1259,7 @@ e_mail_formatter_get_image_loading_policy (EMailFormatter *formatter)
 
 void
 e_mail_formatter_set_image_loading_policy (EMailFormatter *formatter,
-                                           EMailImageLoadingPolicy policy)
+                                           EImageLoadingPolicy policy)
 {
 	g_return_if_fail (E_IS_MAIL_FORMATTER (formatter));
 

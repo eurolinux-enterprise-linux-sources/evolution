@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="guide" id="mail-composer-custom-header-lines" xml:lang="cs">
 
   <info>
-    <desc>Using custom fields in the header of composed messages</desc>
+    <desc>Jak používat vlastní pole v hlavičce psané zprávy.</desc>
 
     <link type="guide" xref="index#mail-composing-advanced"/>
 
@@ -18,30 +18,42 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Custom Header Lines</title>
+<title>Vlastní řádky v hlavičce</title>
 
-<p>You can add arbitrary header lines to outgoing emails.</p>
+<p>Do odchozích poštovních zpráv můžete přidat libovolné řádky hlavičky.</p>
 
 <section id="managing">
-<title>Enabling and managing custom headers</title>
-<p>To set up the Custom Header plugin:</p>
+<title>Zapnutí a správa vlastních hlaviček</title>
+<p>Chcete-li povolit zásuvný modul Vlastní hlavičky:</p>
 <steps>
-<item><p>Select <guiseq><gui>Edit</gui><gui>Plugins</gui></guiseq>.</p></item>
-<item><p>Enable <gui>Custom Header</gui>.</p></item>
-<item><p>Click the <gui>Configuration</gui> tab.</p></item>
-<item><p>You can add, edit, or remove the header fields. For every header field you add, you can specify the keys and values. The key is used as the title of the Custom Header. You can enter multiple values for the keys. You must use a semicolon to separate every value you enter.</p></item>
+<item><p>Vyberte <guiseq><gui>Upravit</gui> <gui>Zásuvné moduly</gui></guiseq>.</p></item>
+<item><p>Zapněte <gui>Vlastní hlavičky</gui>.</p></item>
+<item><p>Klikněte na kartu <gui>Nastavení</gui>.</p></item>
+<item><p>Můžete přidat, upravit nebo odstranit pole hlavičky. U každého pole hlavičky, které jste přidali, můžete určit klíč a hodnotu. Klíč je použit jako název vlastní hlavičky. Ke každému klíči můžete zadat i více hodnot, přičemž jednotlivé hodnoty musíte oddělit středníkem.</p></item>
 </steps>
 </section>
 
 <section id="inserting">
-<title>Inserting custom headers in a message</title>
+<title>Vložení vlastních hlaviček do zprávy</title>
 <steps>
-<item><p>Click <guiseq><gui>New</gui><gui>Mail Message</gui></guiseq> or press <keyseq><key>Shift</key><key>Ctrl</key><key>M</key></keyseq> to open the message composer window.</p></item>
-<item><p>Select <guiseq><gui>Insert</gui><gui>Custom Header</gui></guiseq>.</p>
-<p>In the <gui>Email Custom Header</gui> window, you can view all the defined header fields and values.</p></item>
-<item><p>Set the values for the header fields by using the dropdown list.</p></item>
+<item><p>Kliknutím na <guiseq><gui>Nový</gui> <gui>Poštovní zpráva</gui></guiseq> nebo zmáčknutím <keyseq><key>Shift</key><key>Ctrl</key><key>M</key></keyseq> otevřete okno pro psaní zpráv.</p></item>
+<item><p>Vyberte <guiseq><gui>Vložit</gui> <gui>Vlastní hlavička</gui></guiseq>.</p>
+<p>V okně <gui>Vlastní hlavička e-mailu</gui> můžete vidět všechna pole a hodnoty hlavičky, které jste přidali.</p></item>
+<item><p>Pomocí rozbalovacích seznamů navolte hodnoty pro jednotlivá pole hlavičky.</p></item>
 <item><p>Klikněte na <gui style="button">Budiž</gui>.</p></item>
 </steps>
 </section>

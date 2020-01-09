@@ -15,10 +15,22 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
 <title>Odstranění úkolu</title>
 
-<p>Pokud chcete odstranit úkol ze seznamů úkolů, klikněte pravým tlačítkem na úkol a vyberte <gui>Smazat</gui>, nebo kliknete na úkol a poté klikněte na ikonu <gui>Odstranit</gui> v nástrojové liště, nebo stiskněte <keyseq><key>Ctrl</key><key>D</key></keyseq>, nebo klikněte na <guiseq><gui>Upravit</gui><gui>Odstranit úkol</gui></guiseq>.</p>
+<p>Pokud chcete odstranit úkol ze seznamů úkolů, klikněte pravým tlačítkem na úkol a vyberte <gui>Smazat</gui>, nebo klikněte na úkol a poté klikněte na ikonu <gui>Odstranit</gui> v nástrojové liště, nebo zmáčkněte <keyseq><key>Ctrl</key><key>D</key></keyseq>, nebo klikněte na <guiseq><gui>Upravit</gui><gui>Odstranit úkol</gui></guiseq>.</p>
 
 </page>

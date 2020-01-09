@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="guide" id="mail-composer-message-templates" xml:lang="cs">
 
   <info>
- <desc>Message templates to reuse in the composer.</desc>
+ <desc>Šablony zpráv, které můžete opakovaně používat k psaní zpráv.</desc>
 
  <link type="guide" xref="index#mail-composing-advanced"/>
 
@@ -18,14 +18,26 @@
  <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
   
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Message Templates</title>
-<p>A message template is a standard message that you can use at any time to send mail with the same pattern.</p>
-<p>To enable the Message Template Plugin, click <guiseq><gui>Edit</gui><gui>Plugins</gui></guiseq> and enable <gui>Templates</gui>.</p>
+<title>Šablony zpráv</title>
+<p>Šablona zprávy je standardní zpráva, kterou můžete kdykoliv použít pro poslání e-mailu se stejným vzorem.</p>
+<p>Pokud chcete povolit zásuvný modul Šablona zpráv, klikněte na <guiseq><gui>Upravit</gui> <gui>Zásuvné moduly</gui></guiseq> a povolte <gui>Šablony</gui>.</p>
 
   <section id="options">
-    <title>Message Templates</title>
+    <title>Šablony zpráv</title>
   </section>
 
 </page>

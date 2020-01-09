@@ -2,64 +2,67 @@
 <info xmlns="http://projectmallard.org/1.0/">
 
 <item><p>Avsändare:</p>
-<p>The sender's email address or the name of the sender.</p></item>
+<p>Avsändarens e-postadress eller namnet på avsändaren.</p></item>
 
 <item><p>Mottagare:</p>
-<p>The recipients of the message.</p></item>
+<p>Meddelandets mottagare.</p></item>
 
-<item><p>CC:</p>
-<p>Only the CC recipients of the message.</p></item>
+<item><p>Kopia:</p>
+<p>Bara kopiemottagare av meddelandet.</p></item>
 
 <item><p>BCC:</p>
-<p>Only the BCC recipients of the message. Obviously this can only be applied to outgoing filters.</p></item>
+<p>Bara BCC-mottagarna för meddelande. Naturligtvis kan detta bara tillämpas för utgående filter.</p></item>
 
-<item><p>Sender or Recipients:</p>
-<p>The sender's email address or the name of the sender or the recipients of the message.</p></item>
+<item><p>Avsändare eller mottagare:</p>
+<p>Avsändarens e-postadress eller namnet på avsändaren eller meddelandets mottagare.</p></item>
 
 <item><p>Ämne:</p>
-<p>The subject line of the message.</p></item>
+<p>Meddelandets ämnesrad.</p></item>
 
-<item><p>Specific Header:</p>
-<p>Any header including <link xref="mail-composer-custom-header-lines">custom ones</link>.</p>
-<p>If a message uses a header more than once, Evolution pays attention only to the first instance, even if the message defines the header differently the second time. For example, if a message declares the Resent-From: header as "engineering@example.com" and then restates it as "marketing@example.com", Evolution filters as though the second declaration did not occur. To filter on messages that use headers multiple times, use a regular expression.</p></item>
+<item><p>Specifik rubrik:</p>
+<p>Vilken rubrik som helst inklusive <link xref="mail-composer-custom-header-lines">anpassade</link>.</p>
+<p>Om ett meddelande använder en rubrik mer än en gång kommer <app>Evolution</app> bara att uppmärksamma den den första gången, även om meddelandet definierar rubriken annorlunda andra gången. Om till exempel ett meddelande deklarerar rubriken Resent-From: som ”utveckling@example.com” och sedan upprepar den som ”försäljning@example.com” så kommer <app>Evolution</app> att filtrera meddelande som om den andra deklarationen inte inträffat. För att filtrera meddelanden som använder rubriker flera gånger, använd ett reguljärt uttryck.</p></item>
 
-<item><p>Message Body:</p>
-<p>Searches in the actual text of the message.</p></item>
+<item><p>Meddelandetext:</p>
+<p>Söker i själva meddelandetexten.</p></item>
 
 <item><p>Uttryck:</p>
-<p>(For programmers only) Match a message according to an expression you write in the Scheme language used to define <link xref="mail-filters">filters</link> in Evolution.</p></item>
+<p>(Endast för programmerare) Matcha ett meddelande enligt ett uttryck du skriver i språket Scheme som används för att definiera <link xref="mail-filters">filter</link> i <app>Evolution</app>.</p></item>
 
-<item><p>Date sent:</p>
-<p>Filters messages according to the date on which they were sent. First, choose the conditions you want a message to meet, such as before a given time or after a given time. Then choose the time. The filter compares the message's time stamp to the system clock when the filter is run, or to a specific time and date you choose from a calendar. You can also have it look for a message within a range of time relative to the filter, such as two to four days ago.</p></item>
+<item><p>Friformsuttryck:</p>
+<p>(Endast för avancerade användare) Kombinera många villkor genom att använda en <link href="https://bugzilla.gnome.org/show_bug.cgi?id=550796#c10">speciell syntax</link>.</p></item>
 
-<item><p>Date received:</p>
-<p>This works the same way as the Date Sent option, except that it compares the time you received the message with the dates you specify.</p></item>
+<item><p>Avsändningsdatum:</p>
+<p>Filtrera meddelande enligt det datum då de sänts. Välj först villkoren du vill att meddelandet ska uppfylla, så som före ett givet datum eller efter ett givet datum. Välj sedan tiden. Filtret jämför meddelandets tidsstämpel med systemklockan när filtret körs, eller med en specifik tid och datum som du väljer från en kalender. Du kan också be det leta efter ett meddelande inom ett tidsintervall relativt till filtret, exempelvis för två till fyra dagar sedan.</p></item>
+
+<item><p>Ankomstdatum:</p>
+<p>Detta fungerar på samma sätt som alternativet Avsändningsdatum, förutom att det jämför tiden du tog emot meddelandet med datumen du anger.</p></item>
 
 <item><p>Etikett:</p>
-<p>Messages can have <link xref="mail-labels">labels</link> of Important, Work, Personal, To Do, or Later. You can set labels with other filters or manually.</p></item>
+<p>Meddelanden kan ha <link xref="mail-labels">etiketter</link> som är viktigt, arbete, personligt, att göra eller senare. Du kan sätta etiketter med andra filter eller manuellt.</p></item>
 
 <item><p>Poäng:</p>
-<p>Sets the message score to any whole number greater than 0. You can have one filter set or change a message score, and then set up another filter to move the messages you have scored. A message score is not based on anything in particular: it is simply a number you can assign to messages so other filters can process them.</p></item>
+<p>Sätter meddelandepoäng till ett heltal större än 0. Du kan ha ett filter som sätter eller ändrar en meddelandepoäng och sedan ställa in ett annat filter att flytta meddelanden som har poängsatts. En meddelandepoäng baseras inte på något särskilt: det är helt enkelt bara ett tal du kan tilldela meddelanden så att andra filter kan behandla dem.</p></item>
 
-<item><p>Size (kB):</p>
-<p>Sorts based on the size of the message in kilobytes.</p></item>
+<item><p>Storlek (kB):</p>
+<p>Sorterar baserat på storlek av meddelandet i kilobyte.</p></item>
 
 <item><p>Status:</p>
-<p>Filters according to the status of a message. The status can be Replied To, Draft, Important, Read, or Junk.</p></item>
+<p>Filtrera enligt meddelandets status. Statusen kan vara besvarad, utkast, viktig, läst eller skräppost.</p></item>
 
-<item><p>Follow Up:</p>
-<p>Checks whether the message is <link xref="mail-follow-up-flag">flagged for follow-up</link>.</p></item>
+<item><p>Uppföljning:</p>
+<p>Kontrollera huruvida meddelandet är <link xref="mail-follow-up-flag">flaggat för uppföljning</link>.</p></item>
 
-<item><p>Completed On:</p></item>
+<item><p>Färdigt den:</p></item>
 <!-- TODO: Explain usage of option "Completed On" once https://bugzilla.gnome.org/show_bug.cgi?id=698439 is fixed -->
 
 <item><p>Bilagor:</p>
-<p>Checks whether there is an attachment for the email.</p></item>
+<p>Kontrollerar huruvida det finns en bilaga för meddelandet.</p></item>
 
-<item><p>Mailing List:</p>
-<p>Filters based on the mailing list the message came from. This filter might miss messages from some list servers, because it checks for the X-BeenThere header, which is used to identify mailing lists or other redistributors of mail. Mail from list servers that do not set X-BeenThere properly are not be caught by these filters.</p></item>
+<item><p>Sändlista:</p>
+<p>Filter baserade på sändlistan som meddelandet kom från. Detta filter kan missa meddelanden från vissa listservrar eftersom det letar efter rubriken X-BeenThere, som används för att identifiera sändlistor eller andra återdistributörer av post. Post från listservrar som inte har X-BeenThere satt korrekt fångas inte av dessa filter.</p></item>
 
-<item><p>Regex Match:</p>
-<p>(For programmers only) If you know your way around a <link href="https://en.wikipedia.org/wiki/Regular_expression">regex</link>, or regular expression, this option allows you to search for complex patterns of letters, so that you can find, for example, all words that start with a and end with m, and are between six and fifteen letters long, or all messages that declare a particular header twice. For information about how to use regular expressions, check the man page for the <cmd>grep</cmd> command.</p></item>
+<item><p>Regex-matchning:</p>
+<p>(Endast för programmerare) Om du vet hur <link href="https://en.wikipedia.org/wiki/Regular_expression">regex</link>, eller reguljära uttryck, fungerar då låter denna inställning dig söka efter komplexa mönster av bokstäver så att du kan till exempel kan hitta alla ord som börja med ”a” och slutar med ”m” och är mellan sex och femton bokstäver långa, eller alla meddelanden som deklarerar en särskilt rubrik två gånger. För information om hur man använder reguljära uttryck, se <link href="man:grep">the man page for the <cmd>grep</cmd></link>-kommandot.</p></item>
 
 </info>

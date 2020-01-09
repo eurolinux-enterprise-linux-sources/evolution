@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-composer-enable-html-format" xml:lang="cs">
 
   <info>
-    <desc>Enable HTML format in the mail composer.</desc>
+    <desc>Jak v editoru zpráv povolit formát HTML.</desc>
     <link type="guide" xref="mail-composer-html#formatting-options-html"/>
 
     <revision pkgversion="3.5.90" version="0.1" date="2012-08-16" status="draft"/>
@@ -16,13 +16,25 @@
     
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Enabling HTML format</title>
+<title>Povolení formátu HTML</title>
 
-<p>You can change the format of an email message from plain text to HTML in the email composer by choosing <guiseq><gui>Format</gui><gui>HTML</gui></guiseq> from the menu bar.</p>
-<p>Alternately, you also can change the first dropdown list below the <gui>Subject</gui> line from <gui>Plain Text</gui> to <gui>HTML</gui>.</p>
-<p>If you choose HTML format, a second tool bar will be displayed below the <gui>Subject</gui> line with HTML-only options.</p>
-<p>To send all your mail as HTML by default, enable <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Composer Preferences</gui><gui>Default Behavior</gui><gui>Format messages in HTML</gui></guiseq>.</p>
+<p>V editoru zpráv můžete změnit formát e-mailových zpráv z prostého textu na HTML pomocí <guiseq><gui>Formát</gui> <gui>HTML</gui></guiseq> v nabídkové liště.</p>
+<p>Případně také můžete změnit v prvním rozbalovacím seznamu před řádkem <gui>Předmět</gui> údaje <gui>Prostý text</gui> na <gui>HTML</gui>.</p>
+<p>Ve chvíli, kdy zvolíte formát HTML, se zobrazí druhá nástrojová lišta pod řádkem <gui>Předmět</gui>. Bude obsahovat volby týkající se čistě HTML.</p>
+<p>Pokud chcetě posílat poštu ve formátu HTML běžně, zapněte <guiseq><gui>Upravit</gui> <gui>Předvolby</gui> <gui>Předvolby editoru</gui> <gui>Výchozí chování</gui> <gui>Formátovat zprávy v HTML</gui></guiseq>.</p>
 
 </page>

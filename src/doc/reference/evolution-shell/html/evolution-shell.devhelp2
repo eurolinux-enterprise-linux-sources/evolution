@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
-<!DOCTYPE book PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "">
-<book xmlns="http://www.devhelp.net/book" title="Evolution Shell Reference Manual" link="index.html" author="" name="evolution-shell" version="2" language="c">
+<book xmlns="http://www.devhelp.net/book" title="Evolution Shell Reference Manual" link="index.html" author="" name="evolution-shell" version="2" language="c" online="http://developer.gnome.org/evolution-shell/">
   <chapters>
     <sub name="The Shell" link="ch01.html">
       <sub name="EShell" link="EShell.html"/>
@@ -12,14 +11,20 @@
       <sub name="EShellTaskbar" link="EShellTaskbar.html"/>
       <sub name="EShellSearchbar" link="EShellSearchbar.html"/>
       <sub name="EShellSwitcher" link="EShellSwitcher.html"/>
-      <sub name="Shell Utilities" link="evolution-shell-Shell-Utilities.html"/>
+      <sub name="e-shell-utils" link="evolution-shell-e-shell-utils.html"/>
     </sub>
     <sub name="Actions" link="ch02.html">
-      <sub name="Shell Actions" link="evolution-shell-Shell-Actions.html"/>
-      <sub name="Action Groups" link="evolution-shell-Action-Groups.html"/>
+      <sub name="e-shell-window-actions" link="evolution-shell-e-shell-window-actions.html"/>
+    </sub>
+    <sub name="Miscellaneous" link="ch03.html">
+      <sub name="e-shell-migrate" link="evolution-shell-e-shell-migrate.html"/>
     </sub>
     <sub name="Object Hierarchy" link="object-tree.html"/>
     <sub name="Index" link="api-index-full.html"/>
+    <sub name="Index of new symbols in 3.16" link="api-index-3.16.html"/>
+    <sub name="Index of new symbols in 3.10" link="api-index-3.10.html"/>
+    <sub name="Index of new symbols in 3.4" link="api-index-3.4.html"/>
+    <sub name="Annotation Glossary" link="annotation-glossary.html"/>
   </chapters>
   <functions>
     <keyword type="function" name="e_shell_get_default ()" link="EShell.html#e-shell-get-default"/>
@@ -30,6 +35,8 @@
     <keyword type="function" name="e_shell_get_backend_by_scheme ()" link="EShell.html#e-shell-get-backend-by-scheme"/>
     <keyword type="function" name="e_shell_get_client_cache ()" link="EShell.html#e-shell-get-client-cache"/>
     <keyword type="function" name="e_shell_get_registry ()" link="EShell.html#e-shell-get-registry"/>
+    <keyword type="function" name="e_shell_get_credentials_prompter ()" link="EShell.html#e-shell-get-credentials-prompter" since="3.16"/>
+    <keyword type="function" name="e_shell_allow_auth_prompt_for ()" link="EShell.html#e-shell-allow-auth-prompt-for" since="3.16"/>
     <keyword type="function" name="e_shell_create_shell_window ()" link="EShell.html#e-shell-create-shell-window"/>
     <keyword type="function" name="e_shell_handle_uris ()" link="EShell.html#e-shell-handle-uris"/>
     <keyword type="function" name="e_shell_submit_alert ()" link="EShell.html#e-shell-submit-alert"/>
@@ -45,10 +52,11 @@
     <keyword type="function" name="e_shell_event ()" link="EShell.html#e-shell-event"/>
     <keyword type="function" name="e_shell_quit ()" link="EShell.html#e-shell-quit"/>
     <keyword type="function" name="e_shell_cancel_quit ()" link="EShell.html#e-shell-cancel-quit"/>
-    <keyword type="function" name="e_shell_migrate_attempt ()" link="EShell.html#e-shell-migrate-attempt"/>
-    <keyword type="struct" name="struct EShell" link="EShell.html#EShell-struct"/>
+    <keyword type="function" name="e_shell_requires_shutdown ()" link="EShell.html#e-shell-requires-shutdown"/>
     <keyword type="enum" name="enum EShellQuitReason" link="EShell.html#EShellQuitReason"/>
+    <keyword type="struct" name="struct EShell" link="EShell.html#EShell-struct"/>
     <keyword type="property" name="The “client-cache” property" link="EShell.html#EShell--client-cache"/>
+    <keyword type="property" name="The “credentials-prompter” property" link="EShell.html#EShell--credentials-prompter"/>
     <keyword type="property" name="The “express-mode” property" link="EShell.html#EShell--express-mode"/>
     <keyword type="property" name="The “geometry” property" link="EShell.html#EShell--geometry"/>
     <keyword type="property" name="The “module-directory” property" link="EShell.html#EShell--module-directory"/>
@@ -66,19 +74,21 @@
     <keyword type="function" name="e_shell_backend_get_data_dir ()" link="EShellBackend.html#e-shell-backend-get-data-dir"/>
     <keyword type="function" name="e_shell_backend_get_shell ()" link="EShellBackend.html#e-shell-backend-get-shell"/>
     <keyword type="function" name="e_shell_backend_add_activity ()" link="EShellBackend.html#e-shell-backend-add-activity"/>
-    <keyword type="function" name="e_shell_backend_cancel_all ()" link="EShellBackend.html#e-shell-backend-cancel-all"/>
     <keyword type="function" name="e_shell_backend_is_busy ()" link="EShellBackend.html#e-shell-backend-is-busy"/>
-    <keyword type="function" name="e_shell_backend_get_prefer_new_item ()" link="EShellBackend.html#e-shell-backend-get-prefer-new-item" since="3.4"/>
     <keyword type="function" name="e_shell_backend_set_prefer_new_item ()" link="EShellBackend.html#e-shell-backend-set-prefer-new-item" since="3.4"/>
+    <keyword type="function" name="e_shell_backend_get_prefer_new_item ()" link="EShellBackend.html#e-shell-backend-get-prefer-new-item" since="3.4"/>
+    <keyword type="function" name="e_shell_backend_cancel_all ()" link="EShellBackend.html#e-shell-backend-cancel-all"/>
     <keyword type="function" name="e_shell_backend_start ()" link="EShellBackend.html#e-shell-backend-start"/>
     <keyword type="function" name="e_shell_backend_is_started ()" link="EShellBackend.html#e-shell-backend-is-started"/>
     <keyword type="function" name="e_shell_backend_migrate ()" link="EShellBackend.html#e-shell-backend-migrate"/>
     <keyword type="struct" name="struct EShellBackend" link="EShellBackend.html#EShellBackend-struct"/>
+    <keyword type="struct" name="struct EShellBackendClass" link="EShellBackend.html#EShellBackendClass"/>
     <keyword type="property" name="The “busy” property" link="EShellBackend.html#EShellBackend--busy"/>
     <keyword type="property" name="The “prefer-new-item” property" link="EShellBackend.html#EShellBackend--prefer-new-item"/>
     <keyword type="signal" name="The “activity-added” signal" link="EShellBackend.html#EShellBackend-activity-added"/>
     <keyword type="function" name="e_shell_window_new ()" link="EShellWindow.html#e-shell-window-new"/>
     <keyword type="function" name="e_shell_window_get_shell ()" link="EShellWindow.html#e-shell-window-get-shell"/>
+    <keyword type="function" name="e_shell_window_is_main_instance ()" link="EShellWindow.html#e-shell-window-is-main-instance"/>
     <keyword type="function" name="e_shell_window_get_shell_view ()" link="EShellWindow.html#e-shell-window-get-shell-view"/>
     <keyword type="function" name="e_shell_window_peek_shell_view ()" link="EShellWindow.html#e-shell-window-peek-shell-view"/>
     <keyword type="function" name="e_shell_window_get_shell_view_action ()" link="EShellWindow.html#e-shell-window-get-shell-view-action"/>
@@ -101,6 +111,8 @@
     <keyword type="function" name="e_shell_window_set_taskbar_visible ()" link="EShellWindow.html#e-shell-window-set-taskbar-visible"/>
     <keyword type="function" name="e_shell_window_get_toolbar_visible ()" link="EShellWindow.html#e-shell-window-get-toolbar-visible"/>
     <keyword type="function" name="e_shell_window_set_toolbar_visible ()" link="EShellWindow.html#e-shell-window-set-toolbar-visible"/>
+    <keyword type="function" name="EShellWindowConnetClientFunc ()" link="EShellWindow.html#EShellWindowConnetClientFunc"/>
+    <keyword type="function" name="e_shell_window_connect_client ()" link="EShellWindow.html#e-shell-window-connect-client" since="3.16"/>
     <keyword type="function" name="e_shell_window_register_new_item_actions ()" link="EShellWindow.html#e-shell-window-register-new-item-actions"/>
     <keyword type="function" name="e_shell_window_register_new_source_actions ()" link="EShellWindow.html#e-shell-window-register-new-source-actions"/>
     <keyword type="struct" name="struct EShellWindow" link="EShellWindow.html#EShellWindow-struct"/>
@@ -154,6 +166,7 @@
     <keyword type="function" name="e_shell_view_write_source ()" link="EShellView.html#e-shell-view-write-source"/>
     <keyword type="function" name="e_shell_view_remove_source ()" link="EShellView.html#e-shell-view-remove-source"/>
     <keyword type="function" name="e_shell_view_remote_delete_source ()" link="EShellView.html#e-shell-view-remote-delete-source"/>
+    <keyword type="function" name="e_shell_view_submit_thread_job ()" link="EShellView.html#e-shell-view-submit-thread-job"/>
     <keyword type="struct" name="struct EShellView" link="EShellView.html#EShellView-struct"/>
     <keyword type="struct" name="struct EShellViewClass" link="EShellView.html#EShellViewClass"/>
     <keyword type="property" name="The “action” property" link="EShellView.html#EShellView--action"/>
@@ -228,6 +241,7 @@
     <keyword type="function" name="e_shell_searchbar_set_state_group ()" link="EShellSearchbar.html#e-shell-searchbar-set-state-group"/>
     <keyword type="function" name="e_shell_searchbar_load_state ()" link="EShellSearchbar.html#e-shell-searchbar-load-state"/>
     <keyword type="function" name="e_shell_searchbar_save_state ()" link="EShellSearchbar.html#e-shell-searchbar-save-state"/>
+    <keyword type="function" name="e_shell_searchbar_search_entry_grab_focus ()" link="EShellSearchbar.html#e-shell-searchbar-search-entry-grab-focus"/>
     <keyword type="struct" name="struct EShellSearchbar" link="EShellSearchbar.html#EShellSearchbar-struct"/>
     <keyword type="property" name="The “filter-combo-box” property" link="EShellSearchbar.html#EShellSearchbar--filter-combo-box"/>
     <keyword type="property" name="The “filter-visible” property" link="EShellSearchbar.html#EShellSearchbar--filter-visible"/>
@@ -245,59 +259,105 @@
     <keyword type="function" name="e_shell_switcher_unset_style ()" link="EShellSwitcher.html#e-shell-switcher-unset-style"/>
     <keyword type="function" name="e_shell_switcher_get_visible ()" link="EShellSwitcher.html#e-shell-switcher-get-visible"/>
     <keyword type="function" name="e_shell_switcher_set_visible ()" link="EShellSwitcher.html#e-shell-switcher-set-visible"/>
+    <keyword type="macro" name="E_SHELL_SWITCHER_DEFAULT_TOOLBAR_STYLE" link="EShellSwitcher.html#E-SHELL-SWITCHER-DEFAULT-TOOLBAR-STYLE:CAPS"/>
     <keyword type="struct" name="struct EShellSwitcher" link="EShellSwitcher.html#EShellSwitcher-struct"/>
     <keyword type="property" name="The “toolbar-style” property" link="EShellSwitcher.html#EShellSwitcher--toolbar-style"/>
     <keyword type="property" name="The “toolbar-visible” property" link="EShellSwitcher.html#EShellSwitcher--toolbar-visible"/>
     <keyword type="signal" name="The “style-changed” signal" link="EShellSwitcher.html#EShellSwitcher-style-changed"/>
-    <keyword type="function" name="e_shell_run_open_dialog ()" link="evolution-shell-Shell-Utilities.html#e-shell-run-open-dialog"/>
-    <keyword type="function" name="e_shell_run_save_dialog ()" link="evolution-shell-Shell-Utilities.html#e-shell-run-save-dialog"/>
-    <keyword type="function" name="e_shell_utils_import_uris ()" link="evolution-shell-Shell-Utilities.html#e-shell-utils-import-uris"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_ABOUT()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-ABOUT:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_CLOSE()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-CLOSE:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_CONTENTS()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-CONTENTS:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_COPY_CLIPBOARD()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-COPY-CLIPBOARD:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_CUT_CLIPBOARD()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-CUT-CLIPBOARD:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_DELETE_SELECTION()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-DELETE-SELECTION:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GAL_CUSTOM_VIEW()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-GAL-CUSTOM-VIEW:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GAL_DELETE_VIEW()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-GAL-DELETE-VIEW:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GAL_SAVE_CUSTOM_VIEW()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-GAL-SAVE-CUSTOM-VIEW:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_NEW_WINDOW()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-GROUP-NEW-WINDOW:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_IMPORT()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-IMPORT:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_NEW_WINDOW()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-NEW-WINDOW:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_PAGE_SETUP()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-PAGE-SETUP:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_PASTE_CLIPBOARD()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-PASTE-CLIPBOARD:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_PREFERENCES()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-PREFERENCES:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_QUICK_REFERENCE()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-QUICK-REFERENCE:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_QUIT()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-QUIT:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SEARCH_ADVANCED()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-SEARCH-ADVANCED:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SEARCH_CLEAR()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-SEARCH-CLEAR:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SEARCH_EDIT()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-SEARCH-EDIT:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SEARCH_OPTIONS()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-SEARCH-OPTIONS:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SEARCH_QUICK()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-SEARCH-QUICK:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SEARCH_SAVE()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-SEARCH-SAVE:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SELECT_ALL()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-SELECT-ALL:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SHOW_SIDEBAR()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-SHOW-SIDEBAR:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SHOW_SWITCHER()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-SHOW-SWITCHER:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SHOW_TASKBAR()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-SHOW-TASKBAR:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SHOW_TOOLBAR()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-SHOW-TOOLBAR:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SUBMIT_BUG()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-SUBMIT-BUG:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SWITCHER_INITIAL()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-SWITCHER-INITIAL:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SWITCHER_MENU()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-SWITCHER-MENU:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SWITCHER_STYLE_BOTH()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-SWITCHER-STYLE-BOTH:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SWITCHER_STYLE_ICONS()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-SWITCHER-STYLE-ICONS:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SWITCHER_STYLE_TEXT()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-SWITCHER-STYLE-TEXT:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SWITCHER_STYLE_USER()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-SWITCHER-STYLE-USER:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_WORK_OFFLINE()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-WORK-OFFLINE:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_WORK_ONLINE()" link="evolution-shell-Shell-Actions.html#E-SHELL-WINDOW-ACTION-WORK-ONLINE:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_SHELL()" link="evolution-shell-Action-Groups.html#E-SHELL-WINDOW-ACTION-GROUP-SHELL:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_SWITCHER()" link="evolution-shell-Action-Groups.html#E-SHELL-WINDOW-ACTION-GROUP-SWITCHER:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_NEW_ITEM()" link="evolution-shell-Action-Groups.html#E-SHELL-WINDOW-ACTION-GROUP-NEW-ITEM:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_NEW_SOURCE()" link="evolution-shell-Action-Groups.html#E-SHELL-WINDOW-ACTION-GROUP-NEW-SOURCE:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_CUSTOM_RULES()" link="evolution-shell-Action-Groups.html#E-SHELL-WINDOW-ACTION-GROUP-CUSTOM-RULES:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_GAL_VIEW()" link="evolution-shell-Action-Groups.html#E-SHELL-WINDOW-ACTION-GROUP-GAL-VIEW:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_LOCKDOWN_APPLICATION_HANDLERS()" link="evolution-shell-Action-Groups.html#E-SHELL-WINDOW-ACTION-GROUP-LOCKDOWN-APPLICATION-HANDLERS:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_LOCKDOWN_PRINTING()" link="evolution-shell-Action-Groups.html#E-SHELL-WINDOW-ACTION-GROUP-LOCKDOWN-PRINTING:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_LOCKDOWN_PRINT_SETUP()" link="evolution-shell-Action-Groups.html#E-SHELL-WINDOW-ACTION-GROUP-LOCKDOWN-PRINT-SETUP:CAPS"/>
-    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_LOCKDOWN_SAVE_TO_DISK()" link="evolution-shell-Action-Groups.html#E-SHELL-WINDOW-ACTION-GROUP-LOCKDOWN-SAVE-TO-DISK:CAPS"/>
+    <keyword type="function" name="e_shell_run_open_dialog ()" link="evolution-shell-e-shell-utils.html#e-shell-run-open-dialog"/>
+    <keyword type="function" name="e_shell_run_save_dialog ()" link="evolution-shell-e-shell-utils.html#e-shell-run-save-dialog"/>
+    <keyword type="function" name="e_shell_utils_import_uris ()" link="evolution-shell-e-shell-utils.html#e-shell-utils-import-uris"/>
+    <keyword type="function" name="e_shell_utils_run_preferences ()" link="evolution-shell-e-shell-utils.html#e-shell-utils-run-preferences"/>
+    <keyword type="function" name="e_shell_utils_is_quick_reference_available ()" link="evolution-shell-e-shell-utils.html#e-shell-utils-is-quick-reference-available"/>
+    <keyword type="function" name="e_shell_utils_run_quick_reference ()" link="evolution-shell-e-shell-utils.html#e-shell-utils-run-quick-reference"/>
+    <keyword type="function" name="e_shell_utils_run_help_about ()" link="evolution-shell-e-shell-utils.html#e-shell-utils-run-help-about"/>
+    <keyword type="function" name="e_shell_utils_run_help_contents ()" link="evolution-shell-e-shell-utils.html#e-shell-utils-run-help-contents"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-GROUP:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_ABOUT()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-ABOUT:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_CLOSE()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-CLOSE:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_CONTENTS()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-CONTENTS:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_COPY_CLIPBOARD()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-COPY-CLIPBOARD:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_CUT_CLIPBOARD()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-CUT-CLIPBOARD:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_DELETE_SELECTION()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-DELETE-SELECTION:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GAL_CUSTOM_VIEW()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-GAL-CUSTOM-VIEW:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GAL_DELETE_VIEW()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-GAL-DELETE-VIEW:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GAL_SAVE_CUSTOM_VIEW()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-GAL-SAVE-CUSTOM-VIEW:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_IMPORT()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-IMPORT:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_NEW_WINDOW()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-NEW-WINDOW:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_PAGE_SETUP()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-PAGE-SETUP:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_PASTE_CLIPBOARD()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-PASTE-CLIPBOARD:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_PREFERENCES()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-PREFERENCES:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_QUICK_REFERENCE()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-QUICK-REFERENCE:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_QUIT()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-QUIT:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SEARCH_ADVANCED()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-SEARCH-ADVANCED:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SEARCH_CLEAR()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-SEARCH-CLEAR:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SEARCH_EDIT()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-SEARCH-EDIT:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SEARCH_OPTIONS()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-SEARCH-OPTIONS:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SEARCH_QUICK()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-SEARCH-QUICK:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SEARCH_SAVE()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-SEARCH-SAVE:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SELECT_ALL()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-SELECT-ALL:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SHOW_SIDEBAR()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-SHOW-SIDEBAR:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SHOW_SWITCHER()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-SHOW-SWITCHER:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SHOW_TASKBAR()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-SHOW-TASKBAR:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SHOW_TOOLBAR()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-SHOW-TOOLBAR:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SUBMIT_BUG()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-SUBMIT-BUG:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SWITCHER_INITIAL()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-SWITCHER-INITIAL:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SWITCHER_MENU()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-SWITCHER-MENU:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SWITCHER_STYLE_BOTH()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-SWITCHER-STYLE-BOTH:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SWITCHER_STYLE_ICONS()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-SWITCHER-STYLE-ICONS:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SWITCHER_STYLE_TEXT()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-SWITCHER-STYLE-TEXT:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_SWITCHER_STYLE_USER()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-SWITCHER-STYLE-USER:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_WORK_OFFLINE()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-WORK-OFFLINE:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_WORK_ONLINE()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-WORK-ONLINE:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_CUSTOM_RULES()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-GROUP-CUSTOM-RULES:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_GAL_VIEW()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-GROUP-GAL-VIEW:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_LOCKDOWN_APPLICATION_HANDLERS()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-GROUP-LOCKDOWN-APPLICATION-HANDLERS:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_LOCKDOWN_PRINTING()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-GROUP-LOCKDOWN-PRINTING:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_LOCKDOWN_PRINT_SETUP()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-GROUP-LOCKDOWN-PRINT-SETUP:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_LOCKDOWN_SAVE_TO_DISK()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-GROUP-LOCKDOWN-SAVE-TO-DISK:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_NEW_ITEM()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-GROUP-NEW-ITEM:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_NEW_SOURCE()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-GROUP-NEW-SOURCE:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_SHELL()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-GROUP-SHELL:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_SWITCHER()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-GROUP-SWITCHER:CAPS"/>
+    <keyword type="macro" name="E_SHELL_WINDOW_ACTION_GROUP_NEW_WINDOW()" link="evolution-shell-e-shell-window-actions.html#E-SHELL-WINDOW-ACTION-GROUP-NEW-WINDOW:CAPS"/>
+    <keyword type="function" name="e_shell_migrate_attempt ()" link="evolution-shell-e-shell-migrate.html#e-shell-migrate-attempt"/>
+    <keyword type="function" name="e_shell_migrate_error_quark ()" link="evolution-shell-e-shell-migrate.html#e-shell-migrate-error-quark"/>
+    <keyword type="constant" name="E_SHELL_QUIT_ACTION" link="EShell.html#E-SHELL-QUIT-ACTION:CAPS"/>
+    <keyword type="constant" name="E_SHELL_QUIT_LAST_WINDOW" link="EShell.html#E-SHELL-QUIT-LAST-WINDOW:CAPS"/>
+    <keyword type="constant" name="E_SHELL_QUIT_OPTION" link="EShell.html#E-SHELL-QUIT-OPTION:CAPS"/>
+    <keyword type="constant" name="E_SHELL_QUIT_REMOTE_REQUEST" link="EShell.html#E-SHELL-QUIT-REMOTE-REQUEST:CAPS"/>
+    <keyword type="constant" name="E_SHELL_QUIT_SESSION_REQUEST" link="EShell.html#E-SHELL-QUIT-SESSION-REQUEST:CAPS"/>
+    <keyword type="member" name="EShellBackendClass.shell-view-type" link="EShellBackend.html#EShellBackendClass.shell-view-type"/>
+    <keyword type="member" name="EShellBackendClass.name" link="EShellBackend.html#EShellBackendClass.name"/>
+    <keyword type="member" name="EShellBackendClass.aliases" link="EShellBackend.html#EShellBackendClass.aliases"/>
+    <keyword type="member" name="EShellBackendClass.schemes" link="EShellBackend.html#EShellBackendClass.schemes"/>
+    <keyword type="member" name="EShellBackendClass.sort-order" link="EShellBackend.html#EShellBackendClass.sort-order"/>
+    <keyword type="member" name="EShellBackendClass.preferences-page" link="EShellBackend.html#EShellBackendClass.preferences-page"/>
+    <keyword type="member" name="EShellBackendClass.start" link="EShellBackend.html#EShellBackendClass.start"/>
+    <keyword type="member" name="EShellBackendClass.migrate" link="EShellBackend.html#EShellBackendClass.migrate"/>
+    <keyword type="member" name="EShellBackendClass.get-config-dir" link="EShellBackend.html#EShellBackendClass.get-config-dir"/>
+    <keyword type="member" name="EShellBackendClass.get-data-dir" link="EShellBackend.html#EShellBackendClass.get-data-dir"/>
+    <keyword type="member" name="EShellViewClass.label" link="EShellView.html#EShellViewClass.label"/>
+    <keyword type="member" name="EShellViewClass.icon-name" link="EShellView.html#EShellViewClass.icon-name"/>
+    <keyword type="member" name="EShellViewClass.ui-definition" link="EShellView.html#EShellViewClass.ui-definition"/>
+    <keyword type="member" name="EShellViewClass.ui-manager-id" link="EShellView.html#EShellViewClass.ui-manager-id"/>
+    <keyword type="member" name="EShellViewClass.search-context-type" link="EShellView.html#EShellViewClass.search-context-type"/>
+    <keyword type="member" name="EShellViewClass.search-context" link="EShellView.html#EShellViewClass.search-context"/>
+    <keyword type="member" name="EShellViewClass.search-options" link="EShellView.html#EShellViewClass.search-options"/>
+    <keyword type="member" name="EShellViewClass.search-rules" link="EShellView.html#EShellViewClass.search-rules"/>
+    <keyword type="member" name="EShellViewClass.view-collection" link="EShellView.html#EShellViewClass.view-collection"/>
+    <keyword type="member" name="EShellViewClass.shell-backend" link="EShellView.html#EShellViewClass.shell-backend"/>
+    <keyword type="member" name="EShellViewClass.new-shell-content" link="EShellView.html#EShellViewClass.new-shell-content"/>
+    <keyword type="member" name="EShellViewClass.new-shell-sidebar" link="EShellView.html#EShellViewClass.new-shell-sidebar"/>
+    <keyword type="member" name="EShellViewClass.new-shell-taskbar" link="EShellView.html#EShellViewClass.new-shell-taskbar"/>
+    <keyword type="member" name="EShellViewClass.new-shell-searchbar" link="EShellView.html#EShellViewClass.new-shell-searchbar"/>
+    <keyword type="member" name="EShellViewClass.construct-searchbar" link="EShellView.html#EShellViewClass.construct-searchbar"/>
+    <keyword type="member" name="EShellViewClass.get-search-name" link="EShellView.html#EShellViewClass.get-search-name"/>
+    <keyword type="member" name="EShellViewClass.toggled" link="EShellView.html#EShellViewClass.toggled"/>
+    <keyword type="member" name="EShellViewClass.clear-search" link="EShellView.html#EShellViewClass.clear-search"/>
+    <keyword type="member" name="EShellViewClass.custom-search" link="EShellView.html#EShellViewClass.custom-search"/>
+    <keyword type="member" name="EShellViewClass.execute-search" link="EShellView.html#EShellViewClass.execute-search"/>
+    <keyword type="member" name="EShellViewClass.update-actions" link="EShellView.html#EShellViewClass.update-actions"/>
   </functions>
 </book>

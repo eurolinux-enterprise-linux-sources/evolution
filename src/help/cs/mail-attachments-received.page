@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="guide" id="mail-attachments-received" xml:lang="cs">
 
   <info>
-    <desc>Saving and opening files that are attached to received emails.</desc>
+    <desc>Jak uložit a otevřít soubory, které jsou přiloženy v přijaté poště.</desc>
 
     <link type="guide" xref="mail-displaying-message"/>
     <link type="guide" xref="mail-attachments"/>
@@ -19,17 +19,29 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Handling attachments in received mail</title>
+<title>Práce s přílohami v přijaté poště</title>
 
-<p>If you receive an email message with one or more file attachments, Evolution displays the number of attachments and a <gui style="button">Save</gui> or <gui style="button">Save All</gui> button between the email header and the content of the email.</p>
-<note style="tip"><p>Evolution does not support saving all attachments of all messages in one folder at once.</p></note>
+<p>Když obdržíte e-mailovou zprávu, která má připojenu jednu nebo více příloh, zobrazí <app>Evolution</app> mezi hlavičkou zprávy a tělem zprávy počet příloh a tlačítka <gui style="button">Uložit</gui> nebo <gui style="button">Uložit vše</gui> .</p>
+<note style="tip"><p><app>Evolution</app> nepodporuje ukládání všech příloh ze všech zpráv v jedné složce naráz.</p></note>
 
-<p>A list of attachments is also available at the bottom of the email.</p>
-<p>To save an attachment to disk, click the down-arrow next to the attachment icon and click <gui>Save As</gui>.</p>
-<p>To open an attachment in another application, click the down-arrow next to the attachment icon and choose one of the available applications.</p>
+<p>Seznam příloh je k dispozici také v dolní části zprávy.</p>
+<p>Když chcete přílohu uložit na disk, klikněte na rozbalovací šipku vedle ikony přílohy a pak klikněte na <gui>Uložit jako</gui>.</p>
+<p>Pokud chcete otevřít přílohu v jiné aplikaci, klikněte na rozbalovací šipku vedle ikony přílohy a pak zvolte jednu s dostupných aplikací.</p>
 
-<p>The options available for an attachment vary depending on the type of attachment and the applications that are installed on your system. For example, image files can be opened in the <gui>Image Viewer</gui> application or in the <gui>GIMP</gui> graphics editor.</p>
+<p>Dostupné volby pro přílohu závisí na typu přílohy a aplikacích, které jsou ve vašem systému nainstalované. Např. přiložený soubory s obrázkem může být otevřen v <gui>Prohlížeči obrázků</gui> nebo grafickém editoru <gui>GIMP</gui>.</p>
 
 </page>

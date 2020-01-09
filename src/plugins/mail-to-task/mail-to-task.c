@@ -40,10 +40,8 @@
 #include <mail/em-utils.h>
 #include <mail/message-list.h>
 
-#include <calendar/gui/dialogs/comp-editor.h>
-#include <calendar/gui/dialogs/event-editor.h>
-#include <calendar/gui/dialogs/memo-editor.h>
-#include <calendar/gui/dialogs/task-editor.h>
+#include <calendar/gui/e-comp-editor.h>
+#include <calendar/gui/itip-utils.h>
 
 #define E_SHELL_WINDOW_ACTION_CONVERT_TO_APPOINTMENT(window) \
 	E_SHELL_WINDOW_ACTION ((window), "mail-convert-to-appointment")
@@ -59,16 +57,15 @@ gboolean	mail_browser_init		(GtkUIManager *ui_manager,
 gboolean	mail_shell_view_init		(GtkUIManager *ui_manager,
 						 EShellView *shell_view);
 
-static CompEditor *
+static ECompEditor *
 get_component_editor (EShell *shell,
                       ECalClient *client,
                       ECalComponent *comp,
                       gboolean is_new,
                       GError **error)
 {
-	ECalComponentId *id;
-	CompEditorFlags flags = 0;
-	CompEditor *editor = NULL;
+	ECompEditorFlags flags = 0;
+	ECompEditor *comp_editor = NULL;
 	ESourceRegistry *registry;
 
 	g_return_val_if_fail (E_IS_SHELL (shell), NULL);
@@ -77,61 +74,31 @@ get_component_editor (EShell *shell,
 
 	registry = e_shell_get_registry (shell);
 
-	id = e_cal_component_get_id (comp);
-	g_return_val_if_fail (id != NULL, NULL);
-	g_return_val_if_fail (id->uid != NULL, NULL);
-
 	if (is_new) {
-		flags |= COMP_EDITOR_NEW_ITEM;
+		flags |= E_COMP_EDITOR_FLAG_IS_NEW;
 	} else {
-		editor = comp_editor_find_instance (id->uid);
+		comp_editor = e_comp_editor_find_existing_for (
+			e_client_get_source (E_CLIENT (client)),
+			e_cal_component_get_icalcomponent (comp));
 	}
 
-	if (!editor) {
+	if (!comp_editor) {
 		if (itip_organizer_is_user (registry, comp, client))
-			flags |= COMP_EDITOR_USER_ORG;
+			flags |= E_COMP_EDITOR_FLAG_ORGANIZER_IS_USER;
+		if (e_cal_component_has_attendees (comp))
+			flags |= E_COMP_EDITOR_FLAG_WITH_ATTENDEES;
 
-		switch (e_cal_component_get_vtype (comp)) {
-		case E_CAL_COMPONENT_EVENT:
-			if (e_cal_component_has_attendees (comp))
-				flags |= COMP_EDITOR_MEETING;
+		comp_editor = e_comp_editor_open_for_component (NULL,
+			shell, e_client_get_source (E_CLIENT (client)),
+			e_cal_component_get_icalcomponent (comp), flags);
 
-			editor = event_editor_new (client, shell, flags);
-
-			if (flags & COMP_EDITOR_MEETING)
-				event_editor_show_meeting (EVENT_EDITOR (editor));
-			break;
-		case E_CAL_COMPONENT_TODO:
-			if (e_cal_component_has_attendees (comp))
-				flags |= COMP_EDITOR_IS_ASSIGNED;
-
-			editor = task_editor_new (client, shell, flags);
-
-			if (flags & COMP_EDITOR_IS_ASSIGNED)
-				task_editor_show_assignment (TASK_EDITOR (editor));
-			break;
-		case E_CAL_COMPONENT_JOURNAL:
-			if (e_cal_component_has_organizer (comp))
-				flags |= COMP_EDITOR_IS_SHARED;
-
-			editor = memo_editor_new (client, shell, flags);
-			break;
-		default:
-			g_warn_if_reached ();
-			break;
-		}
-
-		if (editor) {
-			comp_editor_edit_comp (editor, comp);
-
+		if (comp_editor) {
 			/* request save for new events */
-			comp_editor_set_changed (editor, is_new);
+			e_comp_editor_set_changed (comp_editor, is_new);
 		}
 	}
 
-	e_cal_component_free_id (id);
-
-	return editor;
+	return comp_editor;
 }
 
 static void
@@ -590,9 +557,12 @@ do_ask (const gchar *text,
 	if (is_create_edit_add) {
 		gtk_dialog_add_buttons (
 			GTK_DIALOG (dialog),
-			_("_Cancel"), GTK_RESPONSE_CANCEL,
-			_("_Edit"), GTK_RESPONSE_YES,
-			_("_New"), GTK_RESPONSE_NO,
+			/* Translators: Dialog button to Cancel edit of an existing event/memo/task */
+			C_("mail-to-task", "_Cancel"), GTK_RESPONSE_CANCEL,
+			/* Translators: Dialog button to Edit an existing event/memo/task */
+			C_("mail-to-task", "_Edit"), GTK_RESPONSE_YES,
+			/* Translators: Dialog button to create a New event/memo/task */
+			C_("mail-to-task", "_New"), GTK_RESPONSE_NO,
 			NULL);
 	}
 
@@ -619,7 +589,7 @@ get_question_edit_old (ECalClientSourceType source_type)
 		ask = _("Selected memo list contains memo '%s' already. Would you like to edit the old memo?");
 		break;
 	default:
-		g_assert_not_reached ();
+		g_warn_if_reached ();
 		break;
 	}
 
@@ -655,7 +625,7 @@ get_question_add_all_mails (ECalClientSourceType source_type,
 			count);
 		break;
 	default:
-		g_assert_not_reached ();
+		g_warn_if_reached ();
 		break;
 	}
 
@@ -663,14 +633,14 @@ get_question_add_all_mails (ECalClientSourceType source_type,
 }
 
 static void
-comp_editor_closed (CompEditor *editor,
-                    gboolean accepted,
+comp_editor_closed (ECompEditor *comp_editor,
+                    gboolean saved,
                     struct _manage_comp *mc)
 {
 	if (!mc)
 		return;
 
-	if (!accepted && mc->mails_done < mc->mails_count)
+	if (!saved && mc->mails_done < mc->mails_count)
 		mc->can_continue = (do_ask (_("Do you wish to continue converting remaining mails?"), FALSE) == GTK_RESPONSE_YES);
 
 	/* Signal the do_mail_to_event thread that editor was closed and editor
@@ -779,26 +749,25 @@ do_manage_comp_idle (struct _manage_comp *mc)
 
 	if (edit_comp) {
 		EShell *shell;
-		CompEditor *editor;
+		ECompEditor *comp_editor;
 
 		/* FIXME Pass in the EShell instance. */
 		shell = e_shell_get_default ();
-		editor = get_component_editor (
+		comp_editor = get_component_editor (
 			shell, mc->client, edit_comp,
 			edit_comp == mc->comp, &error);
 
-		if (editor && !error) {
-			/* Force editor's title change */
-			comp_editor_title_changed (GTK_WIDGET (editor), NULL, mc);
+		if (comp_editor && !error) {
+			comp_editor_title_changed (GTK_WIDGET (comp_editor), NULL, mc);
 
 			e_signal_connect_notify (
-				editor, "notify::title",
+				comp_editor, "notify::title",
 				G_CALLBACK (comp_editor_title_changed), mc);
 			g_signal_connect (
-				editor, "comp_closed",
+				comp_editor, "editor-closed",
 				G_CALLBACK (comp_editor_closed), mc);
 
-			gtk_window_present (GTK_WINDOW (editor));
+			gtk_window_present (GTK_WINDOW (comp_editor));
 
 			if (edit_comp != mc->comp)
 				g_object_unref (edit_comp);
@@ -830,7 +799,7 @@ typedef struct {
 	ECalClientSourceType source_type;
 	CamelFolder *folder;
 	GPtrArray *uids;
-	gchar *selected_text;
+	const gchar *selected_text;
 	gboolean with_attendees;
 }AsyncData;
 
@@ -843,7 +812,7 @@ do_mail_to_event (AsyncData *data)
 	GError *error = NULL;
 
 	client = e_client_cache_get_client_sync (data->client_cache,
-		data->source, data->extension_name, NULL, &error);
+		data->source, data->extension_name, 30, NULL, &error);
 
 	/* Sanity check. */
 	g_return_val_if_fail (
@@ -864,7 +833,7 @@ do_mail_to_event (AsyncData *data)
 			report_error_idle (_("Selected memo list is read only, thus cannot create memo there. Select other memo list, please."), NULL);
 			break;
 		default:
-			g_assert_not_reached ();
+			g_warn_if_reached ();
 			break;
 		}
 	} else {
@@ -927,7 +896,7 @@ do_mail_to_event (AsyncData *data)
 				e_cal_component_set_new_vtype (comp, E_CAL_COMPONENT_JOURNAL);
 				break;
 			default:
-				g_assert_not_reached ();
+				g_warn_if_reached ();
 				break;
 			}
 
@@ -1040,7 +1009,6 @@ do_mail_to_event (AsyncData *data)
 
 	g_object_unref (data->client_cache);
 	g_object_unref (data->source);
-	g_free (data->selected_text);
 	g_free (data);
 	data = NULL;
 
@@ -1076,24 +1044,21 @@ text_contains_nonwhitespace (const gchar *text,
 	return p - text < len - 1 && c != 0;
 }
 
-/* should be freed with g_free after done with it */
-static gchar *
+static const gchar *
 get_selected_text (EMailReader *reader)
 {
 	EMailDisplay *display;
-	gchar *text = NULL;
+	const gchar *text = NULL;
 
 	display = e_mail_reader_get_mail_display (reader);
 
 	if (!e_web_view_is_selection_active (E_WEB_VIEW (display)))
 		return NULL;
 
-	text = e_mail_display_get_selection_plain_text (display);
+	text = e_mail_display_get_selection_plain_text_sync (display, NULL, NULL);
 
-	if (text == NULL || !text_contains_nonwhitespace (text, strlen (text))) {
-		g_free (text);
+	if (text == NULL || !text_contains_nonwhitespace (text, strlen (text)))
 		return NULL;
-	}
 
 	return text;
 }
@@ -1286,7 +1251,7 @@ static GtkActionEntry multi_selection_entries[] = {
 static GtkActionEntry single_selection_entries[] = {
 
 	{ "mail-convert-to-meeting",
-	  "stock_new-meeting",
+	  "stock_people",
 	  N_("Create a _Meeting"),
 	  NULL,
 	  N_("Create a new meeting from the selected message"),

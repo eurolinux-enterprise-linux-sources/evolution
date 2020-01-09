@@ -17,9 +17,27 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
@@ -30,7 +48,7 @@
 <item><p>Κλικ στο <guiseq><gui>αρχείο</gui><gui>εισαγωγή</gui></guiseq>.</p></item>
 <item><p>Στην καρτέλα <gui>τύπος εισαγωγέα</gui>, κλικ στο <gui>εισαγωγή μοναδικού αρχείου</gui>.</p></item>
 <item><p>Επιλογή αρχείου.</p><p>Ο τύπος αρχείου θα προσδιοριστεί αυτόματα.</p></item>
-<item><p>Επιλέξτε τον προορισμό (π.χ. τον φάκελο στο Evolution) για τα εισαγόμενα δεδομένα.</p></item>
+<item><p>Choose the destination (e.g. the folder in <app>Evolution</app>) for the imported data.</p></item>
 </steps>
 
 <note style="tip"><p>Μπορείτε επίσης να εισάγετε επαφές που δεχθήκατε ως συνημμένα vCard ενός μηνύματος από το μενού συνημμένων του.</p></note>

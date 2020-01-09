@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="intro-main-window" xml:lang="cs">
 
   <info>
-    <desc>An explanation of the areas shown in the Evolution window.</desc>
+    <desc>Vysvětlení jednotilvých částí zobrazených v okně <app>Evolution</app>.</desc>
 
     <link type="guide" xref="index#getting-started"/>
     <link type="seealso" xref="calendar-layout"/>
@@ -24,108 +24,120 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-  <title>The <app>Evolution</app> main window</title>
+  <title>Hlavní okno aplikace <app>Evolution</app></title>
 
 <!-- This section fixes https://bugzilla.gnome.org/show_bug.cgi?id=657028 -->
-<p>Evolution provides functionality for E-Mail, Calendar, Contacts, Tasks, and Memos. You can switch to another functionality by using the "Switcher" buttons in the lower left corner. Depending on the displayed functionality also the displayed elements in the window differ.</p>
+<p><app>Evolution</app> poskytuje funkce pro práci s poštou, kalendářem, kontakty, úkoly a poznámkami. Můžete se mezi nimi přepínat pomocí „přepínacích“ tlačítek v levém dolním rohu. Podle toho se pak také liší prvky zobrazené v okně.</p>
 
 <section id="e-mail">
-<title>E-Mail</title>
+<title>Pošta</title>
 
 <media type="image" src="./figures/window-overview-layers.png" width="600">
-  <p>The Evolution mail main window</p>
+  <p>Hlavní okno aplikace <app>Evolution</app></p>
 </media>
 
-<p>Corresponding elements in the mail main window:</p>
+<p>Příslušné části v hlavním okně pošty:</p>
 <table frame="all" rules="all">
   <tr>
-    <td colspan="2"><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-c4a000.png" width="10"/> Menu bar</p></td>
+    <td colspan="2"><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-c4a000.png" width="10"/> Nabídková lišta</p></td>
   </tr>
   <tr>
-    <td colspan="2"><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-ce5c00.png" width="10"/> Tool bar</p></td>
+    <td colspan="2"><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-ce5c00.png" width="10"/> Nástrojová lišta</p></td>
   </tr>
   <tr>
-    <td rowspan="2"><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-8f5902.png" width="10"/> Folder list</p></td>
-    <td><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-4e9a06.png" width="10"/> Search bar</p></td>
+    <td rowspan="2"><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-8f5902.png" width="10"/> Seznam složek</p></td>
+    <td><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-4e9a06.png" width="10"/> Vyhledávací lišta</p></td>
   </tr>
   <tr>
-    <td><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-204a87.png" width="10"/> Message list</p></td>
+    <td><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-204a87.png" width="10"/> Seznam zpráv</p></td>
   </tr>
   <tr>
-    <td><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-a40000.png" width="10"/> Switcher</p></td>
-    <td><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-5c3566.png" width="10"/> Preview pane</p></td>
+    <td><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-a40000.png" width="10"/> Přepínač</p></td>
+    <td><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-5c3566.png" width="10"/> Panel s náhledem</p></td>
   </tr>
   <tr>
-    <td colspan="2"><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-2e3436.png" width="10"/> Status bar</p></td>
+    <td colspan="2"><p><media type="image" mime="image/png" its:translate="no" src="./figures/color-2e3436.png" width="10"/> Stavová lišta</p></td>
   </tr>
 </table>
 
 <terms>
 <item>
-<title>Folder list</title>
-<p>The folder list gives you a list of the available folders for each account. To see the contents of a folder, click the folder name and its contents are displayed in the message list.</p>
-<note style="tip"><p>For more information see <link xref="mail-folders">Using Folders</link>.</p></note>
+<title>Seznam složek</title>
+<p>Seznam složek vám poskytuje seznam všech dostupných složek u jednotlivých účtů. Pokud chcete vidět obsah složky, klikněte na její název a obsah se zobrazí v seznamu zpráv.</p>
+<note style="tip"><p>Více informací viz <link xref="mail-folders">Používání složek</link>.</p></note>
 </item>
 <item>
-<title>Message List</title>
-<p>The message list displays all the read and unread messages that you have in the chosen folder. To view an email in the preview pane, click the message in the message list.</p>
+<title>Seznam zpráv</title>
+<p>Seznam zpráv zobrazuje seznam přečtených a nepřečtených zpráv, které máte ve zvolené složce. Pro zobrazení e-mailu v panelu náhledu, klikněte na zprávu v seznamu zpráv.</p>
 </item>
 <item>
-<title>Switcher</title>
-<p>The switcher at the bottom of the side bar lets you switch between the Evolution tools:  Mail, Contacts, Calendars, Memos and Tasks.</p><p>For more information see <link xref="change-switcher-appearance">Changing the Switcher appearance</link>.</p>
-<note style="tip"><p>You can disable the folder list and the switcher side bar by toggling <guiseq><gui>View</gui><gui>Layout</gui><gui>Show Side Bar</gui></guiseq> or pressing <key>F9</key>.</p></note>
+<title>Přepínač</title>
+<p>Přepínač v dolní části postranního panelu vám umožňuje přepínat mezi nástroji aplikace <app>Evolution</app> – poštou, kontakty, kalendáři, poznámkami a úkoly.</p><p>Více informací naleznete v části <link xref="change-switcher-appearance">Změna vzhledu přepínače</link>.</p>
+<note style="tip"><p>Postranní panel se seznamem složek a přepínačem můžete vypnout přepnutím <guiseq><gui>Zobrazit</gui> <gui>Rozložení</gui> <gui>Zobrazovat postranní panel</gui></guiseq> nebo zmáčknutím <key>F9</key>.</p></note>
 </item>
 <item>
-<title>Preview Pane</title>
+<title>Panel s náhledem</title>
 <p>Panel náhledu ukazuje zprávu, která je vybrána v seznamu zpráv.</p>
-<note style="tip"><p>You can disable the preview pane by toggling <guiseq><gui>View</gui><gui>Preview</gui><gui>Show Message Preview</gui></guiseq>.</p></note>
+<note style="tip"><p>Panel s náhledem můžete vypnout přepnutím <guiseq><gui>Zobrazit</gui> <gui>Náhled</gui> <gui>Zobrazovat náhled zprávy</gui></guiseq>.</p></note>
 </item>
 </terms>
 </section>
 
 <section id="calendar">
 <title>Kalendář</title>
-<p>Elements in the calendar main window:</p>
+<p>Části hlavního okna kalendáře:</p>
 <table frame="all" rules="all">
   <tr>
-    <td colspan="3"><p><media type="image" its:translate="no" src="./figures/color-c4a000.png" width="10"/> Menu bar</p></td>
+    <td colspan="3"><p><media type="image" its:translate="no" src="./figures/color-c4a000.png" width="10"/> Nabídková lišta</p></td>
   </tr>
   <tr>
-    <td colspan="3"><p><media type="image" its:translate="no" src="./figures/color-ce5c00.png" width="10"/> Tool bar</p></td>
+    <td colspan="3"><p><media type="image" its:translate="no" src="./figures/color-ce5c00.png" width="10"/> Nástrojová lišta</p></td>
   </tr>
   <tr>
-    <td rowspan="2"><p><media type="image" its:translate="no" src="./figures/color-8f5902.png" width="10"/> Calendar list</p></td>
-    <td colspan="2"><p><media type="image" its:translate="no" src="./figures/color-4e9a06.png" width="10"/> Search bar</p></td>
+    <td rowspan="2"><p><media type="image" its:translate="no" src="./figures/color-8f5902.png" width="10"/> Seznam kalendářů</p></td>
+    <td colspan="2"><p><media type="image" its:translate="no" src="./figures/color-4e9a06.png" width="10"/> Vyhledávací lišta</p></td>
   </tr>
   <tr>
-    <td rowspan="3"><p><media type="image" its:translate="no" src="./figures/color-204a87.png" width="10"/> Appointment list</p></td>
-    <td><p>Task list</p></td>
+    <td rowspan="3"><p><media type="image" its:translate="no" src="./figures/color-204a87.png" width="10"/> Seznam událostí</p></td>
+    <td><p>Seznam úkolů</p></td>
   </tr>
   <tr>
-    <td><p>Month pane</p></td>
-    <td rowspan="2"><p>Memo list</p></td>
+    <td><p>Měsíční panel</p></td>
+    <td rowspan="2"><p>Seznam poznámek</p></td>
   </tr>
   <tr>
-    <td><p><media type="image" its:translate="no" src="./figures/color-a40000.png" width="10"/> Switcher</p></td>
+    <td><p><media type="image" its:translate="no" src="./figures/color-a40000.png" width="10"/> Přepínač</p></td>
   </tr>
   <tr>
-    <td colspan="3"><p><media type="image" its:translate="no" src="./figures/color-2e3436.png" width="10"/> Status bar</p></td>
+    <td colspan="3"><p><media type="image" its:translate="no" src="./figures/color-2e3436.png" width="10"/> Stavová lišta</p></td>
   </tr>
 </table>
 <terms>
 <item>
-<title>Appointment List</title>
-<p>The appointment list displays all your scheduled appointments in the time frame selected.</p>
+<title>Seznam událostí</title>
+<p>Seznam událostí zobrazuje všechny vaše náplanované události ve vybraném časovém období.</p>
 </item>
 <item>
-<title>Month Pane</title>
+<title>Měsíční panel</title>
 <p>Měsíční panel je malý náhled kalendářního měsíce. Chcete-li zobrazit další měsíce, táhněte okraj sloupce doprava. Můžete také vybrat rozsah dnů v měsíčním panelu pro zobrazení vlastního rozsahu dnů v seznamu událostí.</p>
 </item>
 <item>
-<title>Task list and Memo list</title>
-<p>Tasks and memos are just displayed for your convience and are not associated to any appointments. Use the <gui>switcher</gui> to go to their main windows.</p>
+<title>Seznam úkolů a seznam poznámek</title>
+<p>Úkoly a poznámky jsou zobrazeny jen pro vaše pohodlí a nejsou svázány s žádnou událostí. Použijte <gui>přepínač</gui> pro přepnutí do jejich hlavního okna.</p>
 </item>
 </terms>
 
@@ -133,29 +145,29 @@
 
 <section id="contacts">
 <title>Kontakty</title>
-<p>Elements in the contacts main window:</p>
+<p>Části hlavního okna kontaktů:</p>
 <table frame="all" rules="all">
   <tr>
-    <td colspan="2"><p><media type="image" its:translate="no" src="./figures/color-c4a000.png" width="10"/> Menu bar</p></td>
+    <td colspan="2"><p><media type="image" its:translate="no" src="./figures/color-c4a000.png" width="10"/> Nabídková lišta</p></td>
   </tr>
   <tr>
-    <td colspan="2"><p><media type="image" its:translate="no" src="./figures/color-ce5c00.png" width="10"/> Tool bar</p></td>
+    <td colspan="2"><p><media type="image" its:translate="no" src="./figures/color-ce5c00.png" width="10"/> Nástrojová lišta</p></td>
   </tr>
   <tr>
-    <td rowspan="2"><p><media type="image" its:translate="no" src="./figures/color-8f5902.png" width="10"/> Address book list</p></td>
-    <td><p><media type="image" its:translate="no" src="./figures/color-4e9a06.png" width="10"/> Search bar</p></td>
+    <td rowspan="2"><p><media type="image" its:translate="no" src="./figures/color-8f5902.png" width="10"/> Adresář</p></td>
+    <td><p><media type="image" its:translate="no" src="./figures/color-4e9a06.png" width="10"/> Vyhledávací lišta</p></td>
   </tr>
   <tr>
-    <td><p><media type="image" its:translate="no" src="./figures/color-204a87.png" width="10"/> Contacts list</p></td>
+    <td><p><media type="image" its:translate="no" src="./figures/color-204a87.png" width="10"/> Seznam kontaktů</p></td>
   </tr>
   <tr>
-    <td><p><media type="image" its:translate="no" src="./figures/color-a40000.png" width="10"/> Switcher</p></td>
-    <td><p><media type="image" its:translate="no" src="./figures/color-5c3566.png" width="10"/> Contact preview</p></td>
+    <td><p><media type="image" its:translate="no" src="./figures/color-a40000.png" width="10"/> Přepínač</p></td>
+    <td><p><media type="image" its:translate="no" src="./figures/color-5c3566.png" width="10"/> Náhled kontaktu</p></td>
   </tr>
   <tr>
-    <td colspan="2"><p><media type="image" its:translate="no" src="./figures/color-2e3436.png" width="10"/> Status bar</p></td>
+    <td colspan="2"><p><media type="image" its:translate="no" src="./figures/color-2e3436.png" width="10"/> Stavová lišta</p></td>
   </tr>
 </table>
-<note style="tip"><p>You can disable the contact preview by toggling <guiseq><gui>View</gui><gui>Preview</gui><gui>Contact Preview</gui></guiseq>.</p></note>
+<note style="tip"><p>Náhled kontaktu můžete vypnout přepnutím <guiseq><gui>Zobrazit</gui> <gui>Náhled</gui> <gui>Náhled kontaktu</gui></guiseq>.</p></note>
 </section>
 </page>

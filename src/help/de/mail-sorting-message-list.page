@@ -33,25 +33,31 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
   <title>Die E-Mail-Liste sortieren</title>
   
-<p>Evolution ermöglicht das Organisieren Ihrer E-Mails, indem Sie Ihre Nachrichten in der <link xref="intro-main-window#e-mail">Nachrichtenliste</link> sortieren.</p>
+<p><gui>Evolution</gui> ermöglicht das Organisieren Ihrer E-Mails, indem Sie Ihre Nachrichten in der <link xref="intro-main-window#e-mail">Nachrichtenliste</link> sortieren.</p>
 
 <section id="email-threads">
 <title>E-Mails in E-Mail-Threads sortieren</title>
@@ -75,12 +81,12 @@
 <item><p>Wählen Sie die Option <gui>Diese Spalte entfernen</gui> oder <gui>Eine Spalte hinzufügen</gui>.</p></item>
 </list>
 
-<p>Evolution ermöglicht es Ihnen, Ihre Nachrichten mit Hilfe dieser Spalten zu sortieren. Klicken Sie auf die Spaltenbeschriftung, um E-Mails zu sortieren. Die Richtung des Pfeils neben der Beschriftung gibt die Sortierreihenfolge an.</p>
+<p><gui>Evolution</gui> ermöglicht es Ihnen, Ihre Nachrichten mit Hilfe dieser Spalten zu sortieren. Klicken Sie auf die Spaltenbeschriftung, um E-Mails zu sortieren. Die Richtung des Pfeils neben der Beschriftung gibt die Sortierreihenfolge an.</p>
 </section>
 
 <section id="sort-options">
 <title>Weitere Sortieroptionen anwenden</title>
-<p>Evolution bietet auch andere Möglichkeiten zur Sortierung von E-Mails. Möglich sind »Sortieren nach«, »Aufsteigend sortieren«, »Absteigend sortieren« und »Unsortiert«.</p>
+<p><gui>Evolution</gui> bietet auch andere Möglichkeiten zur Sortierung von E-Mails. Möglich sind <gui>Sortieren nach</gui>, <gui>Aufsteigend sortieren</gui>, <gui>Absteigend sortieren</gui> und <gui>Unsortiert</gui>.</p>
 	<section id="sort-options-by">
 	<title>Sortieren nach</title>
 		<p>Nachrichten können ebenso mit Hilfe der Liste <gui>Sortieren nach</gui> sortiert werden.</p>
@@ -131,10 +137,10 @@
 	</section>
 
 	<section id="sort-options-unsort">
-	<title>Nicht sortieren</title>
+	<title>Sortierung zurücksetzen</title>
 		<steps>
 		<item><p>Klicken Sie mit der rechten Maustaste auf die Spaltenbezeichnung in der E-Mail-Liste.</p></item>
-		<item><p>Wählen Sie die Optionen <gui>Nicht sortieren</gui>.</p></item>
+		<item><p>Wählen Sie die Option <gui>Sortierung zurücksetzen</gui>.</p></item>
 		</steps>
 		<p>So wird nicht in der Spalte sortiert. Die Nachrichten werden wieder in der Reihenfolge dargestellt, wie sie zu dem Ordner hinzugefügt wurden.</p>
 	</section>

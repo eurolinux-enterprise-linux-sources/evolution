@@ -53,7 +53,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -65,14 +65,14 @@
 </section>
 
 <section id="marking-message-read-or-unread">
-<title>Marking a message as read or unread</title>
-<p>To mark the currently selected message as read, press <keyseq><key>Ctrl</key><key>K</key></keyseq>.</p>
-<p>To mark the currently selected message as unread, press <keyseq><key>Ctrl</key><key>Shift</key><key>K</key></keyseq>.</p>
+<title>Marquage d'un message comme lu ou non lu</title>
+<p>Pour marquer le message actuellement sélectionné comme lu,  appuyez sur <keyseq><key>Maj</key><key>Ctrl</key><key>K</key></keyseq>.</p>
+<p>Pour marquer le message actuellement sélectionné comme non lu, appuyez sur<keyseq><key>Maj</key><key>Ctrl</key><key>K</key></keyseq>.</p>
 </section>
 
 <section id="inside-message">
 <title>Navigation dans un message</title>
-<p>Pour lire le courriel à l'aide du clavier, vous pouvez appuyer sur la <key>barre espace</key> pour faire défiler vers le bas, et sur la touche <key>Retour arrière</key> pour faire défiler vers le haut. Prenez bien soin d'utiliser ces touches lorsque la liste des messages est active.</p>
+<p>Pour lire le courriel à l'aide du clavier, vous pouvez appuyer sur la <key>barre espace</key> pour faire défiler vers le bas, et sur la touche <key>Retour arrière</key> pour faire défiler vers le haut. La liste des messages doit être active quand vous utilisez ces touches.</p>
 </section>
 
 <section id="inside-folder">

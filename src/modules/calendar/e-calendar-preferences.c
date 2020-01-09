@@ -35,15 +35,12 @@
 #include "calendar/gui/calendar-config.h"
 #include "shell/e-shell-utils.h"
 
-/* same is used for Birthdays & Anniversaries calendar */
-static const gint default_reminder_units_map[] = {
-	E_DURATION_MINUTES, E_DURATION_HOURS, E_DURATION_DAYS, -1
-};
+#define ITIP_FORMATTER_CONF_KEY_DELETE "delete-processed"
 
 G_DEFINE_DYNAMIC_TYPE (
 	ECalendarPreferences,
 	e_calendar_preferences,
-	GTK_TYPE_VBOX)
+	GTK_TYPE_BOX)
 
 static gboolean
 calendar_preferences_map_string_to_integer (GValue *value,
@@ -93,7 +90,7 @@ calendar_preferences_map_string_to_icaltimezone (GValue *value,
 	const gchar *location = NULL;
 	icaltimezone *timezone = NULL;
 
-	settings = g_settings_new ("org.gnome.evolution.calendar");
+	settings = e_util_ref_settings ("org.gnome.evolution.calendar");
 
 	if (g_settings_get_boolean (settings, "use-system-timezone"))
 		timezone = e_cal_util_get_system_timezone ();
@@ -124,7 +121,7 @@ calendar_preferences_map_icaltimezone_to_string (const GValue *value,
 	gchar *location_str = NULL;
 	icaltimezone *timezone;
 
-	settings = g_settings_new ("org.gnome.evolution.calendar");
+	settings = e_util_ref_settings ("org.gnome.evolution.calendar");
 
 	if (g_settings_get_boolean (settings, "use-system-timezone")) {
 		location_str = g_settings_get_string (settings, "timezone");
@@ -277,6 +274,7 @@ e_calendar_preferences_class_finalize (ECalendarPreferencesClass *class)
 static void
 e_calendar_preferences_init (ECalendarPreferences *preferences)
 {
+	gtk_orientable_set_orientation (GTK_ORIENTABLE (preferences), GTK_ORIENTATION_VERTICAL);
 }
 
 static GtkWidget *
@@ -393,6 +391,7 @@ day_second_zone_clicked (GtkWidget *widget,
 
 	gtk_widget_show_all (menu);
 
+	gtk_menu_attach_to_widget (GTK_MENU (menu), widget, NULL);
 	gtk_menu_popup (
 		GTK_MENU (menu), NULL, NULL, NULL, NULL,
 		0, gtk_get_current_event_time ());
@@ -424,7 +423,7 @@ start_of_day_changed (GtkWidget *widget,
 		return;
 	}
 
-	settings = g_settings_new ("org.gnome.evolution.calendar");
+	settings = e_util_ref_settings ("org.gnome.evolution.calendar");
 
 	g_settings_set_int (settings, "day-start-hour", start_hour);
 	g_settings_set_int (settings, "day-start-minute", start_minute);
@@ -458,7 +457,7 @@ end_of_day_changed (GtkWidget *widget,
 		return;
 	}
 
-	settings = g_settings_new ("org.gnome.evolution.calendar");
+	settings = e_util_ref_settings ("org.gnome.evolution.calendar");
 
 	g_settings_set_int (settings, "day-end-hour", end_hour);
 	g_settings_set_int (settings, "day-end-minute", end_minute);
@@ -524,7 +523,7 @@ show_config (ECalendarPreferences *prefs)
 {
 	GSettings *settings;
 
-	settings = g_settings_new ("org.gnome.evolution.calendar");
+	settings = e_util_ref_settings ("org.gnome.evolution.calendar");
 
 	/* Day's second zone */
 	update_day_second_zone_caption (prefs);
@@ -572,6 +571,121 @@ eccp_free (EConfig *ec,
 }
 
 static void
+itip_formatter_delete_toggled_cb (GtkWidget *widget)
+{
+	GSettings *settings;
+	gboolean active;
+
+	settings = e_util_ref_settings ("org.gnome.evolution.plugin.itip");
+	active = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget));
+	g_settings_set_boolean (settings, ITIP_FORMATTER_CONF_KEY_DELETE, active);
+	g_object_unref (settings);
+}
+
+static void
+calendar_preferences_add_itip_formatter_page (EShell *shell,
+					      GtkWidget *notebook)
+{
+	ESourceRegistry *registry;
+	GtkWidget *page;
+	GtkWidget *tab_label;
+	GtkWidget *frame;
+	GtkWidget *frame_label;
+	GtkWidget *padding_label;
+	GtkWidget *hbox;
+	GtkWidget *inner_vbox;
+	GtkWidget *check;
+	GtkWidget *label;
+	GtkWidget *ess;
+	GtkWidget *scrolledwin;
+	gchar *str;
+	GSettings *settings;
+
+	g_return_if_fail (GTK_IS_NOTEBOOK (notebook));
+
+	registry = e_shell_get_registry (shell);
+
+	/* Create a new notebook page */
+	page = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+	gtk_container_set_border_width (GTK_CONTAINER (page), 12);
+	tab_label = gtk_label_new (_("Meeting Invitations"));
+	gtk_notebook_append_page (GTK_NOTEBOOK (notebook), page, tab_label);
+
+	/* Frame */
+	frame = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
+	gtk_box_pack_start (GTK_BOX (page), frame, FALSE, FALSE, 0);
+
+	/* "General" */
+	frame_label = gtk_label_new ("");
+	str = g_strdup_printf ("<span weight=\"bold\">%s</span>", _("General"));
+	gtk_label_set_markup (GTK_LABEL (frame_label), str);
+	g_free (str);
+	gtk_misc_set_alignment (GTK_MISC (frame_label), 0.0, 0.5);
+	gtk_box_pack_start (GTK_BOX (frame), frame_label, FALSE, FALSE, 0);
+
+	/* Indent/padding */
+	hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 12);
+	gtk_box_pack_start (GTK_BOX (frame), hbox, FALSE, TRUE, 0);
+	padding_label = gtk_label_new ("");
+	gtk_box_pack_start (GTK_BOX (hbox), padding_label, FALSE, FALSE, 0);
+	inner_vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
+	gtk_box_pack_start (GTK_BOX (hbox), inner_vbox, FALSE, FALSE, 0);
+
+	/* Delete message after acting */
+	settings = e_util_ref_settings ("org.gnome.evolution.plugin.itip");
+
+	check = gtk_check_button_new_with_mnemonic (_("_Delete message after acting"));
+	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), g_settings_get_boolean (settings, ITIP_FORMATTER_CONF_KEY_DELETE));
+	g_signal_connect (
+		check, "toggled",
+		G_CALLBACK (itip_formatter_delete_toggled_cb), NULL);
+	gtk_box_pack_start (GTK_BOX (inner_vbox), check, FALSE, FALSE, 0);
+
+	g_object_unref (settings);
+
+	/* "Conflict searching" */
+	frame = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
+	gtk_box_pack_start (GTK_BOX (page), frame, TRUE, TRUE, 24);
+
+	frame_label = gtk_label_new ("");
+	str = g_strdup_printf ("<span weight=\"bold\">%s</span>", _("Conflict Search"));
+	gtk_label_set_markup (GTK_LABEL (frame_label), str);
+	g_free (str);
+	gtk_misc_set_alignment (GTK_MISC (frame_label), 0.0, 0.5);
+	gtk_box_pack_start (GTK_BOX (frame), frame_label, FALSE, FALSE, 0);
+
+	/* Indent/padding */
+	hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 12);
+	gtk_box_pack_start (GTK_BOX (frame), hbox, TRUE, TRUE, 0);
+	padding_label = gtk_label_new ("");
+	gtk_box_pack_start (GTK_BOX (hbox), padding_label, FALSE, FALSE, 0);
+	inner_vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
+	gtk_box_pack_start (GTK_BOX (hbox), inner_vbox, TRUE, TRUE, 0);
+
+	/* Source selector */
+	label = gtk_label_new (_("Select the calendars to search for meeting conflicts"));
+	gtk_misc_set_alignment (GTK_MISC (label), 0, 0.5);
+	gtk_box_pack_start (GTK_BOX (inner_vbox), label, FALSE, FALSE, 0);
+
+	scrolledwin = gtk_scrolled_window_new (NULL, NULL);
+
+	gtk_scrolled_window_set_policy (
+		GTK_SCROLLED_WINDOW (scrolledwin),
+		GTK_POLICY_AUTOMATIC,
+		GTK_POLICY_AUTOMATIC);
+	gtk_scrolled_window_set_shadow_type (
+		GTK_SCROLLED_WINDOW (scrolledwin),
+		GTK_SHADOW_IN);
+	gtk_box_pack_start (GTK_BOX (inner_vbox), scrolledwin, TRUE, TRUE, 0);
+
+	ess = e_conflict_search_selector_new (registry);
+	atk_object_set_name (gtk_widget_get_accessible (ess), _("Conflict Search"));
+	gtk_container_add (GTK_CONTAINER (scrolledwin), ess);
+
+	gtk_widget_show_all (page);
+}
+
+static void
 calendar_preferences_construct (ECalendarPreferences *prefs,
                                 EShell *shell)
 {
@@ -586,7 +700,7 @@ calendar_preferences_construct (ECalendarPreferences *prefs,
 	GtkWidget *table;
 	GSList *l;
 
-	settings = g_settings_new ("org.gnome.evolution.calendar");
+	settings = e_util_ref_settings ("org.gnome.evolution.calendar");
 
 	locale_supports_12_hour_format =
 		calendar_config_locale_supports_12_hour_format ();
@@ -615,6 +729,8 @@ calendar_preferences_construct (ECalendarPreferences *prefs,
 	for (i = 0; i < G_N_ELEMENTS (eccp_items); i++)
 		l = g_slist_prepend (l, &eccp_items[i]);
 	e_config_add_items ((EConfig *) ec, l, eccp_free, prefs);
+
+	calendar_preferences_add_itip_formatter_page (shell, e_builder_get_widget (prefs->builder, "toplevel-notebook"));
 
 	widget = e_builder_get_widget (prefs->builder, "use-system-tz-check");
 	g_settings_bind (
@@ -758,10 +874,16 @@ calendar_preferences_construct (ECalendarPreferences *prefs,
 		widget, "sensitive",
 		G_SETTINGS_BIND_GET);
 
+	widget = e_builder_get_widget (prefs->builder, "classify-private");
+	g_settings_bind (
+		settings, "classify-private",
+		widget, "active",
+		G_SETTINGS_BIND_DEFAULT);
+
 	/* These settings control the "Birthdays & Anniversaries" backend. */
 
 	eds_settings =
-		g_settings_new ("org.gnome.evolution-data-server.calendar");
+		e_util_ref_settings ("org.gnome.evolution-data-server.calendar");
 
 	widget = e_builder_get_widget (prefs->builder, "ba_reminder");
 	g_settings_bind (
@@ -808,6 +930,12 @@ calendar_preferences_construct (ECalendarPreferences *prefs,
 	widget = e_builder_get_widget (prefs->builder, "show_end_times");
 	g_settings_bind (
 		settings, "show-event-end",
+		widget, "active",
+		G_SETTINGS_BIND_DEFAULT);
+
+	widget = e_builder_get_widget (prefs->builder, "show_icons_month_view");
+	g_settings_bind (
+		settings, "show-icons-month-view",
 		widget, "active",
 		G_SETTINGS_BIND_DEFAULT);
 
@@ -910,6 +1038,18 @@ calendar_preferences_construct (ECalendarPreferences *prefs,
 		widget, "active",
 		G_SETTINGS_BIND_DEFAULT);
 
+	widget = e_builder_get_widget (prefs->builder, "task_reminder_for_completed");
+	g_settings_bind (
+		settings, "task-reminder-for-completed",
+		widget, "active",
+		G_SETTINGS_BIND_DEFAULT);
+
+	widget = e_builder_get_widget (prefs->builder, "default-snooze-minutes-spin");
+	g_settings_bind (
+		settings, "default-snooze-minutes",
+		widget, "value",
+		G_SETTINGS_BIND_DEFAULT);
+
 	prefs->scrolled_window = e_builder_get_widget (prefs->builder, "calendar-source-scrolled-window");
 
 	/* Free/Busy tab */
@@ -929,7 +1069,7 @@ calendar_preferences_construct (ECalendarPreferences *prefs,
 	target = e_cal_config_target_new_prefs (ec);
 	e_config_set_target ((EConfig *) ec, (EConfigTarget *) target);
 	toplevel = e_config_create_widget ((EConfig *) ec);
-	gtk_container_add (GTK_CONTAINER (prefs), toplevel);
+	gtk_box_pack_start (GTK_BOX (prefs), toplevel, TRUE, TRUE, 0);
 
 	show_config (prefs);
 	/* FIXME: weakref? */

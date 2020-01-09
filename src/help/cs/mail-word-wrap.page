@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-word-wrap" xml:lang="cs">
 
   <info>
-    <desc>Slova jsou v odchozích zprávách zalomena po 72 znacích.</desc>
+    <desc>Proč se slova v odchozích zprávách zalamují po 72 znacích.</desc>
     
     <link type="guide" xref="index#common-mail-problems"/>
 
@@ -15,11 +15,23 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Slova jsou v odchozích zprávách zalomena po 72 znacích</title>
+<title>Slova jsou v odchozí poště zalomena po 72 znacích</title>
 
 <p>Aby byl text lépe čitelný, jsou řádky zalamovány po 72 znacích. Tato hodnota je stanovena natvrdo a nemůže být změněna.</p>
-<p>Nechcete-li, aby se řádky v odstavci zalamovaly, odstavec označte a vyberte v editoru zpráv <guiseq><gui>Formát</gui><gui>Styl odstavce</gui><gui>Předformátované</gui></guiseq>.</p>
+<p>Nechcete-li, aby se řádky v odstavci zalamovaly, odstavec označte a vyberte v editoru zpráv <guiseq><gui>Formát</gui> <gui>Styl odstavce</gui> <gui>Předformátované</gui></guiseq>.</p>
 
 </page>

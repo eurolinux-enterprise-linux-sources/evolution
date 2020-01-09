@@ -103,6 +103,8 @@ mail_config_auth_check_update_done_cb (GObject *source_object,
 		e_auth_combo_box_update_available (
 			E_AUTH_COMBO_BOX (auth_check->priv->combo_box),
 			available_authtypes);
+		e_auth_combo_box_pick_highest_available (E_AUTH_COMBO_BOX (auth_check->priv->combo_box));
+
 		g_list_free (available_authtypes);
 	}
 
@@ -172,6 +174,7 @@ mail_config_auth_check_update (EMailConfigAuthCheck *auth_check)
 	activity = e_mail_config_activity_page_new_activity (
 		E_MAIL_CONFIG_ACTIVITY_PAGE (page));
 	cancellable = e_activity_get_cancellable (activity);
+	e_activity_set_text (activity, _("Querying authentication types..."));
 
 	gtk_widget_set_sensitive (GTK_WIDGET (auth_check), FALSE);
 
@@ -334,18 +337,6 @@ mail_config_auth_check_constructed (GObject *object)
 	backend = e_mail_config_auth_check_get_backend (auth_check);
 	provider = e_mail_config_service_backend_get_provider (backend);
 
-	widget = e_auth_combo_box_new ();
-	e_auth_combo_box_set_provider (E_AUTH_COMBO_BOX (widget), provider);
-	gtk_box_pack_start (GTK_BOX (object), widget, FALSE, FALSE, 0);
-	auth_check->priv->combo_box = widget;  /* do not reference */
-	gtk_widget_show (widget);
-
-	g_object_bind_property (
-		widget, "active-id",
-		auth_check, "active-mechanism",
-		G_BINDING_BIDIRECTIONAL |
-		G_BINDING_SYNC_CREATE);
-
 	text = _("Check for Supported Types");
 	widget = gtk_button_new_with_label (text);
 	gtk_box_pack_start (GTK_BOX (object), widget, FALSE, FALSE, 0);
@@ -355,6 +346,18 @@ mail_config_auth_check_constructed (GObject *object)
 		widget, "clicked",
 		G_CALLBACK (mail_config_auth_check_clicked_cb),
 		auth_check);
+
+	widget = e_auth_combo_box_new ();
+	e_auth_combo_box_set_provider (E_AUTH_COMBO_BOX (widget), provider);
+	gtk_box_pack_start (GTK_BOX (object), widget, FALSE, FALSE, 0);
+	auth_check->priv->combo_box = widget;  /* do not reference */
+	gtk_widget_show (widget);
+
+	e_binding_bind_property (
+		widget, "active-id",
+		auth_check, "active-mechanism",
+		G_BINDING_BIDIRECTIONAL |
+		G_BINDING_SYNC_CREATE);
 
 	mail_config_auth_check_init_mechanism (auth_check);
 }

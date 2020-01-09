@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-recognized-thread-related-headers" xml:lang="fr">
 
   <info>
-    <desc>Quels sont les en-têtes relatifs aux fils de discussion reconnus par Evolution.</desc>
+    <desc>Which thread-related headers are recognized by <app>Evolution</app>.</desc>
     
     <link type="guide" xref="index#common-mail-problems"/>
 
@@ -49,13 +49,13 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
-<title>En-têtes relatifs aux fils de discussion reconnus par Evolution</title>
+<title>Thread related headers recognized by <app>Evolution</app></title>
 
-<p>Evolution prend en charge les en-têtes suivants :</p>
+<p><app>Evolution</app> supports the following headers:</p>
 <list>
 <item><p>References</p></item>
 <item><p>In-Reply-To</p></item>

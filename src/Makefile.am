@@ -23,6 +23,8 @@ EXTRA_DIST = 			\
 	$(appdata_in_files)	\
 	AUTHORS			\
 	COPYING-DOCS		\
+	COPYING-DOCS.CCBYSA	\
+	COPYING-DOCS.GFDL	\
 	COPYING.LGPL2		\
 	COPYING.LGPL3		\
 	COPYING.OPENLDAP	\
@@ -39,7 +41,8 @@ EXTRA_DIST = 			\
 	intltool-merge.in	\
 	intltool-update.in	\
 	intltool-extract.in	\
-	gtk-doc.make
+	gtk-doc.make		\
+	tests
 
 if ENABLE_SMIME
 SMIME_SUBDIR=smime
@@ -68,6 +71,7 @@ SUBDIRS = 			\
 	mail			\
 	calendar		\
 	art			\
+	web-extensions		\
 	plugins			\
 	modules			\
 	$(MAINT_SUBDIR)		\
@@ -77,6 +81,8 @@ SUBDIRS = 			\
 	po			\
 	sounds			\
 	$(HELP_SUBDIR)
+
+@GNOME_CODE_COVERAGE_RULES@
 
 DISTCLEANFILES = 			\
 	$(builddir)/iconv-detect.h	\
@@ -153,5 +159,10 @@ DISTCHECK_CONFIGURE_FLAGS =		\
 	--disable-pst-import		\
 	--disable-weather		\
 	--with-help
+
+@BEHAVE_INSTALLED_TESTS_RULE@
+INSTALLED_TESTS=general_shortcuts mail_shortcuts contacts_shortcuts	\
+	memos_shortcuts view_shortcuts addressbook_contacts
+INSTALLED_TESTS_TYPE=session-exclusive
 
 -include $(top_srcdir)/git.mk

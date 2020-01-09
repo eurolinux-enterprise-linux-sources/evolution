@@ -17,12 +17,36 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
 <title>POP levelek szétválogatása több fiókhoz</title>
 
-<p>A fiók- és mappalista ablaktáblán nem használhat több önálló fiókot. Az Evolution egyetlen érkezett mappát használ a bejövő e-mailekhez.</p>
-<p>Használhat IMAP-ot a POP helyett, vagy a bejövő e-maileket különböző mappákba mozgathatja <link xref="mail-folders">mappák</link> és <link xref="mail-filters">szűrők</link> létrehozásával. Hozzon létre egy új mappát, és benne két almappát (az adott fiók bejövő és elküldött leveleihez). Ezután állítson be egy bejövő mappát a <guiseq><gui>Szerkesztés</gui><gui>Üzenetszűrők</gui><gui style="button">Hozzáadás</gui></guiseq> gomb kiválasztásával a bejövő levelek címzett szerinti szűréséhez. Állítson be egy kimenő szűrőt is a kimenő levelek áthelyezéséhez az Elküldött mappába a feladó címe alapján.</p>
+<p>A fiók- és mappalista ablaktáblán nem használhat több önálló fiókot. Az <app>Evolution</app> egyetlen érkezett mappát használ a bejövő e-mailekhez.</p>
+<p>Használhat IMAP-ot a POP helyett, vagy a bejövő e-maileket különböző mappákba mozgathatja <link xref="mail-folders">mappák</link> és <link xref="mail-filters">szűrők</link> létrehozásával. Hozzon létre egy új mappát, és benne két almappát (az adott fiók bejövő és elküldött leveleihez). Ezután állítson be egy bejövő mappát a <guiseq><gui>Szerkesztés</gui><gui>Üzenetszűrők…</gui><gui style="button">Hozzáadás</gui></guiseq> gomb kiválasztásával a bejövő levelek címzett szerinti szűréséhez. Állítson be egy kimenő szűrőt is a kimenő levelek áthelyezéséhez az Elküldött mappába a feladó címe alapján.</p>
 
 <!-- https://bugzilla.gnome.org/show_bug.cgi?id=273944 -->
 

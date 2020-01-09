@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-composer-reply" xml:lang="sv">
 
   <info>
-    <desc>Answering a received email.</desc>
+    <desc>Svara på ett mottaget e-postmeddelande.</desc>
     
     <link type="guide" xref="index#mail-composing"/>
 
@@ -18,40 +18,52 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-<title>Replying to a message</title>
+<title>Svara på ett meddelande</title>
 
 <section id="general-info">
 <title>Svara på e-postmeddelanden</title>
-<p>To reply to a message, select the message to reply to in the message list and click the <gui>Reply</gui> button in the toolbar, or right-click within the message and select <gui>Reply to Sender</gui>. This opens the message composer. The <gui>To:</gui> and <gui>Subject:</gui> fields are already filled, although you can alter them if you prefer. In addition, the full text of the old message is inserted into the new message, either in grey with a blue line on one side (for HTML display) or with the &gt; character before each line (in plain text mode), to indicate that it is part of the previous message.</p>
-<p>If you are reading a message with several recipients, you can use <gui>Reply to All</gui> instead of <gui>Reply</gui>. If there are large numbers of people in the <gui>Cc:</gui> or <gui>To:</gui> fields, this can save substantial amounts of time.</p>
+<p>För att svara på ett meddelande, välj meddelanden att svara på i meddelandelistan och klicka på knappen <gui>Svara</gui> i verktygsfältet, eller högerklicka i meddelandet och välj <gui>Svar till avsändare</gui>. Detta öppnar meddelanderedigeraren. Fälten <gui>Till:</gui> och <gui>Ämne:</gui> är redan ifyllda, men du kan ändra dem om du så önskar. Dessutom har det gamla meddelandets fullständiga text infogats i det nya meddelandet, antingen i grått med en blå linje på ena sidan (för HTML-visning) eller med tecknet &gt; för varje rad (i vanligt textläge) för att indikera att detta är en del av det föregående meddelandet.</p>
+<p>Om du läser ett meddelande med flera mottagare kan du använda <gui>Svara till alla</gui> istället för <gui>Svara</gui>. Om det finns ett stort antal människor i fälten <gui>Kopia:</gui> eller <gui>Till:</gui> kan detta spara en väsentlig mängd tid.</p>
 </section>
 
 <section id="reply-to-all">
-<title>Using the Reply To All Feature</title>
-<p>Susan sends an email to a client and sends copies to Tim and to an internal company mailing list of co-workers. If Tim wants to make a comment for all of them to read, he uses <gui>Reply to All</gui>, but if he just wants to tell Susan that he agrees with her, he uses <gui>Reply</gui>. His reply does not reach anyone that Susan put on her Bcc list, because that list is not shared with anyone.</p>
-<p>If you subscribe to a mailing list, and want your reply to go just to the list rather than to the sender, select <gui>Reply to List</gui> instead of <gui>Reply</gui> or <gui>Reply to All</gui>.</p>
+<title>Användning av funktionen Svara till alla</title>
+<p>Susanne skickar ett e-postmeddelande till en klient och skickar kopior till Tim och till en företagsintern sändlista av kollegor. Om Tim vill kommentera så att alla ser det, använder han <gui>Svara till alla</gui>, men om han bara vill berätta för Susanne att han håller med så använder han <gui>Svara</gui>. Hans svar når inte någon som Susanne lagt till i listan Blindkopia eftersom den listan inte delas med någon.</p>
+<p>Om du prenumererar på en sändlista och vill att ditt svar endast ska gå till listan snarare än till avsändaren, använd <gui>Svara till lista</gui> istället för <gui>Svara</gui> eller <gui>Svara till alla</gui>.</p>
 </section>
 
 <section id="keyboard-shortcuts">
 <title>Tangentbordsgenvägar</title>
 <table frame="all" rules="all">
  <tr>
-  <td><p>Åtgärd</p></td><td><p>Shortcut keys</p></td>
+  <td><p>Åtgärd</p></td><td><p>Snabbtangenter</p></td>
  </tr><tr>
   <td><p>Svara till avsändare</p></td><td><p><keyseq><key>Ctrl</key><key>R</key></keyseq></p></td>
  </tr><tr>
-  <td><p>Reply to Mailing List</p></td><td><p><keyseq><key>Ctrl</key><key>L</key></keyseq></p></td>
+  <td><p>Svara till sändlista</p></td><td><p><keyseq><key>Ctrl</key><key>L</key></keyseq></p></td>
  </tr><tr>
-  <td><p>Svara till alla</p></td><td><p><keyseq><key>Shift</key><key>Ctrl</key><key>R</key></keyseq></p></td>
+  <td><p>Svara till alla</p></td><td><p><keyseq><key>Skift</key><key>Ctrl</key><key>R</key></keyseq></p></td>
  </tr>
 </table>
 </section>
 
 <section id="default-settings">
-<title>Default settings</title>
-<p>The default settings for replying and forwarding can be changed under <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Composer Preferences</gui><gui>General</gui><gui>Replies and Forwards</gui><gui>Reply style</gui></guiseq>.</p>
+<title>Standardinställningar</title>
+<p>Standardinställningarna för att svara och vidarebefordra kan ändras under <guiseq><gui>Redigera</gui><gui>Inställningar</gui><gui>Redigerarinställningar</gui><gui>Allmänt</gui><gui>Svar och vidarebefordringar</gui><gui>Stil för vidarebefordran</gui></guiseq>.</p>
 </section>
 
 </page>

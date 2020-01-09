@@ -16,10 +16,22 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
 
-<title>Jak získat pomoc</title>
+<title>Získání pomoci</title>
 
-<p>To receive help on problems you can send an email to the <link href="http://mail.gnome.org/mailman/listinfo/evolution-list">Evolution mailing list</link> or talk to developers and other users in the IRC chat channel #evolution on the server irc.gimp.net. To connect to an IRC server you can for example <link xref="help:empathy/irc-manage" href="https://help.gnome.org/users/empathy/stable/irc-manage">use the internet messenger application <app>Empathy</app></link>.</p>
+<p>Chcete-li získat pomoc při problémech, můžete poslat e-mail do <link href="http://mail.gnome.org/mailman/listinfo/evolution-list">poštovní konference aplikace <app>Evolution</app></link> nebo se zeptat vývojářů a ostatních uživatelů na kanálu IRC #evolution na serveru irc.gimp.net. Pro připojení k serveru IRC <link xref="help:empathy/irc-manage" href="https://help.gnome.org/users/empathy/stable/irc-manage">můžete použít např. aplikaci pro rychlou komunikaci <app>Empathy</app></link>.</p>
 </page>

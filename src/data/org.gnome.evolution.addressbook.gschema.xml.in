@@ -30,7 +30,17 @@
       <_summary>Contact preview pane position (horizontal)</_summary>
       <_description>Position of the contact preview pane when oriented horizontally.</_description>
     </key>
+    <key name="hpane-position-sub" type="i">
+      <default>200</default>
+      <_summary>Contact preview pane position (horizontal)</_summary>
+      <_description>Position of the contact preview pane when oriented horizontally.</_description>
+    </key>
     <key name="vpane-position" type="i">
+      <default>400</default>
+      <_summary>Contact preview pane position (vertical)</_summary>
+      <_description>Position of the contact preview pane when oriented vertically.</_description>
+    </key>
+    <key name="vpane-position-sub" type="i">
       <default>400</default>
       <_summary>Contact preview pane position (vertical)</_summary>
       <_description>Position of the contact preview pane when oriented vertically.</_description>
@@ -49,6 +59,61 @@
       <default>true</default>
       <_summary>Show preview pane</_summary>
       <_description>Whether to show the preview pane.</_description>
+    </key>
+    <key type="b" name="editor-show-contact-phone">
+      <_default>true</_default>
+      <summary>Show phone numbers</summary>
+      <_description>Whether to show phone numbers in the editor</_description>
+    </key>
+    <key type="b" name="editor-show-contact-sip">
+      <_default>true</_default>
+      <summary>Show SIP addresses</summary>
+      <_description>Whether to show SIP addresses in the editor</_description>
+    </key>
+    <key type="b" name="editor-show-contact-im">
+      <_default>true</_default>
+      <summary>Show IM addresses</summary>
+      <_description>Whether to show IM addresses in the editor</_description>
+    </key>
+    <key type="b" name="editor-show-mailing-home">
+      <_default>true</_default>
+      <summary>Show mailing Home addresses</summary>
+      <_description>Whether to show mailing Home addresses in the editor</_description>
+    </key>
+    <key type="b" name="editor-show-mailing-work">
+      <_default>true</_default>
+      <summary>Show mailing Work addresses</summary>
+      <_description>Whether to show mailing addresses Work in the editor</_description>
+    </key>
+    <key type="b" name="editor-show-mailing-other">
+      <_default>true</_default>
+      <summary>Show mailing Other addresses</summary>
+      <_description>Whether to show mailing addresses Other in the editor</_description>
+    </key>
+    <key type="b" name="editor-show-personal-web">
+      <_default>true</_default>
+      <summary>Show web addresses</summary>
+      <_description>Whether to show Web Addresses in the editor</_description>
+    </key>
+    <key type="b" name="editor-show-personal-job">
+      <_default>true</_default>
+      <summary>Show job information</summary>
+      <_description>Whether to show job information in the editor</_description>
+    </key>
+    <key type="b" name="editor-show-personal-misc">
+      <_default>true</_default>
+      <summary>Show Miscellaneous information</summary>
+      <_description>Whether to show Miscellaneous information in the editor</_description>
+    </key>
+    <key type="b" name="editor-show-notes">
+      <_default>true</_default>
+      <summary>Show notes-tab</summary>
+      <_description>Whether to show notes in the editor</_description>
+    </key>
+    <key type="b" name="editor-show-certs">
+      <_default>true</_default>
+      <summary>Show Certificates tab</summary>
+      <_description>Whether to show Certificates tab in the editor</_description>
     </key>
   </schema>
 </schemalist>

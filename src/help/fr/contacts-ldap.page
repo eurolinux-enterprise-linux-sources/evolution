@@ -4,7 +4,7 @@
   <info>
     <link type="guide" xref="contacts-using-several-addressbooks"/>
 
-    <revision pkgversion="3.1.5" version="0.3" date="2011-07-28" status="final"/>
+    <revision pkgversion="3.1.5" version="0.4" date="2015-03-09" status="final"/>
 
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
@@ -56,7 +56,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -69,8 +69,7 @@
 
   <steps>
     <item>
-      <p>Click <guiseq><gui>File</gui><gui>New</gui>
-      <gui>Address Book</gui></guiseq>.</p>
+      <p>Cliquez sur <guiseq><gui>Fichier</gui><gui>Nouveau</gui><gui>Carnet d'adresses</gui></guiseq>.</p>
     </item>
     <item>
       <p>Dans l'onglet <gui>Général</gui>, sélectionnez le type <gui>Sur les serveurs LDAP</gui>.</p>
@@ -94,7 +93,8 @@
 	  <p>Base de recherche : la base de recherche correspond au point de départ d'une recherche d'annuaire. Pour plus d'informations sur les paramètres appropriés, contactez l'administrateur système.</p>
         </item>
         <item>
-	  <p>Domaine de recherche : le domaine de recherche correspond à l'étendue d'une recherche. Vous disposez des options suivantes :</p>
+	  <p>Domaine de recherche : le domaine de recherche correspond à l'étendue d'une recherche donnée. </p>
+	  <p>Les paramètres suivants sont disponibles :</p>
           <list>
             <item>
 	      <p>Un niveau : effectue une recherche dans la base de recherche et dans un niveau hiérarchique au-dessous.</p>
@@ -122,8 +122,7 @@
           </list>
         </item>
         <item>
-	  <p>Timeout (minutes): The maximum time <app>Evolution</app> attempts
-	  to download data from the server before giving up.</p>
+	  <p>Délai (en minutes) : délai maximum au cours duquel <app>Evolution</app> tente de télécharger les données du serveur avant d'abandonner.</p>
         </item>
         <item>
 	  <p>Limite de téléchargement : nombre maximum de résultats associés à une recherche. La plupart des serveurs refusent d'envoyer plus de 500 contacts, mais vous pouvez définir une valeur inférieure pour raccourcir les téléchargements dans le cas de recherches très larges.</p>
@@ -133,7 +132,7 @@
   </steps>
 
   <note style="tip">
-    <p>Si vous n'êtes pas certain de certains réglages, contactez votre administrateur système.</p>
+    <p>Si vous n'êtes pas sûr de certains réglages, contactez votre administrateur système.</p>
   </note>
 
 </section>
@@ -148,18 +147,15 @@
       <p>Les dossiers réseau ne sont accessibles que lorsque vous êtes connecté au réseau. Si vous utilisez un ordinateur portable ou que vous avez une connexion par modem, il peut être souhaitable de copier ou de mettre en mémoire tampon une partie de l'annuaire réseau. Vous pouvez le faire en faisant glisser les contacts concernés dans les carnets d'adresses locaux.</p>
     </item>
     <item>
-      <p>Vous pouvez également marquer le dossier réseau pour un usage hors ligne. Pour cela, faites un clic-droit sur le dossier, choisissez Propriétés et cochez « Copier le contenu du dossier en local pour les opérations hors ligne ».</p>
+      <p>You can also mark the network folder for offline usage. To mark the
+      folder, right-click the folder, click <gui>Properties</gui> and select
+      <gui>Copy folder content locally for offline operation</gui>.</p>
     </item>
     <item>
-      <p>To prevent excess network traffic, <app>Evolution</app> does not
-      normally load data from the LDAP server upon opening.</p>
+      <p>Pour éviter un trafic réseau trop important, <app>Evolution</app> ne charge en principe pas les données du serveur LDAP au moment de son ouverture.</p>
     </item>
     <item>
-      <p>Depending on your server settings, you might not be able to edit all
-      the fields in a contact stored on an LDAP server. Some servers prohibit
-      some or all changes, and others use a smaller set of fields than
-      <app>Evolution</app> allows. Check with your system administrator if you
-      need different settings.</p>
+      <p>Selon les réglages de votre serveur, vous ne pourrez peut-être pas modifier tous les champs d'un contact stocké sur un serveur LDAP. Certains serveurs empêchent tout ou partie des modifications, et d'autres utilisent un nombre de champs plus restreint que ceux d'<app>Evolution</app> Contactez votre administrateur système si vous avez besoin de réglages différents.</p>
     </item>
   </list>
 

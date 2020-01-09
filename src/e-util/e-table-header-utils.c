@@ -46,6 +46,7 @@ get_button_padding (GtkWidget *widget,
 
 	gtk_style_context_save (context);
 	gtk_style_context_add_class (context, GTK_STYLE_CLASS_BUTTON);
+	gtk_style_context_set_state (context, state_flags);
 	gtk_style_context_get_padding (context, state_flags, padding);
 
 	gtk_style_context_restore (context);
@@ -129,7 +130,7 @@ e_table_header_draw_button (cairo_t *cr,
 {
 	gint inner_x, inner_y;
 	gint inner_width, inner_height;
-	gint arrow_width = 0, arrow_height = 0;
+	gint arrow_width = 0, arrow_height = 0, text_height = 0;
 	PangoContext *pango_context;
 	PangoLayout *layout;
 	GtkStyleContext *context;
@@ -150,6 +151,10 @@ e_table_header_draw_button (cairo_t *cr,
 	gtk_style_context_save (context);
 	gtk_style_context_set_state (context, state_flags);
 	gtk_style_context_add_class (context, GTK_STYLE_CLASS_BUTTON);
+	if (!ecol->icon_name)
+		gtk_style_context_add_class (context, "text-button");
+	else
+		gtk_style_context_add_class (context, "image-button");
 
 	gtk_style_context_get_padding (context, state_flags, &padding);
 
@@ -170,6 +175,7 @@ e_table_header_draw_button (cairo_t *cr,
 		(padding.top + padding.bottom + 2 * HEADER_PADDING);
 
 	if (inner_width < 1 || inner_height < 1) {
+		gtk_style_context_restore (context);
 		return; /* nothing fits */
 	}
 
@@ -191,14 +197,19 @@ e_table_header_draw_button (cairo_t *cr,
 			inner_width -= arrow_width + HEADER_PADDING;
 		break;
 	default:
-		cairo_restore (cr);
-		g_return_if_reached ();
+		gtk_style_context_restore (context);
+		g_warn_if_reached ();
+		return;
 	}
 
 	if (inner_width < 1) {
 		gtk_style_context_restore (context);
 		return; /* nothing else fits */
 	}
+
+	layout = gtk_widget_create_pango_layout (widget, ecol->text);
+	pango_layout_get_pixel_size (layout, NULL, &text_height);
+	g_object_unref (layout);
 
 	pango_context = gtk_widget_create_pango_context (widget);
 	layout = pango_layout_new (pango_context);
@@ -231,7 +242,7 @@ e_table_header_draw_button (cairo_t *cr,
 				xpos = inner_x + (inner_width - width - (pwidth + 1)) / 2;
 			}
 
-			ypos = inner_y;
+			ypos = inner_y + MAX (0, (inner_height - text_height) / 2);
 
 			pango_layout_set_width (
 				layout, (inner_width - (xpos - inner_x)) *
@@ -249,7 +260,7 @@ e_table_header_draw_button (cairo_t *cr,
 	} else {
 		pango_layout_set_width (layout, inner_width * PANGO_SCALE);
 
-		gtk_render_layout (context, cr, inner_x, inner_y, layout);
+		gtk_render_layout (context, cr, inner_x, inner_y + MAX (0, (inner_height - text_height) / 2), layout);
 	}
 
 	switch (arrow) {
@@ -271,10 +282,9 @@ e_table_header_draw_button (cairo_t *cr,
 		break;
 	}
 
-	/* coverity[dead_error_begin] */
 	default:
-		cairo_restore (cr);
-		g_return_if_reached ();
+		g_warn_if_reached ();
+		break;
 	}
 
 	g_object_unref (layout);

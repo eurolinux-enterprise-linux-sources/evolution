@@ -6,7 +6,7 @@
 
     <link type="guide" xref="mail-displaying-message#advanced"/>
 
-    <revision pkgversion="3.9.1" version="0.4" date="2013-04-22" status="final"/>
+    <revision pkgversion="3.13.90" version="0.5" date="2015-03-10" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -28,19 +28,25 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
@@ -56,8 +62,7 @@
 
 <p>Im Falle mehrerer Suchtreffer für einen Kontakt wird immer der erste verwendet.</p>
 
-<!-- Note: <guiseq><gui>Edit</gui><gui>Plugins</gui><gui>Face</gui></guiseq> 
-has no influence at all, so it is not mentioned here. 
-See https://bugzilla.gnome.org/show_bug.cgi?id=698435 -->
+<!-- From https://bugzilla.gnome.org/show_bug.cgi?id=698435 : -->
+<note style="tip"><p>Fügen Sie Ihr eigenes Bild in Nachrichten ein, die Sie versenden. Nutzen Sie dazu <guiseq><gui>Bearbeiten</gui><gui>Erweiterungen</gui><gui>Gesicht</gui></guiseq>. Das Bild muss die Abmessungen 48 x 48 Pixel haben und im PNG-Format vorliegen.</p></note>
  
 </page>

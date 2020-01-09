@@ -111,7 +111,46 @@ create_snapshot_file (EMsgComposer *composer,
 		SNAPSHOT_FILE_KEY, snapshot_file,
 		(GDestroyNotify) delete_snapshot_file);
 
+	g_free (path);
+
 	return snapshot_file;
+}
+
+typedef struct _CreateComposerData {
+	GSimpleAsyncResult *simple;
+	LoadContext *context;
+	CamelMimeMessage *message;
+	GFile *snapshot_file;
+} CreateComposerData;
+
+static void
+autosave_composer_created_cb (GObject *source_object,
+			      GAsyncResult *result,
+			      gpointer user_data)
+{
+	CreateComposerData *ccd = user_data;
+	EMsgComposer *composer;
+	GError *error = NULL;
+
+	composer = e_msg_composer_new_finish (result, &error);
+	if (error) {
+		g_warning ("%s: Failed to create msg composer: %s", G_STRFUNC, error->message);
+		g_simple_async_result_take_error (ccd->simple, error);
+	} else {
+		e_msg_composer_setup_with_message (composer, ccd->message, TRUE, NULL, NULL);
+		g_object_set_data_full (
+			G_OBJECT (composer),
+			SNAPSHOT_FILE_KEY, g_object_ref (ccd->snapshot_file),
+			(GDestroyNotify) delete_snapshot_file);
+		ccd->context->composer = g_object_ref_sink (composer);
+	}
+
+	g_simple_async_result_complete (ccd->simple);
+
+	g_clear_object (&ccd->simple);
+	g_clear_object (&ccd->message);
+	g_clear_object (&ccd->snapshot_file);
+	g_free (ccd);
 }
 
 static void
@@ -122,11 +161,11 @@ load_snapshot_loaded_cb (GFile *snapshot_file,
 	EShell *shell;
 	GObject *object;
 	LoadContext *context;
-	EMsgComposer *composer;
 	CamelMimeMessage *message;
 	CamelStream *camel_stream;
 	gchar *contents = NULL;
 	gsize length;
+	CreateComposerData *ccd;
 	GError *local_error = NULL;
 
 	context = g_simple_async_result_get_op_res_gpointer (simple);
@@ -138,6 +177,7 @@ load_snapshot_loaded_cb (GFile *snapshot_file,
 		g_warn_if_fail (contents == NULL);
 		g_simple_async_result_take_error (simple, local_error);
 		g_simple_async_result_complete (simple);
+		g_object_unref (simple);
 		return;
 	}
 
@@ -155,6 +195,7 @@ load_snapshot_loaded_cb (GFile *snapshot_file,
 		g_simple_async_result_take_error (simple, local_error);
 		g_simple_async_result_complete (simple);
 		g_object_unref (message);
+		g_object_unref (simple);
 		return;
 	}
 
@@ -165,29 +206,29 @@ load_snapshot_loaded_cb (GFile *snapshot_file,
 	 * restore its snapshot file so it continues auto-saving to
 	 * the same file. */
 	shell = E_SHELL (object);
-	g_object_ref (snapshot_file);
-	composer = e_msg_composer_new_with_message (shell, message, TRUE, NULL);
-	g_object_set_data_full (
-		G_OBJECT (composer),
-		SNAPSHOT_FILE_KEY, snapshot_file,
-		(GDestroyNotify) delete_snapshot_file);
-	context->composer = g_object_ref_sink (composer);
-	g_object_unref (message);
+
+	ccd = g_new0 (CreateComposerData, 1);
+	ccd->simple = simple;
+	ccd->context = context;
+	ccd->message = message;
+	ccd->snapshot_file = g_object_ref (snapshot_file);
+
+	e_msg_composer_new (shell, autosave_composer_created_cb, ccd);
 
 	g_object_unref (object);
-
-	g_simple_async_result_complete (simple);
-	g_object_unref (simple);
 }
 
 static void
-save_snapshot_splice_cb (GOutputStream *output_stream,
+save_snapshot_splice_cb (CamelDataWrapper *data_wrapper,
                          GAsyncResult *result,
                          GSimpleAsyncResult *simple)
 {
 	GError *local_error = NULL;
 
-	g_output_stream_splice_finish (output_stream, result, &local_error);
+	g_return_if_fail (CAMEL_IS_DATA_WRAPPER (data_wrapper));
+	g_return_if_fail (g_task_is_valid (result, data_wrapper));
+
+	g_task_propagate_int (G_TASK (result), &local_error);
 
 	if (local_error != NULL)
 		g_simple_async_result_take_error (simple, local_error);
@@ -197,15 +238,38 @@ save_snapshot_splice_cb (GOutputStream *output_stream,
 }
 
 static void
+write_message_to_stream_thread (GTask *task,
+				gpointer source_object,
+				gpointer task_data,
+				GCancellable *cancellable)
+{
+	GOutputStream *output_stream;
+	gssize bytes_written;
+	GError *local_error = NULL;
+
+	output_stream = task_data;
+
+	bytes_written = camel_data_wrapper_decode_to_output_stream_sync (
+		CAMEL_DATA_WRAPPER (source_object),
+		output_stream, cancellable, &local_error);
+
+	g_output_stream_close (output_stream, cancellable, local_error ? NULL : &local_error);
+
+	if (local_error != NULL) {
+		g_task_return_error (task, local_error);
+	} else {
+		g_task_return_int (task, bytes_written);
+	}
+}
+
+static void
 save_snapshot_get_message_cb (EMsgComposer *composer,
                               GAsyncResult *result,
                               GSimpleAsyncResult *simple)
 {
 	SaveContext *context;
 	CamelMimeMessage *message;
-	GInputStream *input_stream;
-	CamelStream *camel_stream;
-	GByteArray *buffer;
+	GTask *task;
 	GError *local_error = NULL;
 
 	context = g_simple_async_result_get_op_res_gpointer (simple);
@@ -223,38 +287,14 @@ save_snapshot_get_message_cb (EMsgComposer *composer,
 
 	g_return_if_fail (CAMEL_IS_MIME_MESSAGE (message));
 
-	/* Decode the message to an in-memory buffer.  We have to do this
-	 * because CamelStreams are synchronous-only, and using threads is
-	 * dangerous because CamelDataWrapper is not reentrant. */
-	buffer = g_byte_array_new ();
-	camel_stream = camel_stream_mem_new ();
-	camel_stream_mem_set_byte_array (
-		CAMEL_STREAM_MEM (camel_stream), buffer);
-	camel_data_wrapper_decode_to_stream_sync (
-		CAMEL_DATA_WRAPPER (message), camel_stream, NULL, NULL);
-	g_object_unref (camel_stream);
+	task = g_task_new (message, context->cancellable, (GAsyncReadyCallback) save_snapshot_splice_cb, simple);
 
+	g_task_set_task_data (task, g_object_ref (context->output_stream), g_object_unref);
+
+	g_task_run_in_thread (task, write_message_to_stream_thread);
+
+	g_object_unref (task);
 	g_object_unref (message);
-
-	/* Load the buffer into a GMemoryInputStream. */
-	input_stream = g_memory_input_stream_new ();
-	if (buffer->len > 0)
-		g_memory_input_stream_add_data (
-			G_MEMORY_INPUT_STREAM (input_stream),
-			buffer->data, (gssize) buffer->len,
-			(GDestroyNotify) g_free);
-	g_byte_array_free (buffer, FALSE);
-
-	/* Splice the input and output streams. */
-	g_output_stream_splice_async (
-		context->output_stream, input_stream,
-		G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE |
-		G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET,
-		G_PRIORITY_DEFAULT, context->cancellable,
-		(GAsyncReadyCallback) save_snapshot_splice_cb,
-		simple);
-
-	g_object_unref (input_stream);
 }
 
 static void

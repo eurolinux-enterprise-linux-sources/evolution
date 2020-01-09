@@ -19,97 +19,77 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Sending a Meeting Invitation.</desc>
+    <desc>Skicka en sammanträdesinbjudan.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Sending a Meeting Invitation</title>
+  <title>Skicka en sammanträdesinbjudan</title>
 
-  <p>When you create a meeting (group appointment), you can specify the
-  attendees in several categories, such as "chair" or "required". When you save
-  the meeting listing, each attendee is sent an email with the meeting
-  information, which also gives them the option to respond.</p>
+  <p>När du skapar ett sammanträde (gruppmöte), kan du ange deltagare i flera kategorier, så som ”ordförande”, ”nödvändig”. När du sparar sammanträdeslistan kommer ett e-postmeddelande att skickas till varje deltagare med sammanträdesinformationen som också ger dem möjlighet att svara.</p>
 
-  <p>If you do not need to collect attendance information when you're
-  scheduling an event, and would rather just announce the event, right-click
-  the meeting and select <gui>Forward as iCalendar</gui>. This opens a new
-  email message with the event notification attached as an announcement.
-  Recipients can add the event to their calendars with one click, but it will
-  not automatically send you email about whether they plan to attend.</p>
+  <p>Om du inte behöver samla in information om deltagande när du bokar ett evenemang och hellre bara tillkännager evenemanget, högerklicka på mötet och välj <gui>Vidarebefordra som iCalendar…</gui>. Detta öppnar ett nytt e-postmeddelande med evenemangsaviseringen bifogad som ett tillkännagivande. Mottagare kan lägga till evenemanget till sina kalendrar med ett klick, men det kommer inte automatiskt att skicka e-post till dig om huruvida de planerar att deltaga.</p>
 
-  <p>To schedule a meeting:</p>
+  <p>För att boka ett sammanträde:</p>
 
   <steps>
     <item>
-      <p>Click
-      <guiseq><gui>File</gui><gui>New</gui><gui>Meeting</gui></guiseq>.</p>
+      <p>Klicka på <guiseq><gui>Arkiv</gui><gui>Nytt</gui><gui>Sammanträde</gui></guiseq>.</p>
     </item>
     <item>
-      <p>If you have multiple email accounts, select the one to use by
-      selecting an item in the <gui>Organizer</gui> field.</p>
+      <p>Om du har flera e-postkonton, välj vilket som ska användas genom att välja ett objekt i fältet <gui>Organisatör</gui>.</p>
     </item>
     <item>
-      <p>Select a calendar in the <gui>Calendar</gui> drop-down list.</p>
+      <p>Välj en kalender från rullgardinslistan <gui>Kalender</gui>.</p>
     </item>
     <item>
-      <p>Click <gui style="button">Add</gui> to add the email addresses of
-      people you want to invite.</p>
+      <p>Klicka på <gui style="button">Lägg till</gui> för att lägga till e-postadresserna för människor du vill bjuda in.</p>
     </item>
     <item>
-      <p>Click <gui>View</gui> in the menu bar to show or hide the
-      <gui>Type</gui>, <gui>Role</gui>, <gui>Status</gui>, and <gui>RSVP</gui>
-      fields.</p>
+      <p>Klicka på <gui>Visa</gui> i menyfältet för att visa eller gömma fälten <gui>Typ</gui>, <gui>Roll</gui>, <gui>Status</gui> och <gui>OSA</gui>.</p>
     </item>
     <item>
-      <p>Enter a brief summary in the <gui>Summary</gui> field.</p>
+      <p>Ange en kortfattad sammanfattning i fältet <gui>Sammanfattning</gui>.</p>
     </item>
     <item>
-      <p>(Optional) Type a location in the <gui>Location</gui> field.</p>
+      <p>(Valfritt) Ange platsen i fältet <gui>Plats</gui>.</p>
     </item>
     <item>
-      <p>To select this event as an all day event, click
-      <guiseq><gui>Options</gui><gui>All Day Event</gui></guiseq>, or click the
-      <gui>All Day Event</gui> button on the toolbar.</p>
+      <p>För att välja detta evenemang som ett heldagsevenemang, klicka på <guiseq><gui>Alternativ</gui><gui>Heldagsevenemang</gui></guiseq>, eller klicka på knappen <gui>Heldagsevenemang</gui> i verktygsfältet.</p>
     </item>
     <item>
-      <p>Select the date and time.</p>
+      <p>Välj datum och tid.</p>
     </item>
     <item>
-      <p>If the event is not an all day event, select either <gui>For</gui> to
-      specify the duration, or select <gui>Until</gui> to specify the ending
-      time of the event.</p>
+      <p>Om evenemanget inte är ett heldagsevenemang, välj antingen <gui>Varaktighet</gui> för att ange varaktigheten, eller välj <gui>Till</gui> för att ange sluttiden för evenemanget.</p>
     </item>
     <item>
-      <p>(Optional) Enter a description in the <gui>Description</gui>
-      field.</p>
+      <p>(Valfritt) Ange en beskrivning i fältet <gui>Beskrivning</gui>.</p>
     </item>
     <item>
-      <p>To query <link xref="calendar-free-busy">free/busy</link> information
-      for the attendees, click the <gui>Free/Busy</gui> button on the toolbar,
-      or click <guiseq><gui>Options</gui><gui>Free/Busy</gui></guiseq>.</p>
+      <p>För att rådfråga <link xref="calendar-free-busy">ledig-/upptagen-</link>informationen för deltagarna, klicka på knappen <gui>Ledig/Upptagen</gui> i verktygsfältet eller klicka på <guiseq><gui>Alternativ</gui><gui>Ledig/Upptagen</gui></guiseq>.</p>
     </item>
     <item>
-      <p>Click <gui>Save</gui> to save the meeting.</p>
+      <p>Klicka på <gui>Spara</gui> för att spara mötet.</p>
     </item>
   </steps>
 
-  <p>An email is sent out to all the recipients, inviting them to your
-  event.</p>
+  <p>Ett e-postmeddelande skickas ut till alla mottagarna som bjuder in dem till ditt evenemang.</p>
 
-  <p>You can also define a <link xref="calendar-timezones">time zone</link>, a
-  <link xref="using-categories">category</link>, a
-  <link xref="calendar-alarms-and-reminders">reminder</link>, a
-  <link xref="calendar-recurrence">recurrence</link>, or a
-  <link xref="calendar-classifications">classification</link> for the event, or
-  add an attachment.</p>
+  <p>Du kan också definiera en <link xref="calendar-timezones">tidszon</link>, en <link xref="using-categories">kategori</link>, en <link xref="calendar-alarms-and-reminders">påminnelse</link>, en <link xref="calendar-recurrence">upprepning</link>, eller en <link xref="calendar-classifications">klassificering</link> för evenemanget eller lägga till en bilaga.</p>
 
   <note style="tip">
-    <p>In <app>Evolution</app>, a meeting can have only one organizer, and only
-    the organizer can add participants to that meeting. Though it is possible
-    to change the organizer of a meeting, this is not recommended as a means to
-    invite additional participants to meetings. If you want to invite
-    additional people to a meeting and are not that meeting's organizer, it is
-    recommended that you forward the invitation message you received from the
-    original meeting organiser to additional participants.</p>
+    <p>I <app>Evolution</app> kan ett sammanträde bara ha en organisatör, och bara organisatören kan lägga till deltagare till sammanträdet. Även om det är möjligt att ändra organisatören för ett sammanträde är detta inte att rekommendera som ett sätt att bjuda in ytterligare deltagare till ett sammanträde. Om du vill bjuda in ytterligare människor till ett sammanträde och inte är sammanträdets organisatör, rekommenderas det att du vidarebefordrar meddelandet med inbjudan du fick från originalorganisatören för sammanträdet till ytterligare deltagare.</p>
   </note>
 
 </page>

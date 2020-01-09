@@ -488,6 +488,7 @@ ethi_add_drop_marker (ETableHeaderItem *ethi,
 	GnomeCanvas *canvas;
 	GtkAdjustment *adjustment;
 	GdkWindow *window;
+	GtkWidget *toplevel;
 	gint rx, ry;
 	gint x;
 
@@ -506,6 +507,12 @@ ethi_add_drop_marker (ETableHeaderItem *ethi,
 	}
 
 	canvas = GNOME_CANVAS_ITEM (ethi)->canvas;
+	toplevel = gtk_widget_get_toplevel (GTK_WIDGET (canvas));
+	if (GTK_IS_WINDOW (toplevel)) {
+		gtk_window_set_transient_for (GTK_WINDOW (arrow_up), GTK_WINDOW (toplevel));
+		gtk_window_set_transient_for (GTK_WINDOW (arrow_down), GTK_WINDOW (toplevel));
+	}
+
 	window = gtk_widget_get_window (GTK_WIDGET (canvas));
 	gdk_window_get_origin (window, &rx, &ry);
 
@@ -714,20 +721,29 @@ ethi_drag_motion (GtkWidget *widget,
 {
 	GtkAllocation allocation;
 	GtkAdjustment *adjustment;
-	GList *targets;
+	GList *targets, *link;
 	gdouble hadjustment_value;
 	gdouble vadjustment_value;
-	gchar *droptype, *headertype;
+	gchar *headertype;
 	guint direction = 0;
 
 	gdk_drag_status (context, 0, time);
 
+	headertype = g_strdup_printf ("%s-%s", TARGET_ETABLE_COL_TYPE, ethi->dnd_code);
 	targets = gdk_drag_context_list_targets (context);
-	droptype = gdk_atom_name (GDK_POINTER_TO_ATOM (targets->data));
-	headertype = g_strdup_printf (
-		"%s-%s", TARGET_ETABLE_COL_TYPE, ethi->dnd_code);
+	for (link = targets; link; link = g_list_next (link)) {
+		gchar *droptype;
 
-	if (strcmp (droptype, headertype) != 0) {
+		droptype = gdk_atom_name (GDK_POINTER_TO_ATOM (link->data));
+		if (g_strcmp0 (droptype, headertype) == 0) {
+			g_free (droptype);
+			break;
+		}
+
+		g_free (droptype);
+	}
+
+	if (!link) {
 		g_free (headertype);
 		return FALSE;
 	}
@@ -904,6 +920,20 @@ ethi_drag_leave (GtkWidget *widget,
 }
 
 static void
+ethi_style_updated_cb (GtkWidget *widget,
+		       ETableHeaderItem *ethi)
+{
+	PangoContext *pango_context;
+
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+	g_return_if_fail (E_IS_TABLE_HEADER_ITEM (ethi));
+
+	pango_context = gtk_widget_get_pango_context (widget);
+
+	ethi_font_set (ethi, pango_context_get_font_description (pango_context));
+}
+
+static void
 ethi_realize (GnomeCanvasItem *item)
 {
 	ETableHeaderItem *ethi = E_TABLE_HEADER_ITEM (item);
@@ -921,6 +951,10 @@ ethi_realize (GnomeCanvasItem *item)
 
 		ethi_font_set (ethi, pango_context_get_font_description (pango_context));
 	}
+
+	g_signal_connect (
+		item->canvas, "style-updated",
+		G_CALLBACK (ethi_style_updated_cb), ethi);
 
 	/*
 	 * Now, configure DnD
@@ -965,6 +999,8 @@ ethi_unrealize (GnomeCanvasItem *item)
 		pango_font_description_free (ethi->font_desc);
 		ethi->font_desc = NULL;
 	}
+
+	g_signal_handlers_disconnect_by_func (item->canvas, G_CALLBACK (ethi_style_updated_cb), ethi);
 
 	g_signal_handler_disconnect (item->canvas, ethi->drag_motion_id);
 	g_signal_handler_disconnect (item->canvas, ethi->drag_leave_id);
@@ -1474,6 +1510,7 @@ ethi_popup_field_chooser (GtkWidget *widget,
                           EthiHeaderInfo *info)
 {
 	GtkWidget *etfcd = info->ethi->etfcd.widget;
+	GtkWidget *toplevel;
 
 	if (etfcd) {
 		gtk_window_present (GTK_WINDOW (etfcd));
@@ -1483,6 +1520,10 @@ ethi_popup_field_chooser (GtkWidget *widget,
 
 	info->ethi->etfcd.widget = e_table_field_chooser_dialog_new ();
 	etfcd = info->ethi->etfcd.widget;
+
+	toplevel = gtk_widget_get_toplevel (widget);
+	if (GTK_IS_WINDOW (toplevel))
+		gtk_window_set_transient_for (GTK_WINDOW (etfcd), GTK_WINDOW (toplevel));
 
 	g_object_add_weak_pointer (G_OBJECT (etfcd), &info->ethi->etfcd.pointer);
 
@@ -1604,7 +1645,7 @@ static EPopupMenu ethi_context_menu[] = {
 		N_("Sort _Descending"),
 		G_CALLBACK (ethi_popup_sort_descending), 2),
 	E_POPUP_ITEM (
-		N_("_Unsort"), G_CALLBACK (ethi_popup_unsort), 0),
+		N_("_Reset sort"), G_CALLBACK (ethi_popup_unsort), 0),
 	E_POPUP_SEPARATOR,
 	E_POPUP_ITEM (
 		N_("Group By This _Field"),
@@ -1780,6 +1821,9 @@ ethi_header_context_menu (ETableHeaderItem *ethi,
 		popup, "selection-done",
 		G_CALLBACK (free_popup_info), info);
 
+	gtk_menu_attach_to_widget (GTK_MENU (popup),
+				   GTK_WIDGET (ethi->parent.canvas),
+				   NULL);
 	gtk_menu_popup (
 		GTK_MENU (popup),
 		NULL, NULL, NULL, NULL,
@@ -2005,8 +2049,10 @@ ethi_event (GnomeCanvasItem *item,
 				ethi->click_x = event_x_win;
 				ethi->click_y = event_y_win;
 				ethi->maybe_drag = TRUE;
+				col = -1;
 				is_pointer_on_division (ethi, x, &start, &col);
-				ethi->selected_col = col;
+				if (col != -1)
+					ethi->selected_col = col;
 				if (gtk_widget_get_can_focus (GTK_WIDGET (item->canvas)))
 					e_canvas_item_grab_focus (item, TRUE);
 			} else if (event_button == 3) {
@@ -2082,6 +2128,9 @@ ethi_event (GnomeCanvasItem *item,
 			g_signal_connect (
 				popup, "selection-done",
 				G_CALLBACK (free_popup_info), info);
+			gtk_menu_attach_to_widget (GTK_MENU (popup),
+						   GTK_WIDGET (canvas),
+						   NULL);
 			gtk_menu_popup (
 				GTK_MENU (popup),
 				NULL, NULL, NULL, NULL,

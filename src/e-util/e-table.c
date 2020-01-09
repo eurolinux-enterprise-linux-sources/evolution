@@ -169,8 +169,10 @@ static gint et_focus (GtkWidget *container, GtkDirectionType direction);
 static void scroll_off (ETable *et);
 static void scroll_on (ETable *et, guint scroll_direction);
 
+static void e_table_scrollable_init (GtkScrollableInterface *iface);
+
 G_DEFINE_TYPE_WITH_CODE (ETable, e_table, GTK_TYPE_TABLE,
-			 G_IMPLEMENT_INTERFACE (GTK_TYPE_SCROLLABLE, NULL))
+			 G_IMPLEMENT_INTERFACE (GTK_TYPE_SCROLLABLE, e_table_scrollable_init))
 
 static void
 et_disconnect_model (ETable *et)
@@ -725,6 +727,9 @@ e_table_setup_header (ETable *e_table)
 {
 	gchar *pointer;
 	e_table->header_canvas = GNOME_CANVAS (e_canvas_new ());
+	gtk_style_context_add_class (
+		gtk_widget_get_style_context (GTK_WIDGET (e_table->header_canvas)),
+		"table-header");
 
 	gtk_widget_show (GTK_WIDGET (e_table->header_canvas));
 
@@ -1251,16 +1256,67 @@ et_canvas_realize (GtkWidget *canvas,
 	set_header_width (e_table);
 }
 
+static ETableItem *
+get_first_etable_item (ETableGroup *table_group)
+{
+	ETableItem *res = NULL;
+	GnomeCanvasGroup *group;
+	GList *link;
+
+	g_return_val_if_fail (E_IS_TABLE_GROUP (table_group), NULL);
+
+	group = GNOME_CANVAS_GROUP (table_group);
+	g_return_val_if_fail (group != NULL, NULL);
+
+	for (link = group->item_list; link && !res; link = g_list_next (link)) {
+		GnomeCanvasItem *item;
+
+		item = GNOME_CANVAS_ITEM (link->data);
+
+		if (E_IS_TABLE_GROUP (item))
+			res = get_first_etable_item (E_TABLE_GROUP (item));
+		else if (E_IS_TABLE_ITEM (item)) {
+			res = E_TABLE_ITEM (item);
+		}
+	}
+
+	return res;
+}
+
+/* Finds the first descendant of the group that is an ETableItem and focuses it */
+static void
+focus_first_etable_item (ETableGroup *group)
+{
+	ETableItem *item;
+
+	item = get_first_etable_item (group);
+	if (item) {
+		e_table_item_set_cursor (item, 0, 0);
+		gnome_canvas_item_grab_focus (GNOME_CANVAS_ITEM (item));
+	}
+}
+
 static gboolean
 white_item_event (GnomeCanvasItem *white_item,
                   GdkEvent *event,
                   ETable *e_table)
 {
-	gboolean return_val = 0;
+	gboolean return_val = FALSE;
 
 	g_signal_emit (
 		e_table, et_signals[WHITE_SPACE_EVENT], 0,
 		event, &return_val);
+
+	if (!return_val && event && e_table->group) {
+		guint event_button = 0;
+
+		gdk_event_get_button (event, &event_button);
+
+		if (event->type == GDK_BUTTON_PRESS && (event_button == 1 || event_button == 2)) {
+			focus_first_etable_item (e_table->group);
+			return_val = TRUE;
+		}
+	}
 
 	return return_val;
 }
@@ -1298,29 +1354,6 @@ et_canvas_root_event (GnomeCanvasItem *root,
 	}
 
 	return FALSE;
-}
-
-/* Finds the first descendant of the group that is an ETableItem and focuses it */
-static void
-focus_first_etable_item (ETableGroup *group)
-{
-	GnomeCanvasGroup *cgroup;
-	GList *l;
-
-	cgroup = GNOME_CANVAS_GROUP (group);
-
-	for (l = cgroup->item_list; l; l = l->next) {
-		GnomeCanvasItem *i;
-
-		i = GNOME_CANVAS_ITEM (l->data);
-
-		if (E_IS_TABLE_GROUP (i))
-			focus_first_etable_item (E_TABLE_GROUP (i));
-		else if (E_IS_TABLE_ITEM (i)) {
-			e_table_item_set_cursor (E_TABLE_ITEM (i), 0, 0);
-			gnome_canvas_item_grab_focus (i);
-		}
-	}
 }
 
 /* Handler for focus events in the table_canvas; we have to repaint ourselves
@@ -3509,6 +3542,39 @@ e_table_class_init (ETableClass *class)
 
 	gtk_widget_class_set_accessible_type (widget_class,
 		GAL_A11Y_TYPE_E_TABLE);
+}
+
+#if GTK_CHECK_VERSION (3, 15, 9)
+static gboolean
+e_table_scrollable_get_border (GtkScrollable *scrollable,
+			       GtkBorder *border)
+{
+	ETable *table;
+	ETableHeaderItem *header_item;
+
+	g_return_val_if_fail (E_IS_TABLE (scrollable), FALSE);
+	g_return_val_if_fail (border != NULL, FALSE);
+
+	table = E_TABLE (scrollable);
+	if (!table->header_item)
+		return FALSE;
+
+	g_return_val_if_fail (E_IS_TABLE_HEADER_ITEM (table->header_item), FALSE);
+
+	header_item = E_TABLE_HEADER_ITEM (table->header_item);
+
+	border->top = header_item->height;
+
+	return TRUE;
+}
+#endif
+
+static void
+e_table_scrollable_init (GtkScrollableInterface *iface)
+{
+#if GTK_CHECK_VERSION (3, 15, 9)
+	iface->get_border = e_table_scrollable_get_border;
+#endif
 }
 
 void

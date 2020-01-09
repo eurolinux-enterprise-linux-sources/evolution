@@ -17,9 +17,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -38,5 +44,5 @@
 <title>Exportar datos del calendario</title>
 
 <p>Para exportar un calendario completo, pulse con el botón derecho del ratón sobre el calendario en la lista de calendarios y pulse <gui>Guardar como</gui>. Los formatos disponibles son el formato iCalendar (ICS, recomendado), valores separados por comas (CSV) y formato RDF.</p>
-<p>Si quiere exportar un sólo contacto (o una tarea o una nota) pulse <guiseq><gui>Archivo</gui><gui>Guardar como iCalendar...</gui></guiseq> o pulse con el botón derecho del ratón sobre el contacto y pulse <gui>Guardar como iCalendar</gui>.</p>
+<p>Si quiere exportar un sólo contacto (o una tarea o una nota) pulse <guiseq><gui>Archivo</gui><gui>Guardar como iCalendar…</gui></guiseq> o pulse con el botón derecho del ratón sobre el contacto y pulse <gui>Guardar como iCalendar…</gui>.</p>
 </page>

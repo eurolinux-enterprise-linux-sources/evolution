@@ -50,7 +50,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -59,7 +59,7 @@
 <section id="received-messages">
 <title>Courriel reçu</title>
 
-<p>Si l'application de messagerie de l'expéditeur ne fonctionne pas bien ou est mal configurée, il se peut que les courriels de texte n'incluent pas d'informations sur le codage de caractères utilisé. Si vous recevez de tels messages, choisissez <guiseq><gui>Affichage</gui><gui>Codage des caractères</gui></guiseq> dans le menu principal et changez le codage de caractères actuellement sélectionné pour un plus approprié qui pourrait être celui utilisé par l'expéditeur. Vous devez faire cette modification à chaque fois que vous lisez le message.</p>
+<p>Si l'application de messagerie de l'expéditeur ne fonctionne pas bien ou est mal configurée, il se peut que les courriels de texte n'incluent pas d'informations sur le codage de caractères qui est utilisé. Si vous recevez de tels messages, choisissez <guiseq><gui>Affichage</gui><gui>Codage des caractères</gui></guiseq> dans le menu principal et changez le codage de caractères actuellement sélectionné pour un plus approprié qui pourrait être celui utilisé par l'expéditeur. Vous devez faire cette modification à chaque fois que vous lisez le message.</p>
 <p>Pour que cela devienne le paramétrage par défaut, allez dans <guiseq><gui>Édition</gui><gui>Préférences</gui><gui>Préférences du courriel</gui><gui>Général</gui><gui>Codage des caractères par défaut</gui></guiseq>.</p>
 
 </section>

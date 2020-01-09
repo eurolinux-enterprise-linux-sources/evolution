@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-composer-html-rule" xml:lang="cs">
 
   <info>
-    <desc>Insert a horizontal line in the mail composer.</desc>
+    <desc>Jak v editoru zpráv vložit vodorovnou oddělovací čáru.</desc>
     <link type="guide" xref="mail-composer-html#formatting-options-html"/>
 
     <revision pkgversion="3.5.90" version="0.4" date="2012-08-16" status="final"/>
@@ -16,18 +16,30 @@
     
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Inserting a Rule in HTML</title>
+<title>Vložení čáry v HTML</title>
 
-<p>You can insert a horizontal line into the email (at the current position of the cursor) to help divide two sections:</p>
+<p>Do e-mailu můžete vložit vodorovnou čáru (na místo aktuální pozice kurzoru), čímž zprávu opticky rozdělíte na dvě části:</p>
 <steps>
-<item><p>Click <guiseq><gui>Insert</gui><gui>Rule...</gui></guiseq> in the menubar.</p></item>
-<item><p>Select width, size, and alignment.</p></item>
-<item><p>Select <gui>Shaded</gui> if wanted.</p></item>
+<item><p>V liště nabídek klikněte na <guiseq><gui>Vložit</gui> <gui>Oddělovací čára…</gui></guiseq></p></item>
+<item><p>Vyberte šířku, velikost a zarovnání.</p></item>
+<item><p>Jestli chcete, vyberte, že má být <gui>Stínovaná</gui>.</p></item>
 <item><p>Klikněte na <gui>Zavřít</gui>.</p></item>
 </steps>
 
-<p>Alternately, you can also use the <media type="image" its:translate="no" src="./figures/html-composer-insert-rule.png"/> icon in the second bar below the <gui>Subject</gui> line.</p>
+<p>Případně můžete také použít ikonu <media type="image" its:translate="no" src="./figures/html-composer-insert-rule.png"/> ve druhé liště pod řádkem <gui>Předmět</gui>.</p>
 
 </page>

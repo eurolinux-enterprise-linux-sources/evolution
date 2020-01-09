@@ -48,14 +48,13 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
   <title>Modification d'un rendez-vous</title>
 
-  <p>If you want to change an appointment that already exists in your
-  calendars:</p>
+  <p>Si vous souhaitez modifier un rendez-vous qui existe déjà dans vos agendas :</p>
 
   <steps>
     <item>
@@ -65,7 +64,7 @@
       <p>modifiez le rendez-vous (consultez <link xref="calendar-usage-add-appointment">Ajout d'un rendez-vous</link> pour la liste des options disponibles),</p>
     </item>
     <item>
-      <p>cliquez sur le bouton <gui style="button">Enregistrer</gui> ou utilisez le menu <guiseq><gui>Fichier</gui><gui>Enregistrer</gui></guiseq>.</p>
+      <p>Cliquez sur le bouton <gui style="button">Enregistrer</gui> ou utilisez le menu <guiseq><gui>Fichier</gui><gui>Enregistrer</gui></guiseq>.</p>
     </item>
   </steps>
 

@@ -52,23 +52,26 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
   <title>Formats de fichier pris en charge</title>
 
-<p>Evolution est capable d'importer les types de fichiers suivants :</p>
+<p><app>Evolution</app> can import the following types of files:</p>
 
 <section id="mail">
 <title>Messagerie</title>
 <list>
 <item><p>Berkeley Mailbox (.mbox ou sans extension) :</p>
-<p>Le format de courriels utilisé par Mozilla, Netscape, Evolution (pour les dossiers locaux avant la version 2.32), Eudora et bien d'autres logiciels de messagerie.</p></item>
+<p>The email format used by <app>Mozilla</app>, <app>Netscape</app>, <app>Evolution</app> (for local folders until version 2.32), <app>Eudora</app>, and many other email clients.
+</p></item>
 <item><p>Maildir (sans extension) :</p>
-<p>Le format utilisé par Evolution (pour les dossiers locaux depuis la version 3.0). Vous n'avez pas besoin d'importer des fichiers Maildir puisque vous pouvez <link xref="mail-account-manage-maildir-format-directories">configurer un compte Maildir</link> dans Evolution et pointer vers le dossier où les fichiers Maildir sont enregistrés.</p></item>
+<p>The format used by <app>Evolution</app> (for local folders since version 3.0). There is no need to import Maildir files as you can <link xref="mail-account-manage-maildir-format-directories">configure a Maildir account</link> in <app>Evolution</app> and point to the folder where the Maildir files are stored.
+</p></item>
 <item><p>Dossiers personnels Outlook Express 5/6 (.dbx) :</p>
-<p>Le format de fichier de courriels utilisé par Microsoft Outlook Express 5/6. Pour les nouvelles versions, l'importation PST est recommandée.</p></item>
+<p>The email file format used by <app>Microsoft Outlook Express 5/6</app>. For newer versions PST import is recommended.
+</p></item>
 </list>
 </section>
 
@@ -76,9 +79,11 @@
 <title>Agenda</title>
 <list>
 <item><p>vCalendar (.vcs) :</p>
-<p>Un format de stockage de fichiers d'agenda, utilisé généralement par Evolution, MS Outlook, Sunbird et Korganizer.</p></item>
+<p>A format for storing calendar files, which is generally used by <app>Evolution</app>, <app>Microsoft Outlook</app>, <app>Sunbird</app>, and <app>Korganizer</app>.
+</p></item>
 <item><p>iCalendar ou iCal (.ics) :</p>
-<p>Un format de stockage de fichiers d'agenda. iCalendar est utilisé par Evolution, Microsoft Outlook, portable Palm OS et d'autres.</p></item>
+<p>A format for storing calendar files. iCalendar is used by <app>Evolution</app>, <app>Microsoft Outlook</app>, Palm OS handhelds, and others.
+</p></item>
 </list>
 </section>
 
@@ -95,10 +100,13 @@
 <section id="misc">
 <title>Divers</title>
 <list>
-<item><p>Evolution/Mozilla/Outlook CSV/Tab (.csv, .tab) :</p>
-<p>Les fichiers Tabulator ou CSV (Comma-separated values : valeurs séparées par des virgules) enregistrés par Evolution, MS Outlook et Mozilla.</p></item>
+<item><p>
+<app>Evolution</app>/Mozilla/Outlook CSV/Tab (.csv, .tab):</p>
+<p>CSV (Comma-separated values) or Tabulator files saved by using <app>Evolution</app>, <app>Microsoft Outlook</app> and <app>Mozilla</app>.
+</p></item>
 <item><p>Dossiers personnels Outlook (.pst) :</p>
-<p>Un format de fichier utilisé pour stocker des copies locales des messages, des événements de l'agenda et d'autres objets avec les logiciels Microsoft, tels que le client Microsoft Exchange, Windows Messaging et Microsoft Outlook. Il est aussi appelé « Personal Storage Table » (table d'enregistrement personnel).</p></item>
+<p>A file format used to store local copies of messages, calendar events, and other items within Microsoft software such as <app>Microsoft Exchange Client</app>, <app>Windows Messaging</app>, and <app>Microsoft Outlook</app>. It is also called "Personal Storage Table".
+</p></item>
 </list>
 </section>
 

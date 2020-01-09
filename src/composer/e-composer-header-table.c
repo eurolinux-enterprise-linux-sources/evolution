@@ -50,6 +50,8 @@ struct _EComposerHeaderTablePrivate {
 	GtkWidget *signature_combo_box;
 	ENameSelector *name_selector;
 	EClientCache *client_cache;
+
+	gchar *previous_from_uid;
 };
 
 enum {
@@ -270,7 +272,7 @@ composer_header_table_setup_mail_headers (EComposerHeaderTable *table)
 	GSettings *settings;
 	gint ii;
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 	for (ii = 0; ii < E_COMPOSER_NUM_HEADERS; ii++) {
 		EComposerHeader *header;
@@ -281,6 +283,10 @@ composer_header_table_setup_mail_headers (EComposerHeaderTable *table)
 		header = e_composer_header_table_get_header (table, ii);
 
 		switch (ii) {
+			case E_COMPOSER_HEADER_FROM:
+				key = "composer-show-from-override";
+				break;
+
 			case E_COMPOSER_HEADER_BCC:
 				key = "composer-show-bcc";
 				break;
@@ -325,11 +331,18 @@ composer_header_table_setup_mail_headers (EComposerHeaderTable *table)
 		e_composer_header_set_sensitive (header, sensitive);
 		e_composer_header_set_visible (header, visible);
 
-		if (key != NULL)
-			g_settings_bind (
-				settings, key,
-				header, "visible",
-				G_SETTINGS_BIND_DEFAULT);
+		if (key != NULL) {
+			if (ii == E_COMPOSER_HEADER_FROM)
+				g_settings_bind (
+					settings, key,
+					header, "override-visible",
+					G_SETTINGS_BIND_DEFAULT);
+			else
+				g_settings_bind (
+					settings, key,
+					header, "visible",
+					G_SETTINGS_BIND_DEFAULT);
+		}
 	}
 
 	g_object_unref (settings);
@@ -341,7 +354,7 @@ composer_header_table_setup_post_headers (EComposerHeaderTable *table)
 	GSettings *settings;
 	gint ii;
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 	for (ii = 0; ii < E_COMPOSER_NUM_HEADERS; ii++) {
 		EComposerHeader *header;
@@ -455,10 +468,13 @@ composer_header_table_from_changed_cb (EComposerHeaderTable *table)
 	ESource *mail_account = NULL;
 	EComposerHeader *header;
 	EComposerHeaderType type;
+	EComposerFromHeader *from_header;
 	EComposerPostHeader *post_header;
 	EComposerTextHeader *text_header;
 	EDestination **old_destinations;
 	EDestination **new_destinations;
+	const gchar *name = NULL;
+	const gchar *address = NULL;
 	const gchar *reply_to = NULL;
 	const gchar * const *bcc = NULL;
 	const gchar * const *cc = NULL;
@@ -492,12 +508,51 @@ composer_header_table_from_changed_cb (EComposerHeaderTable *table)
 		extension_name = E_SOURCE_EXTENSION_MAIL_COMPOSITION;
 		mc = e_source_get_extension (source, extension_name);
 
+		name = e_source_mail_identity_get_name (mi);
+		address = e_source_mail_identity_get_address (mi);
 		reply_to = e_source_mail_identity_get_reply_to (mi);
 		bcc = e_source_mail_composition_get_bcc (mc);
 		cc = e_source_mail_composition_get_cc (mc);
 
+		if (table->priv->previous_from_uid) {
+			ESource *previous_source;
+
+			previous_source = e_composer_header_table_ref_source (table, table->priv->previous_from_uid);
+			if (previous_source && e_source_has_extension (previous_source, E_SOURCE_EXTENSION_MAIL_IDENTITY)) {
+				const gchar *previous_reply_to;
+				const gchar *current_reply_to;
+				gboolean matches;
+
+				mi = e_source_get_extension (previous_source, E_SOURCE_EXTENSION_MAIL_IDENTITY);
+				previous_reply_to = e_source_mail_identity_get_reply_to (mi);
+
+				header = e_composer_header_table_get_header (table, E_COMPOSER_HEADER_REPLY_TO);
+				text_header = E_COMPOSER_TEXT_HEADER (header);
+				current_reply_to = e_composer_text_header_get_text (text_header);
+
+				matches = ((!current_reply_to || !*current_reply_to) && (!previous_reply_to || !*previous_reply_to)) ||
+					g_strcmp0 (current_reply_to, previous_reply_to) == 0;
+
+				/* Do not change Reply-To, if the user changed it. */
+				if (!matches)
+					reply_to = current_reply_to;
+			}
+		}
+
+		g_free (table->priv->previous_from_uid);
+		table->priv->previous_from_uid = g_strdup (e_source_get_uid (source));
+
 		g_object_unref (source);
+	} else {
+		g_free (table->priv->previous_from_uid);
+		table->priv->previous_from_uid = NULL;
 	}
+
+	type = E_COMPOSER_HEADER_FROM;
+	header = e_composer_header_table_get_header (table, type);
+	from_header = E_COMPOSER_FROM_HEADER (header);
+	e_composer_from_header_set_name (from_header, name);
+	e_composer_from_header_set_address (from_header, address);
 
 	type = E_COMPOSER_HEADER_POST_TO;
 	header = e_composer_header_table_get_header (table, type);
@@ -740,6 +795,9 @@ composer_header_table_dispose (GObject *object)
 		priv->client_cache = NULL;
 	}
 
+	g_free (priv->previous_from_uid);
+	priv->previous_from_uid = NULL;
+
 	/* Chain up to parent's dispose() method. */
 	G_OBJECT_CLASS (e_composer_header_table_parent_class)->dispose (object);
 }
@@ -748,6 +806,7 @@ static void
 composer_header_table_constructed (GObject *object)
 {
 	EComposerHeaderTable *table;
+	EComposerFromHeader *from_header;
 	ENameSelector *name_selector;
 	EClientCache *client_cache;
 	ESourceRegistry *registry;
@@ -802,6 +861,8 @@ composer_header_table_constructed (GObject *object)
 
 	header = e_composer_spell_header_new_label (registry, _("S_ubject:"));
 	composer_header_table_bind_header ("subject", "changed", header);
+	e_composer_header_set_title_has_tooltip (header, FALSE);
+	e_composer_header_set_input_has_tooltip (header, FALSE);
 	table->priv->headers[E_COMPOSER_HEADER_SUBJECT] = header;
 
 	widget = e_mail_signature_combo_box_new (registry);
@@ -819,14 +880,19 @@ composer_header_table_constructed (GObject *object)
 	row_padding = 3;
 
 	for (ii = 0; ii < G_N_ELEMENTS (table->priv->headers); ii++) {
+		gint row = ii;
+
+		if (ii > E_COMPOSER_HEADER_FROM)
+			row++;
+
 		gtk_table_attach (
 			GTK_TABLE (object),
 			table->priv->headers[ii]->title_widget, 0, 1,
-			ii, ii + 1, GTK_FILL, GTK_FILL, 0, row_padding);
+			row, row + 1, GTK_FILL, GTK_FILL, 0, row_padding);
 		gtk_table_attach (
 			GTK_TABLE (object),
 			table->priv->headers[ii]->input_widget, 1, 4,
-			ii, ii + 1, GTK_FILL | GTK_EXPAND, 0, 0, row_padding);
+			row, row + 1, GTK_FILL | GTK_EXPAND, 0, 0, row_padding);
 	}
 
 	ii = E_COMPOSER_HEADER_FROM;
@@ -837,12 +903,12 @@ composer_header_table_constructed (GObject *object)
 		table->priv->headers[ii]->input_widget,
 		"right-attach", 2, NULL);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		table->priv->headers[ii]->input_widget, "visible",
 		table->priv->signature_label, "visible",
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		table->priv->headers[ii]->input_widget, "visible",
 		table->priv->signature_combo_box, "visible",
 		G_BINDING_SYNC_CREATE);
@@ -856,6 +922,13 @@ composer_header_table_constructed (GObject *object)
 		GTK_TABLE (object),
 		table->priv->signature_combo_box,
 		3, 4, ii, ii + 1, 0, 0, 0, row_padding);
+
+	from_header = E_COMPOSER_FROM_HEADER (e_composer_header_table_get_header (table, E_COMPOSER_HEADER_FROM));
+
+	gtk_table_attach (
+		GTK_TABLE (object),
+		from_header->override_widget, 1, 2,
+		ii + 1, ii + 2, GTK_FILL, GTK_FILL, 0, row_padding);
 
 	/* Initialize the headers. */
 	composer_header_table_from_changed_cb (table);
@@ -1091,7 +1164,7 @@ e_composer_header_table_get_destinations (EComposerHeaderTable *table)
 		destinations[--total] = g_object_ref (to[--n_to]);
 
 	/* Counters should all be zero now. */
-	g_assert (total == 0 && n_to == 0 && n_cc == 0 && n_bcc == 0);
+	g_return_val_if_fail (total == 0 && n_to == 0 && n_cc == 0 && n_bcc == 0, destinations);
 
 	e_destination_freev (to);
 	e_destination_freev (cc);
@@ -1293,6 +1366,38 @@ e_composer_header_table_set_identity_uid (EComposerHeaderTable *table,
 	from_header = E_COMPOSER_FROM_HEADER (header);
 
 	e_composer_from_header_set_active_id (from_header, identity_uid);
+}
+
+const gchar *
+e_composer_header_table_get_from_name (EComposerHeaderTable *table)
+{
+	EComposerHeader *header;
+	EComposerHeaderType type;
+	EComposerFromHeader *from_header;
+
+	g_return_val_if_fail (E_IS_COMPOSER_HEADER_TABLE (table), NULL);
+
+	type = E_COMPOSER_HEADER_FROM;
+	header = e_composer_header_table_get_header (table, type);
+	from_header = E_COMPOSER_FROM_HEADER (header);
+
+	return e_composer_from_header_get_name (from_header);
+}
+
+const gchar *
+e_composer_header_table_get_from_address (EComposerHeaderTable *table)
+{
+	EComposerHeader *header;
+	EComposerHeaderType type;
+	EComposerFromHeader *from_header;
+
+	g_return_val_if_fail (E_IS_COMPOSER_HEADER_TABLE (table), NULL);
+
+	type = E_COMPOSER_HEADER_FROM;
+	header = e_composer_header_table_get_header (table, type);
+	from_header = E_COMPOSER_FROM_HEADER (header);
+
+	return e_composer_from_header_get_address (from_header);
 }
 
 GList *

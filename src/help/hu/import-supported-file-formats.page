@@ -18,21 +18,45 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
   <title>Támogatott fájlformátumok</title>
 
-<p>Az Evolution a következő fájltípusokat tudja importálni:</p>
+<p>Az <app>Evolution</app> a következő fájltípusokat tudja importálni:</p>
 
 <section id="mail">
 <title>Levelezés</title>
 <list>
 <item><p>Berkeley Mailbox (.mbox vagy nincs kiterjesztése):</p>
-<p>A Mozilla, Netscape, Evolution (helyi mappák esetén a 2.32-es verzióig), Eudora és sok más levelezőkliens által használt e-mail formátum.</p></item>
+<p>A <app>Mozilla</app>, <app>Netscape</app>, <app>Evolution</app> (helyi mappák esetén a 2.32-es verzióig), <app>Eudora</app> és sok más levelezőkliens által használt e-mail formátum.</p></item>
 <item><p>Maildir (nincs kiterjesztése):</p>
-<p>Az Evolution által (helyi mappákhoz a 3.0 verzió óta) használt formátum. A Maildir fájlok importálása nem szükséges, mivel <link xref="mail-account-manage-maildir-format-directories">beállíthat egy Maildir fiókot</link> az Evolutionben, és megadhatja hozzá a Maildir fájlokat tároló mappát.</p></item>
+<p>Az <app>Evolution</app> által (helyi mappákhoz a 3.0 verzió óta) használt formátum. A Maildir fájlok importálása nem szükséges, mivel <link xref="mail-account-manage-maildir-format-directories">beállíthat egy Maildir fiókot</link> az <app>Evolutionben</app>, és megadhatja hozzá a Maildir fájlokat tároló mappát.</p></item>
 <item><p>Outlook Express 5/6 személyes mappák (.dbx):</p>
-<p>A Microsoft Outlook Express 5/6 által használt e-mail fájlformátum. Újabb verziókhoz a PST-importálás szükséges.</p></item>
+<p>A <app>Microsoft Outlook Express 5/6</app> által használt e-mail fájlformátum. Újabb verziókhoz a PST-importálás szükséges.</p></item>
 </list>
 </section>
 
@@ -40,9 +64,9 @@
 <title>Naptár</title>
 <list>
 <item><p>vCalendar (.vcs):</p>
-<p>Naptárfájlok tárolására használt formátum, amelyet az Evolution, Microsoft Outlook, Sunbird és Korganizer szoftverek használnak.</p></item>
+<p>Naptárfájlok tárolására használt formátum, amelyet az <app>Evolution</app>, <app>Microsoft Outlook</app>, <app>Sunbird</app> és <app>Korganizer</app> szoftverek használnak.</p></item>
 <item><p>iCalendar vagy iCal (.ics):</p>
-<p>Naptárfájlok tárolására használt formátum. Az Evolution, Microsoft Outlook, Palm OS kéziszámítógépek és mások használnak.</p></item>
+<p>Naptárfájlok tárolására használt formátum. Az <app>Evolution</app>, <app>Microsoft Outlook</app>, Palm OS kéziszámítógépek és mások használnak.</p></item>
 </list>
 </section>
 
@@ -59,10 +83,10 @@
 <section id="misc">
 <title>Egyebek</title>
 <list>
-<item><p>Evolution/Mozilla/Outlook CSV/Tab (.csv, .tab):</p>
-<p>Az Evolution, Microsoft Outlook és Mozilla által mentett CSV (Vesszőkkel elválasztott értéklista) vagy Tabulator fájlok.</p></item>
+<item><p><app>Evolution</app>/Mozilla/Outlook CSV/Tab (.csv, .tab):</p>
+<p>Az <app>Evolution</app>, <app>Microsoft Outlook</app> és <app>Mozilla</app> által mentett CSV (Vesszőkkel elválasztott értéklista) vagy Tabulator fájlok.</p></item>
 <item><p>Outlook személyes mappák (.pst):</p>
-<p>Üzenetek, naptáresemények és más elemek helyi másolatainak Microsoft szoftverekben (például Microsoft Exchange Client, Windows Messaging és Microsoft Outlook) való tárolására használt fájlformátum. „Personal Storage Table néven is ismert.</p></item>
+<p>Üzenetek, naptáresemények és más elemek helyi másolatainak Microsoft szoftverekben (például <app>Microsoft Exchange Client</app>, <app>Windows Messaging</app> és <app>Microsoft Outlook</app>) való tárolására használt fájlformátum. „Personal Storage Table néven is ismert.</p></item>
 </list>
 </section>
 

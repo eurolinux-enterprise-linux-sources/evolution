@@ -312,6 +312,180 @@ em_rename_folder_views (EShellBackend *shell_backend)
 	g_free (views_dir);
 }
 
+static gboolean
+em_maybe_update_filter_rule_part (xmlNodePtr part)
+{
+	xmlNodePtr values;
+	xmlChar *name, *value;
+
+	name = xmlGetProp (part, (xmlChar *) "name");
+	if (name) {
+		if (g_strcmp0 ((const gchar *) name, "completed-on") != 0) {
+			xmlFree (name);
+			return FALSE;
+		}
+
+		xmlFree (name);
+	} else {
+		return FALSE;
+	}
+
+	xmlSetProp (part, (xmlChar *) "name", (xmlChar *) "follow-up");
+
+	values = part->children;
+	while (values) {
+		if (g_strcmp0 ((const gchar *) values->name, "value") == 0) {
+			name = xmlGetProp (values, (xmlChar *) "name");
+			if (name) {
+				if (g_strcmp0 ((const gchar *) name, "date-spec-type") == 0) {
+					xmlSetProp (values, (xmlChar *) "name", (xmlChar *) "match-type");
+
+					value = xmlGetProp (values, (xmlChar *) "value");
+					if (value) {
+						if (g_strcmp0 ((const gchar *) value, "is set") == 0)
+							xmlSetProp (values, (xmlChar *) "value", (xmlChar *) "is completed");
+						else if (g_strcmp0 ((const gchar *) value, "is not set") == 0)
+							xmlSetProp (values, (xmlChar *) "value", (xmlChar *) "is not completed");
+
+						xmlFree (value);
+					}
+				}
+
+				xmlFree (name);
+			}
+		}
+
+		values = values->next;
+	}
+
+	return TRUE;
+}
+
+static void
+em_update_filter_rules_file (const gchar *filename)
+{
+	xmlNodePtr set, rule, root;
+	xmlDocPtr doc;
+	gboolean changed = FALSE;
+
+	if (!filename || !*filename || !g_file_test (filename, G_FILE_TEST_IS_REGULAR))
+		return;
+
+	doc = e_xml_parse_file (filename);
+	if (!doc)
+		return;
+
+	root = xmlDocGetRootElement (doc);
+	set = root && g_strcmp0 ((const gchar *) root->name, "filteroptions") == 0 ? root->children : NULL;
+	while (set) {
+		if (g_strcmp0 ((const gchar *) set->name, "ruleset") == 0) {
+			rule = set->children;
+			while (rule) {
+				if (g_strcmp0 ((const gchar *) rule->name, "rule") == 0) {
+					xmlNodePtr partset;
+
+					partset = rule->children;
+					while (partset) {
+						if (g_strcmp0 ((const gchar *) partset->name, "partset") == 0) {
+							xmlNodePtr part;
+
+							part = partset->children;
+							while (part) {
+								if (g_strcmp0 ((const gchar *) part->name, "part") == 0) {
+									changed = em_maybe_update_filter_rule_part (part) || changed;
+								}
+
+								part = part->next;
+							}
+						}
+
+						partset = partset->next;
+					}
+				}
+
+				rule = rule->next;
+			}
+		}
+
+		set = set->next;
+	}
+
+	if (changed)
+		e_xml_save_file (filename, doc);
+
+	xmlFreeDoc (doc);
+}
+
+static void
+em_update_filter_rules (EShellBackend *shell_backend)
+{
+	const gchar *config_dir;
+	gchar *filename;
+
+	g_return_if_fail (shell_backend != NULL);
+
+	config_dir = e_shell_backend_get_config_dir (shell_backend);
+
+	filename = g_build_filename (config_dir, "filters.xml", NULL);
+	em_update_filter_rules_file (filename);
+	g_free (filename);
+
+	filename = g_build_filename (config_dir, "searches.xml", NULL);
+	em_update_filter_rules_file (filename);
+	g_free (filename);
+
+	filename = g_build_filename (config_dir, "vfolders.xml", NULL);
+	em_update_filter_rules_file (filename);
+	g_free (filename);
+}
+
+static void
+unset_initial_setup_write_finished_cb (GObject *source_object,
+				       GAsyncResult *result,
+				       gpointer user_data)
+{
+	ESource *source;
+	GError *local_error = NULL;
+
+	g_return_if_fail (E_IS_SOURCE (source_object));
+	g_return_if_fail (result != NULL);
+
+	source = E_SOURCE (source_object);
+
+	if (!e_source_write_finish (source, result, &local_error)) {
+		g_warning ("%s: Failed to save source '%s' (%s): %s", G_STRFUNC, e_source_get_uid (source),
+			e_source_get_display_name (source), local_error ? local_error->message : "Unknown error");
+	}
+
+	g_clear_error (&local_error);
+}
+
+static void
+em_unset_initial_setup_for_accounts (EShellBackend *shell_backend)
+{
+	ESourceRegistry *registry;
+	GList *sources, *link;
+
+	g_return_if_fail (E_IS_SHELL_BACKEND (shell_backend));
+
+	registry = e_shell_get_registry (e_shell_backend_get_shell (shell_backend));
+	sources = e_source_registry_list_sources (registry, E_SOURCE_EXTENSION_MAIL_ACCOUNT);
+
+	for (link = sources; link; link = g_list_next (link)) {
+		ESource *source = link->data;
+		ESourceMailAccount *mail_account;
+
+		mail_account = e_source_get_extension (source, E_SOURCE_EXTENSION_MAIL_ACCOUNT);
+		if (e_source_mail_account_get_needs_initial_setup (mail_account)) {
+			e_source_mail_account_set_needs_initial_setup (mail_account, FALSE);
+
+			e_source_write (source, NULL, unset_initial_setup_write_finished_cb, NULL);
+		}
+	}
+
+	g_list_free_full (sources, g_object_unref);
+}
+
 gboolean
 e_mail_migrate (EShellBackend *shell_backend,
                 gint major,
@@ -328,6 +502,12 @@ e_mail_migrate (EShellBackend *shell_backend,
 
 	if (major <= 2 || (major == 3 && minor < 4))
 		em_rename_folder_views (shell_backend);
+
+	if (major <= 2 || (major == 3 && minor < 17))
+		em_update_filter_rules (shell_backend);
+
+	if (major <= 2 || (major == 3 && minor < 19) || (major == 3 && minor == 19 && micro < 90))
+		em_unset_initial_setup_for_accounts (shell_backend);
 
 	return TRUE;
 }

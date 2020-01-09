@@ -78,12 +78,18 @@ enum {
 	COL_SUBJECT_NORM,
 	COL_TO_NORM,
 
+	COL_UID,
+
 	COL_LAST,
 
 	/* Invisible columns */
 	COL_DELETED,
+	COL_DELETED_OR_JUNK,
+	COL_JUNK,
+	COL_JUNK_STRIKEOUT_COLOR,
 	COL_UNREAD,
-	COL_COLOUR
+	COL_COLOUR,
+	COL_ITALIC
 };
 
 #define MESSAGE_LIST_COLUMN_IS_ACTIVE(col) (col == COL_MESSAGE_STATUS || \
@@ -143,7 +149,8 @@ typedef enum {
 	MESSAGE_LIST_SELECT_NEXT = 0,
 	MESSAGE_LIST_SELECT_PREVIOUS = 1,
 	MESSAGE_LIST_SELECT_DIRECTION = 1, /* direction mask */
-	MESSAGE_LIST_SELECT_WRAP = 1<<1 /* option bit */
+	MESSAGE_LIST_SELECT_WRAP = 1 << 1, /* option bit */
+	MESSAGE_LIST_SELECT_INCLUDE_COLLAPSED = 1 << 2 /* whether to search collapsed nodes as well */
 } MessageListSelectDirection;
 
 GType		message_list_get_type		(void);
@@ -167,6 +174,9 @@ void		message_list_set_group_by_threads
 gboolean	message_list_get_show_deleted	(MessageList *message_list);
 void		message_list_set_show_deleted	(MessageList *message_list,
 						 gboolean show_deleted);
+gboolean	message_list_get_show_junk	(MessageList *message_list);
+void		message_list_set_show_junk	(MessageList *message_list,
+						 gboolean show_junk);
 gboolean	message_list_get_thread_latest	(MessageList *message_list);
 void		message_list_set_thread_latest	(MessageList *message_list,
 						 gboolean thread_latest);
@@ -209,6 +219,8 @@ void		message_list_save_state		(MessageList *message_list);
 
 void		message_list_sort_uids		(MessageList *message_list,
 						 GPtrArray *uids);
+gboolean	message_list_contains_uid	(MessageList *message_list,
+						 const gchar *uid);
 
 G_END_DECLS
 

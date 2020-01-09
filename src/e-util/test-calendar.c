@@ -73,7 +73,7 @@ main (gint argc,
 
 	cal = e_calendar_new ();
 	e_calendar_set_minimum_size (E_CALENDAR (cal), 1, 1);
-	calitem = E_CALENDAR (cal)->calitem;
+	calitem = e_calendar_get_item (E_CALENDAR (cal));
 	gtk_widget_show (cal);
 
 	g_signal_connect (
@@ -97,6 +97,8 @@ main (gint argc,
 	gtk_widget_show (window);
 
 	gtk_main ();
+
+	e_util_cleanup_settings ();
 
 	return 0;
 }

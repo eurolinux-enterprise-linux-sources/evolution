@@ -50,7 +50,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -60,12 +60,12 @@
 <p>Vous pouvez insérer un lien dans le courriel :</p>
 <steps>
 <item><p>Sélectionnez le texte que vous voulez transformer en lien.</p></item>
-<item><p>Soit vous cliquez sur <guiseq><gui>Insertion</gui><gui>Lien...</gui></guiseq> dans la barre de menu, soit vous faites un clic-droit sur le texte sélectionné et cliquez sur <gui>Insérer un lien</gui>.</p></item>
+<item><p>Soit vous cliquez sur <guiseq><gui>Insertion</gui><gui>Lien…</gui></guiseq> dans la barre de menu, soit vous faites un clic-droit sur le texte sélectionné et cliquez sur <gui>Insérer un lien</gui>.</p></item>
 <item><p>Saisissez l'adresse dans le champ <gui>URL</gui>.</p></item>
 <item><p>Cliquez sur <gui>Fermer</gui>.</p></item>
 </steps>
 
-<p>Alternately, you can also use the <media type="image" its:translate="no" src="./figures/html-composer-insert-link.png"/> icon in the second bar below the <gui>Subject</gui> line.</p>
+<p>Vous pouvez aussi utiliser l'icône <media type="image" its:translate="no" src="./figures/html-composer-insert-link.png"/> dans la seconde barre d'outils sous la ligne <gui>Sujet</gui>.</p>
 
 <p>Si vous ne souhaitez pas choisir un texte particulier pour le texte du lien, vous pouvez simplement saisir l'adresse telle quelle et Evolution reconnaîtra qu'il s'agit d'un lien.</p>
 </page>

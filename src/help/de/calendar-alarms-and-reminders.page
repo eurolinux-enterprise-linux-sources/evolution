@@ -28,19 +28,25 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
@@ -49,7 +55,7 @@
 <section id="general-settings">
   <title>Allgemeine Einstellungen</title>
 
-  <p>Unter <guiseq><gui>Bearbeiten</gui><gui>Einstellungen</gui><gui>Kalender und Aufgaben</gui><gui>Erinnerungen</gui></guiseq> wählen Sie die Kalender, für die Sie Erinnerungen erhalten möchten. Wenn Sie einen Kalender nicht auswählen, so werden Sie keine Erinnerungen für Ereignisse in diesem Kalender erhalten. Sie können ebenso festlegen, ob eine Erinnerung für jeden Termin und für jeden Geburtstag und Jahrestag gegeben werden soll.</p>
+  <p>Unter <guiseq><gui>Bearbeiten</gui><gui>Einstellungen</gui><gui>Kalender und Aufgaben</gui><gui>Erinnerungen</gui></guiseq> wählen Sie die Kalender, für die Sie Erinnerungen erhalten möchten. Wenn Sie einen Kalender nicht auswählen, so werden Sie keine Erinnerungen für Termine in diesem Kalender erhalten. Sie können ebenso festlegen, ob eine Erinnerung für jeden Termin und für jeden Geburtstag und Jahrestag gegeben werden soll.</p>
 
   <if:choose>
     <if:when test="platform:gnome-shell">

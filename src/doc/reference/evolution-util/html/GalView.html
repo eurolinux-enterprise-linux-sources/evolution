@@ -2,13 +2,13 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Evolution Utilities Reference Manual: GalView</title>
-<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<title>GalView: Evolution Utilities Reference Manual</title>
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
 <link rel="home" href="index.html" title="Evolution Utilities Reference Manual">
-<link rel="up" href="ch14.html" title="View Management">
-<link rel="prev" href="ch14.html" title="View Management">
+<link rel="up" href="ch15.html" title="View Management">
+<link rel="prev" href="ch15.html" title="View Management">
 <link rel="next" href="GalViewInstance.html" title="GalViewInstance">
-<meta name="generator" content="GTK-Doc V1.21 (XML mode)">
+<meta name="generator" content="GTK-Doc V1.25 (XML mode)">
 <link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
@@ -21,8 +21,8 @@
                   <a href="#GalView.signals" class="shortcut">Signals</a></span>
 </td>
 <td><a accesskey="h" href="index.html"><img src="home.png" width="16" height="16" border="0" alt="Home"></a></td>
-<td><a accesskey="u" href="ch14.html"><img src="up.png" width="16" height="16" border="0" alt="Up"></a></td>
-<td><a accesskey="p" href="ch14.html"><img src="left.png" width="16" height="16" border="0" alt="Prev"></a></td>
+<td><a accesskey="u" href="ch15.html"><img src="up.png" width="16" height="16" border="0" alt="Up"></a></td>
+<td><a accesskey="p" href="ch15.html"><img src="left.png" width="16" height="16" border="0" alt="Prev"></a></td>
 <td><a accesskey="n" href="GalViewInstance.html"><img src="right.png" width="16" height="16" border="0" alt="Next"></a></td>
 </tr></table>
 <div class="refentry">
@@ -36,7 +36,7 @@
 </tr></table></div>
 <div class="refsect1">
 <a name="GalView.functions"></a><h2>Functions</h2>
-<div class="informaltable"><table width="100%" border="0">
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="functions_return">
 <col class="functions_name">
@@ -59,7 +59,7 @@
 </td>
 </tr>
 <tr>
-<td class="function_type">const <a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gchar"><span class="returnvalue">gchar</span></a> *
+<td class="function_type">const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="returnvalue">gchar</span></a> *
 </td>
 <td class="function_name">
 <a class="link" href="GalView.html#gal-view-get-title" title="gal_view_get_title ()">gal_view_get_title</a> <span class="c_punctuation">()</span>
@@ -94,7 +94,7 @@
 </div>
 <div class="refsect1">
 <a name="GalView.properties"></a><h2>Properties</h2>
-<div class="informaltable"><table border="0">
+<div class="informaltable"><table class="informaltable" border="0">
 <colgroup>
 <col width="150px" class="properties_type">
 <col width="300px" class="properties_name">
@@ -102,7 +102,7 @@
 </colgroup>
 <tbody><tr>
 <td class="property_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *</td>
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *</td>
 <td class="property_name"><a class="link" href="GalView.html#GalView--title" title="The “title” property">title</a></td>
 <td class="property_flags">Read / Write</td>
 </tr></tbody>
@@ -110,7 +110,7 @@
 </div>
 <div class="refsect1">
 <a name="GalView.signals"></a><h2>Signals</h2>
-<div class="informaltable"><table border="0">
+<div class="informaltable"><table class="informaltable" border="0">
 <colgroup>
 <col width="150px" class="signals_return">
 <col width="300px" class="signals_name">
@@ -119,26 +119,13 @@
 <tbody><tr>
 <td class="signal_type"><span class="returnvalue">void</span></td>
 <td class="signal_name"><a class="link" href="GalView.html#GalView-changed" title="The “changed” signal">changed</a></td>
-<td class="signal_flags">Run Last</td>
-</tr></tbody>
-</table></div>
-</div>
-<div class="refsect1">
-<a name="GalView.other"></a><h2>Types and Values</h2>
-<div class="informaltable"><table width="100%" border="0">
-<colgroup>
-<col width="150px" class="name">
-<col class="description">
-</colgroup>
-<tbody><tr>
-<td class="datatype_keyword">struct</td>
-<td class="function_name"><a class="link" href="GalView.html#GalView-struct" title="struct GalView">GalView</a></td>
+<td class="signal_flags"><a href="/usr/share/gtk-doc/html/gobjectgobject-Signals.html#G-SIGNAL-RUN-LAST:CAPS">Run Last</a></td>
 </tr></tbody>
 </table></div>
 </div>
 <div class="refsect1">
 <a name="GalView.object-hierarchy"></a><h2>Object Hierarchy</h2>
-<pre class="screen">    <a href="https://developer.gnome.org/gobject/unstable/gobject-The-Base-Object-Type.html#GObject">GObject</a>
+<pre class="screen">    <a href="/usr/share/gtk-doc/html/gobjectgobject-The-Base-Object-Type.html#GObject-struct">GObject</a>
     <span class="lineart">╰──</span> GalView
         <span class="lineart">╰──</span> <a class="link" href="GalViewEtable.html" title="GalViewEtable">GalViewEtable</a>
 </pre>
@@ -152,10 +139,10 @@
 <a name="gal-view-load"></a><h3>gal_view_load ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 gal_view_load (<em class="parameter"><code><a class="link" href="GalView.html" title="GalView"><span class="type">GalView</span></a> *view</code></em>,
-               <em class="parameter"><code>const <a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *filename</code></em>);</pre>
+               <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *filename</code></em>);</pre>
 <div class="refsect3">
-<a name="id-1.15.2.9.2.4"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="gal-view-load.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -181,10 +168,10 @@ gal_view_load (<em class="parameter"><code><a class="link" href="GalView.html" t
 <a name="gal-view-save"></a><h3>gal_view_save ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 gal_view_save (<em class="parameter"><code><a class="link" href="GalView.html" title="GalView"><span class="type">GalView</span></a> *view</code></em>,
-               <em class="parameter"><code>const <a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *filename</code></em>);</pre>
+               <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *filename</code></em>);</pre>
 <div class="refsect3">
-<a name="id-1.15.2.9.3.4"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="gal-view-save.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -208,11 +195,11 @@ gal_view_save (<em class="parameter"><code><a class="link" href="GalView.html" t
 <hr>
 <div class="refsect2">
 <a name="gal-view-get-title"></a><h3>gal_view_get_title ()</h3>
-<pre class="programlisting">const <a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gchar"><span class="returnvalue">gchar</span></a> *
+<pre class="programlisting">const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="returnvalue">gchar</span></a> *
 gal_view_get_title (<em class="parameter"><code><a class="link" href="GalView.html" title="GalView"><span class="type">GalView</span></a> *view</code></em>);</pre>
 <div class="refsect3">
-<a name="id-1.15.2.9.4.4"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="gal-view-get-title.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -226,9 +213,8 @@ gal_view_get_title (<em class="parameter"><code><a class="link" href="GalView.ht
 </table></div>
 </div>
 <div class="refsect3">
-<a name="id-1.15.2.9.4.5"></a><h4>Returns</h4>
+<a name="gal-view-get-title.returns"></a><h4>Returns</h4>
 <p> The title of the view.</p>
-<p></p>
 </div>
 </div>
 <hr>
@@ -236,10 +222,10 @@ gal_view_get_title (<em class="parameter"><code><a class="link" href="GalView.ht
 <a name="gal-view-set-title"></a><h3>gal_view_set_title ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 gal_view_set_title (<em class="parameter"><code><a class="link" href="GalView.html" title="GalView"><span class="type">GalView</span></a> *view</code></em>,
-                    <em class="parameter"><code>const <a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *title</code></em>);</pre>
+                    <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *title</code></em>);</pre>
 <div class="refsect3">
-<a name="id-1.15.2.9.5.4"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="gal-view-set-title.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -266,8 +252,8 @@ gal_view_set_title (<em class="parameter"><code><a class="link" href="GalView.ht
 <pre class="programlisting"><a class="link" href="GalView.html" title="GalView"><span class="returnvalue">GalView</span></a> *
 gal_view_clone (<em class="parameter"><code><a class="link" href="GalView.html" title="GalView"><span class="type">GalView</span></a> *view</code></em>);</pre>
 <div class="refsect3">
-<a name="id-1.15.2.9.6.4"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="gal-view-clone.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -281,9 +267,8 @@ gal_view_clone (<em class="parameter"><code><a class="link" href="GalView.html" 
 </table></div>
 </div>
 <div class="refsect3">
-<a name="id-1.15.2.9.6.5"></a><h4>Returns</h4>
+<a name="gal-view-clone.returns"></a><h4>Returns</h4>
 <p> The clone.</p>
-<p></p>
 </div>
 </div>
 <hr>
@@ -292,8 +277,8 @@ gal_view_clone (<em class="parameter"><code><a class="link" href="GalView.html" 
 <pre class="programlisting"><span class="returnvalue">void</span>
 gal_view_changed (<em class="parameter"><code><a class="link" href="GalView.html" title="GalView"><span class="type">GalView</span></a> *view</code></em>);</pre>
 <div class="refsect3">
-<a name="id-1.15.2.9.7.4"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="gal-view-changed.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -310,16 +295,12 @@ gal_view_changed (<em class="parameter"><code><a class="link" href="GalView.html
 </div>
 <div class="refsect1">
 <a name="GalView.other_details"></a><h2>Types and Values</h2>
-<div class="refsect2">
-<a name="GalView-struct"></a><h3>struct GalView</h3>
-<pre class="programlisting">struct GalView;</pre>
-</div>
 </div>
 <div class="refsect1">
 <a name="GalView.property-details"></a><h2>Property Details</h2>
 <div class="refsect2">
 <a name="GalView--title"></a><h3>The <code class="literal">“title”</code> property</h3>
-<pre class="programlisting">  “title”                    <a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *</pre>
+<pre class="programlisting">  “title”                    <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *</pre>
 <p>View Title.</p>
 <p>Flags: Read / Write</p>
 <p>Default value: NULL</p>
@@ -331,13 +312,12 @@ gal_view_changed (<em class="parameter"><code><a class="link" href="GalView.html
 <a name="GalView-changed"></a><h3>The <code class="literal">“changed”</code> signal</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 user_function (<a class="link" href="GalView.html" title="GalView"><span class="type">GalView</span></a> *galview,
-               <a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> user_data)</pre>
-<p>Flags: Run Last</p>
+               <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> user_data)</pre>
+<p>Flags: <a href="/usr/share/gtk-doc/html/gobjectgobject-Signals.html#G-SIGNAL-RUN-LAST:CAPS">Run Last</a></p>
 </div>
 </div>
 </div>
 <div class="footer">
-<hr>
-          Generated by GTK-Doc V1.21</div>
+<hr>Generated by GTK-Doc V1.25</div>
 </body>
 </html>

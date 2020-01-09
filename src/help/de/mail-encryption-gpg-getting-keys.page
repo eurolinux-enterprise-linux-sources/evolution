@@ -6,7 +6,7 @@
 
     <link type="guide" xref="mail-encryption#gpg"/>
 
-    <revision pkgversion="2.32.1" version="0.2" date="2011-07-27" status="final"/>
+    <revision pkgversion="3.13.90" version="0.3" date="2015-03-09" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -28,28 +28,29 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
   <title>Erhalten und Nutzen öffentlicher GPG-Schlüssel.</title>
-<!-- TODO:POST-3-8: Update and rewrite using Seahorse. Needs a complete rewrite once https://bugzilla.gnome.org/show_bug.cgi?id=508744 is fixed. -->
 
-<p>Um eine verschlüsselte Nachricht zu verschicken benötigen Sie den öffentlichen Schlüssel des Empfänger in Kombination mit Ihrem eigenen privaten Schlüssel. Evolution handhabt die Verschlüsselung, aber Sie müssen selbst den öffentlichen Schlüssel des Empfängers abrufen und diesen zu Ihrem Schlüsselring hinzufügen.</p>
-
-<p>Um öffentliche Schlüssel von einem öffentlichen Schlüssel-Server zu holen, geben Sie den Befehl <cmd>gpg --recv-keys --keyserver wwwkeys.pgp.net keyid</cmd> ein und ersetzen Sie <cmd>keyid</cmd> durch die Schlüsselkennung (ID) des Empfängers. Geben Sie auf Nachfrage Ihr Passwort ein, und die Kennung wird automatisch zu Ihrem Schlüsselbund hinzugefügt.</p>
-
-<p>Falls Ihnen jemand einen öffentlichen Schlüssel direkt zuschickt, speichern Sie diesen als Textdatei und geben Sie den Befehl <cmd>gpg --import</cmd> ein, um den Schlüssel zu Ihrem Schlüsselbund hinzuzufügen.</p>
+<p>Um eine verschlüsselte Nachricht zu verschicken, benötigen Sie den öffentlichen Schlüssel des Empfänger in Kombination mit Ihrem eigenen privaten Schlüssel. <gui>Evolution</gui> handhabt die Verschlüsselung, aber Sie müssen selbst <link xref="help:seahorse/pgp-import" href="https://help.gnome.org/users/seahorse/stable/pgp-import">den öffentlichen Schlüssel des Empfängers abrufen und diesen zu Ihrem Schlüsselbund hinzufügen</link>.</p>
 </page>

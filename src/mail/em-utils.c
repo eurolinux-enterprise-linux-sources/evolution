@@ -50,6 +50,7 @@
 #include "e-mail-tag-editor.h"
 #include "em-composer-utils.h"
 #include "em-filter-editor.h"
+#include "em-folder-properties.h"
 
 /* How many is too many? */
 /* Used in em_util_ask_open_many() */
@@ -75,77 +76,12 @@ em_utils_ask_open_many (GtkWindow *parent,
 		"Are you sure you want to open %d message at once?",
 		"Are you sure you want to open %d messages at once?",
 		how_many), how_many);
-	proceed = em_utils_prompt_user (
-		parent, "prompt-on-open-many",
+	proceed = e_util_prompt_user (
+		parent, "org.gnome.evolution.mail", "prompt-on-open-many",
 		"mail:ask-open-many", string, NULL);
 	g_free (string);
 
 	return proceed;
-}
-
-/**
- * em_utils_prompt_user:
- * @parent: parent window
- * @promptkey: settings key to check if we should prompt the user or not.
- * @tag: e_alert tag.
- *
- * Convenience function to query the user with a Yes/No dialog and a
- * "Do not show this dialog again" checkbox. If the user checks that
- * checkbox, then @promptkey is set to %FALSE, otherwise it is set to
- * %TRUE.
- *
- * Returns %TRUE if the user clicks Yes or %FALSE otherwise.
- **/
-gboolean
-em_utils_prompt_user (GtkWindow *parent,
-                      const gchar *promptkey,
-                      const gchar *tag,
-                      ...)
-{
-	GtkWidget *dialog;
-	GtkWidget *check = NULL;
-	GtkWidget *container;
-	va_list ap;
-	gint button;
-	GSettings *settings;
-	EAlert *alert = NULL;
-
-	settings = g_settings_new ("org.gnome.evolution.mail");
-
-	if (promptkey && !g_settings_get_boolean (settings, promptkey)) {
-		g_object_unref (settings);
-		return TRUE;
-	}
-
-	va_start (ap, tag);
-	alert = e_alert_new_valist (tag, ap);
-	va_end (ap);
-
-	dialog = e_alert_dialog_new (parent, alert);
-	g_object_unref (alert);
-
-	container = e_alert_dialog_get_content_area (E_ALERT_DIALOG (dialog));
-
-	if (promptkey) {
-		check = gtk_check_button_new_with_mnemonic (
-			_("_Do not show this message again"));
-		gtk_box_pack_start (
-			GTK_BOX (container), check, FALSE, FALSE, 0);
-		gtk_widget_show (check);
-	}
-
-	button = gtk_dialog_run (GTK_DIALOG (dialog));
-	if (promptkey)
-		g_settings_set_boolean (
-			settings, promptkey,
-			!gtk_toggle_button_get_active (
-				GTK_TOGGLE_BUTTON (check)));
-
-	gtk_widget_destroy (dialog);
-
-	g_object_unref (settings);
-
-	return button == GTK_RESPONSE_YES;
 }
 
 /* Editing Filters/Search Folders... */
@@ -324,8 +260,8 @@ em_utils_flag_for_followup (EMailReader *reader,
 
 		e_mail_tag_editor_add_message (
 			E_MAIL_TAG_EDITOR (editor),
-			camel_message_info_from (info),
-			camel_message_info_subject (info));
+			camel_message_info_get_from (info),
+			camel_message_info_get_subject (info));
 
 		camel_message_info_unref (info);
 	}
@@ -338,7 +274,7 @@ em_utils_flag_for_followup (EMailReader *reader,
 		message_uid = g_ptr_array_index (uids, 0);
 		info = camel_folder_get_message_info (folder, message_uid);
 		if (info) {
-			tags = (CamelTag *) camel_message_info_user_tags (info);
+			tags = (CamelTag *) camel_message_info_get_user_tags (info);
 
 			if (tags)
 				e_mail_tag_editor_set_tag_list (
@@ -446,7 +382,7 @@ em_utils_flag_for_followup_completed (GtkWindow *parent,
 		CamelMessageInfo *mi = camel_folder_get_message_info (folder, uids->pdata[i]);
 
 		if (mi) {
-			tag = camel_message_info_user_tag (mi, "follow-up");
+			tag = camel_message_info_get_user_tag (mi, "follow-up");
 			if (tag && tag[0])
 				camel_message_info_set_user_tag (mi, "completed-on", now);
 			camel_message_info_unref (mi);
@@ -540,12 +476,16 @@ em_utils_print_messages_to_file (CamelFolder *folder,
 	parts_list = e_mail_parser_parse_sync (
 		parser, folder, uid, message, NULL);
 	if (parts_list != NULL) {
+		EMailBackend *mail_backend;
 		EAsyncClosure *closure;
 		GAsyncResult *result;
 		EMailPrinter *printer;
 		GtkPrintOperationResult print_result;
 
-		printer = e_mail_printer_new (parts_list);
+		mail_backend = E_MAIL_BACKEND (e_shell_get_backend_by_name (e_shell_get_default (), "mail"));
+		g_return_val_if_fail (mail_backend != NULL, FALSE);
+
+		printer = e_mail_printer_new (parts_list, e_mail_backend_get_remote_content (mail_backend));
 		e_mail_printer_set_export_filename (printer, filename);
 
 		closure = e_async_closure_new ();
@@ -582,12 +522,15 @@ em_utils_read_messages_from_stream (CamelFolder *folder,
 {
 	CamelMimeParser *mp = camel_mime_parser_new ();
 	gboolean success = TRUE;
+	gboolean any_read = FALSE;
 
 	camel_mime_parser_scan_from (mp, TRUE);
 	camel_mime_parser_init_with_stream (mp, stream, NULL);
 
 	while (camel_mime_parser_step (mp, NULL, NULL) == CAMEL_MIME_PARSER_STATE_FROM) {
 		CamelMimeMessage *msg;
+
+		any_read = TRUE;
 
 		/* NB: de-from filter, once written */
 		msg = camel_mime_message_new ();
@@ -609,6 +552,22 @@ em_utils_read_messages_from_stream (CamelFolder *folder,
 	}
 
 	g_object_unref (mp);
+
+	/* No message had bean read, maybe it's not MBOX, but a plain message */
+	if (!any_read) {
+		CamelMimeMessage *msg;
+
+		if (G_IS_SEEKABLE (stream))
+			g_seekable_seek (G_SEEKABLE (stream), 0, G_SEEK_SET, NULL, NULL);
+
+		msg = camel_mime_message_new ();
+		if (camel_data_wrapper_construct_from_stream_sync (
+			(CamelDataWrapper *) msg, stream, NULL, NULL))
+			/* FIXME camel_folder_append_message_sync() may block. */
+			camel_folder_append_message_sync (
+				folder, msg, NULL, NULL, NULL, NULL);
+		g_object_unref (msg);
+	}
 
 	return success ? 0 : -1;
 }
@@ -689,7 +648,6 @@ em_utils_selection_get_message (GtkSelectionData *selection_data,
                                 CamelFolder *folder)
 {
 	CamelStream *stream;
-	CamelMimeMessage *msg;
 	const guchar *data;
 	gint length;
 
@@ -699,15 +657,10 @@ em_utils_selection_get_message (GtkSelectionData *selection_data,
 	if (data == NULL || length == -1)
 		return;
 
-	stream = (CamelStream *)
-		camel_stream_mem_new_with_buffer ((gchar *) data, length);
-	msg = camel_mime_message_new ();
-	if (camel_data_wrapper_construct_from_stream_sync (
-		(CamelDataWrapper *) msg, stream, NULL, NULL))
-		/* FIXME camel_folder_append_message_sync() may block. */
-		camel_folder_append_message_sync (
-			folder, msg, NULL, NULL, NULL, NULL);
-	g_object_unref (msg);
+	stream = camel_stream_mem_new_with_buffer ((const gchar *) data, length);
+
+	em_utils_read_messages_from_stream (folder, stream);
+
 	g_object_unref (stream);
 }
 
@@ -880,7 +833,20 @@ em_utils_selection_get_uidlist (GtkSelectionData *selection_data,
 		g_propagate_error (error, local_error);
 }
 
-static gchar *
+/**
+ * em_utils_build_export_basename:
+ * @folder: a #CamelFolder where the message belongs
+ * @uid: a message UID
+ * @extension: (nullable): a filename extension
+ *
+ * Builds a name that consists of data and time when the message was received,
+ * message subject and extension.
+ *
+ * Returns: (transfer full): a newly allocated string with generated basename
+ *
+ * Since: 3.22
+ **/
+gchar *
 em_utils_build_export_basename (CamelFolder *folder,
                                 const gchar *uid,
                                 const gchar *extension)
@@ -892,13 +858,16 @@ em_utils_build_export_basename (CamelFolder *folder,
 	time_t reftime;
 	gchar datetmp[15];
 
+	g_return_val_if_fail (CAMEL_IS_FOLDER (folder), NULL);
+	g_return_val_if_fail (uid != NULL, NULL);
+
 	reftime = time (NULL);
 
 	/* Try to get the drop filename from the message or folder. */
 	info = camel_folder_get_message_info (folder, uid);
 	if (info != NULL) {
-		subject = camel_message_info_subject (info);
-		reftime = camel_message_info_date_sent (info);
+		subject = camel_message_info_get_subject (info);
+		reftime = camel_message_info_get_date_sent (info);
 	}
 
 	ts = localtime (&reftime);
@@ -950,7 +919,7 @@ em_utils_selection_set_urilist (GtkSelectionData *data,
 	if (tmpdir == NULL)
 		return;
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 	/* Save format is mbox unless pdf is explicitly requested. */
 	save_file_format = g_settings_get_string (
@@ -1191,6 +1160,7 @@ em_utils_message_to_html (CamelSession *session,
                           const gchar *credits,
                           guint32 flags,
                           EMailPartList *parts_list,
+                          const gchar *prepend,
                           const gchar *append,
                           EMailPartValidityFlags *validity_found)
 {
@@ -1201,6 +1171,7 @@ em_utils_message_to_html (CamelSession *session,
 	GtkWindow *window;
 	EMailPart *hidden_text_html_part = NULL;
 	EMailPartValidityFlags is_validity_found = 0;
+	gsize n_bytes_written = 0;
 	GQueue queue = G_QUEUE_INIT;
 	GList *head, *link;
 	gchar *data;
@@ -1222,7 +1193,7 @@ em_utils_message_to_html (CamelSession *session,
 
 		/* FIXME We should be getting this from the
 		 *       current view, not the global setting. */
-		settings = g_settings_new ("org.gnome.evolution.mail");
+		settings = e_util_ref_settings ("org.gnome.evolution.mail");
 		charset = g_settings_get_string (settings, "charset");
 		if (charset && *charset)
 			e_mail_formatter_set_default_charset (formatter, charset);
@@ -1265,6 +1236,10 @@ em_utils_message_to_html (CamelSession *session,
 	if (validity_found != NULL)
 		*validity_found = is_validity_found;
 
+	if (prepend != NULL && *prepend != '\0')
+		g_output_stream_write_all (
+			stream, prepend, strlen (prepend), NULL, NULL, NULL);
+
 	e_mail_formatter_format_sync (
 		formatter, parts_list, stream, 0,
 		E_MAIL_FORMATTER_MODE_PRINTING, NULL);
@@ -1281,7 +1256,7 @@ em_utils_message_to_html (CamelSession *session,
 		g_output_stream_write_all (
 			stream, append, strlen (append), NULL, NULL, NULL);
 
-	g_output_stream_write (stream, "", 1, NULL, NULL);
+	g_output_stream_write_all (stream, "", 1, &n_bytes_written, NULL, NULL);
 
 	g_output_stream_close (stream, NULL, NULL);
 
@@ -1313,7 +1288,8 @@ em_utils_empty_trash (GtkWidget *parent,
 
 	registry = e_mail_session_get_registry (session);
 
-	if (!em_utils_prompt_user ((GtkWindow *) parent,
+	if (!e_util_prompt_user ((GtkWindow *) parent,
+		"org.gnome.evolution.mail",
 		"prompt-on-empty-trash",
 		"mail:ask-empty-trash", NULL))
 		return;
@@ -1420,6 +1396,7 @@ check_prefix (const gchar *subject,
               const gchar *prefix,
               gint *skip_len)
 {
+	gboolean res = FALSE;
 	gint plen;
 
 	g_return_val_if_fail (subject != NULL, FALSE);
@@ -1431,17 +1408,27 @@ check_prefix (const gchar *subject,
 	if (g_ascii_strncasecmp (subject, prefix, plen) != 0)
 		return FALSE;
 
-	if (g_ascii_strncasecmp (subject + plen, ": ", 2) == 0) {
-		*skip_len = plen + 2;
-		return TRUE;
+	if (g_ascii_isspace (subject[plen]))
+		plen++;
+
+	res = e_util_utf8_strstrcase (subject + plen, ":") == subject + plen;
+	if (res)
+		plen += strlen (":");
+
+	if (!res) {
+		res = e_util_utf8_strstrcase (subject + plen, "︰") == subject + plen;
+		if (res)
+			plen += strlen ("︰");
 	}
 
-	if (g_ascii_strncasecmp (subject + plen, " : ", 3) == 0) {
-		*skip_len = plen + 3;
-		return TRUE;
+	if (res) {
+		if (g_ascii_isspace (subject[plen]))
+			plen++;
+
+		*skip_len = plen;
 	}
 
-	return FALSE;
+	return res;
 }
 
 gboolean
@@ -1470,7 +1457,7 @@ em_utils_is_re_in_subject (const gchar *subject,
 		GSettings *settings;
 		gchar *prefixes;
 
-		settings = g_settings_new ("org.gnome.evolution.mail");
+		settings = e_util_ref_settings ("org.gnome.evolution.mail");
 		prefixes = g_settings_get_string (settings, "composer-localized-re");
 		g_object_unref (settings);
 
@@ -1499,4 +1486,243 @@ em_utils_is_re_in_subject (const gchar *subject,
 		g_strfreev (prefixes_strv);
 
 	return res;
+}
+
+gchar *
+em_utils_get_archive_folder_uri_from_folder (CamelFolder *folder,
+					     EMailBackend *mail_backend,
+					     GPtrArray *uids,
+					     gboolean deep_uids_check)
+{
+	CamelStore *store;
+	ESource *source = NULL;
+	gchar *archive_folder = NULL;
+	gchar *folder_uri;
+	gboolean aa_enabled;
+	EAutoArchiveConfig aa_config;
+	gint aa_n_units;
+	EAutoArchiveUnit aa_unit;
+	gchar *aa_custom_target_folder_uri;
+
+	if (!folder)
+		return NULL;
+
+	folder_uri = e_mail_folder_uri_build (
+		camel_folder_get_parent_store (folder),
+		camel_folder_get_full_name (folder));
+
+	if (em_folder_properties_autoarchive_get (mail_backend, folder_uri,
+		&aa_enabled, &aa_config, &aa_n_units, &aa_unit, &aa_custom_target_folder_uri)) {
+		if (aa_enabled && aa_config == E_AUTO_ARCHIVE_CONFIG_MOVE_TO_CUSTOM &&
+		    aa_custom_target_folder_uri && *aa_custom_target_folder_uri) {
+			g_free (folder_uri);
+			return aa_custom_target_folder_uri;
+		}
+
+		g_free (aa_custom_target_folder_uri);
+	}
+	g_free (folder_uri);
+
+	store = camel_folder_get_parent_store (folder);
+	if (g_strcmp0 (E_MAIL_SESSION_LOCAL_UID, camel_service_get_uid (CAMEL_SERVICE (store))) == 0) {
+		return mail_config_dup_local_archive_folder ();
+	}
+
+	if (CAMEL_IS_VEE_FOLDER (folder) && uids && uids->len > 0) {
+		CamelVeeFolder *vee_folder = CAMEL_VEE_FOLDER (folder);
+		CamelFolder *orig_folder = NULL;
+
+		store = NULL;
+
+		if (deep_uids_check) {
+			gint ii;
+
+			for (ii = 0; ii < uids->len; ii++) {
+				orig_folder = camel_vee_folder_get_vee_uid_folder (vee_folder, uids->pdata[ii]);
+				if (orig_folder) {
+					if (store && camel_folder_get_parent_store (orig_folder) != store) {
+						/* Do not know which archive folder to use when there are
+						   selected messages from multiple accounts/stores. */
+						store = NULL;
+						break;
+					}
+
+					store = camel_folder_get_parent_store (orig_folder);
+				}
+			}
+		} else {
+			orig_folder = camel_vee_folder_get_vee_uid_folder (CAMEL_VEE_FOLDER (folder), uids->pdata[0]);
+			if (orig_folder)
+				store = camel_folder_get_parent_store (orig_folder);
+		}
+
+		if (store && orig_folder) {
+			folder_uri = e_mail_folder_uri_build (
+				camel_folder_get_parent_store (orig_folder),
+				camel_folder_get_full_name (orig_folder));
+
+			if (em_folder_properties_autoarchive_get (mail_backend, folder_uri,
+				&aa_enabled, &aa_config, &aa_n_units, &aa_unit, &aa_custom_target_folder_uri)) {
+				if (aa_enabled && aa_config == E_AUTO_ARCHIVE_CONFIG_MOVE_TO_CUSTOM &&
+				    aa_custom_target_folder_uri && *aa_custom_target_folder_uri) {
+					g_free (folder_uri);
+					return aa_custom_target_folder_uri;
+				}
+
+				g_free (aa_custom_target_folder_uri);
+			}
+
+			g_free (folder_uri);
+		}
+	}
+
+	if (store) {
+		ESourceRegistry *registry;
+
+		registry = e_mail_session_get_registry (e_mail_backend_get_session (mail_backend));
+		source = e_source_registry_ref_source (registry, camel_service_get_uid (CAMEL_SERVICE (store)));
+	}
+
+	if (source) {
+		if (e_source_has_extension (source, E_SOURCE_EXTENSION_MAIL_ACCOUNT)) {
+			ESourceMailAccount *account_ext;
+
+			account_ext = e_source_get_extension (source, E_SOURCE_EXTENSION_MAIL_ACCOUNT);
+
+			archive_folder = e_source_mail_account_dup_archive_folder (account_ext);
+			if (!archive_folder || !*archive_folder) {
+				g_free (archive_folder);
+				archive_folder = NULL;
+			}
+		}
+
+		g_object_unref (source);
+	}
+
+	return archive_folder;
+}
+
+gboolean
+em_utils_process_autoarchive_sync (EMailBackend *mail_backend,
+				   CamelFolder *folder,
+				   const gchar *folder_uri,
+				   GCancellable *cancellable,
+				   GError **error)
+{
+	gboolean aa_enabled;
+	EAutoArchiveConfig aa_config;
+	gint aa_n_units;
+	EAutoArchiveUnit aa_unit;
+	gchar *aa_custom_target_folder_uri = NULL;
+	GDateTime *now_time, *use_time;
+	gchar *search_sexp;
+	GPtrArray *uids;
+	gboolean success = TRUE;
+
+	g_return_val_if_fail (E_IS_MAIL_BACKEND (mail_backend), FALSE);
+	g_return_val_if_fail (CAMEL_IS_FOLDER (folder), FALSE);
+	g_return_val_if_fail (folder_uri != NULL, FALSE);
+
+	if (!em_folder_properties_autoarchive_get (mail_backend, folder_uri,
+		&aa_enabled, &aa_config, &aa_n_units, &aa_unit, &aa_custom_target_folder_uri))
+		return TRUE;
+
+	if (!aa_enabled) {
+		g_free (aa_custom_target_folder_uri);
+		return TRUE;
+	}
+
+	if (aa_config == E_AUTO_ARCHIVE_CONFIG_MOVE_TO_CUSTOM && (!aa_custom_target_folder_uri || !*aa_custom_target_folder_uri)) {
+		g_free (aa_custom_target_folder_uri);
+		return TRUE;
+	}
+
+	now_time = g_date_time_new_now_utc ();
+	switch (aa_unit) {
+		case E_AUTO_ARCHIVE_UNIT_DAYS:
+			use_time = g_date_time_add_days (now_time, -aa_n_units);
+			break;
+		case E_AUTO_ARCHIVE_UNIT_WEEKS:
+			use_time = g_date_time_add_weeks (now_time, -aa_n_units);
+			break;
+		case E_AUTO_ARCHIVE_UNIT_MONTHS:
+			use_time = g_date_time_add_months (now_time, -aa_n_units);
+			break;
+		default:
+			g_date_time_unref (now_time);
+			g_free (aa_custom_target_folder_uri);
+			return TRUE;
+	}
+
+	g_date_time_unref (now_time);
+
+	search_sexp = g_strdup_printf ("(match-all (< (get-sent-date) %" G_GINT64_FORMAT "))", g_date_time_to_unix (use_time));
+	uids = camel_folder_search_by_expression (folder, search_sexp, cancellable, error);
+
+	if (!uids) {
+		success = FALSE;
+	} else {
+		gint ii;
+
+		if (aa_config == E_AUTO_ARCHIVE_CONFIG_MOVE_TO_ARCHIVE ||
+		    aa_config == E_AUTO_ARCHIVE_CONFIG_MOVE_TO_CUSTOM) {
+			CamelFolder *dest;
+
+			if (aa_config == E_AUTO_ARCHIVE_CONFIG_MOVE_TO_ARCHIVE) {
+				g_free (aa_custom_target_folder_uri);
+				aa_custom_target_folder_uri = em_utils_get_archive_folder_uri_from_folder (folder, mail_backend, uids, TRUE);
+			}
+
+			dest = aa_custom_target_folder_uri ? e_mail_session_uri_to_folder_sync (
+				e_mail_backend_get_session (mail_backend), aa_custom_target_folder_uri, 0,
+				cancellable, error) : NULL;
+			if (dest != NULL && dest != folder) {
+				camel_folder_freeze (folder);
+				camel_folder_freeze (dest);
+
+				if (camel_folder_transfer_messages_to_sync (
+					folder, uids, dest, TRUE, NULL,
+					cancellable, error)) {
+					/* make sure all deleted messages are marked as seen */
+					for (ii = 0; ii < uids->len; ii++) {
+						camel_folder_set_message_flags (
+							folder, uids->pdata[ii],
+							CAMEL_MESSAGE_SEEN, CAMEL_MESSAGE_SEEN);
+					}
+				} else {
+					success = FALSE;
+				}
+
+				camel_folder_thaw (folder);
+				camel_folder_thaw (dest);
+
+				if (success)
+					success = camel_folder_synchronize_sync (dest, FALSE, cancellable, error);
+			}
+
+			g_clear_object (&dest);
+		} else if (aa_config == E_AUTO_ARCHIVE_CONFIG_DELETE) {
+			camel_folder_freeze (folder);
+
+			camel_operation_push_message (cancellable, "%s", _("Deleting old messages"));
+
+			for (ii = 0; ii < uids->len; ii++) {
+				camel_folder_set_message_flags (
+					folder, uids->pdata[ii],
+					CAMEL_MESSAGE_DELETED | CAMEL_MESSAGE_SEEN, CAMEL_MESSAGE_DELETED | CAMEL_MESSAGE_SEEN);
+			}
+
+			camel_operation_pop_message (cancellable);
+
+			camel_folder_thaw (folder);
+		}
+
+		camel_folder_search_free (folder, uids);
+	}
+
+	g_free (search_sexp);
+	g_free (aa_custom_target_folder_uri);
+	g_date_time_unref (use_time);
+
+	return success;
 }

@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-several-pop-accounts" xml:lang="sv">
 
   <info>
-    <desc>How to split and sort mail when using more than one local account.</desc>
+    <desc>Hur man delar och sorterar e-post när man använder mer än ett lokalt konto.</desc>
     
     <link type="guide" xref="index#common-mail-problems"/>
     <link type="seealso" xref="mail-organizing"/>
@@ -17,12 +17,24 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-<title>Separating POP mail for more than one account</title>
+<title>Separera POP-e-post från mer än ett konto</title>
 
-<p>It is not possible to have separate accounts in the accounts and folder list pane. Evolution only has one unique inbox for incoming email.</p>
-<p>You can either use IMAP instead of POP, or move incoming emails into different folders by <link xref="mail-folders">creating folders</link> and <link xref="mail-filters">creating filters</link>: Create a new folder and create two subfolders (for incoming and for sent mail of that account). Now set up an incoming filter via <guiseq><gui>Edit</gui><gui>Message Filters...</gui><gui style="button">Add</gui></guiseq> to move incoming mail to the incoming folder by filtering on the recipient's address and set up an outgoing filter to move outgoing mail to the sent folder by filtering on the sender's address.</p>
+<p>Det är inte möjligt att ha separata konton i konto- och mapplistpanelerna. <app>Evolution</app> har bara en unik inkorg för inkommande e-post.</p>
+<p>Du kan antingen använda IMAP istället för POP, eller flytta inkommande e-post till olika mappar genom <link xref="mail-folders">skapa mappar</link> och <link xref="mail-filters">skapa filter</link>: Skapa en ny mapp och skapa två undermappar (för inkommande och för utgående e-post för det kontot). Ställ sedan in ett inkommande filter via <guiseq><gui>Redigera</gui><gui>Meddelandefilter…</gui><gui style="button">Lägg till</gui></guiseq> för att flytta inkommande e-post till den inkommande mappen genom att filtrera på mottagarens adress och ställ in ett utgående filter att flytta utgående e-post till mappen skickad genom att filtrera på avsändarens adress.</p>
 
 <!-- https://bugzilla.gnome.org/show_bug.cgi?id=273944 -->
 

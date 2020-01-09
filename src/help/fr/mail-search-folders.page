@@ -51,17 +51,17 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
-  <title>Utilisation des dossiers de recherche</title>
+  <title>Using <gui>Search</gui> folders</title>
   
 <p>Si les <link xref="mail-filters">filtres</link> ne sont pas assez souples ou si vous réalisez encore et encore la même <link xref="mail-searching">recherche</link>, pensez aux dossiers de recherche.</p>
 
 <p>Un dossier de recherche ressemble à un <link xref="mail-folders">dossier</link>, il se comporte comme une <link xref="mail-searching">recherche</link> et il se configure comme un <link xref="mail-filters">filtre</link>. Alors qu'un dossier conventionnel contient réellement des messages, un dossier de recherche est une vue sur des messages qui peuvent se trouver dans plusieurs dossiers. Les messages qu'il contient sont définis à la volée par un ensemble de critères choisis lors de la création du dossier de recherche.</p>
 
-<p>Evolution met à jour automatiquement le contenu du dossier de recherche lorsque des nouveaux messages sont reçus ou qu'un message est supprimé.</p>
+<p><app>Evolution</app> automatically updates the search folder contents when new messages are received or message are deleted.</p>
 
 <p>Le dossier de recherche <gui>Autres courriels</gui> est l'opposé des autres dossiers de recherche. Il affiche tous les messages qui n'apparaissent dans aucun autre dossier de recherche.</p>
 

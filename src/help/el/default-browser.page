@@ -17,9 +17,27 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
@@ -32,7 +50,7 @@
 
 <if:choose>
   <if:when test="!platform:gnome-shell !platform:gnome-classic !platform:unity">
-<p>Σε περίπτωση που χρησιμοποιείτε το Evolution κάτω από ένα διαφορετικό περιβάλλον από το GNOME,</p>
+<p>In case you use <app>Evolution</app> under a different environment from GNOME,</p>
  <steps>
    <item>
      <p>Ανοίξτε μια εφαρμογή τερματικού.</p>
@@ -53,7 +71,7 @@
      </cmd></p>
    </item>
    <item>
-     <p>Το Evolution μπορεί να χρειαστεί να επανεκκινηθεί για να εφαρμοστούν οι ρυθμίσεις.</p>
+     <p><app>Evolution</app> may need to be restarted for the settings to take effect.</p>
    </item>
  </steps>
 <note style="tip">

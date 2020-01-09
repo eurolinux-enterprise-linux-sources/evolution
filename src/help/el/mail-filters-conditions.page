@@ -20,9 +20,27 @@
     
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
@@ -38,7 +56,7 @@ included by XInclude. See http://blogs.gnome.org/shaunm/2011/07/21/understanding
 <p>Μηνύματα φίλτρων αναογα με τον εξυπηρετητή από τον οποίον τα πήρατε. Αυτό είναι περισσότερο χρήσιμο αν χρησιμοποιείτε πολλαπλούς λογαριασμούς αλληλογραφίας POP.</p></item>
 
 <item><p>Σωλήνωση στο πρόγραμμα:</p>
-<p>Το Evolution μπορεί να χρησιμοποιήσει μια εξωτερική εντολή για να επεξεργαστεί ένα μήνυμα, μετά να το επεξεργαστεί με βάση την επιστρεφόμενη τιμή. Οι χρησιμοποιούμενες εντολές με αυτό τον τρόπο θα πρέπει να επιστρέφουν έναν ακέραιο. Αυτό χρησιμοποιείται πιο συχνά για να προστεθεί ένα εξωτερικό φίλτρο ανεπιθύμητων μηνυμάτων.</p></item>
+<p><app>Evolution</app> can use an external command to process a message, then process it based on the return value. Commands used in this way must return an integer. This is most commonly used to add an external junk mail filter.</p></item>
 
 <item><p>Δοκιμή ανεπιθύμητων:</p>
 <p>Φιλτράρει με βάση τα αποτελέσματα του ελέγχου <link xref="mail-spam">ανεπιθύμητης αλληλογραφίας</link>.</p></item>

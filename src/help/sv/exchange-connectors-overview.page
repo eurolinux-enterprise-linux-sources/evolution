@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" xmlns:e="http://projectmallard.org/experimental/" xmlns:if="http://projectmallard.org/experimental/if/" type="guide" id="exchange-connectors-overview" xml:lang="sv">
 
   <info>
-    <desc>Which additional package to install in order to connect to an Exchange server.</desc>
+    <desc>Vilka extra paket man måste installera för att kunna ansluta till en Exchange-server.</desc>
 
     <link type="guide" xref="exchange-placeholder"/>
 
@@ -15,33 +15,45 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-<title>Choosing the right connector</title>
+<title>Välj rätt anslutning</title>
 
-<p>Depending on the version of the Microsoft Exchange server that you would like to connect to it is required to make sure that an additional package is installed that provides this functionality.</p>
+<p>Beroende på versionen av Microsoft Exchange-servern som du vill ansluta till kan det krävas att ett extra paket är installerat som tillhandahåller denna funktionalitet.</p>
 
-<p>For Microsoft Exchange 2007, 2010 and newer it is recommended to use the package <sys>evolution-ews</sys>.</p>
+<p>För Microsoft Exchange 2007, 2010 och nyare rekommenderas det att använda paketet <sys>evolution-ews</sys>.</p>
 <if:choose xmlns:if="http://projectmallard.org/if/1.0/">
   <if:when test="action:install">
     <note style="info package">
-      <p><link action="install:evolution-ews" href="http://projects.gnome.org/evolution/download" style="button">Install evolution-ews</link></p>
+      <p><link action="install:evolution-ews" href="https://wiki.gnome.org/Apps/Evolution#Get_the_Source_Code" style="button">Installera evolution-ews</link></p>
     </note>
   </if:when>
 </if:choose>
 
 
-<p>For older versions of Microsoft Exchange, or if <sys>evolution-ews</sys> does not work well for you, try <sys>evolution-mapi</sys>. It uses Microsoft's Messaging API which is also used by Microsoft Outlook. However, <sys>evolution-mapi</sys> requires installing <sys>OpenChange</sys> and <sys>Samba 4</sys>, and is not as performant as <sys>evolution-ews</sys>.</p>
+<p>För äldre versioner av Microsoft Exchange, eller om <sys>evolution-ews</sys> inte fungerar bra för dig, prova <sys>evolution-mapi</sys>. Det använder Microsofts Messaging API som också används av Microsoft Outlook. Men <sys>evolution-mapi</sys> kräver att du installerar <sys>OpenChange</sys> och <sys>Samba 4</sys> och har inte lika bra prestanda som <sys>evolution-ews</sys>.</p>
 
 <if:choose xmlns:if="http://projectmallard.org/if/1.0/">
   <if:when test="action:install">
     <note style="info package">
-      <p><link action="install:evolution-mapi" href="http://projects.gnome.org/evolution/download" style="button">Install evolution-mapi</link></p>
+      <p><link action="install:evolution-mapi" href="https://wiki.gnome.org/Apps/Evolution#Get_the_Source_Code" style="button">Installera evolution-mapi</link></p>
     </note>
   </if:when>
 </if:choose>
 
-<note style="tip"><p>If you are unsure which Microsoft Exchange server version is used, you may want to contact your system administrator for more information.</p></note>
+<note style="tip"><p>Om du är osäker på vilken din Microsoft Exchange-serverversion är bör du kontakta din systemadministratör för mer information.</p></note>
 
 <!-- TODO:POST-3-4: <mbarnes> actually, a table in the docs would make it crystal clear  (Exchange version x Evolution backend); <seanius> also, a feature matrix of what works in the particular releases might be helpful, though maybe hard to visualize in a compact manner
 -->

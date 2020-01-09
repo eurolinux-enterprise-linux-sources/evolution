@@ -26,7 +26,6 @@
 #include <libgnomecanvas/libgnomecanvas.h>
 
 #include "e-calendar-view.h"
-#include "gnome-cal.h"
 
 /*
  * EWeekView - displays the Week & Month views of the calendar.
@@ -218,7 +217,7 @@ struct _EWeekView {
 	gint rows_per_compressed_cell;
 
 	/* The number of rows we have used for each day (i.e. each cell) */
-	gint rows_per_day[E_WEEK_VIEW_MAX_WEEKS * 7];
+	gint rows_per_day[E_WEEK_VIEW_MAX_WEEKS * 7 + 1];
 
 	/* If the small font is used for displaying the minutes. */
 	gboolean use_small_font;
@@ -381,6 +380,11 @@ gboolean	e_week_view_get_show_event_end_times
 void		e_week_view_set_show_event_end_times
 						(EWeekView *week_view,
 						 gboolean show_event_end_times);
+gboolean	e_week_view_get_show_icons_month_view
+						(EWeekView *week_view);
+void		e_week_view_set_show_icons_month_view
+						(EWeekView *week_view,
+						 gboolean show_icons_month_view);
 
 void		e_week_view_delete_occurrence	(EWeekView *week_view);
 

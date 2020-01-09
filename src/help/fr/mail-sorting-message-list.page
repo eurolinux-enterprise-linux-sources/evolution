@@ -57,19 +57,19 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
   <title>Tri de la liste des messages</title>
   
-<p>Evolution vous permet d'organiser vos courriels en triant les messages dans la <link xref="intro-main-window#e-mail">liste des messages</link>.</p>
+<p><app>Evolution</app> lets you organize your emails by letting you sort messages in the <link xref="intro-main-window#e-mail">message list</link>.</p>
 
 <section id="email-threads">
 <title>Tri des messages par fils de discussion</title>
 <p>Vous pouvez utiliser un affichage groupé par fils de discussion pour trier vos courriels. Pour activer cette fonction, cliquez sur <guiseq><gui>Affichage</gui><gui>Grouper par fils de discussion</gui></guiseq> ou pressez <keyseq><key>Ctrl</key><key>T</key></keyseq>.</p>
 <p>Cette fonctionnalité, lorsqu'elle est activée, regroupe les réponses au message d'origine et vous permet de suivre le flux de la conversation d'un message à l'autre.</p>
-<p>Lorsqu'un nouveau message arrive, il est ajouté sous le message parent. Les fils de discussion sont triés et affichés sur la base de la date du message reçu le plus récemment.</p>
+<p>Lorsqu'un nouveau message arrive, il est ajouté sous le message parent. Les fils de discussion sont triés et affichés par ordre chronologique.</p>
 <note style="tip"><p>Pour les utilisateurs avancés : il existe une clé GSettings qui vous permet de basculer entre un état plié ou déplié des fils de discussion de courriel. L'état plié est activé par défaut. Il peut être modifié en démarrant le <app>terminal</app> et en lançant la commande <cmd>gsettings set org.gnome.evolution.mail thread-expand true</cmd>.</p>
 <list>
 <item><p>Ouvrez l'application <app>Terminal</app>.</p></item>
@@ -80,19 +80,19 @@
 
 <section id="column-headers">
 <title>Tri des messages avec les en-têtes de colonne</title>
-<p>La liste des messages comporte normalement des colonnes pour indiquer si un message a été lu, s'il possède des pièces jointes, son importance, l'expéditeur, la date et le sujet. Pour modifier les colonnes utilisées, vous pouvez :</p>
+<p>La liste des messages comporte normalement des colonnes pour indiquer si un message a été lu, s'il possède des pièces jointes, ainsi que son importance, l'expéditeur, la date et le sujet. Pour modifier les colonnes utilisées, vous pouvez :</p>
 <list>
 <item><p>déplacer les barres d'en-tête de colonne,</p></item>
 <item><p>faire un clic-droit sur l'en-tête,</p></item>
 <item><p>sélectionner l'option <gui>Enlever cette colonne</gui> ou <gui>Ajouter une colonne</gui>.</p></item>
 </list>
 
-<p>Evolution vous permet de trier vos messages en utilisant ces colonnes. Il suffit de cliquer sur l'étiquette de la colonne pour trier les courriels. La direction de la flèche à côté de l'étiquette indique la direction du tri.</p>
+<p><app>Evolution</app> allows you to sort your messages using these columns. Just click on the column label to sort the emails. The direction of the arrow next to the label indicates the direction of the sort.</p>
 </section>
 
 <section id="sort-options">
 <title>Utilisation d'autres options de tri</title>
-<p>Evolution fournit d'autres façons de trier les messages de courriel. Vous pouvez utiliser Trier par, Tri croissant, Tri décroissant ou Ne pas trier.</p>
+<p><app>Evolution</app> provides other ways for sorting email messages. You can use Sort By, Sort Ascending, Sort Descending, or Reset sort.</p>
 	<section id="sort-options-by">
 	<title>Trier par</title>
 		<p>Vous pouvez également trier les messages de courriel en utilisant la liste <gui>Trier par</gui>.</p>
@@ -143,10 +143,10 @@
 	</section>
 
 	<section id="sort-options-unsort">
-	<title>Ne pas trier</title>
+	<title>Réinitialiser le tri</title>
 		<steps>
 		<item><p>Faites un clic-droit sur l'en-tête de la colonne de la liste des messages.</p></item>
-		<item><p>Sélectionnez l'option <gui>Ne pas trier</gui>.</p></item>
+		<item><p>Sélectionnez l'option <gui>Réinitialiser le tri</gui>.</p></item>
 		</steps>
 		<p>Cela enlève le tri selon cette colonne, revenant à l'état de tri des messages selon leur ordre d'arrivée dans le dossier.</p>
 	</section>

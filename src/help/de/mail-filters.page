@@ -28,19 +28,25 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
@@ -48,7 +54,7 @@
 
 <p>Nachrichtenfilter führen aufgrund von Bedingungen, die Sie festgelegt haben, Aktionen mit Nachrichten aus. Es gibt Filter sowohl für eingehende als auch für ausgehende E-Mails.</p>
 
-<p>Filter werden automatisch auf eingehende Nachrichten für lokale Konten (wie z.B. POP) angewendet. E-Mail-Server von entfernten Konten (wie z.B. IMAP) filtern häufig E-Mails bereits auf dem Server, weil es schneller ist. Wenn die Filter in Evolution auf entfernte Konten angewendet werden sollen, so schalten Sie dies unter <guiseq><gui>Bearbeiten</gui><gui>Einstellungen</gui><gui>E-Mail-Konten</gui><gui style="button">Bearbeiten</gui><gui>Empfangsoptionen</gui><gui>Optionen</gui><gui>Filter auf neue Nachrichten im Eingang dieses Servers anwenden</gui></guiseq> ein.</p>
+<p>Filter werden automatisch auf eingehende Nachrichten für lokale Konten (wie z.B. POP) angewendet. E-Mail-Server von entfernten Konten (wie z.B. IMAP) filtern häufig E-Mails bereits auf dem Server, weil es schneller ist. Wenn die Filter in <app>Evolution</app> auf entfernte Konten angewendet werden sollen, so schalten Sie dies unter <guiseq><gui>Bearbeiten</gui><gui>Einstellungen</gui><gui>E-Mail-Konten</gui><gui style="button">Bearbeiten</gui><gui>Empfangsoptionen</gui><gui>Optionen</gui><gui>Filter auf neue Nachrichten im Eingang dieses Servers anwenden</gui></guiseq> ein.</p>
 
 <p>Um händisch Filter auf Nachrichten in einem Ordner anzuwenden, wählen Sie die Nachrichten und klicken Sie auf  <guiseq><gui>Nachricht</gui><gui>Filter anwenden</gui></guiseq>, oder drücken Sie <keyseq><key>Strg</key><key>Y</key></keyseq>.</p>
 <p>Um alle Nachrichten in einem Ordner auszuwählen, wählen Sie <guiseq><gui>Bearbeiten</gui><gui>Alle markieren</gui></guiseq> in der Menüleiste, oder drücken Sie <keyseq><key>Strg</key><key>A</key></keyseq>.</p>

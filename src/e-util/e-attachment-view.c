@@ -50,13 +50,7 @@ static const gchar *ui =
 "    <menuitem action='remove'/>"
 "    <menuitem action='properties'/>"
 "    <separator/>"
-"    <placeholder name='inline-actions'>"
-"      <menuitem action='show'/>"
-"      <menuitem action='show-all'/>"
-"      <separator/>"
-"      <menuitem action='hide'/>"
-"      <menuitem action='hide-all'/>"
-"    </placeholder>"
+"    <placeholder name='inline-actions'/>"
 "    <separator/>"
 "    <placeholder name='custom-actions'/>"
 "    <separator/>"
@@ -100,44 +94,6 @@ action_cancel_cb (GtkAction *action,
 	attachment = list->data;
 
 	e_attachment_cancel (attachment);
-
-	g_list_foreach (list, (GFunc) g_object_unref, NULL);
-	g_list_free (list);
-}
-
-static void
-action_hide_cb (GtkAction *action,
-                EAttachmentView *view)
-{
-	EAttachment *attachment;
-	GList *list;
-
-	list = e_attachment_view_get_selected_attachments (view);
-	g_return_if_fail (g_list_length (list) == 1);
-	attachment = list->data;
-
-	e_attachment_set_shown (attachment, FALSE);
-
-	g_list_foreach (list, (GFunc) g_object_unref, NULL);
-	g_list_free (list);
-}
-
-static void
-action_hide_all_cb (GtkAction *action,
-                    EAttachmentView *view)
-{
-	EAttachmentStore *store;
-	GList *list, *iter;
-
-	store = e_attachment_view_get_store (view);
-	list = e_attachment_store_get_attachments (store);
-
-	for (iter = list; iter != NULL; iter = iter->next) {
-		EAttachment *attachment;
-
-		attachment = E_ATTACHMENT (iter->data);
-		e_attachment_set_shown (attachment, FALSE);
-	}
 
 	g_list_foreach (list, (GFunc) g_object_unref, NULL);
 	g_list_free (list);
@@ -249,6 +205,21 @@ action_remove_cb (GtkAction *action,
 }
 
 static void
+call_attachment_save_handle_error (GObject *source_object,
+				   GAsyncResult *result,
+				   gpointer user_data)
+{
+	GtkWindow *window = user_data;
+
+	g_return_if_fail (E_IS_ATTACHMENT (source_object));
+	g_return_if_fail (!window || GTK_IS_WINDOW (window));
+
+	e_attachment_save_handle_error (E_ATTACHMENT (source_object), result, window);
+
+	g_clear_object (&window);
+}
+
+static void
 action_save_all_cb (GtkAction *action,
                     EAttachmentView *view)
 {
@@ -278,7 +249,7 @@ action_save_all_cb (GtkAction *action,
 
 		e_attachment_save_async (
 			attachment, destination, (GAsyncReadyCallback)
-			e_attachment_save_handle_error, parent);
+			call_attachment_save_handle_error, parent ? g_object_ref (parent) : NULL);
 	}
 
 	g_object_unref (destination);
@@ -315,50 +286,12 @@ action_save_as_cb (GtkAction *action,
 
 		e_attachment_save_async (
 			attachment, destination, (GAsyncReadyCallback)
-			e_attachment_save_handle_error, parent);
+			call_attachment_save_handle_error, parent ? g_object_ref (parent) : NULL);
 	}
 
 	g_object_unref (destination);
 
 exit:
-	g_list_foreach (list, (GFunc) g_object_unref, NULL);
-	g_list_free (list);
-}
-
-static void
-action_show_cb (GtkAction *action,
-                EAttachmentView *view)
-{
-	EAttachment *attachment;
-	GList *list;
-
-	list = e_attachment_view_get_selected_attachments (view);
-	g_return_if_fail (g_list_length (list) == 1);
-	attachment = list->data;
-
-	e_attachment_set_shown (attachment, TRUE);
-
-	g_list_foreach (list, (GFunc) g_object_unref, NULL);
-	g_list_free (list);
-}
-
-static void
-action_show_all_cb (GtkAction *action,
-                    EAttachmentView *view)
-{
-	EAttachmentStore *store;
-	GList *list, *iter;
-
-	store = e_attachment_view_get_store (view);
-	list = e_attachment_store_get_attachments (store);
-
-	for (iter = list; iter != NULL; iter = iter->next) {
-		EAttachment *attachment;
-
-		attachment = E_ATTACHMENT (iter->data);
-		e_attachment_set_shown (attachment, TRUE);
-	}
-
 	g_list_foreach (list, (GFunc) g_object_unref, NULL);
 	g_list_free (list);
 }
@@ -427,36 +360,20 @@ static GtkActionEntry editable_entries[] = {
 	  G_CALLBACK (action_remove_cb) }
 };
 
-static GtkActionEntry inline_entries[] = {
+static void
+call_attachment_load_handle_error (GObject *source_object,
+				   GAsyncResult *result,
+				   gpointer user_data)
+{
+	GtkWindow *window = user_data;
 
-	{ "hide",
-	  NULL,
-	  N_("_Hide"),
-	  NULL,
-	  NULL,  /* XXX Add a tooltip! */
-	  G_CALLBACK (action_hide_cb) },
+	g_return_if_fail (E_IS_ATTACHMENT (source_object));
+	g_return_if_fail (!window || GTK_IS_WINDOW (window));
 
-	{ "hide-all",
-	  NULL,
-	  N_("Hid_e All"),
-	  NULL,
-	  NULL,  /* XXX Add a tooltip! */
-	  G_CALLBACK (action_hide_all_cb) },
+	e_attachment_load_handle_error (E_ATTACHMENT (source_object), result, window);
 
-	{ "show",
-	  NULL,
-	  N_("_View Inline"),
-	  NULL,
-	  NULL,  /* XXX Add a tooltip! */
-	  G_CALLBACK (action_show_cb) },
-
-	{ "show-all",
-	  NULL,
-	  N_("Vie_w All Inline"),
-	  NULL,
-	  NULL,  /* XXX Add a tooltip! */
-	  G_CALLBACK (action_show_all_cb) }
-};
+	g_clear_object (&window);
+}
 
 static void
 attachment_view_netscape_url (EAttachmentView *view,
@@ -502,7 +419,7 @@ attachment_view_netscape_url (EAttachmentView *view,
 	e_attachment_store_add_attachment (store, attachment);
 	e_attachment_load_async (
 		attachment, (GAsyncReadyCallback)
-		e_attachment_load_handle_error, parent);
+		call_attachment_load_handle_error, parent ? g_object_ref (parent) : NULL);
 	g_object_unref (attachment);
 
 	g_strfreev (strv);
@@ -556,7 +473,7 @@ attachment_view_text_calendar (EAttachmentView *view,
 	e_attachment_store_add_attachment (store, attachment);
 	e_attachment_load_async (
 		attachment, (GAsyncReadyCallback)
-		e_attachment_load_handle_error, parent);
+		call_attachment_load_handle_error, parent ? g_object_ref (parent) : NULL);
 	g_object_unref (attachment);
 
 	g_object_unref (mime_part);
@@ -610,7 +527,7 @@ attachment_view_text_x_vcard (EAttachmentView *view,
 	e_attachment_store_add_attachment (store, attachment);
 	e_attachment_load_async (
 		attachment, (GAsyncReadyCallback)
-		e_attachment_load_handle_error, parent);
+		call_attachment_load_handle_error, parent ? g_object_ref (parent) : NULL);
 	g_object_unref (attachment);
 
 	g_object_unref (mime_part);
@@ -651,7 +568,7 @@ attachment_view_uris (EAttachmentView *view,
 		e_attachment_store_add_attachment (store, attachment);
 		e_attachment_load_async (
 			attachment, (GAsyncReadyCallback)
-			e_attachment_load_handle_error, parent);
+			call_attachment_load_handle_error, parent ? g_object_ref (parent) : NULL);
 		g_object_unref (attachment);
 	}
 
@@ -665,66 +582,31 @@ attachment_view_update_actions (EAttachmentView *view)
 {
 	EAttachmentViewPrivate *priv;
 	EAttachment *attachment;
-	EAttachmentStore *store;
 	GtkActionGroup *action_group;
 	GtkAction *action;
 	GList *list, *iter;
-	guint n_shown = 0;
-	guint n_hidden = 0;
 	guint n_selected;
 	gboolean busy = FALSE;
-	gboolean can_show = FALSE;
-	gboolean shown = FALSE;
-	gboolean visible;
 
 	g_return_if_fail (E_IS_ATTACHMENT_VIEW (view));
 
 	priv = e_attachment_view_get_private (view);
-
-	store = e_attachment_view_get_store (view);
-	list = e_attachment_store_get_attachments (store);
-
-	for (iter = list; iter != NULL; iter = iter->next) {
-		attachment = iter->data;
-
-		if (!e_attachment_get_can_show (attachment))
-			continue;
-
-		if (e_attachment_get_shown (attachment))
-			n_shown++;
-		else
-			n_hidden++;
-	}
-
-	g_list_foreach (list, (GFunc) g_object_unref, NULL);
-	g_list_free (list);
 
 	list = e_attachment_view_get_selected_attachments (view);
 	n_selected = g_list_length (list);
 
 	if (n_selected == 1) {
 		attachment = g_object_ref (list->data);
+
 		busy |= e_attachment_get_loading (attachment);
 		busy |= e_attachment_get_saving (attachment);
-		can_show = e_attachment_get_can_show (attachment);
-		shown = e_attachment_get_shown (attachment);
 	} else
 		attachment = NULL;
 
-	g_list_foreach (list, (GFunc) g_object_unref, NULL);
-	g_list_free (list);
+	g_list_free_full (list, g_object_unref);
 
 	action = e_attachment_view_get_action (view, "cancel");
 	gtk_action_set_visible (action, busy);
-
-	action = e_attachment_view_get_action (view, "hide");
-	gtk_action_set_visible (action, can_show && shown);
-
-	/* Show this action if there are multiple viewable
-	 * attachments, and at least one of them is shown. */
-	visible = (n_shown + n_hidden > 1) && (n_shown > 0);
-	action = e_attachment_view_get_action (view, "hide-all");
-	gtk_action_set_visible (action, visible);
 
 	action = e_attachment_view_get_action (view, "open-with");
 	gtk_action_set_visible (action, !busy && n_selected == 1);
@@ -738,23 +620,16 @@ attachment_view_update_actions (EAttachmentView *view)
 	action = e_attachment_view_get_action (view, "save-as");
 	gtk_action_set_visible (action, !busy && n_selected > 0);
 
-	action = e_attachment_view_get_action (view, "show");
-	gtk_action_set_visible (action, can_show && !shown);
-
-	/* Show this action if there are multiple viewable
-	 * attachments, and at least one of them is hidden. */
-	visible = (n_shown + n_hidden > 1) && (n_hidden > 0);
-	action = e_attachment_view_get_action (view, "show-all");
-	gtk_action_set_visible (action, visible);
-
 	/* Clear out the "openwith" action group. */
 	gtk_ui_manager_remove_ui (priv->ui_manager, priv->merge_id);
 	action_group = e_attachment_view_get_action_group (view, "openwith");
 	e_action_group_remove_all_actions (action_group);
 	gtk_ui_manager_ensure_update (priv->ui_manager);
 
-	if (attachment == NULL || busy)
+	if (!attachment || busy) {
+		g_clear_object (&attachment);
 		return;
+	}
 
 	list = e_attachment_list_apps (attachment);
 
@@ -818,9 +693,8 @@ attachment_view_update_actions (EAttachmentView *view)
 		g_free (action_tooltip);
 	}
 
+	g_list_free_full (list, g_object_unref);
 	g_object_unref (attachment);
-	g_list_foreach (list, (GFunc) g_object_unref, NULL);
-	g_list_free (list);
 }
 
 static void
@@ -901,7 +775,7 @@ e_attachment_view_init (EAttachmentView *view)
 
 	action_group = e_attachment_view_add_action_group (view, "editable");
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		view, "editable",
 		action_group, "visible",
 		G_BINDING_BIDIRECTIONAL |
@@ -909,13 +783,6 @@ e_attachment_view_init (EAttachmentView *view)
 	gtk_action_group_add_actions (
 		action_group, editable_entries,
 		G_N_ELEMENTS (editable_entries), view);
-
-	action_group = e_attachment_view_add_action_group (view, "inline");
-
-	gtk_action_group_add_actions (
-		action_group, inline_entries,
-		G_N_ELEMENTS (inline_entries), view);
-	gtk_action_group_set_visible (action_group, FALSE);
 
 	e_attachment_view_add_action_group (view, "openwith");
 
@@ -1865,6 +1732,11 @@ e_attachment_view_get_popup_menu (EAttachmentView *view)
 	ui_manager = e_attachment_view_get_ui_manager (view);
 	menu = gtk_ui_manager_get_widget (ui_manager, "/context");
 	g_return_val_if_fail (GTK_IS_MENU (menu), NULL);
+
+	if (!gtk_menu_get_attach_widget (GTK_MENU (menu)))
+		gtk_menu_attach_to_widget (GTK_MENU (menu),
+					   GTK_WIDGET (view),
+					   NULL);
 
 	return menu;
 }

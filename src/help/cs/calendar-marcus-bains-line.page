@@ -13,12 +13,23 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>The red "Marcus Bains" line displays the current time.</desc>
+    <desc>Jak v kalendáři zobrazit červenou čáru u aktuálního času (tzv. čára Marcuse Bainse)</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Time display in the Day view</title>
+  <title>Zobrazení času v denním zobrazení</title>
 
-  <p>The red Marcus Bains Line in the Day view of the calendar is a marker to
-  show the current date and time.</p>
+  <p>Červená čára Marca Bainse je značka, která ukazuje v kalendáři aktuální datum a čas.</p>
 
 </page>

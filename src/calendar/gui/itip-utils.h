@@ -22,10 +22,12 @@
 #include <libical/ical.h>
 #include <string.h>
 #include <libecal/libecal.h>
+#include <calendar/gui/e-cal-model.h>
 
 G_BEGIN_DECLS
 
 typedef enum {
+	E_CAL_COMPONENT_METHOD_NONE = -1,
 	E_CAL_COMPONENT_METHOD_PUBLISH,
 	E_CAL_COMPONENT_METHOD_REQUEST,
 	E_CAL_COMPONENT_METHOD_REPLY,
@@ -45,6 +47,8 @@ struct CalMimeAttach {
 	gboolean disposition;
 	guint length;
 };
+
+void		itip_cal_mime_attach_free	(gpointer ptr); /* struct CalMimeAttach * */
 
 gboolean	itip_get_default_name_and_address
 						(ESourceRegistry *registry,
@@ -68,15 +72,42 @@ const gchar *	itip_strip_mailto		(const gchar *address);
 gchar *		itip_get_comp_attendee		(ESourceRegistry *registry,
 						 ECalComponent *comp,
 						 ECalClient *cal_client);
-gboolean	itip_send_comp			(ESourceRegistry *registry,
+gboolean	itip_send_comp_sync		(ESourceRegistry *registry,
 						 ECalComponentItipMethod method,
-						 ECalComponent *comp,
+						 ECalComponent *send_comp,
 						 ECalClient *cal_client,
 						 icalcomponent *zones,
 						 GSList *attachments_list,
 						 GSList *users,
 						 gboolean strip_alarms,
-						 gboolean only_new_attendees);
+						 gboolean only_new_attendees,
+						 GCancellable *cancellable,
+						 GError **error);
+void		itip_send_component_with_model	(ECalModel *model,
+						 ECalComponentItipMethod method,
+						 ECalComponent *send_comp,
+						 ECalClient *cal_client,
+						 icalcomponent *zones,
+						 GSList *attachments_list,
+						 GSList *users,
+						 gboolean strip_alarms,
+						 gboolean only_new_attendees,
+						 gboolean ensure_master_object);
+void		itip_send_component		(ESourceRegistry *registry,
+						 ECalComponentItipMethod method,
+						 ECalComponent *send_comp,
+						 ECalClient *cal_client,
+						 icalcomponent *zones,
+						 GSList *attachments_list,
+						 GSList *users,
+						 gboolean strip_alarms,
+						 gboolean only_new_attendees,
+						 gboolean ensure_master_object,
+						 GCancellable *cancellable,
+						 GAsyncReadyCallback callback,
+						 gpointer user_data);
+gboolean	itip_send_component_finish	(GAsyncResult *result,
+						 GError **error);
 gboolean	itip_publish_begin		(ECalComponent *pub_comp,
 						 ECalClient *cal_client,
 						 gboolean cloned,

@@ -49,7 +49,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -58,9 +58,9 @@
 <p>Si vous souhaitez modifier une tâche existante de votre liste de tâches,</p>
 
 <steps>
-<item><p>faites un double-clic sur la tâche que vous voulez modifier dans la liste de tâches ou faites un clic-droit sur la tâche, puis cliquez sur <key>Ouvrir la tâche</key>,</p></item>
+<item><p>Faites un double-clic sur la tâche que vous voulez modifier dans la liste de tâches ou faites un clic-droit sur la tâche, puis cliquez sur <key>Ouvrir la tâche</key>,</p></item>
 <item><p>modifiez les informations de la tâche,</p></item>
-<item><p>cliquez sur le bouton <gui style="button">Enregistrer</gui> ou utilisez le menu <guiseq><gui>Fichier</gui><gui>Enregistrer</gui></guiseq>.</p></item>
+<item><p>Cliquez sur le bouton <gui style="button">Enregistrer</gui> ou utilisez le menu <guiseq><gui>Fichier</gui><gui>Enregistrer</gui></guiseq>.</p></item>
 </steps>
 
 </page>

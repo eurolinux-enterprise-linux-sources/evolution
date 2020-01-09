@@ -28,6 +28,8 @@
 #include <libecal/libecal.h>
 
 #include <e-util/e-util.h>
+#include <shell/e-shell.h>
+#include <calendar/gui/e-cal-data-model.h>
 
 #include "e-cell-date-edit-text.h"
 
@@ -86,13 +88,9 @@ typedef enum {
 	E_CAL_MODEL_FIELD_UID,
 	E_CAL_MODEL_FIELD_CREATED,
 	E_CAL_MODEL_FIELD_LASTMODIFIED,
+	E_CAL_MODEL_FIELD_SOURCE,           /* not a real field */
 	E_CAL_MODEL_FIELD_LAST
 } ECalModelField;
-
-typedef enum {
-	E_CAL_MODEL_FLAGS_INVALID = -1,
-	E_CAL_MODEL_FLAGS_EXPAND_RECURRENCES = 0x01
-} ECalModelFlags;
 
 typedef struct _ECalModel ECalModel;
 typedef struct _ECalModelClass ECalModelClass;
@@ -109,6 +107,7 @@ struct _ECalModelComponent {
 	icalcomponent *icalcomp;
 	time_t instance_start;
 	time_t instance_end;
+	gboolean is_new_component;
 
 	/* Private data used by ECalModelCalendar and ECalModelTasks */
 	/* keep these public to avoid many accessor functions */
@@ -144,11 +143,15 @@ struct _ECalModelClass {
 	const gchar *	(*get_color_for_component)
 						(ECalModel *model,
 						 ECalModelComponent *comp_data);
-	void		(*fill_component_from_model)
+	void		(*store_values_from_model)
+						(ECalModel *model,
+						 ETableModel *source_model,
+						 gint row,
+						 GHashTable *values); /* column ID ~> value */
+	void		(*fill_component_from_values)
 						(ECalModel *model,
 						 ECalModelComponent *comp_data,
-						 ETableModel *source_model,
-						 gint row);
+						 GHashTable *values); /* column ID ~> value, populated by store_values_from_model() */
 
 	/* Signals */
 	void		(*time_range_changed)	(ECalModel *model,
@@ -157,25 +160,22 @@ struct _ECalModelClass {
 	void		(*row_appended)		(ECalModel *model);
 	void		(*comps_deleted)	(ECalModel *model,
 						 gpointer list);
-	void		(*cal_view_progress)	(ECalModel *model,
-						 const gchar *message,
-						 gint progress,
-						 ECalClientSourceType type);
-	void		(*cal_view_complete)	(ECalModel *model,
-						 const GError *error,
-						 ECalClientSourceType type);
-	void		(*status_message)	(ECalModel *model,
-						 const gchar *message,
-						 gdouble percent);
 	void		(*timezone_changed)	(ECalModel *model,
 						 icaltimezone *old_zone,
 						 icaltimezone *new_zone);
+	void		(*object_created)	(ECalModel *model,
+						 ECalClient *where);
 };
 
 typedef time_t (*ECalModelDefaultTimeFunc) (ECalModel *model, gpointer user_data);
 
 GType		e_cal_model_get_type		(void);
 GType		e_cal_model_component_get_type	(void);
+ECalDataModel *	e_cal_model_get_data_model	(ECalModel *model);
+ESourceRegistry *
+		e_cal_model_get_registry	(ECalModel *model);
+EShell *	e_cal_model_get_shell		(ECalModel *model);
+EClientCache *	e_cal_model_get_client_cache	(ECalModel *model);
 icalcomponent_kind
 		e_cal_model_get_component_kind	(ECalModel *model);
 void		e_cal_model_set_component_kind	(ECalModel *model,
@@ -183,11 +183,6 @@ void		e_cal_model_set_component_kind	(ECalModel *model,
 gboolean	e_cal_model_get_confirm_delete	(ECalModel *model);
 void		e_cal_model_set_confirm_delete	(ECalModel *model,
 						 gboolean confirm_delete);
-ECalModelFlags	e_cal_model_get_flags		(ECalModel *model);
-void		e_cal_model_set_flags		(ECalModel *model,
-						 ECalModelFlags flags);
-ESourceRegistry *
-		e_cal_model_get_registry	(ECalModel *model);
 icaltimezone *	e_cal_model_get_timezone	(ECalModel *model);
 void		e_cal_model_set_timezone	(ECalModel *model,
 						 icaltimezone *zone);
@@ -249,27 +244,101 @@ gint		e_cal_model_get_work_day_start_minute
 void		e_cal_model_set_work_day_start_minute
 						(ECalModel *model,
 						 gint work_day_start_minute);
-ECalClient *	e_cal_model_ref_default_client	(ECalModel *model);
-void		e_cal_model_set_default_client	(ECalModel *model,
-						 ECalClient *client);
-GList *		e_cal_model_list_clients	(ECalModel *model);
-gboolean	e_cal_model_add_client		(ECalModel *model,
-						 ECalClient *cal_client);
-gboolean	e_cal_model_remove_client	(ECalModel *model,
-						 ECalClient *cal_client);
-void		e_cal_model_remove_all_clients	(ECalModel *model);
+gint		e_cal_model_get_work_day_start_mon
+						(ECalModel *model);
+void		e_cal_model_set_work_day_start_mon
+						(ECalModel *model,
+						 gint work_day_start);
+gint		e_cal_model_get_work_day_end_mon
+						(ECalModel *model);
+void		e_cal_model_set_work_day_end_mon
+						(ECalModel *model,
+						 gint work_day_end);
+gint		e_cal_model_get_work_day_start_tue
+						(ECalModel *model);
+void		e_cal_model_set_work_day_start_tue
+						(ECalModel *model,
+						 gint work_day_start);
+gint		e_cal_model_get_work_day_end_tue
+						(ECalModel *model);
+void		e_cal_model_set_work_day_end_tue
+						(ECalModel *model,
+						 gint work_day_end);
+gint		e_cal_model_get_work_day_start_wed
+						(ECalModel *model);
+void		e_cal_model_set_work_day_start_wed
+						(ECalModel *model,
+						 gint work_day_start);
+gint		e_cal_model_get_work_day_end_wed
+						(ECalModel *model);
+void		e_cal_model_set_work_day_end_wed
+						(ECalModel *model,
+						 gint work_day_end);
+gint		e_cal_model_get_work_day_start_thu
+						(ECalModel *model);
+void		e_cal_model_set_work_day_start_thu
+						(ECalModel *model,
+						 gint work_day_start);
+gint		e_cal_model_get_work_day_end_thu
+						(ECalModel *model);
+void		e_cal_model_set_work_day_end_thu
+						(ECalModel *model,
+						 gint work_day_end);
+gint		e_cal_model_get_work_day_start_fri
+						(ECalModel *model);
+void		e_cal_model_set_work_day_start_fri
+						(ECalModel *model,
+						 gint work_day_start);
+gint		e_cal_model_get_work_day_end_fri
+						(ECalModel *model);
+void		e_cal_model_set_work_day_end_fri
+						(ECalModel *model,
+						 gint work_day_end);
+gint		e_cal_model_get_work_day_start_sat
+						(ECalModel *model);
+void		e_cal_model_set_work_day_start_sat
+						(ECalModel *model,
+						 gint work_day_start);
+gint		e_cal_model_get_work_day_end_sat
+						(ECalModel *model);
+void		e_cal_model_set_work_day_end_sat
+						(ECalModel *model,
+						 gint work_day_end);
+gint		e_cal_model_get_work_day_start_sun
+						(ECalModel *model);
+void		e_cal_model_set_work_day_start_sun
+						(ECalModel *model,
+						 gint work_day_start);
+gint		e_cal_model_get_work_day_end_sun
+						(ECalModel *model);
+void		e_cal_model_set_work_day_end_sun
+						(ECalModel *model,
+						 gint work_day_end);
+void		e_cal_model_get_work_day_range_for
+						(ECalModel *model,
+						 GDateWeekday weekday,
+						 gint *start_hour,
+						 gint *start_minute,
+						 gint *end_hour,
+						 gint *end_minute);
+const gchar *	e_cal_model_get_default_source_uid
+						(ECalModel *model);
+void		e_cal_model_set_default_source_uid
+						(ECalModel *model,
+						 const gchar *source_uid);
+void		e_cal_model_remove_all_objects	(ECalModel *model);
 void		e_cal_model_get_time_range	(ECalModel *model,
 						 time_t *start,
 						 time_t *end);
 void		e_cal_model_set_time_range	(ECalModel *model,
 						 time_t start,
 						 time_t end);
-const gchar *	e_cal_model_get_search_query	(ECalModel *model);
-void		e_cal_model_set_search_query	(ECalModel *model,
-						 const gchar *sexp);
-icalcomponent *	e_cal_model_create_component_with_defaults
+icalcomponent *	e_cal_model_create_component_with_defaults_sync
 						(ECalModel *model,
-						 gboolean all_day);
+						 ECalClient *client,
+						 gboolean all_day,
+						 GCancellable *cancellable,
+						 GError **error);
 gchar *		e_cal_model_get_attendees_status_info
 						(ECalModel *model,
 						 ECalComponent *comp,
@@ -277,6 +346,10 @@ gchar *		e_cal_model_get_attendees_status_info
 const gchar *	e_cal_model_get_color_for_component
 						(ECalModel *model,
 						 ECalModelComponent *comp_data);
+gboolean	e_cal_model_get_rgba_for_component
+						(ECalModel *model,
+						 ECalModelComponent *comp_data,
+						 GdkRGBA *rgba);
 gboolean	e_cal_model_get_rgb_color_for_component
 						(ECalModel *model,
 						 ECalModelComponent *comp_data,
@@ -287,8 +360,9 @@ ECalModelComponent *
 		e_cal_model_get_component_at	(ECalModel *model,
 						 gint row);
 ECalModelComponent *
-		e_cal_model_get_component_for_uid
+		e_cal_model_get_component_for_client_and_uid
 						(ECalModel *model,
+						 ECalClient *client,
 						 const ECalComponentId *id);
 gchar *		e_cal_model_date_value_to_string (ECalModel *model,
 						 gconstpointer value);
@@ -301,11 +375,6 @@ void		e_cal_model_generate_instances_sync
 GPtrArray *	e_cal_model_get_object_array	(ECalModel *model);
 void		e_cal_model_set_instance_times	(ECalModelComponent *comp_data,
 						 const icaltimezone *zone);
-void		e_cal_model_set_search_query_with_time_range
-						(ECalModel *model,
-						 const gchar *sexp,
-						 time_t start,
-						 time_t end);
 gboolean	e_cal_model_test_row_editable	(ECalModel *model,
 						 gint row);
 void		e_cal_model_set_default_time_func
@@ -321,10 +390,19 @@ void		e_cal_model_update_comp_time	(ECalModel *model,
 								   struct icaltimetype v),
 						 icalproperty * (*new_func) (struct icaltimetype v));
 
-void		e_cal_model_update_status_message
-						(ECalModel *model,
-						 const gchar *message,
-						 gdouble percent);
+void		e_cal_model_emit_object_created	(ECalModel *model,
+						 ECalClient *where);
+
+void		e_cal_model_modify_component	(ECalModel *model,
+						 ECalModelComponent *comp_data,
+						 ECalObjModType mod);
+
+void		e_cal_model_util_set_value	(GHashTable *values,
+						 ETableModel *table_model,
+						 gint column,
+						 gint row);
+gpointer	e_cal_model_util_get_value	(GHashTable *values,
+						 gint column);
 
 ECellDateEditValue *
 		e_cal_model_copy_cell_date_value

@@ -22,6 +22,7 @@ public_icons = \
 	hicolor_apps_48x48_evolution-memos.png \
 	hicolor_apps_48x48_evolution-tasks.png \
 	hicolor_apps_256x256_evolution.png \
+	hicolor_apps_symbolic_evolution-symbolic.svg \
 	$(NULL)
 
 # hicolor_status_16x16_wrapped.png was copied from Firefox
@@ -65,6 +66,7 @@ private_icons = \
 	hicolor_apps_scalable_im-yahoo.svg \
 	hicolor_actions_16x16_folder-copy.png \
 	hicolor_actions_16x16_folder-move.png \
+	hicolor_actions_16x16_mail-archive.png \
 	hicolor_actions_16x16_mail-copy.png \
 	hicolor_actions_16x16_mail-move.png \
 	hicolor_actions_16x16_go-today.png \
@@ -80,6 +82,7 @@ private_icons = \
 	hicolor_actions_22x22_view-calendar-week.png \
 	hicolor_actions_22x22_view-calendar-workweek.png \
 	hicolor_actions_24x24_go-today.png \
+	hicolor_actions_24x24_mail-archive.png \
 	hicolor_actions_24x24_query-free-busy.png \
 	hicolor_actions_24x24_view-calendar-day.png \
 	hicolor_actions_24x24_view-calendar-list.png \
@@ -132,7 +135,6 @@ stock_private_icons = \
 	hicolor_actions_16x16_stock_mail-open-multiple.png \
 	hicolor_actions_16x16_stock_mail-unread-multiple.png \
 	hicolor_actions_16x16_stock_new-24h-appointment.png \
-	hicolor_actions_16x16_stock_new-meeting.png \
 	hicolor_actions_16x16_stock_notes.png \
 	hicolor_actions_16x16_stock_people.png \
 	hicolor_actions_16x16_stock_select-column.png \
@@ -157,7 +159,6 @@ stock_private_icons = \
 	hicolor_actions_24x24_stock_mail-filters-apply.png \
 	hicolor_actions_24x24_stock_mail-open-multiple.png \
 	hicolor_actions_24x24_stock_mail-unread-multiple.png \
-	hicolor_actions_24x24_stock_new-meeting.png \
 	hicolor_actions_24x24_stock_notes.png \
 	hicolor_actions_24x24_stock_people.png \
 	hicolor_actions_24x24_stock_select-column.png \
@@ -177,7 +178,6 @@ stock_private_icons = \
 	hicolor_actions_48x48_stock_mail-flag-for-followup-done.png \
 	hicolor_actions_48x48_stock_mail-flag-for-followup.png \
 	hicolor_actions_48x48_stock_new-24h-appointment.png \
-	hicolor_actions_48x48_stock_new-meeting.png \
 	hicolor_actions_48x48_stock_notes.png \
 	hicolor_actions_48x48_stock_people.png \
 	hicolor_actions_48x48_stock_timezone.png \
@@ -255,16 +255,16 @@ install-icons:
 		CONTEXT=`echo $$icon | cut -d_ -f2`; \
 		SIZE=`echo $$icon | cut -d_ -f3`; \
 		ICONFILE=`echo $$icon | cut -d_ -f4`; \
-		mkdir -p $(DESTDIR)$(pkgdatadir)/$(BASE_VERSION)/icons/$$THEME/$$SIZE/$$CONTEXT; \
-		$(INSTALL_DATA) $(srcdir)/$$icon $(DESTDIR)$(pkgdatadir)/$(BASE_VERSION)/icons/$$THEME/$$SIZE/$$CONTEXT/$$ICONFILE; \
+		mkdir -p $(DESTDIR)$(pkgdatadir)/icons/$$THEME/$$SIZE/$$CONTEXT; \
+		$(INSTALL_DATA) $(srcdir)/$$icon $(DESTDIR)$(pkgdatadir)/icons/$$THEME/$$SIZE/$$CONTEXT/$$ICONFILE; \
 	done
 	for icon in $(stock_private_icons); do \
 		THEME=`echo $$icon | cut -d_ -f1`; \
 		CONTEXT=`echo $$icon | cut -d_ -f2`; \
 		SIZE=`echo $$icon | cut -d_ -f3`; \
 		ICONFILE=`echo $$icon | cut -d_ -f5`; \
-		mkdir -p $(DESTDIR)$(pkgdatadir)/$(BASE_VERSION)/icons/$$THEME/$$SIZE/$$CONTEXT; \
-		$(INSTALL_DATA) $(srcdir)/$$icon $(DESTDIR)$(pkgdatadir)/$(BASE_VERSION)/icons/$$THEME/$$SIZE/$$CONTEXT/stock_$$ICONFILE; \
+		mkdir -p $(DESTDIR)$(pkgdatadir)/icons/$$THEME/$$SIZE/$$CONTEXT; \
+		$(INSTALL_DATA) $(srcdir)/$$icon $(DESTDIR)$(pkgdatadir)/icons/$$THEME/$$SIZE/$$CONTEXT/stock_$$ICONFILE; \
 	done
 
 uninstall-icons:
@@ -280,14 +280,14 @@ uninstall-icons:
 		CONTEXT=`echo $$icon | cut -d_ -f2`; \
 		SIZE=`echo $$icon | cut -d_ -f3`; \
 		ICONFILE=`echo $$icon | cut -d_ -f4`; \
-		rm -f $(DESTDIR)$(pkgdatadir)/$(BASE_VERSION)/icons/$$THEME/$$SIZE/$$CONTEXT/$$ICONFILE; \
+		rm -f $(DESTDIR)$(pkgdatadir)/icons/$$THEME/$$SIZE/$$CONTEXT/$$ICONFILE; \
 	done
 	for icon in $(stock_private_icons); do \
 		THEME=`echo $$icon | cut -d_ -f1`; \
 		CONTEXT=`echo $$icon | cut -d_ -f2`; \
 		SIZE=`echo $$icon | cut -d_ -f3`; \
 		ICONFILE=`echo $$icon | cut -d_ -f5`; \
-		rm -f $(DESTDIR)$(pkgdatadir)/$(BASE_VERSION)/icons/$$THEME/$$SIZE/$$CONTEXT/stock_$$ICONFILE; \
+		rm -f $(DESTDIR)$(pkgdatadir)/icons/$$THEME/$$SIZE/$$CONTEXT/stock_$$ICONFILE; \
 	done
 
 install-data-local: install-icons

@@ -27,25 +27,31 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
 <title>Trennen von POP-E-Mail-Nachrichten bei mehr als einem Konto</title>
 
-<p>Es ist nicht möglich, dass es mehrere getrennte Konten in der Kontenansicht und der Ordnerlistenansicht gibt. Evolution hat nur einen Eingangsbereich für eingehende E-Mails.</p>
+<p>Es ist nicht möglich, dass es mehrere getrennte Konten in der Kontenansicht und der Ordnerlistenansicht gibt. <gui>Evolution</gui> hat nur einen Eingangsbereich für eingehende E-Mails.</p>
 <p>Verwenden Sie IMAP anstelle von POP oder verschieben Sie eingehende Nachrichten in andere Ordner, indem Sie <link xref="mail-folders">Ordner erstellen</link> und <link xref="mail-filters">Filter erstellen</link>: Erstellen Sie einen neuen Ordner und zwei Unterordner (für eingehende und verschickte Nachrichten dieses Kontos). Richten Sie nun einen Eingangsfilter via <guiseq><gui>Bearbeiten</gui><gui>Nachrichtenfilter …</gui><gui style="button">Hinzufügen</gui></guiseq> ein, um eingehende Nachrichten durch Filtern der Empfängeradresse in den Eingangsordner zu verschieben, und einen Ausgangsfilter, um ausgehende Nachrichten durch Filtern der Absenderadresse in den Verschickt-Ordner zu verschieben.</p>
 
 <!-- https://bugzilla.gnome.org/show_bug.cgi?id=273944 -->

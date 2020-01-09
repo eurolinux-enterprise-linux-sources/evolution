@@ -2,11 +2,11 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-composer-mail-signatures-manage" xml:lang="cs">
 
   <info>
-    <desc>Add, change, edit or delete email signatures.</desc>
+    <desc>Jak přidat, změnit, upravit nebo smazat podpisy e-mailů.</desc>
     
     <link type="guide" xref="mail-composer-mail-signatures"/>
 
-    <revision pkgversion="3.0.2" version="0.2" date="2011-07-30" status="final"/>
+    <revision pkgversion="3.12.9" version="0.3" date="2015-02-15" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -15,11 +15,24 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Managing signatures</title>
+<title>Správa podpisů</title>
 
-<p>You can add, edit and delete all your signatures under <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Composer preferences</gui><gui>Signatures</gui></guiseq>.</p>
-<p>Assigning a default signature to an email account has to be done in the <link xref="mail-composer-mail-signatures-per-account">account settings</link>.</p>
+<p>Všechny své podpisy můžete přidat, upravit nebo smazat přes <guiseq><gui>Upravit</gui> <gui>Předvolby</gui> <gui>Předvolby editoru</gui> <gui>Podpisy</gui></guiseq>.</p>
+<p>Přiřazení výchozího podpisu k poštovnímu účtu můžete provést v <link xref="mail-composer-mail-signatures-per-account">nastavení účtu</link>.</p>
 
+<note style="tip"><p>Podle <link href="http://tools.ietf.org/html/rfc3676#section-4.3">dlouhodové zvyklosti</link> (odkazovaný text je v angličtině) podpis vždy začíná dvěma pomlčkami a mezerou na samostatném řádku. Díky tomu mohou poštovní klienti při odpovídání na zprávu podpis automaticky odstranit z citace.</p></note>
 </page>

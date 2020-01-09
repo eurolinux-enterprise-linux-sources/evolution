@@ -20,23 +20,26 @@
 <p>Předmět zprávy.</p></item>
 
 <item><p>Určitá hlavička:</p>
-<p>Any header including <link xref="mail-composer-custom-header-lines">custom ones</link>.</p>
-<p>Pokud zpráva používá hlavičku více než jedenkrát, Evolution se jí zabývá pouze v první instanci, dokonce i když zpráva definuje podruhé hlavičku jinak. Např. pokud zpráva deklaruje hlavičku Resent-From: jako "engineering@example.com" a potom ji zopakuje jako "marketing@example.com", Evolution ji filtruje, jakoby se druhá deklarace neobjevila. Pro filtrování zpráv, které používají hlavičky vícekrát, použijte regulární výrazy. </p></item>
+<p>Jakákoliv hlavička včetně <link xref="mail-composer-custom-header-lines">vlastních</link>.</p>
+<p>Pokud zpráva používá hlavičku více než jedenkrát, <app>Evolution</app> se jí zabývá pouze v první instanci, dokonce i když zpráva definuje podruhé hlavičku jinak. Např. pokud zpráva deklaruje hlavičku Resent-From: jako "engineering@example.com" a potom ji zopakuje jako "marketing@example.com", <app>Evolution</app> ji filtruje, jakoby se druhá deklarace neobjevila. Pro filtrování zpráv, které používají hlavičky vícekrát, použijte regulární výrazy. </p></item>
 
 <item><p>Tělo zprávy:</p>
-<p>Prohledává skutečné tělo zprávy.</p></item>
+<p>Prohledává text zprávy.</p></item>
 
 <item><p>Výraz:</p>
-<p>(For programmers only) Match a message according to an expression you write in the Scheme language used to define <link xref="mail-filters">filters</link> in Evolution.</p></item>
+<p>(pouze pro programátory) Porovnává zprávy podle výrazu, který napíšete v jazyce Scheme, používaného v aplikaci <app>Evolution</app> k definování <link xref="mail-filters">filtrů</link>.</p></item>
+
+<item><p>Výraz ve volné tvaru:</p>
+<p>(Jen pro pokročilé uživatele) Kombinujte několik podmínek pomocí <link href="https://bugzilla.gnome.org/show_bug.cgi?id=550796#c10">speciální syntaxe</link>.</p></item>
 
 <item><p>Datum odeslání:</p>
-<p>Filtruje zprávy podle data, kdy byly odeslány. Prvně vyberte podmínky, které chcete, aby zpráva splnila jako před určitým časem nebo po určitém čase. Potom zvolte čas. Filtr porovnává časové razítko zprávy se systémovými hodinami, když filtr běží, nebo s určitým časem a datem, které vyberete v kalendáři. Můžete jej také nechat, aby se podíval po zprávách v určitém časovém rozmezí jako před dvěma až čtyřmi dny.</p></item>
+<p>Filtruje zprávy podle data, kdy byly odeslány. Prvně vyberte podmínky, které chcete, aby zpráva splnila, jako před určitým datem nebo po určitém datu. Potom zvolte čas. Filtr porovnává časové razítko zprávy se systémovými hodinami, když filtr běží, nebo s určitým časem a datem, které vyberete v kalendáři. Můžete jej také nechat, aby se podíval po zprávách v určitém časovém rozmezí jako před dvěma až čtyřmi dny.</p></item>
 
 <item><p>Datum přijetí:</p>
-<p>Toto funkce stejným způsobem jako volba Datum odeslání až na to, že to porovnává čas, kdy jste zprávu přijali, s datem, které jste zadali.</p></item>
+<p>Toto funkce stejným způsobem jako volba Datum odeslání až na to, že to porovnává datum, kdy jste zprávu přijali, s datem, které jste zadali.</p></item>
 
 <item><p>Štítek:</p>
-<p>Messages can have <link xref="mail-labels">labels</link> of Important, Work, Personal, To Do, or Later. You can set labels with other filters or manually.</p></item>
+<p>Zprávy mohou mít <link xref="mail-labels">štítky</link> Důležité, Pracovní, Osobní, Rozpracované, Později. Štítky můžete nastavit jinými filtry nebo ručně.</p></item>
 
 <item><p>Skóre:</p>
 <p>Nastaví zprávě skóre na jakékoliv celé číslo větší než 0. Můžete mít jeden filtr na nastavení nebo skóre zprávy změnit ručně a potom nastavit jiný filtr k přesouvání zpráv, které jste ohodnotili. Skóre zprávy není založeno na ničem konkrétním: je to jednoduše číslo, které můžete zprávě přidělit tak, aby je mohly jiné filtry zpracovat.</p></item>
@@ -48,7 +51,7 @@
 <p>Filtruje podle stavu zprávy. Stav může být Zodpovězeno, Koncept, Důležité, Přečteno nebo Nevyžádaná pošta.</p></item>
 
 <item><p>K vyřízení:</p>
-<p>Checks whether the message is <link xref="mail-follow-up-flag">flagged for follow-up</link>.</p></item>
+<p>Kontroluje, zda není zpráva <link xref="mail-follow-up-flag">označena k vyřízení</link>.</p></item>
 
 <item><p>Dokončeno:</p></item>
 <!-- TODO: Explain usage of option "Completed On" once https://bugzilla.gnome.org/show_bug.cgi?id=698439 is fixed -->
@@ -56,10 +59,10 @@
 <item><p>Přílohy:</p>
 <p>Kontroluje, zda e-mail obsahuje přílohu.</p></item>
 
-<item><p>Mailing List:</p>
+<item><p>Poštovní konference:</p>
 <p>Filtruje na základě toho, z které poštovní konference zpráva přišla. Tento filtr může opomenout zprávy z některých serverů, protože kontroluje hlavičku X-BeenThere, která se používá pro identifikaci poštovních konferencí nebo jiných redistributorů pošty. Pošta ze serverů, které nenastavují X-BeenThere správně, nemůže být tímto filtrem zachycena.</p></item>
 
-<item><p>Odpovídající regexu:</p>
-<p>(For programmers only) If you know your way around a <link href="https://en.wikipedia.org/wiki/Regular_expression">regex</link>, or regular expression, this option allows you to search for complex patterns of letters, so that you can find, for example, all words that start with a and end with m, and are between six and fifteen letters long, or all messages that declare a particular header twice. For information about how to use regular expressions, check the man page for the <cmd>grep</cmd> command.</p></item>
+<item><p>Odpovídající regulárnímu výrazu:</p>
+<p>(pouze pro programátory) Pokud víte, jak zacházet se vzory <link href="https://en.wikipedia.org/wiki/Regular_expression">regex</link>, respektive regulárními výrazy, umožní vám tato volba vyhledávat komplexní vzory znaků, takže můžete např. najít všechna slova, které začínají na „a“ a končí na „m“ a jsou dlouhé 6 až 15 znaků nebo všechny zprávy, které deklarují určité hlavičky dvakrát. Více informací o tom, jak používat regulární výrazy, se dočtete v <link href="man:grep">the man page for the <cmd>grep</cmd></link>.</p></item>
 
 </info>

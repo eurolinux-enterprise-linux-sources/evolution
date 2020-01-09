@@ -17,9 +17,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -36,8 +42,8 @@
   </info>
 
 <title>Comprobar automáticamente si hay correo nuevo</title>
-<p>Si quiere que Evolution compruebe automáticamente si hay correos nuevos active la opción <gui>Comprobar si hay mensajes nuevos cada ... minutos</gui> en la página <gui>Opciones de recepción</gui> de la configuración de la cuenta (accesible a través de <guiseq><gui>Editar</gui><gui>Preferencias</gui><gui>Cuentas de correo</gui><gui style="button">Editar</gui><gui>Opciones de recepción</gui></guiseq>) y seleccione la frecuencia en minutos.</p>
+<p>Si quiere que <app>Evolution</app> compruebe automáticamente si hay correos nuevos active la opción <gui>Comprobar si hay mensajes nuevos cada … minutos</gui> en la página <gui>Opciones de recepción</gui> de la configuración de la cuenta (accesible a través de <guiseq><gui>Editar</gui><gui>Preferencias</gui><gui>Cuentas de correo</gui><gui style="button">Editar</gui><gui>Opciones de recepción</gui></guiseq>) y seleccione la frecuencia en minutos.</p>
 
-<note style="advanced"><p>Evolution soporta <link href="http://es.wikipedia.org/wiki/IMAP_IDLE">IMAP IDLE</link> en la carpeta actualmente seleccionada y soporta parcialmente la extensión <link href="http://tools.ietf.org/search/rfc5465">IMAP NOTIFY</link>.</p></note>
+<note style="advanced"><p><app>Evolution</app> soporta <link href="http://es.wikipedia.org/wiki/IMAP_IDLE">IMAP IDLE</link> en la carpeta actualmente seleccionada y soporta parcialmente la extensión <link href="http://tools.ietf.org/search/rfc5465">IMAP NOTIFY</link>.</p></note>
 
 </page>

@@ -46,7 +46,7 @@ settings_map_string_to_icaltimezone (GValue *value,
 	const gchar *location = NULL;
 	icaltimezone *timezone = NULL;
 
-	settings = g_settings_new ("org.gnome.evolution.calendar");
+	settings = e_util_ref_settings ("org.gnome.evolution.calendar");
 
 	if (g_settings_get_boolean (settings, "use-system-timezone"))
 		timezone = e_cal_util_get_system_timezone ();
@@ -76,7 +76,7 @@ settings_cal_model_constructed (GObject *object)
 	extension = E_EXTENSION (object);
 	extensible = e_extension_get_extensible (extension);
 
-	settings = g_settings_new ("org.gnome.evolution.calendar");
+	settings = e_util_ref_settings ("org.gnome.evolution.calendar");
 
 	/*** ECalModel ***/
 
@@ -176,6 +176,76 @@ settings_cal_model_constructed (GObject *object)
 	g_settings_bind (
 		settings, "day-start-minute",
 		extensible, "work-day-start-minute",
+		G_SETTINGS_BIND_GET);
+
+	g_settings_bind (
+		settings, "day-start-mon",
+		extensible, "work-day-start-mon",
+		G_SETTINGS_BIND_GET);
+
+	g_settings_bind (
+		settings, "day-end-mon",
+		extensible, "work-day-end-mon",
+		G_SETTINGS_BIND_GET);
+
+	g_settings_bind (
+		settings, "day-start-tue",
+		extensible, "work-day-start-tue",
+		G_SETTINGS_BIND_GET);
+
+	g_settings_bind (
+		settings, "day-end-tue",
+		extensible, "work-day-end-tue",
+		G_SETTINGS_BIND_GET);
+
+	g_settings_bind (
+		settings, "day-start-wed",
+		extensible, "work-day-start-wed",
+		G_SETTINGS_BIND_GET);
+
+	g_settings_bind (
+		settings, "day-end-wed",
+		extensible, "work-day-end-wed",
+		G_SETTINGS_BIND_GET);
+
+	g_settings_bind (
+		settings, "day-start-thu",
+		extensible, "work-day-start-thu",
+		G_SETTINGS_BIND_GET);
+
+	g_settings_bind (
+		settings, "day-end-thu",
+		extensible, "work-day-end-thu",
+		G_SETTINGS_BIND_GET);
+
+	g_settings_bind (
+		settings, "day-start-fri",
+		extensible, "work-day-start-fri",
+		G_SETTINGS_BIND_GET);
+
+	g_settings_bind (
+		settings, "day-end-fri",
+		extensible, "work-day-end-fri",
+		G_SETTINGS_BIND_GET);
+
+	g_settings_bind (
+		settings, "day-start-sat",
+		extensible, "work-day-start-sat",
+		G_SETTINGS_BIND_GET);
+
+	g_settings_bind (
+		settings, "day-end-sat",
+		extensible, "work-day-end-sat",
+		G_SETTINGS_BIND_GET);
+
+	g_settings_bind (
+		settings, "day-start-sun",
+		extensible, "work-day-start-sun",
+		G_SETTINGS_BIND_GET);
+
+	g_settings_bind (
+		settings, "day-end-sun",
+		extensible, "work-day-end-sun",
 		G_SETTINGS_BIND_GET);
 
 	/*** ECalModelTasks ***/

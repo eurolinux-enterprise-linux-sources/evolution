@@ -32,7 +32,7 @@ included by XInclude. See http://blogs.gnome.org/shaunm/2011/07/21/understanding
 <p>Фильтрует сообщения в соответствии сервером, с которого вы их получили. Это больше всего полезно, если вы используете несколько учётных записей протокола POP.</p></item>
 
 <item><p>Передать программе через канал:</p>
-<p>Evolution может использовать внешнюю команду для осуществления процедур над сообщениями, после чего процесс основывается на возвращённом значении. Команда, использующаяся этим способом, должна вернуть переменную. Это наиболее часто используется для добавления внешнего фильтра почтового спама.</p></item>
+<p><app>Evolution</app> can use an external command to process a message, then process it based on the return value. Commands used in this way must return an integer. This is most commonly used to add an external junk mail filter.</p></item>
 
 <item><p>Тест на спам:</p>
 <p>Filters based on the results of the <link xref="mail-spam">junk mail</link> test.</p></item>

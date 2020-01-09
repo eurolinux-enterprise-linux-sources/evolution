@@ -4,7 +4,7 @@
   <info>
     <link type="guide" xref="calendar-layout"/>
 
-    <revision pkgversion="3.0.2" version="0.4" date="2012-02-18" status="final"/>
+    <revision pkgversion="3.13.90" version="0.5" date="2015-03-10" status="final"/>
 
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
@@ -19,49 +19,52 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Define the displaying of appointments in the calendar.</desc>
+    <desc>Definiera visning av möten i kalendern.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Appearance of Appointments</title>
+  <title>Utseende för möten</title>
 
   <!-- TODO:POST-3-8: Just listing the partially busted UI options (also see
        calendar-layout-general-formatting) here is very poor and not
        task-oriented, but that's it for the time being. Better ideas welcome.
        -->
 
-  <!-- TODO: Recheck once https://bugzilla.gnome.org/show_bug.cgi?id=657233 is
-       fixed, as the current UI is a huge mess. -->
-
-  <p>The following calendar-related options are available under
-  <guiseq><gui>Edit</gui><gui>Preferences</gui>
-  <gui>Calendar and Tasks</gui><gui>Display</gui></guiseq>.</p>
+  <p>Följande kalender-relaterade inställningar finns tillgängliga under <guiseq><gui>Redigera</gui><gui>Inställningar</gui> <gui>Kalender och uppgifter</gui><gui>Visning</gui></guiseq>.</p>
 
 <section id="general">
   <title>Allmänt</title>
 
   <list>
     <item>
-      <p>Time Divisions:</p>
-      <p>Sets the time increments shown as fine lines on the daily view in the
-      calendar.</p>
+      <p>Tidsuppdelningar:</p>
+      <p>Ställer in tidsintervallerna som visas som tunna linjer i den dagsvyn i kalendern.</p>
     </item>
     <item>
-      <p>Show appointment end times in week and month views:</p>
-      <p>If there is space, <app>Evolution</app> shows the end times in the
-      week and month views for each appointment.</p>
+      <p>Visa sluttiderna för möten i vecko- och månadsvyerna:</p>
+      <p>Om det finns utrymme så visar <app>Evolution</app> sluttiderna i vecko- och månadsvyerna för varje möte.</p>
     </item>
     <item>
-      <p>Compress weekends in month view:</p>
-      <p>Select this option to display weekends in one box instead of two in
-      the month view.</p>
+      <p>Tryck ihop helger i månadsvyn:</p>
+      <p>Välj detta alternativ för att visa helger i en ruta istället för två i månadsvyn.</p>
     </item>
     <item>
-      <p>Show week numbers:</p>
-      <p>Shows the week numbers next to the respective weeks in the
-      calendar.</p>
+      <p>Visa veckonummer:</p>
+      <p>Visa veckonummer intill respektive vecka i kalendern.</p>
     </item>
     <item>
-      <p>Show recurring events in italic in bottom left calendar.</p>
+      <p>Visa återkommande evenemang i kursiv text i nedre vänstra kalendern.</p>
     </item>
     <item>
       <p>Rulla i månadsvy med en vecka</p>
@@ -70,15 +73,10 @@
 
 </section>
 
-<section id="date-time">
-  <title>Format för datum/tid</title>
+<section id="alerts">
+  <title>Alarm</title>
 
-  <p>You can change the format of the <gui>Date</gui> column by setting your
-  preferred format.</p>
-
-  <p>The placeholders in the format expression are strftime formats. For a
-  complete list of available strftime formats, run <cmd>date --help</cmd> in
-  the <app>Terminal</app> application.</p>
+  <p>Om du vill bli varnad innan du tar bort ett möte, välj detta alternativ.</p>
 
 </section>
 

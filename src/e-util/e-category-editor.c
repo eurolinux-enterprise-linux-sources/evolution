@@ -176,6 +176,7 @@ e_category_editor_init (ECategoryEditor *editor)
 	gtk_grid_attach (grid_category_properties, label_name, 0, 0, 1, 1);
 
 	category_name = gtk_entry_new ();
+	gtk_entry_set_activates_default (GTK_ENTRY (category_name), TRUE);
 	gtk_widget_set_hexpand (category_name, TRUE);
 	gtk_widget_set_halign (category_name, GTK_ALIGN_FILL);
 	gtk_label_set_mnemonic_widget (GTK_LABEL (label_name), category_name);
@@ -304,7 +305,7 @@ e_category_editor_edit_category (ECategoryEditor *editor,
                                  const gchar *category)
 {
 	GtkFileChooser *file_chooser;
-	const gchar *icon_file;
+	gchar *icon_file;
 
 	g_return_val_if_fail (E_IS_CATEGORY_EDITOR (editor), FALSE);
 	g_return_val_if_fail (category != NULL, FALSE);
@@ -314,11 +315,12 @@ e_category_editor_edit_category (ECategoryEditor *editor,
 	gtk_entry_set_text (GTK_ENTRY (editor->priv->category_name), category);
 	gtk_widget_set_sensitive (editor->priv->category_name, FALSE);
 
-	icon_file = e_categories_get_icon_file_for (category);
+	icon_file = e_categories_dup_icon_file_for (category);
 	if (icon_file) {
 		gtk_file_chooser_set_filename (file_chooser, icon_file);
 		update_preview (file_chooser, NULL);
 	}
+	g_free (icon_file);
 
 	if (gtk_dialog_run (GTK_DIALOG (editor)) == GTK_RESPONSE_OK) {
 		gchar *category_icon;

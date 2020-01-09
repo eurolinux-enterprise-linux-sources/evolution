@@ -51,13 +51,13 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
 <title>Séparation de courriel POP lorsque vous avez plus d'un compte</title>
 
-<p>Il n'est pas possible d'avoir des comptes séparés dans la panneau des listes de comptes et de dossiers. Evolution ne possède qu'une seule Boîte de réception pour les courriels entrants.</p>
+<p>It is not possible to have separate accounts in the accounts and folder list pane. <app>Evolution</app> only has one unique inbox for incoming email.</p>
 <p>Vous pouvez utiliser IMAP au lieu de POP ou déplacer les courriels entrants dans des dossiers différents en <link xref="mail-folders">créant des dossiers</link> et en <link xref="mail-filters">créant des filtres</link> : créez un dossier et deux sous-dossiers (un pour les courriels sortants, l'autre pour ceux envoyés pour ce compte). Ensuite configurez un filtre entrant en utilisant <guiseq><gui>Édition</gui><gui>Filtres de message</gui><gui style="button">Ajouter</gui></guiseq> pour déplacer les courriels entrant dans le dossier des messages entrants en filtrant sur l'adresse du destinataire et configurez un filtre sortant pour déplacer les courriels sortant dans le dossier des messages envoyés en filtrant sur l'adresse de l'expéditeur.</p>
 
 <!-- https://bugzilla.gnome.org/show_bug.cgi?id=273944 -->

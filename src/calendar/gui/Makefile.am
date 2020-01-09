@@ -1,5 +1,3 @@
-SUBDIRS = dialogs
-
 privsolib_LTLIBRARIES = libevolution-calendar.la
 
 ecalendarincludedir = $(privincludedir)/calendar/gui
@@ -11,13 +9,28 @@ ecalendarinclude_HEADERS =			\
 	comp-util.h				\
 	e-alarm-list.h				\
 	e-cal-config.h				\
+	e-cal-data-model.h			\
+	e-cal-data-model-subscriber.h		\
+	e-cal-dialogs.h				\
 	e-cal-event.h				\
 	e-cal-list-view.h			\
 	e-cal-model-calendar.h			\
 	e-cal-model.h				\
-	e-calendar-selector.h			\
+	e-cal-ops.h				\
 	e-calendar-view.h			\
 	e-cell-date-edit-text.h			\
+	e-comp-editor.h				\
+	e-comp-editor-event.h			\
+	e-comp-editor-memo.h			\
+	e-comp-editor-page-attachments.h	\
+	e-comp-editor-page-general.h		\
+	e-comp-editor-page-recurrence.h		\
+	e-comp-editor-page-reminders.h		\
+	e-comp-editor-page-schedule.h		\
+	e-comp-editor-page.h			\
+	e-comp-editor-property-part.h		\
+	e-comp-editor-property-parts.h		\
+	e-comp-editor-task.h			\
 	e-date-time-list.h                      \
 	e-day-view-layout.h			\
 	e-day-view-main-item.h			\
@@ -33,6 +46,7 @@ ecalendarinclude_HEADERS =			\
 	e-meeting-utils.h			\
 	e-select-names-editable.h		\
 	e-select-names-renderer.h		\
+	e-send-options-utils.h			\
 	e-week-view-event-item.h		\
 	e-week-view-layout.h			\
 	e-week-view-main-item.h			\
@@ -40,7 +54,6 @@ ecalendarinclude_HEADERS =			\
 	e-week-view.h				\
 	e-weekday-chooser.h			\
 	e-timezone-entry.h			\
-	gnome-cal.h				\
 	itip-utils.h				\
 	misc.h					\
 	tag-calendar.h
@@ -67,14 +80,15 @@ libevolution_calendar_la_CPPFLAGS =			\
 	-DPREFIX=\""$(prefix)"\"			\
 	$(EVOLUTION_DATA_SERVER_CFLAGS)			\
 	$(GNOME_PLATFORM_CFLAGS)			\
-	$(GTKHTML_CFLAGS)				\
-	$(LIBSOUP_CFLAGS)
+	$(LIBSOUP_CFLAGS)				\
+	$(CODE_COVERAGE_CFLAGS)				\
+	$(NULL)
 
 etspec_DATA =				\
-	e-calendar-table.etspec		\
 	e-meeting-time-sel.etspec	\
 	e-cal-list-view.etspec		\
-	e-memo-table.etspec
+	e-memo-table.etspec		\
+	e-task-table.etspec
 
 libevolution_calendar_la_SOURCES = \
 	calendar-config.c			\
@@ -90,24 +104,41 @@ libevolution_calendar_la_SOURCES = \
 	e-cal-component-preview.h		\
 	e-cal-config.c				\
 	e-cal-config.h				\
+	e-cal-data-model.c			\
+	e-cal-data-model.h			\
+	e-cal-data-model-subscriber.c		\
+	e-cal-data-model-subscriber.h		\
+	e-cal-dialogs.c				\
 	e-cal-event.c				\
 	e-cal-event.h				\
+	e-cal-list-view.c			\
+	e-cal-list-view.h			\
 	e-cal-model-calendar.c			\
 	e-cal-model-calendar.h			\
 	e-cal-model.c				\
 	e-cal-model.h				\
-	e-cal-list-view.c			\
-	e-cal-list-view.h			\
 	e-cal-model-memos.c			\
 	e-cal-model-memos.h			\
 	e-cal-model-tasks.c			\
 	e-cal-model-tasks.h			\
-	e-calendar-selector.c			\
-	e-calendar-selector.h			\
+	e-cal-ops.h				\
+	e-cal-ops.c				\
 	e-calendar-view.c			\
 	e-calendar-view.h			\
 	e-cell-date-edit-text.h			\
 	e-cell-date-edit-text.c			\
+	e-comp-editor.c				\
+	e-comp-editor-event.c			\
+	e-comp-editor-memo.c			\
+	e-comp-editor-page-attachments.c	\
+	e-comp-editor-page-general.c		\
+	e-comp-editor-page-recurrence.c		\
+	e-comp-editor-page-reminders.c		\
+	e-comp-editor-page-schedule.c		\
+	e-comp-editor-page.c			\
+	e-comp-editor-property-part.c		\
+	e-comp-editor-property-parts.c		\
+	e-comp-editor-task.c			\
 	e-date-time-list.c			\
 	e-date-time-list.h			\
 	e-day-view-layout.c			\
@@ -133,8 +164,6 @@ libevolution_calendar_la_SOURCES = \
 	e-meeting-types.h			\
 	e-meeting-utils.c			\
 	e-meeting-utils.h			\
-	e-memo-list-selector.c			\
-	e-memo-list-selector.h			\
 	e-memo-table.c				\
 	e-memo-table.h				\
 	e-month-view.c				\
@@ -143,8 +172,7 @@ libevolution_calendar_la_SOURCES = \
 	e-select-names-editable.h		\
 	e-select-names-renderer.c		\
 	e-select-names-renderer.h		\
-	e-task-list-selector.c			\
-	e-task-list-selector.h			\
+	e-send-options-utils.c			\
 	e-task-table.c				\
 	e-task-table.h				\
 	e-week-view-event-item.c		\
@@ -161,8 +189,6 @@ libevolution_calendar_la_SOURCES = \
 	e-weekday-chooser.h			\
 	e-timezone-entry.c			\
 	e-timezone-entry.h			\
-	gnome-cal.c				\
-	gnome-cal.h				\
 	itip-utils.c				\
 	itip-utils.h				\
 	misc.c					\
@@ -192,24 +218,24 @@ libevolution_calendar_la_SOURCES = \
 	ea-week-view-cell.c			\
 	ea-week-view-cell.h			\
 	ea-jump-button.c			\
-	ea-jump-button.h			\
-	ea-gnome-calendar.c			\
-	ea-gnome-calendar.h
+	ea-jump-button.h
 
 libevolution_calendar_la_LIBADD =					\
 	$(top_builddir)/composer/libevolution-mail-composer.la		\
 	$(top_builddir)/addressbook/gui/contact-editor/libecontacteditor.la \
 	$(top_builddir)/addressbook/gui/contact-list-editor/libecontactlisteditor.la \
+	$(top_builddir)/addressbook/util/libeabutil.la			\
 	$(top_builddir)/shell/libevolution-shell.la			\
-	$(top_builddir)/calendar/gui/dialogs/libcal-dialogs.la		\
 	$(top_builddir)/calendar/importers/libevolution-calendar-importers.la \
 	$(top_builddir)/e-util/libevolution-util.la			\
+	$(top_builddir)/libgnomecanvas/libgnomecanvas.la 		\
 	$(EVOLUTION_DATA_SERVER_LIBS)					\
 	$(GNOME_PLATFORM_LIBS)						\
-	$(GTKHTML_LIBS)							\
-	$(LIBSOUP_LIBS)
+	$(LIBSOUP_LIBS)							\
+	$(MATH_LIB)							\
+	$(NULL)
 
-libevolution_calendar_la_LDFLAGS = -avoid-version $(NO_UNDEFINED)
+libevolution_calendar_la_LDFLAGS = -avoid-version $(NO_UNDEFINED) $(CODE_COVERAGE_LDFLAGS)
 
 EXTRA_DIST =	 			\
 	$(ui_DATA)			\

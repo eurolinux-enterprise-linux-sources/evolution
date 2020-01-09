@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="guide" id="mail-search-folders" xml:lang="sv">
 
   <info>
-    <desc>Use search folders to see messages in one folder while still keeping them in their original folders.</desc>
+    <desc>Använd sökmappar för att se meddelande i en mapp medan du fortfarande behåller dem i deras originalmappar.</desc>
 
     <link type="guide" xref="mail-organizing#advanced"/>
 
@@ -17,18 +17,30 @@
     
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Using Search folders</title>
+  <title>Användning av <gui>Sök</gui>-mappar</title>
   
-<p>If <link xref="mail-filters">filters</link> are not flexible enough, or you find yourself performing the same <link xref="mail-searching">search</link> again and again, consider a search folder.</p>
+<p>Om <link xref="mail-filters">filter</link> inte är flexibla nog, eller du märker att du gör samma <link xref="mail-searching">sökning</link> om och om igen, överväg en sökmapp.</p>
 
-<p>A search folder looks like a <link xref="mail-folders">folder</link>, it acts like a <link xref="mail-searching">search</link>, and you set it up like a <link xref="mail-filters">filter</link>. While a conventional folder actually contains messages, a search folder is a view of messages that might be in several different folders. The messages it contains are determined on the fly using a set of criteria that you have chosen when setting up the search folder.</p>
+<p>En sökmapp ser ut som en <link xref="mail-folders">mapp</link>, den beter sig som en <link xref="mail-searching">sökning</link>, och du ställer in den som ett <link xref="mail-filters">filter</link>. Medan en vanlig mapp faktiskt innehåller meddelanden så är en sökmapp en vy av meddelanden som kan finnas i flera olika mappar. Meddelandena den innehåller bestäms i farten via en uppsättning kriterier som du har valt när du ställde in sökmappen.</p>
 
-<p>Evolution automatically updates the search folder contents when new messages are received or message are deleted.</p>
+<p><app>Evolution</app> kommer automatiskt att uppdatera sökmappens innehåll när nya meddelanden tas emot eller meddelanden tas bort.</p>
 
-<p>The <gui>Unmatched</gui> search folder is the opposite of other search folders: it displays all messages that do not appear in other search folders.</p>
+<p>Sökmappen <gui>Omatchade</gui> är motsatsen till andra sökmappar: den visar alla meddelanden som inte finns i andra sökmappar.</p>
 
-<p>If you use remote email storage like IMAP, and have created search folders to search through them, the <gui>Unmatched</gui> search folder also searches the remote folders. If you do not create any search folders that search remote mail stores, the <gui>Unmatched</gui> search folder does not search in them either.</p>
+<p>Om du använder fjärrlagring av e-post, så som IMAP, och har skapat sökmappar för att söka genom dem kommer sökmappen <gui>Omatchade</gui> också att söka igenom fjärrmappar. Om du inte skapar några sökmappar som söker genom fjärrlagrad e-post kommer sökmappen <gui>Omatchade</gui> inte heller att söka igenom den.</p>
 
 </page>

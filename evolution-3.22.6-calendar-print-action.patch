@@ -1,0 +1,12 @@
+diff -up evolution-3.22.6/modules/calendar/e-cal-shell-view-actions.c.calendar-print-action evolution-3.22.6/modules/calendar/e-cal-shell-view-actions.c
+--- evolution-3.22.6/modules/calendar/e-cal-shell-view-actions.c.calendar-print-action	2016-03-21 09:07:26.000000000 +0100
++++ evolution-3.22.6/modules/calendar/e-cal-shell-view-actions.c	2017-04-19 09:33:29.144300407 +0200
+@@ -235,7 +235,7 @@ static void
+ action_calendar_print_cb (GtkAction *action,
+                           ECalShellView *cal_shell_view)
+ {
+-	cal_shell_view_actions_print_or_preview (cal_shell_view, GTK_PRINT_OPERATION_ACTION_PRINT);
++	cal_shell_view_actions_print_or_preview (cal_shell_view, GTK_PRINT_OPERATION_ACTION_PRINT_DIALOG);
+ }
+ 
+ static void

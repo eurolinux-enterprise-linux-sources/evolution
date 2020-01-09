@@ -57,7 +57,8 @@ typedef enum {
 	EMLA_ACTION_SUBSCRIBE,
 	EMLA_ACTION_POST,
 	EMLA_ACTION_OWNER,
-	EMLA_ACTION_ARCHIVE
+	EMLA_ACTION_ARCHIVE,
+	EMLA_ACTION_ARCHIVED_AT
 } EmlaAction;
 
 typedef struct {
@@ -79,6 +80,7 @@ const EmlaActionHeader emla_action_headers[] = {
 	{ EMLA_ACTION_POST,        TRUE,  "List-Post" },
 	{ EMLA_ACTION_OWNER,       TRUE,  "List-Owner" },
 	{ EMLA_ACTION_ARCHIVE,     FALSE, "List-Archive" },
+	{ EMLA_ACTION_ARCHIVED_AT, FALSE, "Archived-At" }
 };
 
 gboolean	mail_browser_init		(GtkUIManager *ui_manager,
@@ -114,6 +116,44 @@ async_context_free (AsyncContext *context)
 	g_slice_free (AsyncContext, context);
 }
 
+typedef struct _SendMessageData {
+	gchar *url;
+	gchar *uid;
+} SendMessageData;
+
+static void
+send_message_composer_created_cb (GObject *source_object,
+				  GAsyncResult *result,
+				  gpointer user_data)
+{
+	SendMessageData *smd = user_data;
+	EMsgComposer *composer;
+	GError *error = NULL;
+
+	g_return_if_fail (smd != NULL);
+
+	composer = e_msg_composer_new_finish (result, &error);
+	if (error) {
+		g_warning ("%s: Failed to create msg composer: %s", G_STRFUNC, error->message);
+		g_clear_error (&error);
+	} else {
+		EComposerHeaderTable *table;
+
+		/* directly send message */
+		e_msg_composer_setup_from_url (composer, smd->url);
+		table = e_msg_composer_get_header_table (composer);
+
+		if (smd->uid)
+			e_composer_header_table_set_identity_uid (table, smd->uid);
+
+		e_msg_composer_send (composer);
+	}
+
+	g_free (smd->url);
+	g_free (smd->uid);
+	g_free (smd);
+}
+
 static void
 emla_list_action_cb (CamelFolder *folder,
                      GAsyncResult *result,
@@ -122,7 +162,6 @@ emla_list_action_cb (CamelFolder *folder,
 	const gchar *header = NULL, *headerpos;
 	gchar *end, *url = NULL;
 	gint t;
-	EMsgComposer *composer;
 	EAlertSink *alert_sink;
 	CamelMimeMessage *message;
 	gint send_message_response;
@@ -237,15 +276,13 @@ emla_list_action_cb (CamelFolder *folder,
 					url, NULL);
 
 			if (send_message_response == GTK_RESPONSE_YES) {
-				EComposerHeaderTable *table;
+				SendMessageData *smd;
 
-				/* directly send message */
-				composer = e_msg_composer_new_from_url (shell, url);
-				table = e_msg_composer_get_header_table (composer);
+				smd = g_new0 (SendMessageData, 1);
+				smd->url = g_strdup (url);
+				smd->uid = g_strdup (uid);
 
-				if (uid != NULL)
-					e_composer_header_table_set_identity_uid (table, uid);
-				e_msg_composer_send (composer);
+				e_msg_composer_new (shell, send_message_composer_created_cb, smd);
 			} else if (send_message_response == GTK_RESPONSE_NO) {
 				/* show composer */
 				em_utils_compose_new_message_with_mailto (shell, url, folder);
@@ -253,7 +290,14 @@ emla_list_action_cb (CamelFolder *folder,
 
 			goto exit;
 		} else if (url && *url) {
-			e_show_uri (window, url);
+			if (context->action == EMLA_ACTION_ARCHIVED_AT) {
+				GtkClipboard *clipboard;
+
+				clipboard = gtk_clipboard_get (GDK_SELECTION_CLIPBOARD);
+				gtk_clipboard_set_text (clipboard, url, -1);
+			} else {
+				e_show_uri (window, url);
+			}
 			goto exit;
 		}
 		g_free (url);
@@ -323,6 +367,13 @@ action_mailing_list_archive_cb (GtkAction *action,
 }
 
 static void
+action_mailing_list_archived_at_cb (GtkAction *action,
+				    EMailReader *reader)
+{
+	emla_list_action (reader, EMLA_ACTION_ARCHIVED_AT);
+}
+
+static void
 action_mailing_list_help_cb (GtkAction *action,
                              EMailReader *reader)
 {
@@ -365,6 +416,13 @@ static GtkActionEntry mailing_list_entries[] = {
 	  NULL,
 	  N_("Get an archive of the list this message belongs to"),
 	  G_CALLBACK (action_mailing_list_archive_cb) },
+
+	{ "mailing-list-archived-at",
+	  NULL,
+	  N_("Copy _Message Archive URL"),
+	  NULL,
+	  N_("Copy direct URL for the selected message in its archive"),
+	  G_CALLBACK (action_mailing_list_archived_at_cb) },
 
 	{ "mailing-list-help",
 	  NULL,
@@ -421,6 +479,27 @@ update_actions_cb (EMailReader *reader,
 	sensitive = (state & E_MAIL_READER_SELECTION_IS_MAILING_LIST) != 0
 		 && (state & E_MAIL_READER_SELECTION_SINGLE) != 0;
 	gtk_action_group_set_sensitive (action_group, sensitive);
+
+	if (sensitive) {
+		EMailDisplay *mail_display;
+		EMailPartList *part_list;
+		CamelMimeMessage *message;
+		GtkAction *action;
+
+		mail_display = e_mail_reader_get_mail_display (reader);
+		part_list = mail_display ? e_mail_display_get_part_list (mail_display) : NULL;
+		message = part_list ? e_mail_part_list_get_message (part_list) : NULL;
+
+		if (message) {
+			const gchar *header;
+
+			header = camel_medium_get_header (CAMEL_MEDIUM (message), "Archived-At");
+			sensitive = header && *header;
+		}
+
+		action = gtk_action_group_get_action (action_group, "mailing-list-archived-at");
+		gtk_action_set_sensitive (action, message && sensitive);
+	}
 }
 
 static void

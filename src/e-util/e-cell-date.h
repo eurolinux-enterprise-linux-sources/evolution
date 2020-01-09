@@ -67,7 +67,12 @@ ECell *		e_cell_date_new			(const gchar *fontname,
 void		e_cell_date_set_format_component
 						(ECellDate *ecd,
 						 const gchar *fmt_component);
-
+gchar *		e_cell_date_value_to_text	(ECellDate *ecd,
+						 gint64 value,
+						 gboolean date_only);
+gchar *		e_cell_date_tm_to_text		(ECellDate *ecd,
+						 struct tm *tm_time,
+						 gboolean date_only);
 G_END_DECLS
 
 #endif /* E_CELL_DATE_H */

@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-composer-mail-signatures-per-account" xml:lang="cs">
 
   <info>
-    <desc>Setting a default signature for an email account.</desc>
+    <desc>Jak natavit výchozí podpis pro poštovní účet.</desc>
     
     <link type="guide" xref="mail-composer-mail-signatures"/>
     <link type="guide" xref="mail-account-manage-imap-plus#identity"/>
@@ -24,12 +24,24 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Default account signature</title>
+<title>Výchozí podpis účtu</title>
 
-<p>You can define a default <link xref="mail-composer-mail-signatures">signature</link> for each of your mail accounts. This can be edited under <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Mail Accounts</gui><gui style="button">Edit</gui><gui>Identity</gui><gui>Optional Information</gui></guiseq>.</p>
+<p>Můžete určit výchozí <link xref="mail-composer-mail-signatures">podpis</link> pro každý z poštovních účtů. Udělat je to možné přes <guiseq><gui>Upravit</gui> <gui>Předvolby</gui> <gui>Poštovní účty</gui> <gui style="button">Upravit</gui> <gui>Identity</gui> <gui>Volitelné informace</gui></guiseq>.</p>
 
-<p>If you have a signature for your account defined but exceptionally do not want to use it for one message, or want to use a different signature, you can change it via the dropdown menu in the right upper corner in the email composer window.</p>
+<p>Pokud máte pro svůj účet určen podpis, ale výjimečně jej u jedné zprávy použít nechcete nebo u ní chcete použít jiný podpis, můžete jej změnit přes rozbalovací nabídku v pravém horním rohu v okně editoru zpráv.</p>
 
 </page>

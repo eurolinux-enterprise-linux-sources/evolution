@@ -18,9 +18,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -38,7 +44,7 @@
 
 <title>Notificar la recepción de correo nuevo</title>
 
-<p>Evolution siempre le notifica nuevos correos añadiendo una estrella amarilla al icono del correo en la ventana del <link xref="change-switcher-appearance">selector</link>.</p>
+<p><app>Evolution</app> siempre le notifica nuevos correos añadiendo una estrella amarilla al icono del correo en la ventana del <link xref="change-switcher-appearance">selector</link>.</p>
 <!-- Translators: Please make sure that the screenshot does have the small yellow star in the Mail icon -->
 <media type="image" src="./figures/new-mail-switcher.png" width="256">
   <p>Distribución del selector cuando llega un correo nuevo</p>

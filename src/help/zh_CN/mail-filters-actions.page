@@ -57,13 +57,13 @@
 <p>使系统蜂鸣。</p></item>
 
 <item><p>播放声音：</p>
-<p>选择让Evolution播放一个声音文件。</p></item>
+<p>Select a sound file for <app>Evolution</app> to play.</p></item>
 
 <item><p>运行程序：</p>
-<p>让Evolution运行一个程序。</p></item>
+<p><app>Evolution</app> runs an application.</p></item>
 
 <item><p>管道到程序：</p>
-<p>Sends the message to an application of your choice. No return value is expected. This feature can be used to create automatic Web postings from email messages or to perform additional message post processing not supported by Evolution.</p></item>
+<p>Sends the message to an application of your choice. No return value is expected. This feature can be used to create automatic Web postings from email messages or to perform additional message post processing not supported by <app>Evolution</app>.</p></item>
 
 <item><p>Forward to:</p>
 <p>Forwards the message to another email address.</p></item>

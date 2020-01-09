@@ -55,6 +55,8 @@ open_contact (EBookShellView *book_shell_view,
 		editor = e_contact_editor_new (
 			shell, book, contact, is_new_contact, editable);
 
+	gtk_window_set_transient_for (eab_editor_get_window (editor), GTK_WINDOW (shell_window));
+
 	eab_editor_show (editor);
 }
 
@@ -339,7 +341,7 @@ book_shell_view_activate_selected_source (EBookShellView *book_shell_view,
 	/* XXX No way to cancel this? */
 	e_client_selector_get_client (
 		E_CLIENT_SELECTOR (selector),
-		source, NULL,
+		source, TRUE, (guint32) -1, NULL,
 		book_shell_view_client_connect_cb,
 		g_object_ref (view));
 

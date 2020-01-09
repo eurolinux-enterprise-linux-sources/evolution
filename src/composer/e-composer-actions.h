@@ -18,7 +18,9 @@
 #define E_COMPOSER_ACTIONS_H
 
 #define E_COMPOSER_ACTION(composer, name) \
-	(gtkhtml_editor_get_action (GTKHTML_EDITOR (composer), (name)))
+	(e_html_editor_get_action ( \
+		e_msg_composer_get_editor ( \
+		E_MSG_COMPOSER (composer)), (name)))
 
 #define E_COMPOSER_ACTION_ATTACH(composer) \
 	E_COMPOSER_ACTION ((composer), "attach")
@@ -54,10 +56,24 @@
 	E_COMPOSER_ACTION ((composer), "smime-encrypt")
 #define E_COMPOSER_ACTION_SMIME_SIGN(composer) \
 	E_COMPOSER_ACTION ((composer), "smime-sign")
+#define E_COMPOSER_ACTION_TOOLBAR_PGP_ENCRYPT(composer) \
+	E_COMPOSER_ACTION ((composer), "toolbar-pgp-encrypt")
+#define E_COMPOSER_ACTION_TOOLBAR_PGP_SIGN(composer) \
+	E_COMPOSER_ACTION ((composer), "toolbar-pgp-sign")
+#define E_COMPOSER_ACTION_TOOLBAR_PRIORITIZE_MESSAGE(composer) \
+	E_COMPOSER_ACTION ((composer), "toolbar-prioritize-message")
+#define E_COMPOSER_ACTION_TOOLBAR_REQUEST_READ_RECEIPT(composer) \
+	E_COMPOSER_ACTION ((composer), "toolbar-request-read-receipt")
+#define E_COMPOSER_ACTION_TOOLBAR_SMIME_ENCRYPT(composer) \
+	E_COMPOSER_ACTION ((composer), "toolbar-smime-encrypt")
+#define E_COMPOSER_ACTION_TOOLBAR_SMIME_SIGN(composer) \
+	E_COMPOSER_ACTION ((composer), "toolbar-smime-sign")
 #define E_COMPOSER_ACTION_VIEW_BCC(composer) \
 	E_COMPOSER_ACTION ((composer), "view-bcc")
 #define E_COMPOSER_ACTION_VIEW_CC(composer) \
 	E_COMPOSER_ACTION ((composer), "view-cc")
+#define E_COMPOSER_ACTION_VIEW_FROM_OVERRIDE(composer) \
+	E_COMPOSER_ACTION ((composer), "view-from-override")
 #define E_COMPOSER_ACTION_VIEW_REPLY_TO(composer) \
 	E_COMPOSER_ACTION ((composer), "view-reply-to")
 

@@ -17,9 +17,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -40,7 +46,7 @@
 <p>Si quiere modificar una tarjeta que ya existe en su lista de tareas,</p>
 
 <steps>
-<item><p>Pulse dos veces en la tarjeta que quiera editar. en la lista de tareas, o pulse con el botón derecho y elija <key>Abrir tarea</key>.</p></item>
+<item><p>Pulse dos veces en la tarea que quiera editar, en la lista de tareas, o púlsela con el botón derecho y elija <gui>Abrir tarea</gui>.</p></item>
 <item><p>Edite la información de la tarea.</p></item>
 <item><p>Pulse el botón <gui style="button">Guardar</gui> o <guiseq><gui>Archivo</gui><gui>Guardar</gui></guiseq>.</p></item>
 </steps>

@@ -21,98 +21,67 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Using the Free/Busy view on a groupware server to set up
-    meetings.</desc>
+    <desc>Användning av ledig-/upptagenvyn på en groupware-server för att ställa in sammanträden.</desc>
     <!-- TODO: Really split this into Exchange/Groupware section and normal people section -->
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
   <title>Ledig-/upptageninformation</title>
 
-  <p>You can use the Free/Busy search for meetings to determine the
-  availability of invitees.</p>
+  <p>Du kan använda ledig-/upptagensökningen för sammanträden för att avgöra deltagarnas tillgänglighet.</p>
 
-  <p>In addition to the standard meeting scheduling tools, you can use the
-  Free/Busy view to check whether people are available in advance. The
-  Free/Busy feature is normally a function of dedicated groupware servers such
-  as Microsoft Exchange and Novell GroupWise. However, you can also publish
-  Free/Busy information online, and access Free/Busy information published
-  elsewhere. If not everyone you collaborate with publishes Free/Busy data, you
-  can still use
-  <link xref="calendar-meetings-sending-invitation">meeting invitations</link>
-  to coordinate schedules with other people.</p>
+  <p>Utöver de normala verktygen för sammanträdesbokning kan du använda ledig-/upptagenvyn för att se huruvida människor är tillgängliga i förväg. Funktionen ledig/upptagen är normalt en funktion för dedikerade groupware-servers så som Microsoft Exchange och Novell GroupWise. Det kan dock också publicera ledig/upptagen-information på nätet och komma åt ledig/upptagen-information som publicerats på andra ställen. Om inte alla du samarbetar med publicerar ledig/upptagen-data kan du fortfarande använda <link xref="calendar-meetings-sending-invitation">sammanträdesinbjudningar</link> för att koordinera bokningar med andra människor.</p>
 
-  <p>To access the free/busy view:</p>
+  <p>För att nå ledig-/upptagenvyn:</p>
 
   <steps>
     <item>
-      <p>Click
-      <guiseq><gui>File</gui><gui>New</gui><gui>Meeting</gui></guiseq>.</p>
+      <p>Klicka på <guiseq><gui>Arkiv</gui><gui>Nytt</gui><gui>Sammanträde</gui></guiseq>.</p>
     </item>
     <item>
-      <p>Click <gui style="button">Add</gui> to add the email addresses of
-      people you want to invite.</p>
+      <p>Klicka på <gui style="button">Lägg till</gui> för att lägga till e-postadresserna för människor du vill bjuda in.</p>
     </item>
     <item>
-      <p>Click the <gui>Free/Busy</gui> button on the toolbar, or click
-      <guiseq><gui>Options</gui><gui>Free/Busy</gui></guiseq>.</p>
+      <p>Klicka på <gui>Ledig/Upptagen</gui>-knappen i verktygsfältet eller klicka på <guiseq><gui>Alternativ</gui><gui>Ledig/Upptagen</gui></guiseq>.</p>
     </item>
     <item>
-      <p>Adjust the meeting time, either by dragging the meeting borders or by
-      using the <gui>Autopick</gui> buttons to choose a time automatically,
-      then click <gui style="button">Close</gui>. Attendees on an Exchange
-      server have the appointment updated automatically; others receive email
-      notification of any change in plans.</p>
+      <p>Justera sammanträdestiden, antingen genom att dra sammanträdesramarna eller genom att använda <gui>Autovälj</gui>-knapparna för att välja en tid automatiskt, klicka sedan på <gui style="button">Stäng</gui>. Deltagare på en Exchange-server kommer att få mötet uppdaterat automatiskt; andra kommer att få e-postaviseringar angående ändringar i planerna.</p>
     </item>
   </steps>
 
   <list>
     <item>
-      <p>Attendee List:</p>
-      <p>The Attendee List shows the people who have been invited to the
-      appointment.</p>
+      <p>Deltagarlista:</p>
+      <p>Deltagarlistan visar människorna som har bjudits in till mötet.</p>
     </item>
     <item>
-      <p>Schedule Grid:</p>
-      <p>The Schedule Grid shows the published Free/Busy information for the
-      people you have invited. This is where you compare schedules to find free
-      time to schedule the appointment. Individuals have visible scheduling
-      information only if they use the same Novell GroupWise or Microsoft
-      Exchange server you do (that is, if they are in the same organization as
-      you), or if they publish free/busy information at a web address (URL)
-      that you can reach and you have entered that web address for the specific
-      contact in the
-      <link xref="contacts-usage-edit-contact">Contact Editor</link> under
-      <guiseq><gui>Personal information</gui>
-      <gui>Web Addresses</gui><gui>Free/Busy</gui></guiseq>.</p>
+      <p>Bokningsrutnät:</p>
+      <p>Bokningsrutnätet visa den publicerade ledig/upptagen-informationen för människor du har bjudit in. Det är här du jämför scheman för att hitta ledig tid att boka mötet. Individer har synlig bokningsinformation bara om de använder samma Novell GroupWise- eller Microsoft Exchange-server som du (det vill säga, om de är i samma organisation om du), eller om de publicerar ledig-/upptageninformation på en webbadress (URL) som du kan nå och du har matat in den webbadressen för den specifika kontakten i <link xref="contacts-usage-edit-contact">Kontaktredigerare</link> under <guiseq><gui>Personlig information</gui> <gui>Webbadresser</gui><gui>Ledig/Upptagen</gui></guiseq>.</p>
     </item>
   </list>
 
-  <p>You can publish Calendar and Free/Busy information to a WebDAV server, FTP
-  server, a remote machine through SSH or to any other web server with HTTP PUT
-  support.</p>
+  <p>Du kan publicera kalender- och ledig-/upptageninformation på en WebDAV-server, FTP-server, en fjärrmaskin via SSH eller på vilken webbserver som helst med HTTP PUT-stöd.</p>
 
-  <p>In corporate environments you can publish Calendar and Free/Busy
-  information to an Exchange or Groupwise server. Note that you must use the
-  top-level Exchange calendar if you want others to be able to access your Free
-  / Busy information when inviting you to a meeting.</p> <p>The default server
-  can be defined under
-  <guiseq><gui>Edit</gui><gui>Preferences</gui>
-  <gui>Calendar and Tasks</gui>
-  <gui>Publishing Information</gui>
-  <gui>Default Free/Busy Server</gui></guiseq>.</p>
+  <p>I företagsmiljöer kan du publicera kalender- och ledig-/upptageninformation på en Exchange- eller Groupwise-server. Notera att du måste använda toppnivå-Exchange-kalendern om du vill att andra ska kunna nå din ledig-/upptageninformation när de bjuder in dig till ett möte.</p> <p>Standardservern kan definieras under <guiseq><gui>Redigera</gui><gui>Inställningar</gui> <gui>Kalender och uppgifter</gui> <gui>Publiceringsinformation</gui> <gui>Standardserver för ledig/upptagen</gui></guiseq>.</p>
 
   <!-- This is the location since 3.1.5, see bug
        https://bugzilla.gnome.org/show_bug.cgi?id=655666 -->
 
 <section id="no-groupware">
-  <title>Accessing Free/Busy Data Without a Groupware Server</title>
+  <title>Nå ledig-/upptagendata utan en Groupware-server</title>
 
-  <p>If individuals give you a URL for Free/Busy data or for their web
-  calendar, you can add the URL under
-  <guiseq><gui>Personal Information</gui><gui>Web Addresses</gui></guiseq> in
-  the <link xref="contacts-usage-edit-contact">Contact Editor</link>. Then,
-  when you schedule a meeting with them,<app>Evolution</app> looks up the
-  schedule and displays it in the Free/Busy data.</p>
+  <p>Om individer ger dig en URL med ledig-/upptageninformation eller till deras webbkalender kan du lägga till URL:en under <guiseq><gui>Personlig Information</gui><gui>Webbadresser</gui></guiseq> i <link xref="contacts-usage-edit-contact">Kontaktredigerare</link>. Sen, när du bokar ett möte med dem kommer <app>Evolution</app> att slå upp schemat och visa det bland ledig-/upptagendata.</p>
 
 </section>
 

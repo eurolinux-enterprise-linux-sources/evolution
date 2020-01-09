@@ -25,7 +25,6 @@
 
 #include <string.h>
 #include <glib/gi18n.h>
-#include <webkit/webkitdom.h>
 #include <libedataserver/libedataserver.h>
 
 #include <shell/e-shell.h>
@@ -37,14 +36,16 @@
 #include <mail/em-utils.h>
 #include <em-format/e-mail-formatter-utils.h>
 
-#include "e-conflict-search-selector.h"
-#include "e-source-conflict-search.h"
 #include "itip-view.h"
 #include "e-mail-part-itip.h"
 
+#include "itip-view-elements-defines.h"
+
+#include "web-extension/module-itip-formatter-web-extension.h"
+
 #define d(x)
 
-#define MEETING_ICON "stock_new-meeting"
+#define MEETING_ICON "stock_people"
 
 #define ITIP_VIEW_GET_PRIVATE(obj) \
 	(G_TYPE_INSTANCE_GET_PRIVATE \
@@ -107,54 +108,85 @@ struct _ItipViewPrivate {
 
 	gint needs_decline : 1;
 
-        WebKitDOMDocument *dom_document;
-        EMailPartItip *itip_part;
+        gpointer itip_part_ptr; /* not referenced, only for a "reference" to which part this belongs */
+
+	GDBusProxy *web_extension;
+	guint web_extension_watch_name_id;
+	guint web_extension_source_changed_cb_signal_id;
+	guint web_extension_recur_toggled_signal_id;
+
+	guint64 page_id;
+	gchar *part_id;
 
         gchar *error;
+	GWeakRef *web_view_weakref;
+
+	CamelFolder *folder;
+	CamelMimeMessage *message;
+	gchar *message_uid;
+	CamelMimePart *itip_mime_part;
+	GCancellable *cancellable;
+
+	ECalClient *current_client;
+
+	gchar *vcalendar;
+	ECalComponent *comp;
+	icalcomponent *main_comp;
+	icalcomponent *ical_comp;
+	icalcomponent *top_level;
+	icalcompiter iter;
+	icalproperty_method method;
+	time_t start_time;
+	time_t end_time;
+
+	gint current;
+	gint total;
+
+	gchar *calendar_uid;
+
+	gchar *from_address;
+	gchar *from_name;
+	gchar *to_address;
+	gchar *to_name;
+	gchar *delegator_address;
+	gchar *delegator_name;
+	gchar *my_address;
+	gint   view_only;
+
+	guint progress_info_id;
+
+	/* a reply can only be sent if and only if there is an organizer */
+	gboolean has_organizer;
+	/*
+	 * Usually replies are sent unless the user unchecks that option.
+	 * There are some cases when the default is not to sent a reply
+	 * (but the user can still chose to do so by checking the option):
+	 * - the organizer explicitly set RSVP=FALSE for the current user
+	 * - the event has no ATTENDEEs: that's the case for most non-meeting
+	 *   events
+	 *
+	 * The last case is meant for forwarded non-meeting
+	 * events. Traditionally Evolution hasn't offered to send a
+	 * reply, therefore the updated implementation mimics that
+	 * behavior.
+	 *
+	 * Unfortunately some software apparently strips all ATTENDEEs
+	 * when forwarding a meeting; in that case sending a reply is
+	 * also unchecked by default. So the check for ATTENDEEs is a
+	 * tradeoff between sending unwanted replies in cases where
+	 * that wasn't done in the past and not sending a possibly
+	 * wanted reply where that wasn't possible in the past
+	 * (because replies to forwarded events were not
+	 * supported). Overall that should be an improvement, and the
+	 * user can always override the default.
+	 */
+	gboolean no_reply_wanted;
+
+	guint update_item_progress_info_id;
+	guint update_item_error_info_id;
+	ItipViewResponse update_item_response;
+	GHashTable *real_comps; /* ESource's UID -> ECalComponent stored on the server */
 };
-
-#define TEXT_ROW_SENDER "text_row_sender"
-#define TABLE_ROW_SUMMARY "table_row_summary"
-#define TABLE_ROW_LOCATION "table_row_location"
-#define TABLE_ROW_START_DATE "table_row_start_time"
-#define TABLE_ROW_END_DATE "table_row_end_time"
-#define TABLE_ROW_STATUS "table_row_status"
-#define TABLE_ROW_COMMENT "table_row_comment"
-#define TABLE_ROW_DESCRIPTION "table_row_description"
-#define TABLE_ROW_RSVP_COMMENT "table_row_rsvp_comment"
-#define TABLE_ROW_ESCB "table_row_escb"
-#define TABLE_ROW_BUTTONS "table_row_buttons"
-#define TABLE_ROW_ESCB_LABEL "table_row_escb_label"
-
-#define TABLE_BUTTONS "table_buttons"
-
-#define SELECT_ESOURCE "select_esource"
-#define TEXTAREA_RSVP_COMMENT "textarea_rsvp_comment"
-
-#define CHECKBOX_RSVP "checkbox_rsvp"
-#define CHECKBOX_RECUR "checkbox_recur"
-#define CHECKBOX_UPDATE "checkbox_update"
-#define CHECKBOX_FREE_TIME "checkbox_free_time"
-#define CHECKBOX_KEEP_ALARM "checkbox_keep_alarm"
-#define CHECKBOX_INHERIT_ALARM "checkbox_inherit_alarm"
-
-#define BUTTON_OPEN_CALENDAR "button_open_calendar"
-#define BUTTON_DECLINE "button_decline"
-#define BUTTON_DECLINE_ALL "button_decline_all"
-#define BUTTON_ACCEPT "button_accept"
-#define BUTTON_ACCEPT_ALL "button_accept_all"
-#define BUTTON_TENTATIVE "button_tentative"
-#define BUTTON_TENTATIVE_ALL "button_tentative_all"
-#define BUTTON_SEND_INFORMATION "button_send_information"
-#define BUTTON_UPDATE "button_update"
-#define BUTTON_UPDATE_ATTENDEE_STATUS "button_update_attendee_status"
-#define BUTTON_SAVE "button_save"
-
-#define TABLE_UPPER_ITIP_INFO "table_upper_itip_info"
-#define TABLE_LOWER_ITIP_INFO "table_lower_itip_info"
-
-#define DIV_ITIP_CONTENT "div_itip_content"
-#define DIV_ITIP_ERROR "div_itip_error"
 
 enum {
 	PROP_0,
@@ -441,9 +473,9 @@ set_calendar_sender_text (ItipView *view)
 		break;
 	case ITIP_VIEW_MODE_CANCEL:
 		if (priv->organizer_sentby)
-			sender = dupe_first_bold (_("%s through %s has canceled the following meeting:"), organizer, priv->organizer_sentby);
+			sender = dupe_first_bold (_("%s through %s has cancelled the following meeting:"), organizer, priv->organizer_sentby);
 		else
-			sender = dupe_first_bold (_("%s has canceled the following meeting:"), organizer, NULL);
+			sender = dupe_first_bold (_("%s has cancelled the following meeting:"), organizer, NULL);
 		break;
 	case ITIP_VIEW_MODE_COUNTER:
 		if (priv->attendee_sentby)
@@ -531,9 +563,9 @@ set_tasklist_sender_text (ItipView *view)
 		break;
 	case ITIP_VIEW_MODE_CANCEL:
 		if (priv->organizer_sentby)
-			sender = dupe_first_bold (_("%s through %s has canceled the following assigned task:"), organizer, priv->organizer_sentby);
+			sender = dupe_first_bold (_("%s through %s has cancelled the following assigned task:"), organizer, priv->organizer_sentby);
 		else
-			sender = dupe_first_bold (_("%s has canceled the following assigned task:"), organizer, NULL);
+			sender = dupe_first_bold (_("%s has cancelled the following assigned task:"), organizer, NULL);
 		break;
 	case ITIP_VIEW_MODE_COUNTER:
 		if (priv->attendee_sentby)
@@ -597,9 +629,9 @@ set_journal_sender_text (ItipView *view)
 		break;
 	case ITIP_VIEW_MODE_CANCEL:
 		if (priv->organizer_sentby)
-			sender = dupe_first_bold (_("%s through %s has canceled the following shared memo:"), organizer, priv->organizer_sentby);
+			sender = dupe_first_bold (_("%s through %s has cancelled the following shared memo:"), organizer, priv->organizer_sentby);
 		else
-			sender = dupe_first_bold (_("%s has canceled the following shared memo:"), organizer, NULL);
+			sender = dupe_first_bold (_("%s has cancelled the following shared memo:"), organizer, NULL);
 		break;
 	default:
 		break;
@@ -611,6 +643,165 @@ set_journal_sender_text (ItipView *view)
 	g_free (on_behalf_of);
 
 	return sender;
+}
+
+static void
+enable_button (ItipView *view,
+	       const gchar *button_id,
+               gboolean enable)
+{
+	if (!view->priv->web_extension)
+		return;
+
+	e_util_invoke_g_dbus_proxy_call_with_error_check (
+		view->priv->web_extension,
+		"EnableButton",
+		g_variant_new ("(tssb)", view->priv->page_id, view->priv->part_id, button_id, enable),
+		NULL);
+}
+
+static void
+show_button (ItipView *view,
+             const gchar *id)
+{
+	if (!view->priv->web_extension)
+		return;
+
+	e_util_invoke_g_dbus_proxy_call_with_error_check (
+		view->priv->web_extension,
+		"ShowButton",
+		g_variant_new ("(tss)", view->priv->page_id, view->priv->part_id, id),
+		NULL);
+}
+
+static void
+hide_element (ItipView *view,
+	      const gchar *element_id,
+              gboolean hide)
+{
+	if (!view->priv->web_extension)
+		return;
+
+	e_util_invoke_g_dbus_proxy_call_with_error_check (
+		view->priv->web_extension,
+		"HideElement",
+		g_variant_new ("(tssb)", view->priv->page_id, view->priv->part_id, element_id, hide),
+		NULL);
+}
+
+static gboolean
+element_is_hidden (ItipView *view,
+                   const gchar *element_id)
+{
+	GVariant *result;
+	gboolean hidden;
+
+	if (!view->priv->web_extension)
+		return FALSE;
+
+	result = e_util_invoke_g_dbus_proxy_call_sync_wrapper_with_error_check (
+			view->priv->web_extension,
+			"ElementIsHidden",
+			g_variant_new ("(tss)", view->priv->page_id, view->priv->part_id, element_id),
+			NULL);
+
+	if (result) {
+		g_variant_get (result, "(b)", &hidden);
+		g_variant_unref (result);
+		return hidden;
+	}
+
+	return FALSE;
+}
+
+static void
+set_inner_html (ItipView *view,
+	        const gchar *element_id,
+                const gchar *inner_html)
+{
+	if (!view->priv->web_extension)
+		return;
+
+	e_util_invoke_g_dbus_proxy_call_with_error_check (
+		view->priv->web_extension,
+		"ElementSetInnerHTML",
+		g_variant_new ("(tsss)", view->priv->page_id, view->priv->part_id, element_id, inner_html),
+		NULL);
+}
+
+static void
+input_set_checked (ItipView *view,
+                   const gchar *input_id,
+                   gboolean checked)
+{
+	if (!view->priv->web_extension)
+		return;
+
+	e_util_invoke_g_dbus_proxy_call_with_error_check (
+		view->priv->web_extension,
+		"InputSetChecked",
+		g_variant_new ("(tssb)", view->priv->page_id, view->priv->part_id, input_id, checked),
+		NULL);
+}
+
+static gboolean
+input_is_checked (ItipView *view,
+                  const gchar *input_id)
+{
+	GVariant *result;
+	gboolean checked;
+
+	if (!view->priv->web_extension)
+		return FALSE;
+
+	result = e_util_invoke_g_dbus_proxy_call_sync_wrapper_with_error_check (
+			view->priv->web_extension,
+			"InputIsChecked",
+			g_variant_new ("(tss)", view->priv->page_id, view->priv->part_id, input_id),
+			NULL);
+
+	if (result) {
+		g_variant_get (result, "(b)", &checked);
+		g_variant_unref (result);
+		return checked;
+	}
+
+	return FALSE;
+}
+
+static void
+show_checkbox (ItipView *view,
+               const gchar *id,
+               gboolean show,
+	       gboolean update_second)
+{
+	g_return_if_fail (ITIP_IS_VIEW (view));
+
+	if (!view->priv->web_extension)
+		return;
+
+	e_util_invoke_g_dbus_proxy_call_with_error_check (
+		view->priv->web_extension,
+		"ShowCheckbox",
+		g_variant_new ("(tssbb)", view->priv->page_id, view->priv->part_id, id, show, update_second),
+		NULL);
+}
+
+static void
+set_area_text (ItipView *view,
+               const gchar *id,
+               const gchar *text)
+{
+	g_return_if_fail (ITIP_IS_VIEW (view));
+
+	if (!view->priv->web_extension)
+		return;
+
+	e_util_invoke_g_dbus_proxy_call_with_error_check (
+		view->priv->web_extension,
+		"SetAreaText",
+		g_variant_new ("(tsss)", view->priv->page_id, view->priv->part_id, id, text ? text : ""),
+		NULL);
 }
 
 static void
@@ -637,21 +828,14 @@ set_sender_text (ItipView *view)
 		break;
 	}
 
-	if (priv->sender && priv->dom_document) {
-		WebKitDOMElement *div;
-
-		div = webkit_dom_document_get_element_by_id (
-			priv->dom_document, TEXT_ROW_SENDER);
-		webkit_dom_html_element_set_inner_html (
-			WEBKIT_DOM_HTML_ELEMENT (div), priv->sender, NULL);
-	}
+	if (priv->sender && priv->web_extension)
+		set_inner_html (view, TEXT_ROW_SENDER, priv->sender);
 }
 
 static void
 update_start_end_times (ItipView *view)
 {
 	ItipViewPrivate *priv;
-	WebKitDOMElement *row, *col;
 	gchar buffer[256];
 	time_t now;
 	struct tm *now_tm;
@@ -696,139 +880,147 @@ update_start_end_times (ItipView *view)
 	}
 	#undef is_same
 
-	if (priv->dom_document) {
-		row = webkit_dom_document_get_element_by_id (
-			priv->dom_document, TABLE_ROW_START_DATE);
-		if (priv->start_header && priv->start_label) {
-			webkit_dom_html_element_set_hidden (
-				WEBKIT_DOM_HTML_ELEMENT (row), FALSE);
+	if (!priv->web_extension)
+		return;
 
-			col = webkit_dom_element_get_first_element_child (row);
-			webkit_dom_html_element_set_inner_html (
-				WEBKIT_DOM_HTML_ELEMENT (col), priv->start_header, NULL);
+	if (priv->start_header && priv->start_label) {
+		e_util_invoke_g_dbus_proxy_call_with_error_check (
+			priv->web_extension,
+			"UpdateTimes",
+			g_variant_new (
+				"(tssss)",
+				view->priv->page_id,
+				view->priv->part_id,
+				TABLE_ROW_START_DATE,
+				priv->start_header,
+				priv->start_label),
+			NULL);
+	} else
+		hide_element (view, TABLE_ROW_START_DATE, TRUE);
 
-			col = webkit_dom_element_get_last_element_child (row);
-			webkit_dom_html_element_set_inner_html (
-				WEBKIT_DOM_HTML_ELEMENT (col), priv->start_label, NULL);
-		} else {
-			webkit_dom_html_element_set_hidden (
-				WEBKIT_DOM_HTML_ELEMENT (row), TRUE);
-		}
+	if (priv->end_header && priv->end_label) {
+		e_util_invoke_g_dbus_proxy_call_with_error_check (
+			priv->web_extension,
+			"UpdateTimes",
+			g_variant_new (
+				"(tssss)",
+				view->priv->page_id,
+				view->priv->part_id,
+				TABLE_ROW_END_DATE,
+				priv->end_header,
+				priv->end_label),
+			NULL);
+	} else
+		hide_element (view, TABLE_ROW_END_DATE, TRUE);
+}
 
-		row = webkit_dom_document_get_element_by_id (
-			priv->dom_document, TABLE_ROW_END_DATE);
-		if (priv->end_header && priv->end_label) {
-			webkit_dom_html_element_set_hidden (
-				WEBKIT_DOM_HTML_ELEMENT (row), FALSE);
+static void
+itip_view_itip_button_clicked_cb (EWebView *web_view,
+				  const gchar *element_class,
+				  const gchar *element_value,
+				  const GtkAllocation *element_position,
+				  gpointer user_data)
+{
+	ItipView *view = user_data;
+	gboolean can_use;
+	gchar *tmp;
 
-			col = webkit_dom_element_get_first_element_child (row);
-			webkit_dom_html_element_set_inner_html (
-				WEBKIT_DOM_HTML_ELEMENT (col), priv->end_header, NULL);
+	g_return_if_fail (E_IS_WEB_VIEW (web_view));
+	g_return_if_fail (element_class && *element_class);
+	g_return_if_fail (element_value && *element_value);
+	g_return_if_fail (ITIP_IS_VIEW (view));
 
-			col = webkit_dom_element_get_last_element_child (row);
-			webkit_dom_html_element_set_inner_html (
-				WEBKIT_DOM_HTML_ELEMENT (col), priv->end_label, NULL);
-		} else {
-			webkit_dom_html_element_set_hidden (
-				WEBKIT_DOM_HTML_ELEMENT (row), TRUE);
-		}
+	tmp = g_strdup_printf ("%p:", view->priv->itip_part_ptr);
+	can_use = g_str_has_prefix (element_value, tmp);
+	if (can_use)
+		element_value += strlen (tmp);
+	g_free (tmp);
+
+	if (can_use) {
+		gint response = atoi (element_value);
+
+		g_signal_emit (view, signals[RESPONSE], 0, response);
 	}
 }
 
 static void
-button_clicked_cb (WebKitDOMElement *element,
-                   WebKitDOMEvent *event,
-                   gpointer data)
+itip_view_register_clicked_listener (ItipView *view)
 {
-	ItipViewResponse response;
-	gchar *responseStr;
+	EWebView *web_view;
 
-	responseStr = webkit_dom_html_button_element_get_value (
-		WEBKIT_DOM_HTML_BUTTON_ELEMENT (element));
+	g_return_if_fail (ITIP_IS_VIEW (view));
 
-	response = atoi (responseStr);
-
-	g_signal_emit (data, signals[RESPONSE], 0, response);
-}
-
-static void
-rsvp_toggled_cb (WebKitDOMHTMLInputElement *input,
-                 WebKitDOMEvent *event,
-                 gpointer data)
-{
-	WebKitDOMElement *el;
-
-	ItipView *view = data;
-	gboolean rsvp;
-
-	rsvp = webkit_dom_html_input_element_get_checked (input);
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, TEXTAREA_RSVP_COMMENT);
-	webkit_dom_html_text_area_element_set_disabled (
-		WEBKIT_DOM_HTML_TEXT_AREA_ELEMENT (el), !rsvp);
-}
-
-static void
-recur_toggled_cb (WebKitDOMHTMLInputElement *input,
-                  WebKitDOMEvent *event,
-                  gpointer data)
-{
-	ItipView *view = data;
-
-	itip_view_set_mode (view, view->priv->mode);
-}
-
-/*
-  alarm_check_toggled_cb
-  check1 was changed, so make the second available based on state of the first check.
-*/
-static void
-alarm_check_toggled_cb (WebKitDOMHTMLInputElement *check1,
-                        WebKitDOMEvent *event,
-                        ItipView *view)
-{
-	WebKitDOMElement *check2;
-	gchar *id;
-
-#if WEBKIT_CHECK_VERSION(2,2,0)  /* XXX should really be (2,1,something) */
-	id = webkit_dom_element_get_id (
-		WEBKIT_DOM_ELEMENT (check1));
-#else
-	id = webkit_dom_html_element_get_id (
-		WEBKIT_DOM_HTML_ELEMENT (check1));
-#endif
-
-	if (g_strcmp0 (id, CHECKBOX_INHERIT_ALARM)) {
-		check2 = webkit_dom_document_get_element_by_id (
-			view->priv->dom_document, CHECKBOX_KEEP_ALARM);
-	} else {
-		check2 = webkit_dom_document_get_element_by_id (
-			view->priv->dom_document, CHECKBOX_INHERIT_ALARM);
+	web_view = itip_view_ref_web_view (view);
+	if (web_view) {
+		e_web_view_register_element_clicked (web_view, "itip-button",
+			itip_view_itip_button_clicked_cb, view);
 	}
 
-	g_free (id);
-
-	webkit_dom_html_input_element_set_disabled (
-		WEBKIT_DOM_HTML_INPUT_ELEMENT (check2),
-		(webkit_dom_html_element_get_hidden (
-				WEBKIT_DOM_HTML_ELEMENT (check1)) &&
-			webkit_dom_html_input_element_get_checked (check1)));
+	g_clear_object (&web_view);
 }
 
 static void
-source_changed_cb (WebKitDOMElement *select,
-                   WebKitDOMEvent *event,
-                   ItipView *view)
+recur_toggled_signal_cb (GDBusConnection *connection,
+                         const gchar *sender_name,
+                         const gchar *object_path,
+                         const gchar *interface_name,
+                         const gchar *signal_name,
+                         GVariant *parameters,
+                         ItipView *view)
+{
+	guint64 page_id = 0;
+	const gchar *part_id = NULL;
+
+	g_return_if_fail (ITIP_IS_VIEW (view));
+
+	if (g_strcmp0 (signal_name, "RecurToggled") != 0)
+		return;
+
+	g_variant_get (parameters, "(t&s)", &page_id, &part_id);
+
+	if (view->priv->page_id == page_id &&
+	    g_strcmp0 (view->priv->part_id, part_id) == 0)
+		itip_view_set_mode (view, view->priv->mode);
+}
+
+static void
+source_changed_cb (ItipView *view)
 {
 	ESource *source;
 
 	source = itip_view_ref_source (view);
 
-	d (printf ("Source changed to '%s'\n", e_source_get_display_name (source)));
-	g_signal_emit (view, signals[SOURCE_SELECTED], 0, source);
+	if (source) {
+		d (printf ("Source changed to '%s'\n", e_source_get_display_name (source)));
+		g_signal_emit (view, signals[SOURCE_SELECTED], 0, source);
 
-	g_object_unref (source);
+		g_object_unref (source);
+	}
+}
+
+static void
+source_changed_cb_signal_cb (GDBusConnection *connection,
+			     const gchar *sender_name,
+			     const gchar *object_path,
+			     const gchar *interface_name,
+			     const gchar *signal_name,
+			     GVariant *parameters,
+			     gpointer user_data)
+{
+	ItipView *view = user_data;
+	guint64 page_id = 0;
+	const gchar *part_id = NULL;
+
+	g_return_if_fail (ITIP_IS_VIEW (view));
+
+	if (g_strcmp0 (signal_name, "SourceChanged") != 0)
+		return;
+
+	g_variant_get (parameters, "(t&s)", &page_id, &part_id);
+
+	if (view->priv->page_id == page_id &&
+	    g_strcmp0 (view->priv->part_id, part_id) == 0)
+		source_changed_cb (view);
 }
 
 static void
@@ -895,23 +1087,8 @@ append_info_item_row (ItipView *view,
                       const gchar *table_id,
                       ItipViewInfoItem *item)
 {
-	WebKitDOMElement *table;
-	WebKitDOMHTMLElement *row, *cell;
 	const gchar *icon_name;
-	gchar *id;
-
-	table = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, table_id);
-	row = webkit_dom_html_table_element_insert_row (
-		WEBKIT_DOM_HTML_TABLE_ELEMENT (table), -1, NULL);
-
-	id = g_strdup_printf ("%s_row_%d", table_id, item->id);
-#if WEBKIT_CHECK_VERSION(2,2,0)  /* XXX should really be (2,1,something) */
-	webkit_dom_element_set_id (WEBKIT_DOM_ELEMENT (row), id);
-#else
-	webkit_dom_html_element_set_id (row, id);
-#endif
-	g_free (id);
+	gchar *row_id;
 
 	switch (item->type) {
 		case ITIP_VIEW_INFO_ITEM_TYPE_INFO:
@@ -931,31 +1108,25 @@ append_info_item_row (ItipView *view,
 			icon_name = NULL;
 	}
 
-	cell = webkit_dom_html_table_row_element_insert_cell (
-		(WebKitDOMHTMLTableRowElement *) row, -1, NULL);
+	row_id = g_strdup_printf ("%s_row_%d", table_id, item->id);
 
-	if (icon_name) {
-		WebKitDOMElement *image;
-		gchar *icon_uri;
+	if (!view->priv->web_extension)
+		return;
 
-		image = webkit_dom_document_create_element (
-			view->priv->dom_document, "IMG", NULL);
+	e_util_invoke_g_dbus_proxy_call_with_error_check (
+		view->priv->web_extension,
+		"AppendInfoItemRow",
+		g_variant_new (
+			"(tsssss)",
+			view->priv->page_id,
+			view->priv->part_id,
+			table_id,
+			row_id,
+			icon_name,
+			item->message),
+		NULL);
 
-		icon_uri = g_strdup_printf ("gtk-stock://%s", icon_name);
-		webkit_dom_html_image_element_set_src (
-			WEBKIT_DOM_HTML_IMAGE_ELEMENT (image), icon_uri);
-		g_free (icon_uri);
-
-		webkit_dom_node_append_child (
-			WEBKIT_DOM_NODE (cell),
-			WEBKIT_DOM_NODE (image),
-			NULL);
-	}
-
-	cell = webkit_dom_html_table_row_element_insert_cell (
-		(WebKitDOMHTMLTableRowElement *) row, -1, NULL);
-
-	webkit_dom_html_element_set_inner_html (cell, item->message, NULL);
+	g_free (row_id);
 
 	d (printf ("Added row %s_row_%d ('%s')\n", table_id, item->id, item->message));
 }
@@ -965,24 +1136,27 @@ remove_info_item_row (ItipView *view,
                       const gchar *table_id,
                       guint id)
 {
-	WebKitDOMElement *row;
 	gchar *row_id;
 
 	row_id = g_strdup_printf ("%s_row_%d", table_id, id);
-	row = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, row_id);
-	g_free (row_id);
 
-	webkit_dom_node_remove_child (
-		webkit_dom_node_get_parent_node (WEBKIT_DOM_NODE (row)),
-		WEBKIT_DOM_NODE (row),
+	if (!view->priv->web_extension)
+		return;
+
+	e_util_invoke_g_dbus_proxy_call_with_error_check (
+		view->priv->web_extension,
+		"RemoveElement",
+		g_variant_new ("(tss)", view->priv->page_id, view->priv->part_id, row_id),
 		NULL);
+
+	g_free (row_id);
 
 	d (printf ("Removed row %s_row_%d\n", table_id, id));
 }
 
 static void
 buttons_table_write_button (GString *buffer,
+			    gpointer itip_part_ptr,
                             const gchar *name,
                             const gchar *label,
                             const gchar *icon,
@@ -993,20 +1167,27 @@ buttons_table_write_button (GString *buffer,
 	html_label = e_mail_formatter_parse_html_mnemonics (label, &access_key);
 
 	if (icon) {
+		gint icon_width, icon_height;
+
+		if (!gtk_icon_size_lookup (GTK_ICON_SIZE_BUTTON, &icon_width, &icon_height)) {
+			icon_width = 16;
+			icon_height = 16;
+		}
+
 		g_string_append_printf (
 			buffer,
-			"<td><button type=\"button\" name=\"%s\" value=\"%d\" id=\"%s\" accesskey=\"%s\" hidden disabled>"
-			"<div><img src=\"gtk-stock://%s?size=%d\"> <span>%s</span></div>"
+			"<td><button class=\"itip-button\" type=\"button\" name=\"%s\" value=\"%p:%d\" id=\"%s\" accesskey=\"%s\" hidden disabled>"
+			"<div><img src=\"gtk-stock://%s?size=%d\" width=\"%dpx\" height=\"%dpx\"> <span>%s</span></div>"
 			"</button></td>\n",
-			name, response, name, access_key ? access_key : "" , icon,
-			GTK_ICON_SIZE_BUTTON, html_label);
+			name, itip_part_ptr, response, name, access_key ? access_key : "" , icon,
+			GTK_ICON_SIZE_BUTTON, icon_width, icon_height, html_label);
 	} else {
 		g_string_append_printf (
 			buffer,
-			"<td><button type=\"button\" name=\"%s\" value=\"%d\" id=\"%s\" accesskey=\"%s\" hidden disabled>"
+			"<td><button class=\"itip-button\" type=\"button\" name=\"%s\" value=\"%p:%d\" id=\"%s\" accesskey=\"%s\" hidden disabled>"
 			"<div><span>%s</span></div>"
 			"</button></td>\n",
-			name, response, name, access_key ? access_key : "" , html_label);
+			name, itip_part_ptr, response, name, access_key ? access_key : "" , html_label);
 	}
 
 	g_free (html_label);
@@ -1016,7 +1197,8 @@ buttons_table_write_button (GString *buffer,
 }
 
 static void
-append_buttons_table (GString *buffer)
+append_buttons_table (GString *buffer,
+		      gpointer itip_part_ptr)
 {
 	g_string_append (
 		buffer,
@@ -1027,34 +1209,34 @@ append_buttons_table (GString *buffer)
 
         /* Everything gets the open button */
 	buttons_table_write_button (
-		buffer, BUTTON_OPEN_CALENDAR, _("Ope_n Calendar"),
+		buffer, itip_part_ptr, BUTTON_OPEN_CALENDAR, _("Ope_n Calendar"),
 		"go-jump", ITIP_VIEW_RESPONSE_OPEN);
 	buttons_table_write_button (
-		buffer, BUTTON_DECLINE_ALL, _("_Decline all"),
+		buffer, itip_part_ptr, BUTTON_DECLINE_ALL, _("_Decline all"),
 		NULL, ITIP_VIEW_RESPONSE_DECLINE);
 	buttons_table_write_button (
-		buffer, BUTTON_DECLINE, _("_Decline"),
+		buffer, itip_part_ptr, BUTTON_DECLINE, _("_Decline"),
 		NULL, ITIP_VIEW_RESPONSE_DECLINE);
 	buttons_table_write_button (
-		buffer, BUTTON_TENTATIVE_ALL, _("_Tentative all"),
+		buffer, itip_part_ptr, BUTTON_TENTATIVE_ALL, _("_Tentative all"),
 		NULL, ITIP_VIEW_RESPONSE_TENTATIVE);
 	buttons_table_write_button (
-		buffer, BUTTON_TENTATIVE, _("_Tentative"),
+		buffer, itip_part_ptr, BUTTON_TENTATIVE, _("_Tentative"),
 		NULL, ITIP_VIEW_RESPONSE_TENTATIVE);
 	buttons_table_write_button (
-		buffer, BUTTON_ACCEPT_ALL, _("Acce_pt all"),
+		buffer, itip_part_ptr, BUTTON_ACCEPT_ALL, _("Acce_pt all"),
 		NULL, ITIP_VIEW_RESPONSE_ACCEPT);
 	buttons_table_write_button (
-		buffer, BUTTON_ACCEPT, _("Acce_pt"),
+		buffer, itip_part_ptr, BUTTON_ACCEPT, _("Acce_pt"),
 		NULL, ITIP_VIEW_RESPONSE_ACCEPT);
 	buttons_table_write_button (
-		buffer, BUTTON_SEND_INFORMATION, _("Send _Information"),
+		buffer, itip_part_ptr, BUTTON_SEND_INFORMATION, _("Send _Information"),
 		NULL, ITIP_VIEW_RESPONSE_REFRESH);
 	buttons_table_write_button (
-		buffer, BUTTON_UPDATE_ATTENDEE_STATUS, _("_Update Attendee Status"),
+		buffer, itip_part_ptr, BUTTON_UPDATE_ATTENDEE_STATUS, _("_Update Attendee Status"),
 		NULL, ITIP_VIEW_RESPONSE_UPDATE);
 	buttons_table_write_button (
-		buffer, BUTTON_UPDATE,  _("_Update"),
+		buffer, itip_part_ptr, BUTTON_UPDATE,  _("_Update"),
 		NULL, ITIP_VIEW_RESPONSE_CANCEL);
 
 	g_string_append (buffer, "</tr></table>");
@@ -1064,106 +1246,55 @@ static void
 itip_view_rebuild_source_list (ItipView *view)
 {
 	ESourceRegistry *registry;
-	WebKitDOMElement *select;
 	GList *list, *link;
 	const gchar *extension_name;
-	GHashTable *groups;
 
 	d (printf ("Assigning a new source list!\n"));
 
-	if (!view->priv->dom_document)
+	if (!view->priv->web_extension)
 		return;
 
 	registry = view->priv->registry;
 	extension_name = itip_view_get_extension_name (view);
 
-	select = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, SELECT_ESOURCE);
-
-	while (webkit_dom_node_has_child_nodes (WEBKIT_DOM_NODE (select))) {
-		webkit_dom_node_remove_child (
-			WEBKIT_DOM_NODE (select),
-			webkit_dom_node_get_last_child (WEBKIT_DOM_NODE (select)),
-			NULL);
-	}
-
 	if (extension_name == NULL)
 		return;
 
+	e_util_invoke_g_dbus_proxy_call_with_error_check (
+		view->priv->web_extension,
+		"ElementRemoveChildNodes",
+		g_variant_new ("(tss)", view->priv->page_id, view->priv->part_id, SELECT_ESOURCE),
+		NULL);
+
 	list = e_source_registry_list_enabled (registry, extension_name);
-	groups = g_hash_table_new_full (
-		g_str_hash, g_str_equal,
-		(GDestroyNotify) g_free, NULL);
 
 	for (link = list; link != NULL; link = g_list_next (link)) {
 		ESource *source = E_SOURCE (link->data);
 		ESource *parent;
-		WebKitDOMElement *option;
-		WebKitDOMHTMLOptGroupElement *optgroup;
 
 		parent = e_source_registry_ref_source (
 			registry, e_source_get_parent (source));
 
-		optgroup = g_hash_table_lookup (groups, e_source_get_uid (parent));
-		if (!optgroup) {
-			optgroup = WEBKIT_DOM_HTML_OPT_GROUP_ELEMENT (
-					webkit_dom_document_create_element (
-						view->priv->dom_document,
-						"OPTGROUP", NULL));
-			webkit_dom_html_opt_group_element_set_label (
-				optgroup, e_source_get_display_name (parent));
-			g_hash_table_insert (
-				groups, g_strdup (e_source_get_uid (parent)), optgroup);
-		}
-		g_object_unref (parent);
-
-		option = webkit_dom_document_create_element (
-			view->priv->dom_document, "OPTION", NULL);
-		webkit_dom_html_option_element_set_value (
-			WEBKIT_DOM_HTML_OPTION_ELEMENT (option),
-			e_source_get_uid (source));
-		webkit_dom_html_option_element_set_label (
-			WEBKIT_DOM_HTML_OPTION_ELEMENT (option),
-			e_source_get_display_name (source));
-		webkit_dom_html_element_set_inner_html (
-			WEBKIT_DOM_HTML_ELEMENT (option),
-			e_source_get_display_name (source), NULL);
-
-		/* See https://bugzilla.gnome.org/show_bug.cgi?id=681400
-		 * FIXME: This can be removed once we require WebKitGtk 1.10+ */
-		#if WEBKIT_CHECK_VERSION (1, 9, 6)
-			webkit_dom_element_set_class_name (
-				WEBKIT_DOM_ELEMENT (option), "calendar");
-		#else
-			webkit_dom_html_element_set_class_name (
-				WEBKIT_DOM_HTML_ELEMENT (option), "calendar");
-		#endif
-
-		if (!e_source_get_writable (source)) {
-			webkit_dom_html_option_element_set_disabled (
-				WEBKIT_DOM_HTML_OPTION_ELEMENT (option), TRUE);
-		}
-
-		webkit_dom_node_append_child (
-			WEBKIT_DOM_NODE (optgroup),
-			WEBKIT_DOM_NODE (option),
+		e_util_invoke_g_dbus_proxy_call_with_error_check (
+			view->priv->web_extension,
+			"RebuildSourceList",
+			g_variant_new (
+				"(tsssssb)",
+				view->priv->page_id,
+				view->priv->part_id,
+				e_source_get_uid (parent),
+				e_source_get_display_name (parent),
+				e_source_get_uid (source),
+				e_source_get_display_name (source),
+				e_source_get_writable (source)),
 			NULL);
+
+		g_object_unref (parent);
 	}
 
 	g_list_free_full (list, (GDestroyNotify) g_object_unref);
 
-	list = g_hash_table_get_values (groups);
-	for (link = list; link != NULL; link = g_list_next (link)) {
-		WebKitDOMNode *optgroup = link->data;
-
-		webkit_dom_node_append_child (
-			WEBKIT_DOM_NODE (select), optgroup, NULL);
-	}
-	g_list_free (list);
-
-	g_hash_table_destroy (groups);
-
-	source_changed_cb (select, NULL, view);
+	source_changed_cb (view);
 }
 
 static void
@@ -1281,8 +1412,30 @@ itip_view_dispose (GObject *object)
 		priv->source_removed_handler_id = 0;
 	}
 
+	if (priv->web_extension_watch_name_id > 0) {
+		g_bus_unwatch_name (priv->web_extension_watch_name_id);
+		priv->web_extension_watch_name_id = 0;
+	}
+
+	if (priv->web_extension_recur_toggled_signal_id > 0) {
+		g_dbus_connection_signal_unsubscribe (
+			g_dbus_proxy_get_connection (priv->web_extension),
+			priv->web_extension_recur_toggled_signal_id);
+		priv->web_extension_recur_toggled_signal_id = 0;
+	}
+
+	if (priv->web_extension_source_changed_cb_signal_id > 0) {
+		g_dbus_connection_signal_unsubscribe (
+			g_dbus_proxy_get_connection (priv->web_extension),
+			priv->web_extension_source_changed_cb_signal_id);
+		priv->web_extension_source_changed_cb_signal_id = 0;
+	}
+
 	g_clear_object (&priv->client_cache);
 	g_clear_object (&priv->registry);
+	g_clear_object (&priv->web_extension);
+	g_clear_object (&priv->cancellable);
+	g_clear_object (&priv->comp);
 
 	/* Chain up to parent's dispose() method. */
 	G_OBJECT_CLASS (itip_view_parent_class)->dispose (object);
@@ -1298,7 +1451,6 @@ itip_view_finalize (GObject *object)
 
 	d (printf ("Itip view finalized!\n"));
 
-	g_clear_object (&priv->dom_document);
 	g_free (priv->extension_name);
 	g_free (priv->sender);
 	g_free (priv->organizer);
@@ -1317,6 +1469,7 @@ itip_view_finalize (GObject *object)
 	g_free (priv->end_label);
 	g_free (priv->description);
 	g_free (priv->error);
+	g_free (priv->part_id);
 
 	for (iter = priv->lower_info_items; iter; iter = iter->next) {
 		ItipViewInfoItem *item = iter->data;
@@ -1333,6 +1486,31 @@ itip_view_finalize (GObject *object)
 	}
 
 	g_slist_free (priv->upper_info_items);
+
+	e_weak_ref_free (priv->web_view_weakref);
+
+	g_free (priv->vcalendar);
+	g_free (priv->calendar_uid);
+	g_free (priv->from_address);
+	g_free (priv->from_name);
+	g_free (priv->to_address);
+	g_free (priv->to_name);
+	g_free (priv->delegator_address);
+	g_free (priv->delegator_name);
+	g_free (priv->my_address);
+	g_free (priv->message_uid);
+
+	g_clear_object (&priv->folder);
+	g_clear_object (&priv->message);
+	g_clear_object (&priv->itip_mime_part);
+
+	if (priv->top_level != NULL)
+		icalcomponent_free (priv->top_level);
+
+	if (priv->main_comp != NULL)
+		icalcomponent_free (priv->main_comp);
+
+	g_hash_table_destroy (priv->real_comps);
 
 	/* Chain up to parent's finalize() method. */
 	G_OBJECT_CLASS (itip_view_parent_class)->finalize (object);
@@ -1392,8 +1570,7 @@ itip_view_class_init (ItipViewClass *class)
 			"Client Cache",
 			"Cache of shared EClient instances",
 			E_TYPE_CLIENT_CACHE,
-			G_PARAM_READWRITE |
-			G_PARAM_CONSTRUCT_ONLY));
+			G_PARAM_READABLE));
 
 	g_object_class_install_property (
 		object_class,
@@ -1424,14 +1601,6 @@ itip_view_class_init (ItipViewClass *class)
 		g_cclosure_marshal_VOID__INT,
 		G_TYPE_NONE, 1,
 		G_TYPE_INT);
-}
-
-EMailPartItip *
-itip_view_get_mail_part (ItipView *view)
-{
-	g_return_val_if_fail (ITIP_IS_VIEW (view), NULL);
-
-	return view->priv->itip_part;
 }
 
 EClientCache *
@@ -1469,17 +1638,25 @@ itip_view_set_extension_name (ItipView *view,
 }
 
 void
-itip_view_write (EMailFormatter *formatter,
+itip_view_write (gpointer itip_part_ptr,
+		 EMailFormatter *formatter,
                  GString *buffer)
 {
+	gint icon_width, icon_height;
 	gchar *header = e_mail_formatter_get_html_header (formatter);
+
 	g_string_append (buffer, header);
 	g_free (header);
 
+	if (!gtk_icon_size_lookup (GTK_ICON_SIZE_BUTTON, &icon_width, &icon_height)) {
+		icon_width = 16;
+		icon_height = 16;
+	}
+
 	g_string_append_printf (
 		buffer,
-		"<img src=\"gtk-stock://%s?size=%d\" class=\"itip icon\" />\n",
-			MEETING_ICON, GTK_ICON_SIZE_BUTTON);
+		"<img src=\"gtk-stock://%s?size=%d\" class=\"itip icon\" width=\"%dpx\" height=\"%dpx\"/>\n",
+			MEETING_ICON, GTK_ICON_SIZE_BUTTON, icon_width, icon_height);
 
 	g_string_append (
 		buffer,
@@ -1566,7 +1743,7 @@ itip_view_write (EMailFormatter *formatter,
 	g_string_append (buffer, "</table>\n");
 
         /* Buttons table */
-	append_buttons_table (buffer);
+	append_buttons_table (buffer, itip_part_ptr);
 
         /* <div class="itip content" > */
 	g_string_append (buffer, "</div>\n");
@@ -1639,182 +1816,165 @@ itip_view_write_for_printing (ItipView *view,
 	}
 }
 
-void
-itip_view_create_dom_bindings (ItipView *view,
-                               WebKitDOMElement *element)
+static void
+web_extension_proxy_created_cb (GDBusProxy *proxy,
+                                GAsyncResult *result,
+                                ItipView *view)
 {
-	WebKitDOMElement *el;
-	WebKitDOMDocument *doc;
+	GError *error = NULL;
 
-	doc = webkit_dom_node_get_owner_document (WEBKIT_DOM_NODE (element));
-	view->priv->dom_document = g_object_ref (doc);
-
-	el = webkit_dom_document_get_element_by_id (doc, CHECKBOX_RECUR);
-	if (el) {
-		webkit_dom_event_target_add_event_listener (
-			WEBKIT_DOM_EVENT_TARGET (el), "click",
-			G_CALLBACK (recur_toggled_cb), FALSE, view);
+	view->priv->web_extension = g_dbus_proxy_new_finish (result, &error);
+	if (!view->priv->web_extension) {
+		g_warning ("Error creating web extension proxy: %s\n", error->message);
+		g_error_free (error);
 	}
 
-	el = webkit_dom_document_get_element_by_id (doc, CHECKBOX_RSVP);
-	if (el) {
-		webkit_dom_event_target_add_event_listener (
-			WEBKIT_DOM_EVENT_TARGET (el), "click",
-			G_CALLBACK (rsvp_toggled_cb), FALSE, view);
-	}
+	view->priv->web_extension_source_changed_cb_signal_id =
+		g_dbus_connection_signal_subscribe (
+			g_dbus_proxy_get_connection (view->priv->web_extension),
+			g_dbus_proxy_get_name (view->priv->web_extension),
+			MODULE_ITIP_FORMATTER_WEB_EXTENSION_INTERFACE,
+			"SourceChanged",
+			MODULE_ITIP_FORMATTER_WEB_EXTENSION_OBJECT_PATH,
+			NULL,
+			G_DBUS_SIGNAL_FLAGS_NONE,
+			source_changed_cb_signal_cb,
+			view,
+			NULL);
 
-	el = webkit_dom_document_get_element_by_id (doc, CHECKBOX_INHERIT_ALARM);
-	if (el) {
-		webkit_dom_event_target_add_event_listener (
-			WEBKIT_DOM_EVENT_TARGET (el), "click",
-			G_CALLBACK (alarm_check_toggled_cb), FALSE, view);
-	}
+	view->priv->web_extension_recur_toggled_signal_id =
+		g_dbus_connection_signal_subscribe (
+			g_dbus_proxy_get_connection (view->priv->web_extension),
+			g_dbus_proxy_get_name (view->priv->web_extension),
+			MODULE_ITIP_FORMATTER_WEB_EXTENSION_INTERFACE,
+			"RecurToggled",
+			MODULE_ITIP_FORMATTER_WEB_EXTENSION_OBJECT_PATH,
+			NULL,
+			G_DBUS_SIGNAL_FLAGS_NONE,
+			(GDBusSignalCallback) recur_toggled_signal_cb,
+			view,
+			NULL);
 
-	el = webkit_dom_document_get_element_by_id (doc, CHECKBOX_KEEP_ALARM);
-	if (el) {
-		webkit_dom_event_target_add_event_listener (
-			WEBKIT_DOM_EVENT_TARGET (el), "click",
-			G_CALLBACK (alarm_check_toggled_cb), FALSE, view);
-	}
+	e_util_invoke_g_dbus_proxy_call_with_error_check (
+		view->priv->web_extension,
+		"CreateDOMBindings",
+		g_variant_new ("(ts)", view->priv->page_id, view->priv->part_id),
+		NULL);
 
-	el = webkit_dom_document_get_element_by_id (doc, BUTTON_OPEN_CALENDAR);
-	if (el) {
-		webkit_dom_event_target_add_event_listener (
-			WEBKIT_DOM_EVENT_TARGET (el), "click",
-			G_CALLBACK (button_clicked_cb), FALSE, view);
-	}
+	itip_view_init_view (view);
+}
 
-	el = webkit_dom_document_get_element_by_id (doc, BUTTON_ACCEPT);
-	if (el) {
-		webkit_dom_event_target_add_event_listener (
-			WEBKIT_DOM_EVENT_TARGET (el), "click",
-			G_CALLBACK (button_clicked_cb), FALSE, view);
-	}
+static void
+web_extension_appeared_cb (GDBusConnection *connection,
+                           const gchar *name,
+                           const gchar *name_owner,
+                           ItipView *view)
+{
+	g_dbus_proxy_new (
+		connection,
+		G_DBUS_PROXY_FLAGS_DO_NOT_AUTO_START |
+		G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES |
+		G_DBUS_PROXY_FLAGS_DO_NOT_CONNECT_SIGNALS,
+		NULL,
+		name,
+		MODULE_ITIP_FORMATTER_WEB_EXTENSION_OBJECT_PATH,
+		MODULE_ITIP_FORMATTER_WEB_EXTENSION_INTERFACE,
+		NULL,
+		(GAsyncReadyCallback)web_extension_proxy_created_cb,
+		view);
+}
 
-	el = webkit_dom_document_get_element_by_id (doc, BUTTON_ACCEPT_ALL);
-	if (el) {
-		webkit_dom_event_target_add_event_listener (
-			WEBKIT_DOM_EVENT_TARGET (el), "click",
-			G_CALLBACK (button_clicked_cb), FALSE, view);
-	}
+static void
+web_extension_vanished_cb (GDBusConnection *connection,
+                           const gchar *name,
+                           ItipView *view)
+{
+	g_clear_object (&view->priv->web_extension);
+}
 
-	el = webkit_dom_document_get_element_by_id (doc, BUTTON_TENTATIVE);
-	if (el) {
-		webkit_dom_event_target_add_event_listener (
-			WEBKIT_DOM_EVENT_TARGET (el), "click",
-			G_CALLBACK (button_clicked_cb), FALSE, view);
-	}
+static void
+itip_view_watch_web_extension (ItipView *view)
+{
+	view->priv->web_extension_watch_name_id =
+		g_bus_watch_name (
+			G_BUS_TYPE_SESSION,
+			MODULE_ITIP_FORMATTER_WEB_EXTENSION_SERVICE_NAME,
+			G_BUS_NAME_WATCHER_FLAGS_NONE,
+			(GBusNameAppearedCallback) web_extension_appeared_cb,
+			(GBusNameVanishedCallback) web_extension_vanished_cb,
+			view, NULL);
+}
 
-	el = webkit_dom_document_get_element_by_id (doc, BUTTON_TENTATIVE_ALL);
-	if (el) {
-		webkit_dom_event_target_add_event_listener (
-			WEBKIT_DOM_EVENT_TARGET (el), "click",
-			G_CALLBACK (button_clicked_cb), FALSE, view);
-	}
+GDBusProxy *
+itip_view_get_web_extension_proxy (ItipView *view)
+{
+	g_return_val_if_fail (ITIP_IS_VIEW (view), NULL);
 
-	el = webkit_dom_document_get_element_by_id (doc, BUTTON_DECLINE);
-	if (el) {
-		webkit_dom_event_target_add_event_listener (
-			WEBKIT_DOM_EVENT_TARGET (el), "click",
-			G_CALLBACK (button_clicked_cb), FALSE, view);
-	}
-
-	el = webkit_dom_document_get_element_by_id (doc, BUTTON_DECLINE_ALL);
-	if (el) {
-		webkit_dom_event_target_add_event_listener (
-			WEBKIT_DOM_EVENT_TARGET (el), "click",
-			G_CALLBACK (button_clicked_cb), FALSE, view);
-	}
-
-	el = webkit_dom_document_get_element_by_id (doc, BUTTON_UPDATE);
-	if (el) {
-		webkit_dom_event_target_add_event_listener (
-			WEBKIT_DOM_EVENT_TARGET (el), "click",
-			G_CALLBACK (button_clicked_cb), FALSE, view);
-	}
-
-	el = webkit_dom_document_get_element_by_id (doc, BUTTON_UPDATE_ATTENDEE_STATUS);
-	if (el) {
-		webkit_dom_event_target_add_event_listener (
-			WEBKIT_DOM_EVENT_TARGET (el), "click",
-			G_CALLBACK (button_clicked_cb), FALSE, view);
-	}
-
-	el = webkit_dom_document_get_element_by_id (doc, BUTTON_SEND_INFORMATION);
-	if (el) {
-		webkit_dom_event_target_add_event_listener (
-			WEBKIT_DOM_EVENT_TARGET (el), "click",
-			G_CALLBACK (button_clicked_cb), FALSE, view);
-	}
-
-	el = webkit_dom_document_get_element_by_id (doc, SELECT_ESOURCE);
-	if (el) {
-		webkit_dom_event_target_add_event_listener (
-			WEBKIT_DOM_EVENT_TARGET (el), "change",
-			G_CALLBACK (source_changed_cb), FALSE, view);
-	}
+	return view->priv->web_extension;
 }
 
 static void
 itip_view_init (ItipView *view)
 {
-	view->priv = ITIP_VIEW_GET_PRIVATE (view);
+	EShell *shell;
+	EClientCache *client_cache;
 
+	shell = e_shell_get_default ();
+	client_cache = e_shell_get_client_cache (shell);
+
+	view->priv = ITIP_VIEW_GET_PRIVATE (view);
+	view->priv->web_view_weakref = e_weak_ref_new (NULL);
+	view->priv->real_comps = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
+	view->priv->client_cache = g_object_ref (client_cache);
 }
 
 ItipView *
-itip_view_new (EMailPartItip *puri,
-               EClientCache *client_cache)
+itip_view_new (guint64 page_id,
+               const gchar *part_id,
+	       gpointer itip_part_ptr,
+	       CamelFolder *folder,
+	       const gchar *message_uid,
+	       CamelMimeMessage *message,
+	       CamelMimePart *itip_mime_part,
+	       const gchar *vcalendar,
+	       GCancellable *cancellable)
 {
 	ItipView *view;
 
-	g_return_val_if_fail (E_IS_CLIENT_CACHE (client_cache), NULL);
+	view = ITIP_VIEW (g_object_new (ITIP_TYPE_VIEW, NULL));
+	view->priv->page_id = page_id;
+	view->priv->part_id = g_strdup (part_id);
+	view->priv->itip_part_ptr = itip_part_ptr;
+	view->priv->folder = g_object_ref (folder);
+	view->priv->message_uid = g_strdup (message_uid);
+	view->priv->message = g_object_ref (message);
+	view->priv->itip_mime_part = g_object_ref (itip_mime_part);
+	view->priv->vcalendar = g_strdup (vcalendar);
+	view->priv->cancellable = g_object_ref (cancellable);
 
-	view = ITIP_VIEW (g_object_new (
-		ITIP_TYPE_VIEW,
-		"client-cache", client_cache,
-		NULL));
-	view->priv->itip_part = puri;
+	itip_view_watch_web_extension (view);
 
 	return view;
-}
-
-static void
-show_button (ItipView *view,
-             const gchar *id)
-{
-	WebKitDOMElement *button;
-
-	button = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, id);
-	webkit_dom_html_element_set_hidden (
-		WEBKIT_DOM_HTML_ELEMENT (button), FALSE);
 }
 
 void
 itip_view_set_mode (ItipView *view,
                     ItipViewMode mode)
 {
-	WebKitDOMElement *row, *cell;
-	WebKitDOMElement *button;
-
 	g_return_if_fail (ITIP_IS_VIEW (view));
 
 	view->priv->mode = mode;
 
 	set_sender_text (view);
 
-	if (!view->priv->dom_document)
+	if (!view->priv->web_extension)
 		return;
 
-	row = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, TABLE_ROW_BUTTONS);
-	cell = webkit_dom_element_get_first_element_child (row);
-	do {
-		button = webkit_dom_element_get_first_element_child (cell);
-		webkit_dom_html_element_set_hidden (
-			WEBKIT_DOM_HTML_ELEMENT (button), TRUE);
-	} while ((cell = webkit_dom_element_get_next_element_sibling (cell)) != NULL);
+	e_util_invoke_g_dbus_proxy_call_with_error_check (
+		view->priv->web_extension,
+		"ElementHideChildNodes",
+		g_variant_new ("(tss)", view->priv->page_id, view->priv->part_id, TABLE_ROW_BUTTONS),
+		NULL);
 
 	view->priv->is_recur_set = itip_view_get_recur_check_state (view);
 
@@ -1872,7 +2032,6 @@ void
 itip_view_set_item_type (ItipView *view,
                          ECalClientSourceType type)
 {
-	WebKitDOMElement *label;
 	const gchar *header;
 	gchar *access_key, *html_label;
 
@@ -1880,11 +2039,8 @@ itip_view_set_item_type (ItipView *view,
 
 	view->priv->type = type;
 
-	if (!view->priv->dom_document)
+	if (!view->priv->web_extension)
 		return;
-
-	label = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, TABLE_ROW_ESCB_LABEL);
 
 	switch (view->priv->type) {
 		case E_CAL_CLIENT_SOURCE_TYPE_EVENTS:
@@ -1908,10 +2064,13 @@ itip_view_set_item_type (ItipView *view,
 
 	html_label = e_mail_formatter_parse_html_mnemonics (header, &access_key);
 
-	webkit_dom_html_element_set_access_key (
-		WEBKIT_DOM_HTML_ELEMENT (label), access_key);
-	webkit_dom_html_element_set_inner_html (
-		WEBKIT_DOM_HTML_ELEMENT (label), html_label, NULL);
+	e_util_invoke_g_dbus_proxy_call_with_error_check (
+		view->priv->web_extension,
+		"ElementSetAccessKey",
+		g_variant_new ("(tsss)", view->priv->page_id, view->priv->part_id, TABLE_ROW_ESCB_LABEL, access_key),
+		NULL);
+
+	set_inner_html (view, TABLE_ROW_ESCB_LABEL, html_label);
 
 	g_free (html_label);
 
@@ -1924,7 +2083,7 @@ itip_view_set_item_type (ItipView *view,
 ECalClientSourceType
 itip_view_get_item_type (ItipView *view)
 {
-	g_return_val_if_fail (ITIP_IS_VIEW (view), ITIP_VIEW_MODE_NONE);
+	g_return_val_if_fail (ITIP_IS_VIEW (view), E_CAL_CLIENT_SOURCE_TYPE_LAST);
 
 	return view->priv->type;
 }
@@ -2065,8 +2224,6 @@ void
 itip_view_set_summary (ItipView *view,
                        const gchar *summary)
 {
-	WebKitDOMElement *row, *col;
-
 	g_return_if_fail (ITIP_IS_VIEW (view));
 
 	if (view->priv->summary)
@@ -2074,19 +2231,7 @@ itip_view_set_summary (ItipView *view,
 
 	view->priv->summary = summary ? g_strstrip (e_utf8_ensure_valid (summary)) : NULL;
 
-	if (!view->priv->dom_document)
-		return;
-
-	row = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, TABLE_ROW_SUMMARY);
-	webkit_dom_html_element_set_hidden (
-		WEBKIT_DOM_HTML_ELEMENT (row), (view->priv->summary == NULL));
-
-	col = webkit_dom_element_get_last_element_child (row);
-	webkit_dom_html_element_set_inner_html (
-		WEBKIT_DOM_HTML_ELEMENT (col),
-		view->priv->summary ? view->priv->summary : "",
-		NULL);
+	set_area_text (view, TABLE_ROW_SUMMARY, view->priv->summary);
 }
 
 const gchar *
@@ -2101,8 +2246,6 @@ void
 itip_view_set_location (ItipView *view,
                         const gchar *location)
 {
-	WebKitDOMElement *row, *col;
-
 	g_return_if_fail (ITIP_IS_VIEW (view));
 
 	if (view->priv->location)
@@ -2110,19 +2253,7 @@ itip_view_set_location (ItipView *view,
 
 	view->priv->location = location ? g_strstrip (e_utf8_ensure_valid (location)) : NULL;
 
-	if (!view->priv->dom_document)
-		return;
-
-	row = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, TABLE_ROW_LOCATION);
-	webkit_dom_html_element_set_hidden (
-		WEBKIT_DOM_HTML_ELEMENT (row), (view->priv->location == NULL));
-
-	col = webkit_dom_element_get_last_element_child (row);
-	webkit_dom_html_element_set_inner_html (
-		WEBKIT_DOM_HTML_ELEMENT (col),
-		view->priv->location ? view->priv->location : "",
-		NULL);
+	set_area_text (view, TABLE_ROW_LOCATION, view->priv->location);
 }
 
 const gchar *
@@ -2137,8 +2268,6 @@ void
 itip_view_set_status (ItipView *view,
                       const gchar *status)
 {
-	WebKitDOMElement *row, *col;
-
 	g_return_if_fail (ITIP_IS_VIEW (view));
 
 	if (view->priv->status)
@@ -2146,19 +2275,7 @@ itip_view_set_status (ItipView *view,
 
 	view->priv->status = status ? g_strstrip (e_utf8_ensure_valid (status)) : NULL;
 
-	if (!view->priv->dom_document)
-		return;
-
-	row = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, TABLE_ROW_STATUS);
-	webkit_dom_html_element_set_hidden (
-		WEBKIT_DOM_HTML_ELEMENT (row), (view->priv->status == NULL));
-
-	col = webkit_dom_element_get_last_element_child (row);
-	webkit_dom_html_element_set_inner_html (
-		WEBKIT_DOM_HTML_ELEMENT (col),
-		view->priv->status ? view->priv->status : "",
-		NULL);
+	set_area_text (view, TABLE_ROW_STATUS, view->priv->status);
 }
 
 const gchar *
@@ -2173,8 +2290,6 @@ void
 itip_view_set_comment (ItipView *view,
                        const gchar *comment)
 {
-	WebKitDOMElement *row, *col;
-
 	g_return_if_fail (ITIP_IS_VIEW (view));
 
 	if (view->priv->comment)
@@ -2182,19 +2297,7 @@ itip_view_set_comment (ItipView *view,
 
 	view->priv->comment = comment ? g_strstrip (e_utf8_ensure_valid (comment)) : NULL;
 
-	if (!view->priv->dom_document)
-		return;
-
-	row = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, TABLE_ROW_COMMENT);
-	webkit_dom_html_element_set_hidden (
-		WEBKIT_DOM_HTML_ELEMENT (row), (view->priv->comment == NULL));
-
-	col = webkit_dom_element_get_last_element_child (row);
-	webkit_dom_html_element_set_inner_html (
-		WEBKIT_DOM_HTML_ELEMENT (col),
-		view->priv->comment ? view->priv->comment : "",
-		NULL);
+	set_area_text (view, TABLE_ROW_COMMENT, view->priv->comment);
 }
 
 const gchar *
@@ -2209,8 +2312,6 @@ void
 itip_view_set_description (ItipView *view,
                            const gchar *description)
 {
-	WebKitDOMElement *div;
-
 	g_return_if_fail (ITIP_IS_VIEW (view));
 
 	if (view->priv->description)
@@ -2218,18 +2319,11 @@ itip_view_set_description (ItipView *view,
 
 	view->priv->description = description ? g_strstrip (e_utf8_ensure_valid (description)) : NULL;
 
-	if (!view->priv->dom_document)
-		return;
-
-	div = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, TABLE_ROW_DESCRIPTION);
-	webkit_dom_html_element_set_hidden (
-		WEBKIT_DOM_HTML_ELEMENT (div), (view->priv->description == NULL));
-
-	webkit_dom_html_element_set_inner_html (
-		WEBKIT_DOM_HTML_ELEMENT (div),
-		view->priv->description ? view->priv->description : "",
-		NULL);
+	hide_element (view, TABLE_ROW_DESCRIPTION, (view->priv->description == NULL));
+	set_inner_html (
+		view,
+		TABLE_ROW_DESCRIPTION,
+		view->priv->description ? view->priv->description : "");
 }
 
 const gchar *
@@ -2336,7 +2430,7 @@ itip_view_add_upper_info_item (ItipView *view,
 
 	priv->upper_info_items = g_slist_append (priv->upper_info_items, item);
 
-	if (!view->priv->dom_document)
+	if (!view->priv->web_extension)
 		return item->id;
 
 	append_info_item_row (view, TABLE_UPPER_ITIP_INFO, item);
@@ -2386,8 +2480,7 @@ itip_view_remove_upper_info_item (ItipView *view,
 			g_free (item->message);
 			g_free (item);
 
-			if (!view->priv->dom_document)
-				remove_info_item_row (view, TABLE_UPPER_ITIP_INFO, id);
+			remove_info_item_row (view, TABLE_UPPER_ITIP_INFO, id);
 
 			return;
 		}
@@ -2407,8 +2500,7 @@ itip_view_clear_upper_info_items (ItipView *view)
 	for (l = priv->upper_info_items; l; l = l->next) {
 		ItipViewInfoItem *item = l->data;
 
-		if (view->priv->dom_document)
-			remove_info_item_row (view, TABLE_UPPER_ITIP_INFO, item->id);
+		remove_info_item_row (view, TABLE_UPPER_ITIP_INFO, item->id);
 
 		g_free (item->message);
 		g_free (item);
@@ -2438,7 +2530,7 @@ itip_view_add_lower_info_item (ItipView *view,
 
 	priv->lower_info_items = g_slist_append (priv->lower_info_items, item);
 
-	if (!view->priv->dom_document)
+	if (!view->priv->web_extension)
 		return item->id;
 
 	append_info_item_row (view, TABLE_LOWER_ITIP_INFO, item);
@@ -2488,8 +2580,7 @@ itip_view_remove_lower_info_item (ItipView *view,
 			g_free (item->message);
 			g_free (item);
 
-			if (view->priv->dom_document)
-				remove_info_item_row (view, TABLE_LOWER_ITIP_INFO, id);
+			remove_info_item_row (view, TABLE_LOWER_ITIP_INFO, id);
 
 			return;
 		}
@@ -2509,8 +2600,7 @@ itip_view_clear_lower_info_items (ItipView *view)
 	for (l = priv->lower_info_items; l; l = l->next) {
 		ItipViewInfoItem *item = l->data;
 
-		if (view->priv->dom_document)
-			remove_info_item_row (view, TABLE_LOWER_ITIP_INFO, item->id);
+		remove_info_item_row (view, TABLE_LOWER_ITIP_INFO, item->id);
 
 		g_free (item->message);
 		g_free (item);
@@ -2524,105 +2614,100 @@ void
 itip_view_set_source (ItipView *view,
                       ESource *source)
 {
-	WebKitDOMElement *select;
-	WebKitDOMElement *row;
 	ESource *selected_source;
-	gulong i, len;
 
 	g_return_if_fail (ITIP_IS_VIEW (view));
 
 	d (printf ("Settings default source '%s'\n", e_source_get_display_name (source)));
 
-	if (!view->priv->dom_document)
-		return;
+	hide_element (view, TABLE_ROW_ESCB, (source == NULL));
 
-	row = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, TABLE_ROW_ESCB);
-	webkit_dom_html_element_set_hidden (
-		WEBKIT_DOM_HTML_ELEMENT (row), (source == NULL));
-	if (source == NULL)
+	if (!source)
 		return;
-
-	select = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, SELECT_ESOURCE);
 
         /* <select> does not emit 'change' event when already selected
 	 * <option> is re-selected, but we need to notify itip formatter,
 	 * so that it would make all the buttons sensitive */
 	selected_source = itip_view_ref_source (view);
 	if (source == selected_source) {
-		source_changed_cb (select, NULL, view);
+		source_changed_cb (view);
 		return;
 	}
 
 	if (selected_source != NULL)
 		g_object_unref (selected_source);
 
-	if (webkit_dom_html_select_element_get_disabled (
-			WEBKIT_DOM_HTML_SELECT_ELEMENT (select))) {
-		webkit_dom_html_select_element_set_disabled (
-			WEBKIT_DOM_HTML_SELECT_ELEMENT (select), FALSE);
-	}
+	if (!view->priv->web_extension)
+		return;
 
-	len = webkit_dom_html_select_element_get_length (
-		WEBKIT_DOM_HTML_SELECT_ELEMENT (select));
-	for (i = 0; i < len; i++) {
+	e_util_invoke_g_dbus_proxy_call_with_error_check (
+		view->priv->web_extension,
+		"EnableSelect",
+		g_variant_new ("(tssb)", view->priv->page_id, view->priv->part_id, SELECT_ESOURCE, TRUE),
+		NULL);
 
-		WebKitDOMNode *node;
-		WebKitDOMHTMLOptionElement *option;
-		gchar *value;
+	e_util_invoke_g_dbus_proxy_call_with_error_check (
+		view->priv->web_extension,
+		"SelectSetSelected",
+		g_variant_new ("(tsss)", view->priv->page_id, view->priv->part_id, SELECT_ESOURCE, e_source_get_uid (source)),
+		NULL);
 
-		node = webkit_dom_html_select_element_item (
-			WEBKIT_DOM_HTML_SELECT_ELEMENT (select), i);
-		option = WEBKIT_DOM_HTML_OPTION_ELEMENT (node);
-
-		value = webkit_dom_html_option_element_get_value (option);
-		if (g_strcmp0 (value, e_source_get_uid (source)) == 0) {
-			webkit_dom_html_option_element_set_selected (
-				option, TRUE);
-
-			g_free (value);
-			break;
-		}
-
-		g_free (value);
-	}
-
-	source_changed_cb (select, NULL, view);
+	source_changed_cb (view);
 }
 
 ESource *
 itip_view_ref_source (ItipView *view)
 {
-	WebKitDOMElement *select;
-	gchar *uid;
-	ESource *source;
-	gboolean disable = FALSE;
+	ESource *source = NULL;
+	gboolean disable = FALSE, enabled = FALSE;
+	GVariant *result;
 
 	g_return_val_if_fail (ITIP_IS_VIEW (view), NULL);
 
-	if (!view->priv->dom_document)
+	if (!view->priv->web_extension)
 		return NULL;
 
-	select = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, SELECT_ESOURCE);
-	if (webkit_dom_html_select_element_get_disabled (
-			WEBKIT_DOM_HTML_SELECT_ELEMENT (select))) {
-		webkit_dom_html_select_element_set_disabled (
-		WEBKIT_DOM_HTML_SELECT_ELEMENT (select), FALSE);
+	result = e_util_invoke_g_dbus_proxy_call_sync_wrapper_with_error_check (
+			view->priv->web_extension,
+			"SelectIsEnabled",
+			g_variant_new ("(tss)", view->priv->page_id, view->priv->part_id, SELECT_ESOURCE),
+			NULL);
+
+	if (result) {
+		g_variant_get (result, "(b)", &enabled);
+		g_variant_unref (result);
+	}
+
+	if (!enabled) {
+		e_util_invoke_g_dbus_proxy_call_with_error_check (
+			view->priv->web_extension,
+			"EnableSelect",
+			g_variant_new ("(tssb)", view->priv->page_id, view->priv->part_id, SELECT_ESOURCE, TRUE),
+			NULL);
+
 		disable = TRUE;
 	}
 
-	uid = webkit_dom_html_select_element_get_value (
-		WEBKIT_DOM_HTML_SELECT_ELEMENT (select));
+	result = e_util_invoke_g_dbus_proxy_call_sync_wrapper_with_error_check (
+		view->priv->web_extension,
+		"SelectGetValue",
+		g_variant_new ("(tss)", view->priv->page_id, view->priv->part_id, SELECT_ESOURCE),
+		NULL);
 
-	source = e_source_registry_ref_source (view->priv->registry, uid);
+	if (result) {
+		const gchar *uid;
 
-	g_free (uid);
+		g_variant_get (result, "(&s)", &uid);
+		source = e_source_registry_ref_source (view->priv->registry, uid);
+		g_variant_unref (result);
+	}
 
 	if (disable) {
-		webkit_dom_html_select_element_set_disabled (
-			WEBKIT_DOM_HTML_SELECT_ELEMENT (select), TRUE);
+		e_util_invoke_g_dbus_proxy_call_with_error_check (
+			view->priv->web_extension,
+			"EnableSelect",
+			g_variant_new ("(tssb)", view->priv->page_id, view->priv->part_id, SELECT_ESOURCE, FALSE),
+			NULL);
 	}
 
 	return source;
@@ -2632,201 +2717,126 @@ void
 itip_view_set_rsvp (ItipView *view,
                     gboolean rsvp)
 {
-	WebKitDOMElement *el;
-
 	g_return_if_fail (ITIP_IS_VIEW (view));
 
-	if (!view->priv->dom_document)
+	if (!view->priv->web_extension)
 		return;
 
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_RSVP);
-	webkit_dom_html_input_element_set_checked (
-		WEBKIT_DOM_HTML_INPUT_ELEMENT (el), rsvp);
+	input_set_checked (view, CHECKBOX_RSVP, rsvp);
 
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, TEXTAREA_RSVP_COMMENT);
-	webkit_dom_html_text_area_element_set_disabled (
-		WEBKIT_DOM_HTML_TEXT_AREA_ELEMENT (el), !rsvp);
+	e_util_invoke_g_dbus_proxy_call_with_error_check (
+		view->priv->web_extension,
+		"EnableTextArea",
+		g_variant_new ("(tssb)", view->priv->page_id, view->priv->part_id, TEXTAREA_RSVP_COMMENT, !rsvp),
+		NULL);
 }
 
 gboolean
 itip_view_get_rsvp (ItipView *view)
 {
-	WebKitDOMElement *el;
-
 	g_return_val_if_fail (ITIP_IS_VIEW (view), FALSE);
 
-	if (!view->priv->dom_document)
-		return FALSE;
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_RSVP);
-	return webkit_dom_html_input_element_get_checked (WEBKIT_DOM_HTML_INPUT_ELEMENT (el));
+	return input_is_checked (view, CHECKBOX_RSVP);
 }
 
 void
 itip_view_set_show_rsvp_check (ItipView *view,
                                gboolean show)
 {
-	WebKitDOMElement *label;
-	WebKitDOMElement *el;
-
 	g_return_if_fail (ITIP_IS_VIEW (view));
 
-	if (!view->priv->dom_document)
-		return;
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, "table_row_" CHECKBOX_RSVP);
-	webkit_dom_html_element_set_hidden (WEBKIT_DOM_HTML_ELEMENT (el), !show);
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_RSVP);
-	label = webkit_dom_element_get_next_element_sibling (el);
-	webkit_dom_html_element_set_hidden (WEBKIT_DOM_HTML_ELEMENT (label), !show);
-
-	if (!show) {
-		webkit_dom_html_input_element_set_checked (
-			WEBKIT_DOM_HTML_INPUT_ELEMENT (el), FALSE);
-	}
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, TABLE_ROW_RSVP_COMMENT);
-	webkit_dom_html_element_set_hidden (WEBKIT_DOM_HTML_ELEMENT (el), !show);
+	show_checkbox (view, CHECKBOX_RSVP, show, FALSE);
+	hide_element (view, TABLE_ROW_RSVP_COMMENT, !show);
 }
 
 gboolean
 itip_view_get_show_rsvp_check (ItipView *view)
 {
-	WebKitDOMElement *el;
-
 	g_return_val_if_fail (ITIP_IS_VIEW (view), FALSE);
 
-	if (!view->priv->dom_document)
-		return FALSE;
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_RSVP);
-	return !webkit_dom_html_element_get_hidden (WEBKIT_DOM_HTML_ELEMENT (el));
+	return !element_is_hidden (view, CHECKBOX_RSVP);
 }
 
 void
 itip_view_set_update (ItipView *view,
                       gboolean update)
 {
-	WebKitDOMElement *el;
-
 	g_return_if_fail (ITIP_IS_VIEW (view));
 
-	if (!view->priv->dom_document)
-		return;
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_UPDATE);
-
-	webkit_dom_html_input_element_set_checked (
-		WEBKIT_DOM_HTML_INPUT_ELEMENT (el), update);
+	input_set_checked (view, CHECKBOX_UPDATE, update);
 }
 
 gboolean
 itip_view_get_update (ItipView *view)
 {
-	WebKitDOMElement *el;
-
 	g_return_val_if_fail (ITIP_IS_VIEW (view), FALSE);
 
-	if (!view->priv->dom_document)
-		return FALSE;
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_UPDATE);
-	return webkit_dom_html_input_element_get_checked (WEBKIT_DOM_HTML_INPUT_ELEMENT (el));
+	return input_is_checked (view, CHECKBOX_UPDATE);
 }
 
 void
 itip_view_set_show_update_check (ItipView *view,
                                  gboolean show)
 {
-	WebKitDOMElement *label;
-	WebKitDOMElement *el;
-
 	g_return_if_fail (ITIP_IS_VIEW (view));
 
-	if (!view->priv->dom_document)
-		return;
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, "table_row_" CHECKBOX_UPDATE);
-	webkit_dom_html_element_set_hidden (WEBKIT_DOM_HTML_ELEMENT (el), !show);
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_UPDATE);
-	label = webkit_dom_element_get_next_element_sibling (el);
-	webkit_dom_html_element_set_hidden (WEBKIT_DOM_HTML_ELEMENT (label), !show);
-
-	if (!show) {
-		webkit_dom_html_input_element_set_checked (
-			WEBKIT_DOM_HTML_INPUT_ELEMENT (el), FALSE);
-	}
+	show_checkbox (view, CHECKBOX_UPDATE, show, FALSE);
 }
 
 gboolean
 itip_view_get_show_update_check (ItipView *view)
 {
-	WebKitDOMElement *el;
-
 	g_return_val_if_fail (ITIP_IS_VIEW (view), FALSE);
 
-	if (!view->priv->dom_document)
-		return FALSE;
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_UPDATE);
-	return !webkit_dom_html_element_get_hidden (WEBKIT_DOM_HTML_ELEMENT (el));
+	return !element_is_hidden (view, CHECKBOX_UPDATE);
 }
 
 void
 itip_view_set_rsvp_comment (ItipView *view,
                             const gchar *comment)
 {
-	WebKitDOMElement *el;
-
 	g_return_if_fail (ITIP_IS_VIEW (view));
 
-	if (!view->priv->dom_document)
+	if (!view->priv->web_extension)
 		return;
 
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, TEXTAREA_RSVP_COMMENT);
-	webkit_dom_html_element_set_hidden (
-		WEBKIT_DOM_HTML_ELEMENT (el), (comment == NULL));
-
 	if (comment) {
-		webkit_dom_html_text_area_element_set_value (
-			WEBKIT_DOM_HTML_TEXT_AREA_ELEMENT (el), comment);
+		e_util_invoke_g_dbus_proxy_call_with_error_check (
+			view->priv->web_extension,
+			"TextAreaSetValue",
+			g_variant_new ("(tsss)", view->priv->page_id, view->priv->part_id, TEXTAREA_RSVP_COMMENT, comment),
+			NULL);
 	}
 }
 
 gchar *
 itip_view_get_rsvp_comment (ItipView *view)
 {
-	WebKitDOMElement *el;
+	GVariant *result;
 
 	g_return_val_if_fail (ITIP_IS_VIEW (view), NULL);
 
-	if (!view->priv->dom_document)
+	if (!view->priv->web_extension)
 		return NULL;
 
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, TEXTAREA_RSVP_COMMENT);
-
-	if (webkit_dom_html_element_get_hidden (WEBKIT_DOM_HTML_ELEMENT (el))) {
+	if (element_is_hidden (view, TEXTAREA_RSVP_COMMENT))
 		return NULL;
+
+	result = e_util_invoke_g_dbus_proxy_call_sync_wrapper_with_error_check (
+		view->priv->web_extension,
+		"TextAreaGetValue",
+		g_variant_new ("(tss)", view->priv->page_id, view->priv->part_id, TEXTAREA_RSVP_COMMENT),
+		NULL);
+
+	if (result) {
+		gchar *value;
+
+		g_variant_get (result, "(s)", &value);
+		g_variant_unref (result);
+		return value;
 	}
 
-	return webkit_dom_html_text_area_element_get_value (
-		WEBKIT_DOM_HTML_TEXT_AREA_ELEMENT (el));
+	return NULL;
 }
 
 void
@@ -2842,64 +2852,20 @@ void
 itip_view_set_buttons_sensitive (ItipView *view,
                                  gboolean sensitive)
 {
-	WebKitDOMElement *el, *cell;
-
 	g_return_if_fail (ITIP_IS_VIEW (view));
 
 	d (printf ("Settings buttons %s\n", sensitive ? "sensitive" : "insensitive"));
 
 	view->priv->buttons_sensitive = sensitive;
 
-	if (!view->priv->dom_document)
+	if (!view->priv->web_extension)
 		return;
 
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_UPDATE);
-	webkit_dom_html_input_element_set_disabled (
-		WEBKIT_DOM_HTML_INPUT_ELEMENT (el), !sensitive);
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_RECUR);
-	webkit_dom_html_input_element_set_disabled (
-		WEBKIT_DOM_HTML_INPUT_ELEMENT (el), !sensitive);
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_FREE_TIME);
-	webkit_dom_html_input_element_set_disabled (
-		WEBKIT_DOM_HTML_INPUT_ELEMENT (el), !sensitive);
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_KEEP_ALARM);
-	webkit_dom_html_input_element_set_disabled (
-		WEBKIT_DOM_HTML_INPUT_ELEMENT (el), !sensitive);
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_INHERIT_ALARM);
-	webkit_dom_html_input_element_set_disabled (
-		WEBKIT_DOM_HTML_INPUT_ELEMENT (el), !sensitive);
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_RSVP);
-	webkit_dom_html_input_element_set_disabled (
-		WEBKIT_DOM_HTML_INPUT_ELEMENT (el), !sensitive);
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, TEXTAREA_RSVP_COMMENT);
-	webkit_dom_html_text_area_element_set_disabled (
-		WEBKIT_DOM_HTML_TEXT_AREA_ELEMENT (el), !sensitive);
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, TABLE_ROW_BUTTONS);
-	cell = webkit_dom_element_get_first_element_child (el);
-	do {
-		WebKitDOMElement *btn;
-		btn = webkit_dom_element_get_first_element_child (cell);
-		if (!webkit_dom_html_element_get_hidden (
-			WEBKIT_DOM_HTML_ELEMENT (btn))) {
-			webkit_dom_html_button_element_set_disabled (
-				WEBKIT_DOM_HTML_BUTTON_ELEMENT (btn), !sensitive);
-		}
-	} while ((cell = webkit_dom_element_get_next_element_sibling (cell)) != NULL);
+	e_util_invoke_g_dbus_proxy_call_with_error_check (
+		view->priv->web_extension,
+		"SetButtonsSensitive",
+		g_variant_new ("(tsb)", view->priv->page_id, view->priv->part_id, sensitive),
+		NULL);
 }
 
 gboolean
@@ -2913,193 +2879,69 @@ itip_view_get_buttons_sensitive (ItipView *view)
 gboolean
 itip_view_get_recur_check_state (ItipView *view)
 {
-	WebKitDOMElement *el;
-
 	g_return_val_if_fail (ITIP_IS_VIEW (view), FALSE);
 
-	if (!view->priv->dom_document)
-		return FALSE;
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_RECUR);
-	return webkit_dom_html_input_element_get_checked (
-		WEBKIT_DOM_HTML_INPUT_ELEMENT (el));
+	return input_is_checked (view, CHECKBOX_RECUR);
 }
 
 void
 itip_view_set_show_recur_check (ItipView *view,
                                 gboolean show)
 {
-	WebKitDOMElement *label;
-	WebKitDOMElement *el;
-
 	g_return_if_fail (ITIP_IS_VIEW (view));
 
-	if (!view->priv->dom_document)
-		return;
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, "table_row_" CHECKBOX_RECUR);
-	webkit_dom_html_element_set_hidden (WEBKIT_DOM_HTML_ELEMENT (el), !show);
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_RECUR);
-	label = webkit_dom_element_get_next_element_sibling (el);
-	webkit_dom_html_element_set_hidden (WEBKIT_DOM_HTML_ELEMENT (label), !show);
-
-	if (!show) {
-		webkit_dom_html_input_element_set_checked (
-			WEBKIT_DOM_HTML_INPUT_ELEMENT (el), FALSE);
-	}
-
-        /* and update state of the second check */
-	alarm_check_toggled_cb (
-		WEBKIT_DOM_HTML_INPUT_ELEMENT (el),
-		NULL, view);
+	show_checkbox (view, CHECKBOX_RECUR, show, TRUE);
 }
 
 void
 itip_view_set_show_free_time_check (ItipView *view,
                                     gboolean show)
 {
-	WebKitDOMElement *label;
-	WebKitDOMElement *el;
-
 	g_return_if_fail (ITIP_IS_VIEW (view));
 
-	if (!view->priv->dom_document)
-		return;
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, "table_row_" CHECKBOX_FREE_TIME);
-	webkit_dom_html_element_set_hidden (WEBKIT_DOM_HTML_ELEMENT (el), !show);
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_FREE_TIME);
-	label = webkit_dom_element_get_next_element_sibling (el);
-	webkit_dom_html_element_set_hidden (WEBKIT_DOM_HTML_ELEMENT (label), !show);
-
-	if (!show) {
-		webkit_dom_html_input_element_set_checked (
-			WEBKIT_DOM_HTML_INPUT_ELEMENT (el), FALSE);
-	}
-
-        /* and update state of the second check */
-	alarm_check_toggled_cb (
-		WEBKIT_DOM_HTML_INPUT_ELEMENT (el),
-		NULL, view);
+	show_checkbox (view, CHECKBOX_FREE_TIME, show, TRUE);
 }
 
 gboolean
 itip_view_get_free_time_check_state (ItipView *view)
 {
-	WebKitDOMElement *el;
-
 	g_return_val_if_fail (ITIP_IS_VIEW (view), FALSE);
 
-	if (!view->priv->dom_document)
-		return FALSE;
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_FREE_TIME);
-	return webkit_dom_html_input_element_get_checked (
-		WEBKIT_DOM_HTML_INPUT_ELEMENT (el));
+	return input_is_checked (view, CHECKBOX_FREE_TIME);
 }
 
 void
 itip_view_set_show_keep_alarm_check (ItipView *view,
                                      gboolean show)
 {
-	WebKitDOMElement *label;
-	WebKitDOMElement *el;
-
 	g_return_if_fail (ITIP_IS_VIEW (view));
 
-	if (!view->priv->dom_document)
-		return;
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, "table_row_" CHECKBOX_KEEP_ALARM);
-	webkit_dom_html_element_set_hidden (WEBKIT_DOM_HTML_ELEMENT (el), !show);
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_KEEP_ALARM);
-	label = webkit_dom_element_get_next_element_sibling (el);
-	webkit_dom_html_element_set_hidden (WEBKIT_DOM_HTML_ELEMENT (label), !show);
-
-	if (!show) {
-		webkit_dom_html_input_element_set_checked (
-			WEBKIT_DOM_HTML_INPUT_ELEMENT (el), FALSE);
-	}
-
-        /* and update state of the second check */
-	alarm_check_toggled_cb (
-		WEBKIT_DOM_HTML_INPUT_ELEMENT (el),
-		NULL, view);
+	show_checkbox (view, CHECKBOX_KEEP_ALARM, show, TRUE);
 }
 
 gboolean
 itip_view_get_keep_alarm_check_state (ItipView *view)
 {
-	WebKitDOMElement *el;
-
 	g_return_val_if_fail (ITIP_IS_VIEW (view), FALSE);
 
-	if (!view->priv->dom_document)
-		return FALSE;
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_KEEP_ALARM);
-	return webkit_dom_html_input_element_get_checked (
-		WEBKIT_DOM_HTML_INPUT_ELEMENT (el));
+	return input_is_checked (view, CHECKBOX_KEEP_ALARM);
 }
 
 void
 itip_view_set_show_inherit_alarm_check (ItipView *view,
                                         gboolean show)
 {
-	WebKitDOMElement *label;
-	WebKitDOMElement *el;
-
 	g_return_if_fail (ITIP_IS_VIEW (view));
 
-	if (!view->priv->dom_document)
-		return;
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, "table_row_" CHECKBOX_INHERIT_ALARM);
-	webkit_dom_html_element_set_hidden (WEBKIT_DOM_HTML_ELEMENT (el), !show);
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_INHERIT_ALARM);
-	label = webkit_dom_element_get_next_element_sibling (el);
-	webkit_dom_html_element_set_hidden (WEBKIT_DOM_HTML_ELEMENT (label), !show);
-
-	if (!show) {
-		webkit_dom_html_input_element_set_checked (
-			WEBKIT_DOM_HTML_INPUT_ELEMENT (el), FALSE);
-	}
-
-	/* and update state of the second check */
-	alarm_check_toggled_cb (
-		WEBKIT_DOM_HTML_INPUT_ELEMENT (el),
-		NULL, view);
+	show_checkbox (view, CHECKBOX_INHERIT_ALARM, show, TRUE);
 }
 
 gboolean
 itip_view_get_inherit_alarm_check_state (ItipView *view)
 {
-	WebKitDOMElement *el;
-
 	g_return_val_if_fail (ITIP_IS_VIEW (view), FALSE);
 
-	if (!view->priv->dom_document)
-		return FALSE;
-
-	el = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, CHECKBOX_INHERIT_ALARM);
-	return webkit_dom_html_input_element_get_checked (
-		WEBKIT_DOM_HTML_INPUT_ELEMENT (el));
+	return input_is_checked (view, CHECKBOX_INHERIT_ALARM);
 }
 
 void
@@ -3107,7 +2949,6 @@ itip_view_set_error (ItipView *view,
                      const gchar *error_html,
                      gboolean show_save_btn)
 {
-	WebKitDOMElement *content, *error;
 	GString *str;
 
 	g_return_if_fail (ITIP_IS_VIEW (view));
@@ -3122,7 +2963,7 @@ itip_view_set_error (ItipView *view,
 			"<tr width=\"100%\" id=\"" TABLE_ROW_BUTTONS "\">");
 
 		buttons_table_write_button (
-			str, BUTTON_SAVE, _("Sa_ve"),
+			str, view->priv->itip_part_ptr, BUTTON_SAVE, _("Sa_ve"),
 			"document-save", ITIP_VIEW_RESPONSE_SAVE);
 
 		g_string_append (str, "</tr></table>");
@@ -3131,41 +2972,24 @@ itip_view_set_error (ItipView *view,
 	view->priv->error = str->str;
 	g_string_free (str, FALSE);
 
-	if (!view->priv->dom_document)
+	if (!view->priv->web_extension)
 		return;
 
-	content = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, DIV_ITIP_CONTENT);
-	webkit_dom_html_element_set_hidden (
-		WEBKIT_DOM_HTML_ELEMENT (content), TRUE);
-
-	error = webkit_dom_document_get_element_by_id (
-		view->priv->dom_document, DIV_ITIP_ERROR);
-	webkit_dom_html_element_set_hidden (
-		WEBKIT_DOM_HTML_ELEMENT (error), FALSE);
-
-	webkit_dom_html_element_set_inner_html (
-		WEBKIT_DOM_HTML_ELEMENT (error), view->priv->error, NULL);
+	hide_element (view, DIV_ITIP_CONTENT, TRUE);
+	hide_element (view, DIV_ITIP_ERROR, FALSE);
+	set_inner_html (view, DIV_ITIP_ERROR, view->priv->error);
 
 	if (show_save_btn) {
-		WebKitDOMElement *el;
-
 		show_button (view, BUTTON_SAVE);
+		enable_button (view, BUTTON_SAVE, TRUE);
 
-		el = webkit_dom_document_get_element_by_id (
-			view->priv->dom_document, BUTTON_SAVE);
-		webkit_dom_html_button_element_set_disabled (
-			WEBKIT_DOM_HTML_BUTTON_ELEMENT (el), FALSE);
-		webkit_dom_event_target_add_event_listener (
-			WEBKIT_DOM_EVENT_TARGET (el), "click",
-			G_CALLBACK (button_clicked_cb), FALSE, view);
+		itip_view_register_clicked_listener (view);
 	}
 }
 
 /******************************************************************************/
 
 typedef struct {
-	EMailPartItip *puri;
         ItipView *view;
 	GCancellable *itip_cancellable;
 	GCancellable *cancellable;
@@ -3256,7 +3080,6 @@ find_attendee_if_sentby (icalcomponent *ical_comp,
 
 static void
 find_to_address (ItipView *view,
-                 EMailPartItip *itip_part,
                  icalcomponent *ical_comp,
                  icalparameter_partstat *status)
 {
@@ -3268,26 +3091,26 @@ find_to_address (ItipView *view,
 	registry = view->priv->registry;
 	extension_name = E_SOURCE_EXTENSION_MAIL_IDENTITY;
 
-	if (itip_part->to_address != NULL)
+	if (view->priv->to_address != NULL)
 		return;
 
-	if (itip_part->msg != NULL && itip_part->folder != NULL) {
+	if (view->priv->message != NULL && view->priv->folder != NULL) {
 		ESource *source;
 
 		source = em_utils_guess_mail_identity (
-			registry, itip_part->msg,
-			itip_part->folder, itip_part->uid);
+			registry, view->priv->message,
+			view->priv->folder, view->priv->message_uid);
 
 		if (source != NULL) {
 			extension = e_source_get_extension (source, extension_name);
 
-			itip_part->to_address = e_source_mail_identity_dup_address (extension);
+			view->priv->to_address = e_source_mail_identity_dup_address (extension);
 
 			g_object_unref (source);
 		}
 	}
 
-	if (itip_part->to_address != NULL)
+	if (view->priv->to_address != NULL)
 		return;
 
 	/* Look through the list of attendees to find the user's address */
@@ -3309,20 +3132,20 @@ find_to_address (ItipView *view,
 
 		param = icalproperty_get_first_parameter (prop, ICAL_CN_PARAMETER);
 		if (param != NULL)
-			itip_part->to_name = g_strdup (icalparameter_get_cn (param));
+			view->priv->to_name = g_strdup (icalparameter_get_cn (param));
 
 		text = icalproperty_get_value_as_string_r (prop);
 
-		itip_part->to_address = g_strdup (itip_strip_mailto (text));
+		view->priv->to_address = g_strdup (itip_strip_mailto (text));
 		g_free (text);
-		g_strstrip (itip_part->to_address);
+		g_strstrip (view->priv->to_address);
 
-		itip_part->my_address = g_strdup (address);
+		view->priv->my_address = g_strdup (address);
 
 		param = icalproperty_get_first_parameter (prop, ICAL_RSVP_PARAMETER);
 		if (param != NULL &&
 		    icalparameter_get_rsvp (param) == ICAL_RSVP_FALSE)
-			itip_part->no_reply_wanted = TRUE;
+			view->priv->no_reply_wanted = TRUE;
 
 		if (status) {
 			param = icalproperty_get_first_parameter (prop, ICAL_PARTSTAT_PARAMETER);
@@ -3334,7 +3157,7 @@ find_to_address (ItipView *view,
 
 	g_list_free_full (list, (GDestroyNotify) g_object_unref);
 
-	if (itip_part->to_address != NULL)
+	if (view->priv->to_address != NULL)
 		return;
 
 	/* If the user's address was not found in the attendee's list,
@@ -3367,20 +3190,20 @@ find_to_address (ItipView *view,
 
 		param = icalproperty_get_first_parameter (prop, ICAL_CN_PARAMETER);
 		if (param != NULL)
-			itip_part->to_name = g_strdup (icalparameter_get_cn (param));
+			view->priv->to_name = g_strdup (icalparameter_get_cn (param));
 
 		text = icalproperty_get_value_as_string_r (prop);
 
-		itip_part->to_address = g_strdup (itip_strip_mailto (text));
+		view->priv->to_address = g_strdup (itip_strip_mailto (text));
 		g_free (text);
-		g_strstrip (itip_part->to_address);
+		g_strstrip (view->priv->to_address);
 
-		itip_part->my_address = g_strdup (address);
+		view->priv->my_address = g_strdup (address);
 
 		param = icalproperty_get_first_parameter (prop, ICAL_RSVP_PARAMETER);
 		if (param != NULL &&
 		    ICAL_RSVP_FALSE == icalparameter_get_rsvp (param))
-			itip_part->no_reply_wanted = TRUE;
+			view->priv->no_reply_wanted = TRUE;
 
 		if (status) {
 			param = icalproperty_get_first_parameter (prop, ICAL_PARTSTAT_PARAMETER);
@@ -3395,7 +3218,6 @@ find_to_address (ItipView *view,
 
 static void
 find_from_address (ItipView *view,
-                   EMailPartItip *pitip,
                    icalcomponent *ical_comp)
 {
 	ESourceRegistry *registry;
@@ -3434,11 +3256,11 @@ find_from_address (ItipView *view,
 	if (!(organizer_sentby_clean || organizer_clean))
 		return;
 
-	pitip->from_address = g_strdup (organizer_clean);
+	view->priv->from_address = g_strdup (organizer_clean);
 
 	param = icalproperty_get_first_parameter (prop, ICAL_CN_PARAMETER);
 	if (param)
-		pitip->from_name = g_strdup (icalparameter_get_cn (param));
+		view->priv->from_name = g_strdup (icalparameter_get_cn (param));
 
 	extension_name = E_SOURCE_EXTENSION_MAIL_IDENTITY;
 	list = e_source_registry_list_enabled (registry, extension_name);
@@ -3456,7 +3278,7 @@ find_from_address (ItipView *view,
 
 		if ((organizer_clean && !g_ascii_strcasecmp (organizer_clean, address))
 		    || (organizer_sentby_clean && !g_ascii_strcasecmp (organizer_sentby_clean, address))) {
-			pitip->my_address = g_strdup (address);
+			view->priv->my_address = g_strdup (address);
 
 			break;
 		}
@@ -3469,14 +3291,14 @@ find_from_address (ItipView *view,
 }
 
 static ECalComponent *
-get_real_item (EMailPartItip *pitip)
+get_real_item (ItipView *view)
 {
 	ECalComponent *comp = NULL;
 	ESource *source;
 
-	source = e_client_get_source (E_CLIENT (pitip->current_client));
+	source = e_client_get_source (E_CLIENT (view->priv->current_client));
 	if (source)
-		comp = g_hash_table_lookup (pitip->real_comps, e_source_get_uid (source));
+		comp = g_hash_table_lookup (view->priv->real_comps, e_source_get_uid (source));
 
 	if (!comp) {
 		return NULL;
@@ -3486,12 +3308,12 @@ get_real_item (EMailPartItip *pitip)
 }
 
 static void
-adjust_item (EMailPartItip *pitip,
+adjust_item (ItipView *view,
              ECalComponent *comp)
 {
 	ECalComponent *real_comp;
 
-	real_comp = get_real_item (pitip);
+	real_comp = get_real_item (view);
 	if (real_comp != NULL) {
 		ECalComponentText text;
 		const gchar *string;
@@ -3514,16 +3336,16 @@ adjust_item (EMailPartItip *pitip,
 }
 
 static gboolean
-same_attendee_status (EMailPartItip *pitip,
+same_attendee_status (ItipView *view,
                       ECalComponent *received_comp)
 {
 	ECalComponent *saved_comp;
 	GSList *received_attendees = NULL, *saved_attendees = NULL, *riter, *siter;
 	gboolean same = FALSE;
 
-	g_return_val_if_fail (pitip != NULL, FALSE);
+	g_return_val_if_fail (ITIP_IS_VIEW (view), FALSE);
 
-	saved_comp = get_real_item (pitip);
+	saved_comp = get_real_item (view);
 	if (!saved_comp)
 		return FALSE;
 
@@ -3568,30 +3390,22 @@ same_attendee_status (EMailPartItip *pitip,
 }
 
 static void
-set_buttons_sensitive (EMailPartItip *pitip,
-                       ItipView *view)
+set_buttons_sensitive (ItipView *view)
 {
-	gboolean enabled = pitip->current_client != NULL;
+	gboolean enabled = view->priv->current_client != NULL;
 
-	if (enabled && pitip->current_client)
-		enabled = !e_client_is_readonly (E_CLIENT (pitip->current_client));
+	if (enabled && view->priv->current_client)
+		enabled = !e_client_is_readonly (E_CLIENT (view->priv->current_client));
 
 	itip_view_set_buttons_sensitive (view, enabled);
 
 	if (enabled && itip_view_get_mode (view) == ITIP_VIEW_MODE_REPLY &&
-	    pitip->comp && same_attendee_status (pitip, pitip->comp)) {
+	    view->priv->comp && same_attendee_status (view, view->priv->comp)) {
 		itip_view_add_lower_info_item (
 			view, ITIP_VIEW_INFO_ITEM_TYPE_INFO,
 			_("Attendee status updated"));
 
-		if (view->priv->dom_document) {
-			WebKitDOMElement *el;
-
-			el = webkit_dom_document_get_element_by_id (
-				view->priv->dom_document, BUTTON_UPDATE_ATTENDEE_STATUS);
-			webkit_dom_html_button_element_set_disabled (
-				WEBKIT_DOM_HTML_BUTTON_ELEMENT (el), TRUE);
-		}
+		enable_button (view, BUTTON_UPDATE_ATTENDEE_STATUS, FALSE);
 	}
 }
 
@@ -3612,12 +3426,10 @@ itip_view_cal_opened_cb (GObject *source_object,
                          gpointer user_data)
 {
 	ItipView *view;
-	EMailPartItip *pitip;
 	EClient *client;
 	GError *error = NULL;
 
 	view = ITIP_VIEW (user_data);
-	pitip = itip_view_get_mail_part (view);
 
 	client = e_client_cache_get_client_finish (
 		E_CLIENT_CACHE (source_object), result, &error);
@@ -3642,13 +3454,13 @@ itip_view_cal_opened_cb (GObject *source_object,
 		icalcomponent *icalcomp;
 		gboolean show_recur_check;
 
-		icalcomp = e_cal_component_get_icalcomponent (pitip->comp);
+		icalcomp = e_cal_component_get_icalcomponent (view->priv->comp);
 
 		show_recur_check = check_is_instance (icalcomp);
 		itip_view_set_show_recur_check (view, show_recur_check);
 	}
 
-	if (pitip->type == E_CAL_CLIENT_SOURCE_TYPE_MEMOS) {
+	if (view->priv->type == E_CAL_CLIENT_SOURCE_TYPE_MEMOS) {
 		gboolean needs_decline;
 
 		needs_decline = e_client_check_capability (
@@ -3658,9 +3470,9 @@ itip_view_cal_opened_cb (GObject *source_object,
 		itip_view_set_mode (view, ITIP_VIEW_MODE_PUBLISH);
 	}
 
-	pitip->current_client = g_object_ref (client);
+	view->priv->current_client = g_object_ref (client);
 
-	set_buttons_sensitive (pitip, view);
+	set_buttons_sensitive (view);
 
 exit:
 	g_clear_object (&client);
@@ -3668,8 +3480,7 @@ exit:
 }
 
 static void
-start_calendar_server (EMailPartItip *pitip,
-                       ItipView *view,
+start_calendar_server (ItipView *view,
                        ESource *source,
                        ECalClientSourceType type,
                        GAsyncReadyCallback func,
@@ -3697,13 +3508,12 @@ start_calendar_server (EMailPartItip *pitip,
 	client_cache = itip_view_get_client_cache (view);
 
 	e_client_cache_get_client (
-		client_cache, source, extension_name,
-		pitip->cancellable, func, data);
+		client_cache, source, extension_name, 30,
+		view->priv->cancellable, func, data);
 }
 
 static void
-start_calendar_server_by_uid (EMailPartItip *pitip,
-                              ItipView *view,
+start_calendar_server_by_uid (ItipView *view,
                               const gchar *uid,
                               ECalClientSourceType type)
 {
@@ -3715,7 +3525,7 @@ start_calendar_server_by_uid (EMailPartItip *pitip,
 
 	if (source != NULL) {
 		start_calendar_server (
-			pitip, view, source, type,
+			view, source, type,
 			itip_view_cal_opened_cb,
 			g_object_ref (view));
 		g_object_unref (source);
@@ -3725,16 +3535,15 @@ start_calendar_server_by_uid (EMailPartItip *pitip,
 static void
 source_selected_cb (ItipView *view,
                     ESource *source,
-                    gpointer data)
+                    gpointer user_data)
 {
-	EMailPartItip *pitip = data;
+	g_return_if_fail (ITIP_IS_VIEW (view));
+	g_return_if_fail (E_IS_SOURCE (source));
 
 	itip_view_set_buttons_sensitive (view, FALSE);
 
-	g_return_if_fail (source != NULL);
-
 	start_calendar_server (
-		pitip, view, source, pitip->type,
+		view, source, view->priv->type,
 		itip_view_cal_opened_cb,
 		g_object_ref (view));
 }
@@ -3743,13 +3552,11 @@ static void
 find_cal_update_ui (FormatItipFindData *fd,
                     ECalClient *cal_client)
 {
-	EMailPartItip *pitip;
 	ItipView *view;
 	ESource *source;
 
 	g_return_if_fail (fd != NULL);
 
-	pitip = fd->puri;
 	view = fd->view;
 
 	/* UI part gone */
@@ -3767,25 +3574,26 @@ find_cal_update_ui (FormatItipFindData *fd,
 	}
 
 	/* search for a master object if the detached object doesn't exist in the calendar */
-	if (pitip->current_client && pitip->current_client == cal_client) {
+	if (view->priv->current_client && view->priv->current_client == cal_client) {
+		const gchar *extension_name;
 		gboolean rsvp_enabled = FALSE;
 
 		itip_view_set_show_keep_alarm_check (view, fd->keep_alarm_check);
 
-		pitip->current_client = cal_client;
+		view->priv->current_client = cal_client;
 
 		/* Provide extra info, since its not in the component */
 		/* FIXME Check sequence number of meeting? */
 		/* FIXME Do we need to adjust elsewhere for the delegated calendar item? */
 		/* FIXME Need to update the fields in the view now */
-		if (pitip->method == ICAL_METHOD_REPLY || pitip->method == ICAL_METHOD_REFRESH)
-			adjust_item (pitip, pitip->comp);
+		if (view->priv->method == ICAL_METHOD_REPLY || view->priv->method == ICAL_METHOD_REFRESH)
+			adjust_item (view, view->priv->comp);
 
 		/* We clear everything because we don't really care
 		 * about any other info/warnings now we found an
 		 * existing versions */
 		itip_view_clear_lower_info_items (view);
-		pitip->progress_info_id = 0;
+		view->priv->progress_info_id = 0;
 
 		/* FIXME Check read only state of calendar? */
 		itip_view_add_lower_info_item_printf (
@@ -3798,25 +3606,47 @@ find_cal_update_ui (FormatItipFindData *fd,
 		 * invitiations (REQUEST), but not replies (REPLY).
 		 * Replies only make sense for events with an organizer.
 		 */
-		if ((!pitip->current_client || !e_cal_client_check_save_schedules (pitip->current_client)) &&
-		    (pitip->method == ICAL_METHOD_PUBLISH || pitip->method == ICAL_METHOD_REQUEST) &&
-		    pitip->has_organizer) {
+		if ((!view->priv->current_client || !e_cal_client_check_save_schedules (view->priv->current_client)) &&
+		    (view->priv->method == ICAL_METHOD_PUBLISH || view->priv->method == ICAL_METHOD_REQUEST) &&
+		    view->priv->has_organizer) {
 			rsvp_enabled = TRUE;
 		}
 		itip_view_set_show_rsvp_check (view, rsvp_enabled);
 
 		/* default is chosen in extract_itip_data() based on content of the VEVENT */
-		itip_view_set_rsvp (view, !pitip->no_reply_wanted);
+		itip_view_set_rsvp (view, !view->priv->no_reply_wanted);
 
-		set_buttons_sensitive (pitip, view);
+		set_buttons_sensitive (view);
 
 		g_cancellable_cancel (fd->cancellable);
-	} else if (!pitip->current_client)
+
+		switch (view->priv->type) {
+			case E_CAL_CLIENT_SOURCE_TYPE_EVENTS:
+				extension_name = E_SOURCE_EXTENSION_CALENDAR;
+				break;
+			case E_CAL_CLIENT_SOURCE_TYPE_TASKS:
+				extension_name = E_SOURCE_EXTENSION_TASK_LIST;
+				break;
+			case E_CAL_CLIENT_SOURCE_TYPE_MEMOS:
+				extension_name = E_SOURCE_EXTENSION_MEMO_LIST;
+				break;
+			default:
+				g_return_if_reached ();
+		}
+
+		itip_view_set_extension_name (view, extension_name);
+
+		g_signal_connect (
+			view, "source_selected",
+			G_CALLBACK (source_selected_cb), NULL);
+
+		itip_view_set_source (view, source);
+	} else if (!view->priv->current_client)
 		itip_view_set_show_keep_alarm_check (view, FALSE);
 
-	if (pitip->current_client && pitip->current_client == cal_client) {
-		if (e_cal_client_check_recurrences_no_master (pitip->current_client)) {
-			icalcomponent *icalcomp = e_cal_component_get_icalcomponent (pitip->comp);
+	if (view->priv->current_client && view->priv->current_client == cal_client) {
+		if (e_cal_client_check_recurrences_no_master (view->priv->current_client)) {
+			icalcomponent *icalcomp = e_cal_component_get_icalcomponent (view->priv->comp);
 
 			if (check_is_instance (icalcomp))
 				itip_view_set_show_recur_check (view, TRUE);
@@ -3824,9 +3654,9 @@ find_cal_update_ui (FormatItipFindData *fd,
 				itip_view_set_show_recur_check (view, FALSE);
 		}
 
-		if (pitip->type == E_CAL_CLIENT_SOURCE_TYPE_MEMOS) {
+		if (view->priv->type == E_CAL_CLIENT_SOURCE_TYPE_MEMOS) {
 			/* TODO The static capability should be made generic to convey that the calendar contains unaccepted items */
-			if (e_client_check_capability (E_CLIENT (pitip->current_client), CAL_STATIC_CAPABILITY_HAS_UNACCEPTED_MEETING))
+			if (e_client_check_capability (E_CLIENT (view->priv->current_client), CAL_STATIC_CAPABILITY_HAS_UNACCEPTED_MEETING))
 				itip_view_set_needs_decline (view, TRUE);
 			else
 				itip_view_set_needs_decline (view, FALSE);
@@ -3846,11 +3676,10 @@ decrease_find_data (FormatItipFindData *fd)
 
 	if (fd->count == 0 && !g_cancellable_is_cancelled (fd->cancellable)) {
 		gboolean rsvp_enabled = FALSE;
-		EMailPartItip *pitip = fd->puri;
 		ItipView *view = fd->view;
 
-		itip_view_remove_lower_info_item (view, pitip->progress_info_id);
-		pitip->progress_info_id = 0;
+		itip_view_remove_lower_info_item (view, view->priv->progress_info_id);
+		view->priv->progress_info_id = 0;
 
 		/*
 		 * Only allow replies if backend doesn't do that automatically.
@@ -3858,23 +3687,23 @@ decrease_find_data (FormatItipFindData *fd)
 		 * invitiations (REQUEST), but not replies (REPLY).
 		 * Replies only make sense for events with an organizer.
 		 */
-		if ((!pitip->current_client || !e_cal_client_check_save_schedules (pitip->current_client)) &&
-		    (pitip->method == ICAL_METHOD_PUBLISH || pitip->method == ICAL_METHOD_REQUEST) &&
-		    pitip->has_organizer) {
+		if ((!view->priv->current_client || !e_cal_client_check_save_schedules (view->priv->current_client)) &&
+		    (view->priv->method == ICAL_METHOD_PUBLISH || view->priv->method == ICAL_METHOD_REQUEST) &&
+		    view->priv->has_organizer) {
 			rsvp_enabled = TRUE;
 		}
 		itip_view_set_show_rsvp_check (view, rsvp_enabled);
 
 		/* default is chosen in extract_itip_data() based on content of the VEVENT */
-		itip_view_set_rsvp (view, !pitip->no_reply_wanted);
+		itip_view_set_rsvp (view, !view->priv->no_reply_wanted);
 
-		if ((pitip->method == ICAL_METHOD_PUBLISH || pitip->method == ICAL_METHOD_REQUEST)
-		    && !pitip->current_client) {
+		if ((view->priv->method == ICAL_METHOD_PUBLISH || view->priv->method == ICAL_METHOD_REQUEST)
+		    && !view->priv->current_client) {
 			/* Reuse already declared one or rename? */
 			ESource *source = NULL;
 			const gchar *extension_name;
 
-			switch (pitip->type) {
+			switch (view->priv->type) {
 				case E_CAL_CLIENT_SOURCE_TYPE_EVENTS:
 					extension_name = E_SOURCE_EXTENSION_CALENDAR;
 					break;
@@ -3895,7 +3724,7 @@ decrease_find_data (FormatItipFindData *fd)
 
 			g_signal_connect (
 				view, "source_selected",
-				G_CALLBACK (source_selected_cb), pitip);
+				G_CALLBACK (source_selected_cb), NULL);
 
 			if (source != NULL) {
 				itip_view_set_source (view, source);
@@ -3906,8 +3735,8 @@ decrease_find_data (FormatItipFindData *fd)
 				itip_view_add_lower_info_item (view, ITIP_VIEW_INFO_ITEM_TYPE_ERROR, _("Unable to find any calendars"));
 				itip_view_set_buttons_sensitive (view, FALSE);
 			}
-		} else if (!pitip->current_client) {
-			switch (pitip->type) {
+		} else if (!view->priv->current_client) {
+			switch (view->priv->type) {
 			case E_CAL_CLIENT_SOURCE_TYPE_EVENTS:
 				itip_view_add_lower_info_item_printf (
 					view, ITIP_VIEW_INFO_ITEM_TYPE_WARNING,
@@ -3924,7 +3753,7 @@ decrease_find_data (FormatItipFindData *fd)
 					_("Unable to find this memo in any memo list"));
 				break;
 			default:
-				g_assert_not_reached ();
+				g_warn_if_reached ();
 				break;
 			}
 		}
@@ -3969,8 +3798,8 @@ get_object_without_rid_ready_cb (GObject *source_object,
 	if (icalcomp) {
 		ECalComponent *comp;
 
-		fd->puri->current_client = cal_client;
-		fd->keep_alarm_check = (fd->puri->method == ICAL_METHOD_PUBLISH || fd->puri->method == ICAL_METHOD_REQUEST) &&
+		fd->view->priv->current_client = cal_client;
+		fd->keep_alarm_check = (fd->view->priv->method == ICAL_METHOD_PUBLISH || fd->view->priv->method == ICAL_METHOD_REQUEST) &&
 			(icalcomponent_get_first_component (icalcomp, ICAL_VALARM_COMPONENT) ||
 			icalcomponent_get_first_component (icalcomp, ICAL_XAUDIOALARM_COMPONENT) ||
 			icalcomponent_get_first_component (icalcomp, ICAL_XDISPLAYALARM_COMPONENT) ||
@@ -3981,7 +3810,7 @@ get_object_without_rid_ready_cb (GObject *source_object,
 		if (comp) {
 			ESource *source = e_client_get_source (E_CLIENT (cal_client));
 
-			g_hash_table_insert (fd->puri->real_comps, g_strdup (e_source_get_uid (source)), comp);
+			g_hash_table_insert (fd->view->priv->real_comps, g_strdup (e_source_get_uid (source)), comp);
 		}
 
 		find_cal_update_ui (fd, cal_client);
@@ -4018,8 +3847,8 @@ get_object_with_rid_ready_cb (GObject *source_object,
 	if (icalcomp) {
 		ECalComponent *comp;
 
-		fd->puri->current_client = cal_client;
-		fd->keep_alarm_check = (fd->puri->method == ICAL_METHOD_PUBLISH || fd->puri->method == ICAL_METHOD_REQUEST) &&
+		fd->view->priv->current_client = cal_client;
+		fd->keep_alarm_check = (fd->view->priv->method == ICAL_METHOD_PUBLISH || fd->view->priv->method == ICAL_METHOD_REQUEST) &&
 			(icalcomponent_get_first_component (icalcomp, ICAL_VALARM_COMPONENT) ||
 			icalcomponent_get_first_component (icalcomp, ICAL_XAUDIOALARM_COMPONENT) ||
 			icalcomponent_get_first_component (icalcomp, ICAL_XDISPLAYALARM_COMPONENT) ||
@@ -4030,7 +3859,7 @@ get_object_with_rid_ready_cb (GObject *source_object,
 		if (comp) {
 			ESource *source = e_client_get_source (E_CLIENT (cal_client));
 
-			g_hash_table_insert (fd->puri->real_comps, g_strdup (e_source_get_uid (source)), comp);
+			g_hash_table_insert (fd->view->priv->real_comps, g_strdup (e_source_get_uid (source)), comp);
 		}
 
 		find_cal_update_ui (fd, cal_client);
@@ -4092,7 +3921,6 @@ find_cal_opened_cb (GObject *source_object,
                     gpointer user_data)
 {
 	FormatItipFindData *fd = user_data;
-	EMailPartItip *pitip = fd->puri;
 	ItipView *view = fd->view;
 	EClient *client;
 	ESource *source;
@@ -4132,13 +3960,6 @@ find_cal_opened_cb (GObject *source_object,
 		return;
 	}
 
-	/* Do not process read-only calendars */
-	if (e_client_is_readonly (client)) {
-		g_object_unref (client);
-		decrease_find_data (fd);
-		return;
-	}
-
 	cal_client = E_CAL_CLIENT (client);
 
 	source = e_client_get_source (client);
@@ -4149,8 +3970,15 @@ find_cal_opened_cb (GObject *source_object,
 
 		extension = e_source_get_extension (source, extension_name);
 		search_for_conflicts =
-			(pitip->type == E_CAL_CLIENT_SOURCE_TYPE_EVENTS) &&
+			(view->priv->type == E_CAL_CLIENT_SOURCE_TYPE_EVENTS) &&
 			e_source_conflict_search_get_include_me (extension);
+	}
+
+	/* Do not process read-only calendars */
+	if (e_client_is_readonly (E_CLIENT (cal_client))) {
+		g_object_unref (cal_client);
+		decrease_find_data (fd);
+		return;
 	}
 
  	/* Check for conflicts */
@@ -4164,7 +3992,7 @@ find_cal_opened_cb (GObject *source_object,
 		return;
 	}
 
-	if (!pitip->current_client) {
+	if (!view->priv->current_client) {
 		e_cal_client_get_object (
 			cal_client, fd->uid, fd->rid,
 			fd->cancellable,
@@ -4173,6 +4001,7 @@ find_cal_opened_cb (GObject *source_object,
 	}
 
 	decrease_find_data (fd);
+	g_clear_object (&cal_client);
 }
 
 static void
@@ -4183,8 +4012,7 @@ itip_cancellable_cancelled (GCancellable *itip_cancellable,
 }
 
 static void
-find_server (EMailPartItip *pitip,
-             ItipView *view,
+find_server (ItipView *view,
              ECalComponent *comp)
 {
 	FormatItipFindData *fd = NULL;
@@ -4197,9 +4025,10 @@ find_server (EMailPartItip *pitip,
 	const gchar *extension_name;
 	const gchar *store_uid;
 
-	g_return_if_fail (pitip->folder != NULL);
+	g_return_if_fail (ITIP_IS_VIEW (view));
+	g_return_if_fail (view->priv->folder != NULL);
 
-	switch (pitip->type) {
+	switch (view->priv->type) {
 		case E_CAL_CLIENT_SOURCE_TYPE_EVENTS:
 			extension_name = E_SOURCE_EXTENSION_CALENDAR;
 			break;
@@ -4222,7 +4051,7 @@ find_server (EMailPartItip *pitip,
 	/* XXX Not sure what this was trying to do,
 	 *     but it propbably doesn't work anymore.
 	 *     Some comments would have been helpful. */
-	parent_store = camel_folder_get_parent_store (pitip->folder);
+	parent_store = camel_folder_get_parent_store (view->priv->folder);
 
 	store_uid = camel_service_get_uid (CAMEL_SERVICE (parent_store));
 
@@ -4263,12 +4092,12 @@ find_server (EMailPartItip *pitip,
 	if (current_source) {
 		link = conflict_list;
 
-		pitip->progress_info_id = itip_view_add_lower_info_item (
+		view->priv->progress_info_id = itip_view_add_lower_info_item (
 			view, ITIP_VIEW_INFO_ITEM_TYPE_PROGRESS,
 			_("Opening the calendar. Please wait..."));
 	} else {
 		link = list;
-		pitip->progress_info_id = itip_view_add_lower_info_item (
+		view->priv->progress_info_id = itip_view_add_lower_info_item (
 			view, ITIP_VIEW_INFO_ITEM_TYPE_PROGRESS,
 			_("Searching for an existing version of this appointment"));
 	}
@@ -4280,9 +4109,8 @@ find_server (EMailPartItip *pitip,
 			gchar *start = NULL, *end = NULL;
 
 			fd = g_new0 (FormatItipFindData, 1);
-			fd->puri = pitip;
 			fd->view = g_object_ref (view);
-			fd->itip_cancellable = g_object_ref (pitip->cancellable);
+			fd->itip_cancellable = g_object_ref (view->priv->cancellable);
 			fd->cancellable = g_cancellable_new ();
 			fd->cancelled_id = g_cancellable_connect (
 				fd->itip_cancellable,
@@ -4293,9 +4121,9 @@ find_server (EMailPartItip *pitip,
 			/* avoid free this at the end */
 			rid = NULL;
 
-			if (pitip->start_time && pitip->end_time) {
-				start = isodate_from_time_t (pitip->start_time);
-				end = isodate_from_time_t (pitip->end_time);
+			if (view->priv->start_time && view->priv->end_time) {
+				start = isodate_from_time_t (view->priv->start_time);
+				end = isodate_from_time_t (view->priv->end_time);
 
 				fd->sexp = g_strdup_printf (
 					"(and (occur-in-time-range? "
@@ -4303,7 +4131,7 @@ find_server (EMailPartItip *pitip,
 					"(make-time \"%s\")) "
 					"(not (uid? \"%s\")))",
 					start, end,
-					icalcomponent_get_uid (pitip->ical_comp));
+					icalcomponent_get_uid (view->priv->ical_comp));
 			}
 
 			g_free (start);
@@ -4312,14 +4140,9 @@ find_server (EMailPartItip *pitip,
 		fd->count++;
 		d (printf ("Increasing itip formatter search count to %d\n", fd->count));
 
-		if (current_source == source)
-			start_calendar_server (
-				pitip, view, source, pitip->type,
-				find_cal_opened_cb, fd);
-		else
-			start_calendar_server (
-				pitip, view, source, pitip->type,
-				find_cal_opened_cb, fd);
+		start_calendar_server (
+			view, source, view->priv->type,
+			find_cal_opened_cb, fd);
 	}
 
 	g_list_free_full (conflict_list, (GDestroyNotify) g_object_unref);
@@ -4340,7 +4163,7 @@ change_status (ESourceRegistry *registry,
 	if (prop) {
 		icalparameter *param;
 
-		icalproperty_remove_parameter (prop, ICAL_PARTSTAT_PARAMETER);
+		icalproperty_remove_parameter_by_kind (prop, ICAL_PARTSTAT_PARAMETER);
 		param = icalparameter_new_partstat (status);
 		icalproperty_add_parameter (prop, param);
 	} else {
@@ -4519,26 +4342,25 @@ get_uri_for_part (CamelMimePart *mime_part)
 }
 
 static void
-update_item_progress_info (EMailPartItip *pitip,
-                           ItipView *view,
+update_item_progress_info (ItipView *view,
                            const gchar *message)
 {
-	if (pitip->update_item_progress_info_id) {
-		itip_view_remove_lower_info_item (view, pitip->update_item_progress_info_id);
-		pitip->update_item_progress_info_id = 0;
+	if (view->priv->update_item_progress_info_id) {
+		itip_view_remove_lower_info_item (view, view->priv->update_item_progress_info_id);
+		view->priv->update_item_progress_info_id = 0;
 
 		if (!message)
 			itip_view_set_buttons_sensitive (view, TRUE);
 	}
 
-	if (pitip->update_item_error_info_id) {
-		itip_view_remove_lower_info_item (view, pitip->update_item_error_info_id);
-		pitip->update_item_error_info_id = 0;
+	if (view->priv->update_item_error_info_id) {
+		itip_view_remove_lower_info_item (view, view->priv->update_item_error_info_id);
+		view->priv->update_item_error_info_id = 0;
 	}
 
 	if (message) {
 		itip_view_set_buttons_sensitive (view, FALSE);
-		pitip->update_item_progress_info_id =
+		view->priv->update_item_progress_info_id =
 			itip_view_add_lower_info_item (
 				view,
 				ITIP_VIEW_INFO_ITEM_TYPE_PROGRESS,
@@ -4546,13 +4368,25 @@ update_item_progress_info (EMailPartItip *pitip,
 	}
 }
 
+static gboolean
+itip_view_get_delete_message (void)
+{
+	GSettings *settings;
+	gboolean delete_message;
+
+	settings = e_util_ref_settings ("org.gnome.evolution.plugin.itip");
+	delete_message = g_settings_get_boolean (settings, "delete-processed");
+	g_clear_object (&settings);
+
+	return delete_message;
+}
+
 static void
-finish_message_delete_with_rsvp (EMailPartItip *pitip,
-                                 ItipView *view,
+finish_message_delete_with_rsvp (ItipView *view,
                                  ECalClient *client)
 {
-	if (pitip->delete_message && pitip->folder)
-		camel_folder_delete_message (pitip->folder, pitip->uid);
+	if (itip_view_get_delete_message () && view->priv->folder)
+		camel_folder_delete_message (view->priv->folder, view->priv->message_uid);
 
 	if (itip_view_get_rsvp (view)) {
 		ECalComponent *comp = NULL;
@@ -4564,13 +4398,13 @@ finish_message_delete_with_rsvp (EMailPartItip *pitip,
 		GSList *l, *list = NULL;
 		gboolean found;
 
-		comp = e_cal_component_clone (pitip->comp);
+		comp = e_cal_component_clone (view->priv->comp);
 		if (comp == NULL)
 			return;
 
-		if (pitip->to_address == NULL)
-			find_to_address (view, pitip, pitip->ical_comp, NULL);
-		g_assert (pitip->to_address != NULL);
+		if (view->priv->to_address == NULL)
+			find_to_address (view, view->priv->ical_comp, NULL);
+		g_return_if_fail (view->priv->to_address != NULL);
 
 		ical_comp = e_cal_component_get_icalcomponent (comp);
 
@@ -4592,9 +4426,9 @@ finish_message_delete_with_rsvp (EMailPartItip *pitip,
 
 			/* We do this to ensure there is at most one
 			 * attendee in the response */
-			if (found || g_ascii_strcasecmp (pitip->to_address, text))
+			if (found || g_ascii_strcasecmp (view->priv->to_address, text))
 				list = g_slist_prepend (list, prop);
-			else if (!g_ascii_strcasecmp (pitip->to_address, text))
+			else if (!g_ascii_strcasecmp (view->priv->to_address, text))
 				found = TRUE;
 			g_free (text);
 		}
@@ -4625,14 +4459,14 @@ finish_message_delete_with_rsvp (EMailPartItip *pitip,
 
 		e_cal_component_rescan (comp);
 
-		if (itip_send_comp (
+		if (itip_send_comp_sync (
 				view->priv->registry,
 				E_CAL_COMPONENT_METHOD_REPLY,
-				comp, pitip->current_client,
-				pitip->top_level, NULL, NULL, TRUE, FALSE) &&
-				pitip->folder) {
+				comp, view->priv->current_client,
+				view->priv->top_level, NULL, NULL, TRUE, FALSE, NULL, NULL) &&
+				view->priv->folder) {
 			camel_folder_set_message_flags (
-				pitip->folder, pitip->uid,
+				view->priv->folder, view->priv->message_uid,
 				CAMEL_MESSAGE_ANSWERED,
 				CAMEL_MESSAGE_ANSWERED);
 		}
@@ -4640,7 +4474,7 @@ finish_message_delete_with_rsvp (EMailPartItip *pitip,
 		g_object_unref (comp);
 	}
 
-	update_item_progress_info (pitip, view, NULL);
+	update_item_progress_info (view, NULL);
 }
 
 static void
@@ -4651,7 +4485,6 @@ receive_objects_ready_cb (GObject *ecalclient,
 	ECalClient *client = E_CAL_CLIENT (ecalclient);
 	ESource *source = e_client_get_source (E_CLIENT (client));
 	ItipView *view = user_data;
-	EMailPartItip *pitip = itip_view_get_mail_part (view);
 	GError *error = NULL;
 
 	e_cal_client_receive_objects_finish (client, result, &error);
@@ -4661,8 +4494,8 @@ receive_objects_ready_cb (GObject *ecalclient,
 		return;
 
 	} else if (error != NULL) {
-		update_item_progress_info (pitip, view, NULL);
-		pitip->update_item_error_info_id =
+		update_item_progress_info (view, NULL);
+		view->priv->update_item_error_info_id =
 			itip_view_add_lower_info_item_printf (
 				view, ITIP_VIEW_INFO_ITEM_TYPE_INFO,
 				_("Unable to send item to calendar '%s'.  %s"),
@@ -4676,7 +4509,7 @@ receive_objects_ready_cb (GObject *ecalclient,
 
 	itip_view_clear_lower_info_items (view);
 
-	switch (pitip->update_item_response) {
+	switch (view->priv->update_item_response) {
 	case ITIP_VIEW_RESPONSE_ACCEPT:
 		itip_view_add_lower_info_item_printf (
 			view, ITIP_VIEW_INFO_ITEM_TYPE_INFO,
@@ -4697,19 +4530,18 @@ receive_objects_ready_cb (GObject *ecalclient,
 		/* FIXME some calendars just might not save it at all, is this accurate? */
 		itip_view_add_lower_info_item_printf (
 			view, ITIP_VIEW_INFO_ITEM_TYPE_INFO,
-			_("Sent to calendar '%s' as canceled"), e_source_get_display_name (source));
+			_("Sent to calendar '%s' as cancelled"), e_source_get_display_name (source));
 		break;
 	default:
-		g_assert_not_reached ();
+		g_warn_if_reached ();
 		break;
 	}
 
-	finish_message_delete_with_rsvp (pitip, view, client);
+	finish_message_delete_with_rsvp (view, client);
 }
 
 static void
-update_item (EMailPartItip *pitip,
-             ItipView *view,
+update_item (ItipView *view,
              ItipViewResponse response)
 {
 	struct icaltimetype stamp;
@@ -4718,7 +4550,7 @@ update_item (EMailPartItip *pitip,
 	ECalComponent *clone_comp;
 	gchar *str;
 
-	update_item_progress_info (pitip, view, _("Saving changes to the calendar. Please wait..."));
+	update_item_progress_info (view, _("Saving changes to the calendar. Please wait..."));
 
 	/* Set X-MICROSOFT-CDO-REPLYTIME to record the time at which
 	 * the user accepted/declined the request. (Outlook ignores
@@ -4734,11 +4566,11 @@ update_item (EMailPartItip *pitip,
 	prop = icalproperty_new_x (str);
 	g_free (str);
 	icalproperty_set_x_name (prop, "X-MICROSOFT-CDO-REPLYTIME");
-	icalcomponent_add_property (pitip->ical_comp, prop);
+	icalcomponent_add_property (view->priv->ical_comp, prop);
 
-	clone = icalcomponent_new_clone (pitip->ical_comp);
-	icalcomponent_add_component (pitip->top_level, clone);
-	icalcomponent_set_method (pitip->top_level, pitip->method);
+	clone = icalcomponent_new_clone (view->priv->ical_comp);
+	icalcomponent_add_component (view->priv->top_level, clone);
+	icalcomponent_set_method (view->priv->top_level, view->priv->method);
 
 	if (!itip_view_get_inherit_alarm_check_state (view)) {
 		icalcomponent *alarm_comp;
@@ -4755,8 +4587,8 @@ update_item (EMailPartItip *pitip,
 
 	clone_comp = e_cal_component_new ();
 	if (!e_cal_component_set_icalcomponent (clone_comp, clone)) {
-		update_item_progress_info (pitip, view, NULL);
-		pitip->update_item_error_info_id =
+		update_item_progress_info (view, NULL);
+		view->priv->update_item_error_info_id =
 			itip_view_add_lower_info_item (
 				view, ITIP_VIEW_INFO_ITEM_TYPE_ERROR,
 				_("Unable to parse item"));
@@ -4768,7 +4600,7 @@ update_item (EMailPartItip *pitip,
 		GList *alarms, *l;
 		ECalComponentAlarm *alarm;
 
-		real_comp = get_real_item (pitip);
+		real_comp = get_real_item (view);
 		if (real_comp != NULL) {
 			alarms = e_cal_component_get_alarm_uids (real_comp);
 
@@ -4796,7 +4628,7 @@ update_item (EMailPartItip *pitip,
 	if ((response != ITIP_VIEW_RESPONSE_CANCEL)
 		&& (response != ITIP_VIEW_RESPONSE_DECLINE)) {
 		GSList *attachments = NULL, *new_attachments = NULL, *l;
-		CamelMimeMessage *msg = pitip->msg;
+		CamelMimeMessage *msg = view->priv->message;
 
 		e_cal_component_get_attachment_list (clone_comp, &attachments);
 
@@ -4815,7 +4647,7 @@ update_item (EMailPartItip *pitip,
 
 					/* Skip the actual message and the text/calendar part */
 					/* FIXME Do we need to skip anything else? */
-					if (part == (CamelMimePart *) msg || part == pitip->part)
+					if (part == (CamelMimePart *) msg || part == view->priv->itip_mime_part)
 						continue;
 
 					new_uri = get_uri_for_part (part);
@@ -4845,17 +4677,17 @@ update_item (EMailPartItip *pitip,
 		e_cal_component_set_attachment_list (clone_comp, new_attachments);
 	}
 
-	pitip->update_item_response = response;
+	view->priv->update_item_response = response;
 
 	e_cal_client_receive_objects (
-		pitip->current_client,
-		pitip->top_level,
-		pitip->cancellable,
+		view->priv->current_client,
+		view->priv->top_level,
+		view->priv->cancellable,
 		receive_objects_ready_cb,
 		view);
 
  cleanup:
-	icalcomponent_remove_component (pitip->top_level, clone);
+	icalcomponent_remove_component (view->priv->top_level, clone);
 	g_object_unref (clone_comp);
 }
 
@@ -4932,9 +4764,9 @@ send_comp_to_attendee (ESourceRegistry *registry,
 	}
 
 	/* FIXME send the attachments in the request */
-	status = itip_send_comp (
+	status = itip_send_comp_sync (
 		registry, method, send_comp,
-		client, NULL, NULL, NULL, TRUE, FALSE);
+		client, NULL, NULL, NULL, TRUE, FALSE, NULL, NULL);
 
 	g_object_unref (send_comp);
 
@@ -4942,8 +4774,7 @@ send_comp_to_attendee (ESourceRegistry *registry,
 }
 
 static void
-remove_delegate (EMailPartItip *pitip,
-                 ItipView *view,
+remove_delegate (ItipView *view,
                  const gchar *delegate,
                  const gchar *delegator,
                  ECalComponent *comp)
@@ -4958,13 +4789,13 @@ remove_delegate (EMailPartItip *pitip,
 	/* send cancellation notice to delegate */
 	status = send_comp_to_attendee (
 		view->priv->registry,
-		E_CAL_COMPONENT_METHOD_CANCEL, pitip->comp,
-		delegate, pitip->current_client, comment);
+		E_CAL_COMPONENT_METHOD_CANCEL, view->priv->comp,
+		delegate, view->priv->current_client, comment);
 	if (status != 0) {
 		send_comp_to_attendee (
 			view->priv->registry,
-			E_CAL_COMPONENT_METHOD_REQUEST, pitip->comp,
-			delegator, pitip->current_client, comment);
+			E_CAL_COMPONENT_METHOD_REQUEST, view->priv->comp,
+			delegator, view->priv->current_client, comment);
 	}
 	if (status != 0) {
 		itip_view_add_lower_info_item (
@@ -4981,10 +4812,10 @@ remove_delegate (EMailPartItip *pitip,
 }
 
 static void
-update_x (ECalComponent *pitip_comp,
+update_x (ECalComponent *view_comp,
           ECalComponent *comp)
 {
-	icalcomponent *itip_icalcomp = e_cal_component_get_icalcomponent (pitip_comp);
+	icalcomponent *itip_icalcomp = e_cal_component_get_icalcomponent (view_comp);
 	icalcomponent *icalcomp = e_cal_component_get_icalcomponent (comp);
 
 	icalproperty *prop = icalcomponent_get_first_property (itip_icalcomp, ICAL_X_PROPERTY);
@@ -5008,7 +4839,6 @@ modify_object_cb (GObject *ecalclient,
 {
 	ECalClient *client = E_CAL_CLIENT (ecalclient);
 	ItipView *view = user_data;
-	EMailPartItip *pitip = itip_view_get_mail_part (view);
 	GError *error = NULL;
 
 	e_cal_client_modify_object_finish (client, result, &error);
@@ -5017,8 +4847,8 @@ modify_object_cb (GObject *ecalclient,
 		g_error_free (error);
 
 	} else if (error != NULL) {
-		update_item_progress_info (pitip, view, NULL);
-		pitip->update_item_error_info_id =
+		update_item_progress_info (view, NULL);
+		view->priv->update_item_error_info_id =
 			itip_view_add_lower_info_item_printf (
 				view, ITIP_VIEW_INFO_ITEM_TYPE_ERROR,
 				_("Unable to update attendee. %s"),
@@ -5026,28 +4856,20 @@ modify_object_cb (GObject *ecalclient,
 		g_error_free (error);
 
 	} else {
-		update_item_progress_info (pitip, view, NULL);
+		update_item_progress_info (view, NULL);
 		itip_view_add_lower_info_item (
 			view, ITIP_VIEW_INFO_ITEM_TYPE_INFO,
 			_("Attendee status updated"));
 
-		if (view->priv->dom_document) {
-			WebKitDOMElement *el;
+		enable_button (view, BUTTON_UPDATE_ATTENDEE_STATUS, FALSE);
 
-			el = webkit_dom_document_get_element_by_id (
-				view->priv->dom_document, BUTTON_UPDATE_ATTENDEE_STATUS);
-			webkit_dom_html_button_element_set_disabled (
-				WEBKIT_DOM_HTML_BUTTON_ELEMENT (el), TRUE);
-		}
-
-		if (pitip->delete_message && pitip->folder)
-			camel_folder_delete_message (pitip->folder, pitip->uid);
+		if (itip_view_get_delete_message () && view->priv->folder)
+			camel_folder_delete_message (view->priv->folder, view->priv->message_uid);
 	}
 }
 
 static void
-update_attendee_status_icalcomp (EMailPartItip *pitip,
-                                 ItipView *view,
+update_attendee_status_icalcomp (ItipView *view,
                                  icalcomponent *icalcomp)
 {
 	ECalComponent *comp;
@@ -5055,8 +4877,8 @@ update_attendee_status_icalcomp (EMailPartItip *pitip,
 	gchar *rid;
 	GSList *attendees;
 
-	e_cal_component_get_uid (pitip->comp, &uid);
-	rid = e_cal_component_get_recurid_as_string (pitip->comp);
+	e_cal_component_get_uid (view->priv->comp, &uid);
+	rid = e_cal_component_get_recurid_as_string (view->priv->comp);
 
 	comp = e_cal_component_new ();
 	if (!e_cal_component_set_icalcomponent (comp, icalcomp)) {
@@ -5069,9 +4891,9 @@ update_attendee_status_icalcomp (EMailPartItip *pitip,
 		icalcomponent *org_icalcomp;
 		const gchar *delegate;
 
-		org_icalcomp = e_cal_component_get_icalcomponent (pitip->comp);
+		org_icalcomp = e_cal_component_get_icalcomponent (view->priv->comp);
 
-		e_cal_component_get_attendee_list (pitip->comp, &attendees);
+		e_cal_component_get_attendee_list (view->priv->comp, &attendees);
 		if (attendees != NULL) {
 			ECalComponentAttendee *a = attendees->data;
 			icalproperty *prop, *del_prop;
@@ -5090,7 +4912,7 @@ update_attendee_status_icalcomp (EMailPartItip *pitip,
 					icalcomponent_add_property (icalcomp, icalproperty_new_clone (del_prop));
 					e_cal_component_rescan (comp);
 				} else if (response == GTK_RESPONSE_NO) {
-					remove_delegate (pitip, view, delegate, itip_strip_mailto (a->value), comp);
+					remove_delegate (view, delegate, itip_strip_mailto (a->value), comp);
 					goto cleanup;
 				} else {
 					goto cleanup;
@@ -5113,7 +4935,6 @@ update_attendee_status_icalcomp (EMailPartItip *pitip,
 						e_cal_component_rescan (comp);
 					} else if (response == GTK_RESPONSE_NO) {
 						remove_delegate (
-							pitip,
 							view,
 							itip_strip_mailto (a->value),
 							itip_strip_mailto (a->delfrom),
@@ -5164,23 +4985,23 @@ update_attendee_status_icalcomp (EMailPartItip *pitip,
 		}
 	}
 
-	update_x (pitip->comp, comp);
+	update_x (view->priv->comp, comp);
 
 	if (itip_view_get_update (view)) {
 		e_cal_component_commit_sequence (comp);
-		itip_send_comp (
+		itip_send_comp_sync (
 			view->priv->registry,
 			E_CAL_COMPONENT_METHOD_REQUEST,
-			comp, pitip->current_client,
-			NULL, NULL, NULL, TRUE, FALSE);
+			comp, view->priv->current_client,
+			NULL, NULL, NULL, TRUE, FALSE, NULL, NULL);
 	}
 
-	update_item_progress_info (pitip, view, _("Saving changes to the calendar. Please wait..."));
+	update_item_progress_info (view, _("Saving changes to the calendar. Please wait..."));
 
 	e_cal_client_modify_object (
-		pitip->current_client,
-		icalcomp, rid ? CALOBJ_MOD_THIS : CALOBJ_MOD_ALL,
-		pitip->cancellable,
+		view->priv->current_client,
+		icalcomp, rid ? E_CAL_OBJ_MOD_THIS : E_CAL_OBJ_MOD_ALL,
+		view->priv->cancellable,
 		modify_object_cb,
 		view);
 
@@ -5195,7 +5016,6 @@ update_attendee_status_get_object_without_rid_cb (GObject *ecalclient,
 {
 	ECalClient *client = E_CAL_CLIENT (ecalclient);
 	ItipView *view = user_data;
-	EMailPartItip *pitip = itip_view_get_mail_part (view);
 	icalcomponent *icalcomp = NULL;
 	GError *error = NULL;
 
@@ -5207,8 +5027,8 @@ update_attendee_status_get_object_without_rid_cb (GObject *ecalclient,
 	} else if (error != NULL) {
 		g_error_free (error);
 
-		update_item_progress_info (pitip, view, NULL);
-		pitip->update_item_error_info_id =
+		update_item_progress_info (view, NULL);
+		view->priv->update_item_error_info_id =
 			itip_view_add_lower_info_item (
 				view,
 				ITIP_VIEW_INFO_ITEM_TYPE_WARNING,
@@ -5216,7 +5036,7 @@ update_attendee_status_get_object_without_rid_cb (GObject *ecalclient,
 				"because the item no longer exists"));
 
 	} else {
-		update_attendee_status_icalcomp (pitip, view, icalcomp);
+		update_attendee_status_icalcomp (view, icalcomp);
 	}
 }
 
@@ -5227,7 +5047,6 @@ update_attendee_status_get_object_with_rid_cb (GObject *ecalclient,
 {
 	ECalClient *client = E_CAL_CLIENT (ecalclient);
 	ItipView *view = user_data;
-	EMailPartItip *pitip = itip_view_get_mail_part (view);
 	icalcomponent *icalcomp = NULL;
 	GError *error = NULL;
 
@@ -5242,12 +5061,12 @@ update_attendee_status_get_object_with_rid_cb (GObject *ecalclient,
 
 		g_error_free (error);
 
-		e_cal_component_get_uid (pitip->comp, &uid);
-		rid = e_cal_component_get_recurid_as_string (pitip->comp);
+		e_cal_component_get_uid (view->priv->comp, &uid);
+		rid = e_cal_component_get_recurid_as_string (view->priv->comp);
 
 		if (rid == NULL || *rid == '\0') {
-			update_item_progress_info (pitip, view, NULL);
-			pitip->update_item_error_info_id =
+			update_item_progress_info (view, NULL);
+			view->priv->update_item_error_info_id =
 				itip_view_add_lower_info_item (
 					view,
 					ITIP_VIEW_INFO_ITEM_TYPE_WARNING,
@@ -5255,10 +5074,10 @@ update_attendee_status_get_object_with_rid_cb (GObject *ecalclient,
 					"because the item no longer exists"));
 		} else {
 			e_cal_client_get_object (
-				pitip->current_client,
+				view->priv->current_client,
 				uid,
 				NULL,
-				pitip->cancellable,
+				view->priv->cancellable,
 				update_attendee_status_get_object_without_rid_cb,
 				view);
 		}
@@ -5266,28 +5085,27 @@ update_attendee_status_get_object_with_rid_cb (GObject *ecalclient,
 		g_free (rid);
 
 	} else {
-		update_attendee_status_icalcomp (pitip, view, icalcomp);
+		update_attendee_status_icalcomp (view, icalcomp);
 	}
 }
 
 static void
-update_attendee_status (EMailPartItip *pitip,
-                        ItipView *view)
+update_attendee_status (ItipView *view)
 {
 	const gchar *uid = NULL;
 	gchar *rid;
 
 	/* Obtain our version */
-	e_cal_component_get_uid (pitip->comp, &uid);
-	rid = e_cal_component_get_recurid_as_string (pitip->comp);
+	e_cal_component_get_uid (view->priv->comp, &uid);
+	rid = e_cal_component_get_recurid_as_string (view->priv->comp);
 
-	update_item_progress_info (pitip, view, _("Saving changes to the calendar. Please wait..."));
+	update_item_progress_info (view, _("Saving changes to the calendar. Please wait..."));
 
 	/* search for a master object if the detached object doesn't exist in the calendar */
 	e_cal_client_get_object (
-		pitip->current_client,
+		view->priv->current_client,
 		uid, rid,
-		pitip->cancellable,
+		view->priv->cancellable,
 		update_attendee_status_get_object_with_rid_cb,
 		view);
 
@@ -5295,22 +5113,21 @@ update_attendee_status (EMailPartItip *pitip,
 }
 
 static void
-send_item (EMailPartItip *pitip,
-           ItipView *view)
+send_item (ItipView *view)
 {
 	ECalComponent *comp;
 
-	comp = get_real_item (pitip);
+	comp = get_real_item (view);
 
 	if (comp != NULL) {
-		itip_send_comp (
+		itip_send_comp_sync (
 			view->priv->registry,
 			E_CAL_COMPONENT_METHOD_REQUEST,
-			comp, pitip->current_client,
-			NULL, NULL, NULL, TRUE, FALSE);
+			comp, view->priv->current_client,
+			NULL, NULL, NULL, TRUE, FALSE, NULL, NULL);
 		g_object_unref (comp);
 
-		switch (pitip->type) {
+		switch (view->priv->type) {
 		case E_CAL_CLIENT_SOURCE_TYPE_EVENTS:
 			itip_view_add_lower_info_item (
 				view, ITIP_VIEW_INFO_ITEM_TYPE_INFO,
@@ -5327,11 +5144,11 @@ send_item (EMailPartItip *pitip,
 				_("Memo information sent"));
 			break;
 		default:
-			g_assert_not_reached ();
+			g_warn_if_reached ();
 			break;
 		}
 	} else {
-		switch (pitip->type) {
+		switch (view->priv->type) {
 		case E_CAL_CLIENT_SOURCE_TYPE_EVENTS:
 			itip_view_add_lower_info_item (
 				view, ITIP_VIEW_INFO_ITEM_TYPE_ERROR,
@@ -5348,7 +5165,7 @@ send_item (EMailPartItip *pitip,
 				_("Unable to send memo information, the memo does not exist"));
 			break;
 		default:
-			g_assert_not_reached ();
+			g_warn_if_reached ();
 			break;
 		}
 	}
@@ -5396,18 +5213,18 @@ attachment_load_finish (EAttachment *attachment,
 }
 
 static void
-save_vcalendar_cb (EMailPartItip *pitip)
+save_vcalendar_cb (ItipView *view)
 {
 	EAttachment *attachment;
 	EShell *shell;
 	GFile *file;
 	const gchar *suggestion;
 
-	g_return_if_fail (pitip != NULL);
-	g_return_if_fail (pitip->vcalendar != NULL);
-	g_return_if_fail (pitip->part != NULL);
+	g_return_if_fail (ITIP_IS_VIEW (view));
+	g_return_if_fail (view->priv->vcalendar != NULL);
+	g_return_if_fail (view->priv->itip_mime_part != NULL);
 
-	suggestion = camel_mime_part_get_filename (pitip->part);
+	suggestion = camel_mime_part_get_filename (view->priv->itip_mime_part);
 	if (suggestion == NULL) {
 		/* Translators: This is a default filename for a calendar. */
 		suggestion = _("calendar.ics");
@@ -5420,7 +5237,7 @@ save_vcalendar_cb (EMailPartItip *pitip)
 		return;
 
 	attachment = e_attachment_new ();
-	e_attachment_set_mime_part (attachment, pitip->part);
+	e_attachment_set_mime_part (attachment, view->priv->itip_mime_part);
 
 	e_attachment_load_async (
 		attachment, (GAsyncReadyCallback)
@@ -5447,8 +5264,7 @@ set_itip_error (ItipView *view,
 }
 
 static gboolean
-extract_itip_data (EMailPartItip *pitip,
-                   ItipView *view,
+extract_itip_data (ItipView *view,
                    gboolean *have_alarms)
 {
 	GSettings *settings;
@@ -5461,7 +5277,7 @@ extract_itip_data (EMailPartItip *pitip,
 	ECalComponent *comp;
 	gboolean use_default_reminder;
 
-	if (!pitip->vcalendar) {
+	if (!view->priv->vcalendar) {
 		set_itip_error (
 			view,
 			_("The calendar attached is not valid"),
@@ -5471,53 +5287,53 @@ extract_itip_data (EMailPartItip *pitip,
 		return FALSE;
 	}
 
-	pitip->top_level = e_cal_util_new_top_level ();
+	view->priv->top_level = e_cal_util_new_top_level ();
 
-	pitip->main_comp = icalparser_parse_string (pitip->vcalendar);
-	if (pitip->main_comp == NULL || !is_icalcomp_valid (pitip->main_comp)) {
+	view->priv->main_comp = icalparser_parse_string (view->priv->vcalendar);
+	if (view->priv->main_comp == NULL || !is_icalcomp_valid (view->priv->main_comp)) {
 		set_itip_error (
 			view,
 			_("The calendar attached is not valid"),
 			_("The message claims to contain a calendar, but the calendar is not a valid iCalendar."),
 			FALSE);
 
-		if (pitip->main_comp) {
-			icalcomponent_free (pitip->main_comp);
-			pitip->main_comp = NULL;
+		if (view->priv->main_comp) {
+			icalcomponent_free (view->priv->main_comp);
+			view->priv->main_comp = NULL;
 		}
 
 		return FALSE;
 	}
 
-	prop = icalcomponent_get_first_property (pitip->main_comp, ICAL_METHOD_PROPERTY);
+	prop = icalcomponent_get_first_property (view->priv->main_comp, ICAL_METHOD_PROPERTY);
 	if (prop == NULL) {
-		pitip->method = ICAL_METHOD_PUBLISH;
+		view->priv->method = ICAL_METHOD_PUBLISH;
 	} else {
-		pitip->method = icalproperty_get_method (prop);
+		view->priv->method = icalproperty_get_method (prop);
 	}
 
-	tz_iter = icalcomponent_begin_component (pitip->main_comp, ICAL_VTIMEZONE_COMPONENT);
+	tz_iter = icalcomponent_begin_component (view->priv->main_comp, ICAL_VTIMEZONE_COMPONENT);
 	while ((tz_comp = icalcompiter_deref (&tz_iter)) != NULL) {
 		icalcomponent *clone;
 
 		clone = icalcomponent_new_clone (tz_comp);
-		icalcomponent_add_component (pitip->top_level, clone);
+		icalcomponent_add_component (view->priv->top_level, clone);
 
 		icalcompiter_next (&tz_iter);
 	}
 
-	pitip->iter = icalcomponent_begin_component (pitip->main_comp, ICAL_ANY_COMPONENT);
-	pitip->ical_comp = icalcompiter_deref (&pitip->iter);
-	if (pitip->ical_comp != NULL) {
-		kind = icalcomponent_isa (pitip->ical_comp);
+	view->priv->iter = icalcomponent_begin_component (view->priv->main_comp, ICAL_ANY_COMPONENT);
+	view->priv->ical_comp = icalcompiter_deref (&view->priv->iter);
+	if (view->priv->ical_comp != NULL) {
+		kind = icalcomponent_isa (view->priv->ical_comp);
 		if (kind != ICAL_VEVENT_COMPONENT
 		    && kind != ICAL_VTODO_COMPONENT
 		    && kind != ICAL_VFREEBUSY_COMPONENT
 		    && kind != ICAL_VJOURNAL_COMPONENT)
-			pitip->ical_comp = get_next (&pitip->iter);
+			view->priv->ical_comp = get_next (&view->priv->iter);
 	}
 
-	if (pitip->ical_comp == NULL) {
+	if (view->priv->ical_comp == NULL) {
 		set_itip_error (
 			view,
 			_("The item in the calendar is not valid"),
@@ -5527,13 +5343,13 @@ extract_itip_data (EMailPartItip *pitip,
 		return FALSE;
 	}
 
-	switch (icalcomponent_isa (pitip->ical_comp)) {
+	switch (icalcomponent_isa (view->priv->ical_comp)) {
 	case ICAL_VEVENT_COMPONENT:
-		pitip->type = E_CAL_CLIENT_SOURCE_TYPE_EVENTS;
-		pitip->has_organizer = icalcomponent_get_first_property (pitip->ical_comp, ICAL_ORGANIZER_PROPERTY) != NULL;
-		if (icalcomponent_get_first_property (pitip->ical_comp, ICAL_ATTENDEE_PROPERTY) == NULL) {
+		view->priv->type = E_CAL_CLIENT_SOURCE_TYPE_EVENTS;
+		view->priv->has_organizer = icalcomponent_get_first_property (view->priv->ical_comp, ICAL_ORGANIZER_PROPERTY) != NULL;
+		if (icalcomponent_get_first_property (view->priv->ical_comp, ICAL_ATTENDEE_PROPERTY) == NULL) {
 			/* no attendees: assume that that this is not a meeting and organizer doesn't want a reply */
-			pitip->no_reply_wanted = TRUE;
+			view->priv->no_reply_wanted = TRUE;
 		} else {
 			/*
 			 * if we have attendees, then find_to_address() will check for our RSVP
@@ -5542,10 +5358,10 @@ extract_itip_data (EMailPartItip *pitip,
 		}
 		break;
 	case ICAL_VTODO_COMPONENT:
-		pitip->type = E_CAL_CLIENT_SOURCE_TYPE_TASKS;
+		view->priv->type = E_CAL_CLIENT_SOURCE_TYPE_TASKS;
 		break;
 	case ICAL_VJOURNAL_COMPONENT:
-		pitip->type = E_CAL_CLIENT_SOURCE_TYPE_MEMOS;
+		view->priv->type = E_CAL_CLIENT_SOURCE_TYPE_MEMOS;
 		break;
 	default:
 		set_itip_error (
@@ -5557,12 +5373,12 @@ extract_itip_data (EMailPartItip *pitip,
 		return FALSE;
 	}
 
-	pitip->total = icalcomponent_count_components (pitip->main_comp, ICAL_VEVENT_COMPONENT);
-	pitip->total += icalcomponent_count_components (pitip->main_comp, ICAL_VTODO_COMPONENT);
-	pitip->total += icalcomponent_count_components (pitip->main_comp, ICAL_VFREEBUSY_COMPONENT);
-	pitip->total += icalcomponent_count_components (pitip->main_comp, ICAL_VJOURNAL_COMPONENT);
+	view->priv->total = icalcomponent_count_components (view->priv->main_comp, ICAL_VEVENT_COMPONENT);
+	view->priv->total += icalcomponent_count_components (view->priv->main_comp, ICAL_VTODO_COMPONENT);
+	view->priv->total += icalcomponent_count_components (view->priv->main_comp, ICAL_VFREEBUSY_COMPONENT);
+	view->priv->total += icalcomponent_count_components (view->priv->main_comp, ICAL_VJOURNAL_COMPONENT);
 
-	if (pitip->total > 1) {
+	if (view->priv->total > 1) {
 
 		set_itip_error (
 			view,
@@ -5570,27 +5386,29 @@ extract_itip_data (EMailPartItip *pitip,
 			_("To process all of these items, the file should be saved and the calendar imported"),
 			TRUE);
 
-	} if (pitip->total > 0) {
-		pitip->current = 1;
-	} else {
-		pitip->current = 0;
 	}
 
-	if (icalcomponent_isa (pitip->ical_comp) != ICAL_VJOURNAL_COMPONENT) {
+	if (view->priv->total > 0) {
+		view->priv->current = 1;
+	} else {
+		view->priv->current = 0;
+	}
+
+	if (icalcomponent_isa (view->priv->ical_comp) != ICAL_VJOURNAL_COMPONENT) {
 		gchar *my_address;
 
 		prop = NULL;
 		comp = e_cal_component_new ();
-		e_cal_component_set_icalcomponent (comp, icalcomponent_new_clone (pitip->ical_comp));
+		e_cal_component_set_icalcomponent (comp, icalcomponent_new_clone (view->priv->ical_comp));
 		my_address = itip_get_comp_attendee (
 			view->priv->registry, comp, NULL);
 		g_object_unref (comp);
 		comp = NULL;
 
 		if (!prop)
-			prop = find_attendee (pitip->ical_comp, my_address);
+			prop = find_attendee (view->priv->ical_comp, my_address);
 		if (!prop)
-			prop = find_attendee_if_sentby (pitip->ical_comp, my_address);
+			prop = find_attendee_if_sentby (view->priv->ical_comp, my_address);
 		if (prop) {
 			icalparameter *param;
 			const gchar * delfrom;
@@ -5598,14 +5416,14 @@ extract_itip_data (EMailPartItip *pitip,
 			if ((param = icalproperty_get_first_parameter (prop, ICAL_DELEGATEDFROM_PARAMETER))) {
 				delfrom = icalparameter_get_delegatedfrom (param);
 
-				pitip->delegator_address = g_strdup (itip_strip_mailto (delfrom));
+				view->priv->delegator_address = g_strdup (itip_strip_mailto (delfrom));
 			}
 		}
 		g_free (my_address);
 		prop = NULL;
 
 		/* Determine any delegate sections */
-		prop = icalcomponent_get_first_property (pitip->ical_comp, ICAL_X_PROPERTY);
+		prop = icalcomponent_get_first_property (view->priv->ical_comp, ICAL_X_PROPERTY);
 		while (prop) {
 			const gchar *x_name, *x_val;
 
@@ -5613,19 +5431,19 @@ extract_itip_data (EMailPartItip *pitip,
 			x_val = icalproperty_get_x (prop);
 
 			if (!strcmp (x_name, "X-EVOLUTION-DELEGATOR-CALENDAR-UID"))
-				pitip->calendar_uid = g_strdup (x_val);
+				view->priv->calendar_uid = g_strdup (x_val);
 			else if (!strcmp (x_name, "X-EVOLUTION-DELEGATOR-CALENDAR-URI"))
 				g_warning (G_STRLOC ": X-EVOLUTION-DELEGATOR-CALENDAR-URI used");
 			else if (!strcmp (x_name, "X-EVOLUTION-DELEGATOR-ADDRESS"))
-				pitip->delegator_address = g_strdup (x_val);
+				view->priv->delegator_address = g_strdup (x_val);
 			else if (!strcmp (x_name, "X-EVOLUTION-DELEGATOR-NAME"))
-				pitip->delegator_name = g_strdup (x_val);
+				view->priv->delegator_name = g_strdup (x_val);
 
-			prop = icalcomponent_get_next_property (pitip->ical_comp, ICAL_X_PROPERTY);
+			prop = icalcomponent_get_next_property (view->priv->ical_comp, ICAL_X_PROPERTY);
 		}
 
 		/* Strip out procedural alarms for security purposes */
-		alarm_iter = icalcomponent_begin_component (pitip->ical_comp, ICAL_VALARM_COMPONENT);
+		alarm_iter = icalcomponent_begin_component (view->priv->ical_comp, ICAL_VALARM_COMPONENT);
 		while ((alarm_comp = icalcompiter_deref (&alarm_iter)) != NULL) {
 			icalproperty *p;
 
@@ -5633,21 +5451,21 @@ extract_itip_data (EMailPartItip *pitip,
 
 			p = icalcomponent_get_first_property (alarm_comp, ICAL_ACTION_PROPERTY);
 			if (!p || icalproperty_get_action (p) == ICAL_ACTION_PROCEDURE)
-				icalcomponent_remove_component (pitip->ical_comp, alarm_comp);
+				icalcomponent_remove_component (view->priv->ical_comp, alarm_comp);
 
 			icalcomponent_free (alarm_comp);
 		}
 
 		if (have_alarms) {
-			alarm_iter = icalcomponent_begin_component (pitip->ical_comp, ICAL_VALARM_COMPONENT);
+			alarm_iter = icalcomponent_begin_component (view->priv->ical_comp, ICAL_VALARM_COMPONENT);
 			*have_alarms = icalcompiter_deref (&alarm_iter) != NULL;
 		}
 	}
 
-	pitip->comp = e_cal_component_new ();
-	if (!e_cal_component_set_icalcomponent (pitip->comp, pitip->ical_comp)) {
-		g_object_unref (pitip->comp);
-		pitip->comp = NULL;
+	view->priv->comp = e_cal_component_new ();
+	if (!e_cal_component_set_icalcomponent (view->priv->comp, view->priv->ical_comp)) {
+		g_object_unref (view->priv->comp);
+		view->priv->comp = NULL;
 
 		set_itip_error (
 			view,
@@ -5660,7 +5478,7 @@ extract_itip_data (EMailPartItip *pitip,
 
 	/* Add default reminder if the config says so */
 
-	settings = g_settings_new ("org.gnome.evolution.calendar");
+	settings = e_util_ref_settings ("org.gnome.evolution.calendar");
 
 	use_default_reminder =
 		g_settings_get_boolean (settings, "use-default-reminder");
@@ -5696,33 +5514,34 @@ extract_itip_data (EMailPartItip *pitip,
 				trigger.u.rel_duration.days = interval;
 				break;
 			default:
-				g_assert_not_reached ();
+				g_warn_if_reached ();
+				break;
 		}
 
 		e_cal_component_alarm_set_trigger (acomp, trigger);
-		e_cal_component_add_alarm (pitip->comp, acomp);
+		e_cal_component_add_alarm (view->priv->comp, acomp);
 
 		e_cal_component_alarm_free (acomp);
 	}
 
 	g_object_unref (settings);
 
-	find_from_address (view, pitip, pitip->ical_comp);
-	find_to_address (view, pitip, pitip->ical_comp, NULL);
+	find_from_address (view, view->priv->ical_comp);
+	find_to_address (view, view->priv->ical_comp, NULL);
 
 	return TRUE;
 }
 
 static gboolean
-idle_open_cb (gpointer data)
+idle_open_cb (gpointer user_data)
 {
-	EMailPartItip *pitip = data;
+	ItipView *view = user_data;
 	EShell *shell;
 	const gchar *uris[2];
 	gchar *start, *end, *shell_uri;
 
-	start = isodate_from_time_t (pitip->start_time ? pitip->start_time : time (NULL));
-	end = isodate_from_time_t (pitip->end_time ? pitip->end_time : time (NULL));
+	start = isodate_from_time_t (view->priv->start_time ? view->priv->start_time : time (NULL));
+	end = isodate_from_time_t (view->priv->end_time ? view->priv->end_time : time (NULL));
 	shell_uri = g_strdup_printf ("calendar:///?startdate=%s&enddate=%s", start, end);
 
 	uris[0] = shell_uri;
@@ -5741,100 +5560,99 @@ idle_open_cb (gpointer data)
 static void
 view_response_cb (ItipView *view,
                   ItipViewResponse response,
-                  gpointer data)
+                  gpointer user_data)
 {
-	EMailPartItip *pitip = data;
 	gboolean status = FALSE;
 	icalproperty *prop;
 	ECalComponentTransparency trans;
 
 	if (response == ITIP_VIEW_RESPONSE_SAVE) {
-		save_vcalendar_cb (pitip);
+		save_vcalendar_cb (view);
 		return;
 	}
 
-	if (pitip->method == ICAL_METHOD_PUBLISH || pitip->method == ICAL_METHOD_REQUEST) {
+	if (view->priv->method == ICAL_METHOD_PUBLISH || view->priv->method == ICAL_METHOD_REQUEST) {
 		if (itip_view_get_free_time_check_state (view))
-			e_cal_component_set_transparency (pitip->comp, E_CAL_COMPONENT_TRANSP_TRANSPARENT);
+			e_cal_component_set_transparency (view->priv->comp, E_CAL_COMPONENT_TRANSP_TRANSPARENT);
 		else
-			e_cal_component_set_transparency (pitip->comp, E_CAL_COMPONENT_TRANSP_OPAQUE);
+			e_cal_component_set_transparency (view->priv->comp, E_CAL_COMPONENT_TRANSP_OPAQUE);
 	} else {
-		e_cal_component_get_transparency (pitip->comp, &trans);
+		e_cal_component_get_transparency (view->priv->comp, &trans);
 
 		if (trans == E_CAL_COMPONENT_TRANSP_NONE)
-			e_cal_component_set_transparency (pitip->comp, E_CAL_COMPONENT_TRANSP_OPAQUE);
+			e_cal_component_set_transparency (view->priv->comp, E_CAL_COMPONENT_TRANSP_OPAQUE);
 	}
 
-	if (!pitip->to_address && pitip->current_client != NULL)
-		e_client_get_backend_property_sync (E_CLIENT (pitip->current_client), CAL_BACKEND_PROPERTY_CAL_EMAIL_ADDRESS, &pitip->to_address, NULL, NULL);
+	if (!view->priv->to_address && view->priv->current_client != NULL)
+		e_client_get_backend_property_sync (E_CLIENT (view->priv->current_client), CAL_BACKEND_PROPERTY_CAL_EMAIL_ADDRESS, &view->priv->to_address, NULL, NULL);
 
 	/* check if it is a  recur instance (no master object) and
 	 * add a property */
 	if (itip_view_get_recur_check_state (view)) {
 		prop = icalproperty_new_x ("All");
 		icalproperty_set_x_name (prop, "X-GW-RECUR-INSTANCES-MOD-TYPE");
-		icalcomponent_add_property (pitip->ical_comp, prop);
+		icalcomponent_add_property (view->priv->ical_comp, prop);
 	}
 
 	switch (response) {
 		case ITIP_VIEW_RESPONSE_ACCEPT:
-			if (pitip->type != E_CAL_CLIENT_SOURCE_TYPE_MEMOS)
+			if (view->priv->type != E_CAL_CLIENT_SOURCE_TYPE_MEMOS)
 				status = change_status (
 					view->priv->registry,
-					pitip->ical_comp,
-					pitip->to_address,
+					view->priv->ical_comp,
+					view->priv->to_address,
 					ICAL_PARTSTAT_ACCEPTED);
 			else
 				status = TRUE;
 			if (status) {
-				e_cal_component_rescan (pitip->comp);
-				update_item (pitip, view, response);
+				e_cal_component_rescan (view->priv->comp);
+				update_item (view, response);
 			}
 			break;
 		case ITIP_VIEW_RESPONSE_TENTATIVE:
 			status = change_status (
 					view->priv->registry,
-					pitip->ical_comp,
-					pitip->to_address,
+					view->priv->ical_comp,
+					view->priv->to_address,
 					ICAL_PARTSTAT_TENTATIVE);
 			if (status) {
-				e_cal_component_rescan (pitip->comp);
-				update_item (pitip, view, response);
+				e_cal_component_rescan (view->priv->comp);
+				update_item (view, response);
 			}
 			break;
 		case ITIP_VIEW_RESPONSE_DECLINE:
-			if (pitip->type != E_CAL_CLIENT_SOURCE_TYPE_MEMOS)
+			if (view->priv->type != E_CAL_CLIENT_SOURCE_TYPE_MEMOS)
 				status = change_status (
 					view->priv->registry,
-					pitip->ical_comp,
-					pitip->to_address,
+					view->priv->ical_comp,
+					view->priv->to_address,
 					ICAL_PARTSTAT_DECLINED);
 			else {
 				prop = icalproperty_new_x ("1");
 				icalproperty_set_x_name (prop, "X-GW-DECLINED");
-				icalcomponent_add_property (pitip->ical_comp, prop);
+				icalcomponent_add_property (view->priv->ical_comp, prop);
 				status = TRUE;
 			}
 
 			if (status) {
-				e_cal_component_rescan (pitip->comp);
-				update_item (pitip, view, response);
+				e_cal_component_rescan (view->priv->comp);
+				update_item (view, response);
 			}
 			break;
 		case ITIP_VIEW_RESPONSE_UPDATE:
-			update_attendee_status (pitip, view);
+			update_attendee_status (view);
 			break;
 		case ITIP_VIEW_RESPONSE_CANCEL:
-			update_item (pitip, view, response);
+			update_item (view, response);
 			break;
 		case ITIP_VIEW_RESPONSE_REFRESH:
-			send_item (pitip, view);
+			send_item (view);
 			break;
 		case ITIP_VIEW_RESPONSE_OPEN:
 			/* Prioritize ahead of GTK+ redraws. */
 			g_idle_add_full (
 				G_PRIORITY_HIGH_IDLE,
-				idle_open_cb, pitip, NULL);
+				idle_open_cb, g_object_ref (view), g_object_unref);
 			return;
 		default:
 			break;
@@ -5916,11 +5734,32 @@ in_proper_folder (CamelFolder *folder)
 	return res;
 }
 
+static icaltimezone *
+itip_view_guess_timezone (const gchar *tzid)
+{
+	icaltimezone *zone;
+
+	if (!tzid || !*tzid)
+		return NULL;
+
+	zone = icaltimezone_get_builtin_timezone (tzid);
+	if (zone)
+		return zone;
+
+	zone = icaltimezone_get_builtin_timezone_from_tzid (tzid);
+	if (zone)
+		return zone;
+
+	tzid = e_cal_match_tzid (tzid);
+	if (tzid)
+		zone = icaltimezone_get_builtin_timezone_from_tzid (tzid);
+
+	return zone;
+}
+
 void
 itip_view_init_view (ItipView *view)
 {
-	EShell *shell;
-	EClientCache *client_cache;
 	ECalComponentText text;
 	ECalComponentOrganizer organizer;
 	ECalComponentDateTime datetime;
@@ -5933,33 +5772,26 @@ itip_view_init_view (ItipView *view)
 	const gchar *string, *org;
 	gboolean response_enabled;
 	gboolean have_alarms = FALSE;
-	EMailPartItip *info;
 
-	info = view->priv->itip_part;
-	g_return_if_fail (info != NULL);
-
-	shell = e_shell_get_default ();
-	client_cache = e_shell_get_client_cache (shell);
-
-	info->client_cache = g_object_ref (client_cache);
+	g_return_if_fail (ITIP_IS_VIEW (view));
 
         /* Reset current client before initializing view */
-	info->current_client = NULL;
+	view->priv->current_client = NULL;
 
         /* FIXME Handle multiple VEVENTS with the same UID, ie detached instances */
-	if (!extract_itip_data (info, view, &have_alarms))
+	if (!extract_itip_data (view, &have_alarms))
 		return;
 
-	response_enabled = in_proper_folder (info->folder);
+	response_enabled = in_proper_folder (view->priv->folder);
 
 	if (!response_enabled) {
 		itip_view_set_mode (view, ITIP_VIEW_MODE_HIDE_ALL);
 	} else {
 		itip_view_set_show_inherit_alarm_check (
 			view,
-			have_alarms && (info->method == ICAL_METHOD_PUBLISH || info->method == ICAL_METHOD_REQUEST));
+			have_alarms && (view->priv->method == ICAL_METHOD_PUBLISH || view->priv->method == ICAL_METHOD_REQUEST));
 
-		switch (info->method) {
+		switch (view->priv->method) {
 			case ICAL_METHOD_PUBLISH:
 			case ICAL_METHOD_REQUEST:
                                 /*
@@ -5971,7 +5803,7 @@ itip_view_init_view (ItipView *view)
                                  */
 				itip_view_set_mode (
 					view,
-					info->has_organizer ?
+					view->priv->has_organizer ?
 					ITIP_VIEW_MODE_REQUEST :
 					ITIP_VIEW_MODE_PUBLISH);
 				break;
@@ -5997,7 +5829,7 @@ itip_view_init_view (ItipView *view)
                                 /* Handle appointment requests from Microsoft Live. This is
                                  * a best-at-hand-now handling. Must be revisited when we have
                                  * better access to the source of such meetings */
-				info->method = ICAL_METHOD_REQUEST;
+				view->priv->method = ICAL_METHOD_REQUEST;
 				itip_view_set_mode (view, ITIP_VIEW_MODE_REQUEST);
 				break;
 			default:
@@ -6005,13 +5837,13 @@ itip_view_init_view (ItipView *view)
 		}
 	}
 
-	itip_view_set_item_type (view, info->type);
+	itip_view_set_item_type (view, view->priv->type);
 
 	if (response_enabled) {
-		switch (info->method) {
+		switch (view->priv->method) {
 			case ICAL_METHOD_REQUEST:
                                 /* FIXME What about the name? */
-				itip_view_set_delegator (view, info->delegator_name ? info->delegator_name : info->delegator_address);
+				itip_view_set_delegator (view, view->priv->delegator_name ? view->priv->delegator_name : view->priv->delegator_address);
 				/* coverity[fallthrough] */
 			case ICAL_METHOD_PUBLISH:
 			case ICAL_METHOD_ADD:
@@ -6020,7 +5852,7 @@ itip_view_init_view (ItipView *view)
 				itip_view_set_show_update_check (view, FALSE);
 
                                 /* An organizer sent this */
-				e_cal_component_get_organizer (info->comp, &organizer);
+				e_cal_component_get_organizer (view->priv->comp, &organizer);
 				org = organizer.cn ? organizer.cn : itip_strip_mailto (organizer.value);
 
 				itip_view_set_organizer (view, org);
@@ -6028,11 +5860,11 @@ itip_view_init_view (ItipView *view)
 					itip_view_set_organizer_sentby (
 						view, itip_strip_mailto (organizer.sentby));
 
-				if (info->my_address) {
-					if (!(organizer.value && !g_ascii_strcasecmp (itip_strip_mailto (organizer.value), info->my_address))
-						&& !(organizer.sentby && !g_ascii_strcasecmp (itip_strip_mailto (organizer.sentby), info->my_address))
-						&& (info->to_address && g_ascii_strcasecmp (info->to_address, info->my_address)))
-						itip_view_set_proxy (view, info->to_name ? info->to_name : info->to_address);
+				if (view->priv->my_address) {
+					if (!(organizer.value && !g_ascii_strcasecmp (itip_strip_mailto (organizer.value), view->priv->my_address))
+						&& !(organizer.sentby && !g_ascii_strcasecmp (itip_strip_mailto (organizer.sentby), view->priv->my_address))
+						&& (view->priv->to_address && g_ascii_strcasecmp (view->priv->to_address, view->priv->my_address)))
+						itip_view_set_proxy (view, view->priv->to_name ? view->priv->to_name : view->priv->to_address);
 				}
 				break;
 			case ICAL_METHOD_REPLY:
@@ -6041,7 +5873,7 @@ itip_view_init_view (ItipView *view)
 				itip_view_set_show_update_check (view, TRUE);
 
                                 /* An attendee sent this */
-				e_cal_component_get_attendee_list (info->comp, &list);
+				e_cal_component_get_attendee_list (view->priv->comp, &list);
 				if (list != NULL) {
 					ECalComponentAttendee *attendee;
 
@@ -6052,31 +5884,31 @@ itip_view_init_view (ItipView *view)
 					if (attendee->sentby)
 						itip_view_set_attendee_sentby (view, itip_strip_mailto (attendee->sentby));
 
-					if (info->my_address) {
-						if (!(attendee->value && !g_ascii_strcasecmp (itip_strip_mailto (attendee->value), info->my_address))
-							&& !(attendee->sentby && !g_ascii_strcasecmp (itip_strip_mailto (attendee->sentby), info->my_address))
-							&& (info->from_address && g_ascii_strcasecmp (info->from_address, info->my_address)))
-							itip_view_set_proxy (view, info->from_name ? info->from_name : info->from_address);
+					if (view->priv->my_address) {
+						if (!(attendee->value && !g_ascii_strcasecmp (itip_strip_mailto (attendee->value), view->priv->my_address))
+							&& !(attendee->sentby && !g_ascii_strcasecmp (itip_strip_mailto (attendee->sentby), view->priv->my_address))
+							&& (view->priv->from_address && g_ascii_strcasecmp (view->priv->from_address, view->priv->my_address)))
+							itip_view_set_proxy (view, view->priv->from_name ? view->priv->from_name : view->priv->from_address);
 					}
 
 					e_cal_component_free_attendee_list (list);
 				}
 				break;
 			default:
-				g_assert_not_reached ();
+				g_warn_if_reached ();
 				break;
 		}
 	}
 
-	e_cal_component_get_summary (info->comp, &text);
+	e_cal_component_get_summary (view->priv->comp, &text);
 	itip_view_set_summary (view, text.value ? text.value : C_("cal-itip", "None"));
 
-	e_cal_component_get_location (info->comp, &string);
+	e_cal_component_get_location (view->priv->comp, &string);
 	itip_view_set_location (view, string);
 
         /* Status really only applies for REPLY */
-	if (response_enabled && info->method == ICAL_METHOD_REPLY) {
-		e_cal_component_get_attendee_list (info->comp, &list);
+	if (response_enabled && view->priv->method == ICAL_METHOD_REPLY) {
+		e_cal_component_get_attendee_list (view->priv->comp, &list);
 		if (list != NULL) {
 			ECalComponentAttendee *a = list->data;
 
@@ -6100,12 +5932,12 @@ itip_view_init_view (ItipView *view)
 		e_cal_component_free_attendee_list (list);
 	}
 
-	if (info->method == ICAL_METHOD_REPLY
-		|| info->method == ICAL_METHOD_COUNTER
-		|| info->method == ICAL_METHOD_DECLINECOUNTER) {
+	if (view->priv->method == ICAL_METHOD_REPLY
+		|| view->priv->method == ICAL_METHOD_COUNTER
+		|| view->priv->method == ICAL_METHOD_DECLINECOUNTER) {
                 /* FIXME Check spec to see if multiple comments are actually valid */
                 /* Comments for iTIP are limited to one per object */
-		e_cal_component_get_comment_list (info->comp, &list);
+		e_cal_component_get_comment_list (view->priv->comp, &list);
 		if (list) {
 			ECalComponentText *text = list->data;
 
@@ -6127,7 +5959,7 @@ itip_view_init_view (ItipView *view)
 		e_cal_component_free_text_list (list);
 	}
 
-	e_cal_component_get_description_list (info->comp, &list);
+	e_cal_component_get_description_list (view->priv->comp, &list);
 	for (l = list; l; l = l->next) {
 		ECalComponentText *text = l->data;
 
@@ -6156,7 +5988,7 @@ itip_view_init_view (ItipView *view)
 		g_free (html);
 	}
 
-	settings = g_settings_new ("org.gnome.evolution.calendar");
+	settings = e_util_ref_settings ("org.gnome.evolution.calendar");
 
 	if (g_settings_get_boolean (settings, "use-system-timezone"))
 		to_zone = e_cal_util_get_system_timezone ();
@@ -6175,8 +6007,8 @@ itip_view_init_view (ItipView *view)
 
 	g_object_unref (settings);
 
-	e_cal_component_get_dtstart (info->comp, &datetime);
-	info->start_time = 0;
+	e_cal_component_get_dtstart (view->priv->comp, &datetime);
+	view->priv->start_time = 0;
 	if (datetime.value) {
 		struct tm start_tm;
 
@@ -6184,18 +6016,21 @@ itip_view_init_view (ItipView *view)
                 /* Should we guess if the timezone is an olsen name somehow? */
 		if (datetime.value->is_utc)
 			from_zone = icaltimezone_get_utc_timezone ();
-		else if (!datetime.value->is_utc && datetime.tzid)
-			from_zone = icalcomponent_get_timezone (info->top_level, datetime.tzid);
-		else
+		else if (!datetime.value->is_utc && datetime.tzid) {
+			from_zone = icalcomponent_get_timezone (view->priv->top_level, datetime.tzid);
+
+			if (!from_zone)
+				from_zone = itip_view_guess_timezone (datetime.tzid);
+		} else
 			from_zone = NULL;
 
 		start_tm = icaltimetype_to_tm_with_zone (datetime.value, from_zone, to_zone);
 
 		itip_view_set_start (view, &start_tm, datetime.value->is_date);
-		info->start_time = icaltime_as_timet_with_zone (*datetime.value, from_zone);
+		view->priv->start_time = icaltime_as_timet_with_zone (*datetime.value, from_zone);
 	}
 
-	icalcomp = e_cal_component_get_icalcomponent (info->comp);
+	icalcomp = e_cal_component_get_icalcomponent (view->priv->comp);
 
         /* Set the recurrence id */
 	if (check_is_instance (icalcomp) && datetime.value) {
@@ -6206,13 +6041,13 @@ itip_view_init_view (ItipView *view)
 		recur_id->type = E_CAL_COMPONENT_RANGE_SINGLE;
 		recur_id->datetime.value = &icaltime;
 		recur_id->datetime.tzid = icaltimezone_get_tzid (to_zone);
-		e_cal_component_set_recurid (info->comp, recur_id);
+		e_cal_component_set_recurid (view->priv->comp, recur_id);
 		g_free (recur_id); /* it's ok to call g_free here */
 	}
 	e_cal_component_free_datetime (&datetime);
 
-	e_cal_component_get_dtend (info->comp, &datetime);
-	info->end_time = 0;
+	e_cal_component_get_dtend (view->priv->comp, &datetime);
+	view->priv->end_time = 0;
 	if (datetime.value) {
 		struct tm end_tm;
 
@@ -6220,9 +6055,12 @@ itip_view_init_view (ItipView *view)
                 /* Should we guess if the timezone is an olsen name somehow? */
 		if (datetime.value->is_utc)
 			from_zone = icaltimezone_get_utc_timezone ();
-		else if (!datetime.value->is_utc && datetime.tzid)
-			from_zone = icalcomponent_get_timezone (info->top_level, datetime.tzid);
-		else
+		else if (!datetime.value->is_utc && datetime.tzid) {
+			from_zone = icalcomponent_get_timezone (view->priv->top_level, datetime.tzid);
+
+			if (!from_zone)
+				from_zone = itip_view_guess_timezone (datetime.tzid);
+		} else
 			from_zone = NULL;
 
 		if (datetime.value->is_date) {
@@ -6235,15 +6073,15 @@ itip_view_init_view (ItipView *view)
 		end_tm = icaltimetype_to_tm_with_zone (datetime.value, from_zone, to_zone);
 
 		itip_view_set_end (view, &end_tm, datetime.value->is_date);
-		info->end_time = icaltime_as_timet_with_zone (*datetime.value, from_zone);
+		view->priv->end_time = icaltime_as_timet_with_zone (*datetime.value, from_zone);
 	}
 	e_cal_component_free_datetime (&datetime);
 
         /* Recurrence info */
         /* FIXME Better recurring description */
-	if (e_cal_component_has_recurrences (info->comp)) {
+	if (e_cal_component_has_recurrences (view->priv->comp)) {
                 /* FIXME Tell the user we don't support recurring tasks */
-		switch (info->type) {
+		switch (view->priv->type) {
 			case E_CAL_CLIENT_SOURCE_TYPE_EVENTS:
 				itip_view_add_upper_info_item (view, ITIP_VIEW_INFO_ITEM_TYPE_INFO, _("This meeting recurs"));
 				break;
@@ -6254,31 +6092,47 @@ itip_view_init_view (ItipView *view)
 				itip_view_add_upper_info_item (view, ITIP_VIEW_INFO_ITEM_TYPE_INFO, _("This memo recurs"));
 				break;
 			default:
-				g_assert_not_reached ();
+				g_warn_if_reached ();
 				break;
 		}
 	}
 
 	g_signal_connect (
 		view, "response",
-		G_CALLBACK (view_response_cb), info);
+		G_CALLBACK (view_response_cb), NULL);
 
 	if (response_enabled) {
-		itip_view_set_show_free_time_check (view, info->type == E_CAL_CLIENT_SOURCE_TYPE_EVENTS && (info->method == ICAL_METHOD_PUBLISH || info->method == ICAL_METHOD_REQUEST));
+		itip_view_set_show_free_time_check (view, view->priv->type == E_CAL_CLIENT_SOURCE_TYPE_EVENTS && (view->priv->method == ICAL_METHOD_PUBLISH || view->priv->method == ICAL_METHOD_REQUEST));
 
-		if (info->calendar_uid) {
-			start_calendar_server_by_uid (info, view, info->calendar_uid, info->type);
+		if (view->priv->calendar_uid) {
+			start_calendar_server_by_uid (view, view->priv->calendar_uid, view->priv->type);
 		} else {
-			find_server (info, view, info->comp);
-			set_buttons_sensitive (info, view);
+			find_server (view, view->priv->comp);
+			set_buttons_sensitive (view);
 		}
-	} else if (view->priv->dom_document) {
+	} else if (view->priv->web_extension) {
 		/* The Open Calendar button can be shown, thus enable it */
-		WebKitDOMElement *el;
-
-		el = webkit_dom_document_get_element_by_id (
-			view->priv->dom_document, BUTTON_OPEN_CALENDAR);
-		webkit_dom_html_button_element_set_disabled (
-			WEBKIT_DOM_HTML_BUTTON_ELEMENT (el), FALSE);
+		enable_button (view, BUTTON_OPEN_CALENDAR, TRUE);
 	}
+}
+
+void
+itip_view_set_web_view (ItipView *view,
+			EWebView *web_view)
+{
+	g_return_if_fail (ITIP_IS_VIEW (view));
+	if (web_view)
+		g_return_if_fail (E_IS_WEB_VIEW (web_view));
+
+	g_weak_ref_set (view->priv->web_view_weakref, web_view);
+
+	itip_view_register_clicked_listener (view);
+}
+
+EWebView *
+itip_view_ref_web_view (ItipView *view)
+{
+	g_return_val_if_fail (ITIP_IS_VIEW (view), NULL);
+
+	return g_weak_ref_get (view->priv->web_view_weakref);
 }

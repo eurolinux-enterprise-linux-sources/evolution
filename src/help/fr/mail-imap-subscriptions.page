@@ -53,20 +53,20 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
 
 <title>Abonnements IMAP</title>
 
-<p>Puisque l'ouverture de nombreux dossiers IMAP sur le serveur prend beaucoup de temps, vous pouvez définir les dossiers IMAP à vérifier et à afficher dans Evolution et ceux qu'il faut ignorer, via le <gui>gestionnaire d'abonnements IMAP</gui>.</p>
+<p>As opening many IMAP folders on the server takes time you can define which IMAP folders to check and display in <app>Evolution</app>, and which ones to ignore for the time being, via the <gui>IMAP Subscriptions Manager</gui>.</p>
 <steps>
 <item><p>Sélectionnez <guiseq><gui>Dossier</gui><gui>Abonnements</gui></guiseq> ou faites un clic-droit sur le nœud supérieur d'un compte de messagerie dans la liste des dossiers et cliquez sur <gui>Gérer les abonnements</gui>.</p></item> 
 <item><p>Si vous possédez des comptes sur plusieurs serveurs, sélectionnez le serveur dont vous voulez gérer les abonnements.</p></item>
-<item><p>Evolution affiche une liste des fichiers et dossiers disponibles sur le serveur IMAP.</p></item>
+<item><p><app>Evolution</app> displays a list of files and folders available on the IMAP server.</p></item>
 <item><p>Sélectionnez un fichier ou un dossier en cliquant dessus.</p>
-<p>Vous devriez au moins sélectionner la boîte de réception. Selon la configuration de votre serveur IMAP, la liste des fichiers disponibles peut contenir des dossiers sans messages. Si c'est le cas, vous pouvez les ignorer.</p></item>
+<p>You should select at least the <gui>Inbox</gui> folder. Depending upon the way your IMAP server is configured, the list of available files might include non-mail folders. If it does, you can ignore them.</p></item>
 <item><p>Cochez la case d'un dossier pour ajouter un dossier à la liste des abonnements.</p></item>
 </steps>
 

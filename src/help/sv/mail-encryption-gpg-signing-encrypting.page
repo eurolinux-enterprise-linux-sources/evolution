@@ -2,11 +2,11 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-encryption-gpg-signing-encrypting" xml:lang="sv">
 
   <info>
-    <desc>Signing or encrypting messages via GPG that you send.</desc>
+    <desc>Signera eller kryptera meddelanden via GPG som du skickar.</desc>
 
     <link type="guide" xref="mail-encryption#gpg"/>
 
-    <revision pkgversion="2.32.1" version="0.3" date="2011-08-24" status="final"/>
+    <revision pkgversion="3.13.90" version="0.4" date="2015-03-09" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -18,27 +18,39 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Signing or encrypting messages</title>
+  <title>Signera eller kryptera meddelanden</title>
 
 <!--A seahorse help page(what-is-pgp-key.page) links to this page. So please
      change/delete the link in the Seahorse help if you are renaming or
      deleting this page-->
 
 
-<p>After you have <link xref="mail-encryption-gpg-set-up">set up your GPG key</link>, you can sign or encrypt a message by clicking <guiseq><gui>Options</gui><gui>PGP Sign</gui></guiseq> or <gui>PGP Encrypt</gui> from the message composer menu.</p>
-<note style="tip"><p>The Subject line of the message will not be encrypted and should not be used for sensitive information.</p></note>
+<p>Efter att du har <link xref="mail-encryption-gpg-set-up">ställt in din GPG-nyckel</link> kan du signera eller kryptera ett meddelande genom att välja <guiseq><gui>Alternativ</gui><gui>PGP-signera</gui></guiseq> eller <gui>PGP-kryptera</gui> från meddelanderedigerarens meny eller klicka på motsvarande ikon i verktygsfältet.</p>
+<note style="tip"><p>Ämnesraden för meddelandet kommer inte att krypteras och bör inte användas för känslig information.</p></note>
 
-<p>To have every message signed or encrypted:</p>
+<p>För att få varje meddelande signerat eller krypterat:</p>
 <steps>
-<item><p>Select <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Mail Accounts</gui></guiseq>.</p></item>
-<item><p>Select the mail account to encrypt the messages in.</p></item>
-<item><p>Click <gui style="button">Edit</gui>.</p></item>
-<item><p>Click the <gui>Security</gui> tab.</p></item>
-<item><p>Select <gui>Always sign outgoing messages when using this account</gui>.</p></item>
-<item><p>Click <gui style="button">OK</gui>.</p></item>
-<item><p>Click <gui style="button">Close</gui>.</p></item>
+<item><p>Välj <guiseq><gui>Redigera</gui><gui>Inställningar</gui><gui>E-postkonton</gui></guiseq>.</p></item>
+<item><p>Välj e-postkontot som meddelande ska krypteras för.</p></item>
+<item><p>Klicka på <gui style="button">Redigera</gui>.</p></item>
+<item><p>Klicka på fliken <gui>Säkerhet</gui>.</p></item>
+<item><p>Välj <gui>Signera alltid utgående meddelanden när detta konto används</gui>.</p></item>
+<item><p>Klicka på <gui style="button">OK</gui>.</p></item>
+<item><p>Klicka på <gui style="button">Stäng</gui>.</p></item>
 </steps>
 
 </page>

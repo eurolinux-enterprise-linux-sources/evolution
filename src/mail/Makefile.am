@@ -46,10 +46,13 @@ libevolution_mail_la_CPPFLAGS =				\
 	$(GNOME_PLATFORM_CFLAGS)			\
 	$(CERT_UI_CFLAGS)				\
 	$(CANBERRA_CFLAGS)				\
-	$(GTKHTML_CFLAGS)				\
-	$(LIBSOUP_CFLAGS)
+	$(LIBCRYPTUI_CFLAGS)				\
+	$(LIBSOUP_CFLAGS)				\
+	$(CODE_COVERAGE_CFLAGS)				\
+	$(NULL)
 
 mailinclude_HEADERS =					\
+	e-cid-request.h					\
 	e-http-request.h				\
 	e-mail.h					\
 	e-mail-account-manager.h			\
@@ -82,7 +85,9 @@ mailinclude_HEADERS =					\
 	e-mail-display-popup-extension.h		\
 	e-mail-enums.h					\
 	e-mail-enumtypes.h				\
+	e-mail-folder-create-dialog.h			\
 	e-mail-folder-pane.h				\
+	e-mail-free-form-exp.h				\
 	e-mail-junk-options.h				\
 	e-mail-label-action.h				\
 	e-mail-label-dialog.h				\
@@ -91,11 +96,14 @@ mailinclude_HEADERS =					\
 	e-mail-label-tree-view.h			\
 	e-mail-message-pane.h				\
 	e-mail-migrate.h				\
+	e-mail-notes.h					\
 	e-mail-paned-view.h				\
 	e-mail-print-config-headers.h			\
 	e-mail-printer.h				\
+	e-mail-properties.h				\
 	e-mail-reader-utils.h				\
 	e-mail-reader.h					\
+	e-mail-remote-content.h				\
 	e-mail-request.h				\
 	e-mail-send-account-override.h			\
 	e-mail-sidebar.h				\
@@ -128,6 +136,7 @@ mailinclude_HEADERS =					\
 	message-list.h
 
 libevolution_mail_la_SOURCES =				\
+	e-cid-request.c					\
 	e-http-request.c				\
 	e-mail-account-manager.c			\
 	e-mail-account-store.c				\
@@ -158,7 +167,9 @@ libevolution_mail_la_SOURCES =				\
 	e-mail-display.c				\
 	e-mail-display-popup-extension.c		\
 	e-mail-enumtypes.c				\
+	e-mail-folder-create-dialog.c			\
 	e-mail-folder-pane.c				\
+	e-mail-free-form-exp.c				\
 	e-mail-junk-options.c				\
 	e-mail-label-action.c				\
 	e-mail-label-dialog.c				\
@@ -167,11 +178,14 @@ libevolution_mail_la_SOURCES =				\
 	e-mail-label-tree-view.c			\
 	e-mail-message-pane.c				\
 	e-mail-migrate.c				\
+	e-mail-notes.c					\
 	e-mail-paned-view.c				\
 	e-mail-print-config-headers.c			\
 	e-mail-printer.c				\
+	e-mail-properties.c				\
 	e-mail-reader-utils.c				\
 	e-mail-reader.c					\
+	e-mail-remote-content.c				\
 	e-mail-request.c				\
 	e-mail-send-account-override.c			\
 	e-mail-sidebar.c				\
@@ -221,14 +235,12 @@ libevolution_mail_la_LIBADD =				\
 	$(GNOME_PLATFORM_LIBS)				\
 	$(CERT_UI_LIBS)					\
 	$(CANBERRA_LIBS)				\
-	$(GTKHTML_LIBS)					\
 	$(SMIME_LIBS)					\
+	$(LIBCRYPTUI_LIBS)				\
 	$(LIBSOUP_LIBS)					\
 	$(NULL)
 
-libevolution_mail_la_LDFLAGS = -avoid-version $(NO_UNDEFINED)
-
-libevolution_mail_la_DEPENDENCIES = em-filter-i18n.h
+libevolution_mail_la_LDFLAGS = -avoid-version $(NO_UNDEFINED) $(CODE_COVERAGE_LDFLAGS)
 
 noinst_PROGRAMS = test-mail-autoconfig
 
@@ -249,18 +261,19 @@ test_mail_autoconfig_LDADD = \
 
 # Misc data to install
 filterdir = $(privdatadir)
-filter_DATA = filtertypes.xml vfoldertypes.xml searchtypes.xml
+filter_in_files = \
+	filtertypes.xml.in \
+	searchtypes.xml.in \
+	vfoldertypes.xml.in \
+	$(NULL)
+filter_DATA = $(filter_in_files:.xml.in=.xml)
+
+@INTLTOOL_XML_RULE@
 
 error_DATA = mail.error
 errordir = $(privdatadir)/errors
 # provides error rules too
 @EVO_PLUGIN_RULE@
-
-em-filter-i18n.h: filtertypes.xml vfoldertypes.xml searchtypes.xml
-	echo "/* Automatically generated. Do not edit. */" > $@;	      \
-	cat $(srcdir)/filtertypes.xml $(srcdir)/vfoldertypes.xml $(srcdir)/searchtypes.xml |	      \
-		sed -n -e 's:.*<title>\(.*\)</title>:gchar *s = N_("\1");:p' | \
-		sort -u >> $@
 
 ui_DATA = mail-config.ui mail-dialogs.ui
 
@@ -272,10 +285,8 @@ EXTRA_DIST = 				\
 	$(ui_DATA)			\
 	$(server_in_files)		\
 	$(etspec_DATA)			\
-	filtertypes.xml			\
-	vfoldertypes.xml		\
-	searchtypes.xml			\
-	em-filter-i18n.h
+	$(filter_in_files)		\
+	$(NULL)
 
 # Purify support
 
@@ -295,7 +306,7 @@ endif
 dist-hook:
 	cd $(distdir); rm -f $(BUILT_SOURCES)
 
-BUILT_SOURCES = $(ENUM_GENERATED) $(error_DATA)
+BUILT_SOURCES = $(ENUM_GENERATED) $(error_DATA) $(filter_DATA)
 
 CLEANFILES = $(BUILT_SOURCES)
 

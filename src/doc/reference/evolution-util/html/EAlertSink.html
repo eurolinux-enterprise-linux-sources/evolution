@@ -2,13 +2,13 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Evolution Utilities Reference Manual: EAlertSink</title>
-<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<title>EAlertSink: Evolution Utilities Reference Manual</title>
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
 <link rel="home" href="index.html" title="Evolution Utilities Reference Manual">
 <link rel="up" href="ch03.html" title="Alerts">
 <link rel="prev" href="EAlertDialog.html" title="EAlertDialog">
 <link rel="next" href="ch04.html" title="Attachments">
-<meta name="generator" content="GTK-Doc V1.21 (XML mode)">
+<meta name="generator" content="GTK-Doc V1.25 (XML mode)">
 <link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
@@ -16,9 +16,7 @@
 <td width="100%" align="left" class="shortcuts">
 <a href="#" class="shortcut">Top</a><span id="nav_description">  <span class="dim">|</span> 
                   <a href="#EAlertSink.description" class="shortcut">Description</a></span><span id="nav_hierarchy">  <span class="dim">|</span> 
-                  <a href="#EAlertSink.object-hierarchy" class="shortcut">Object Hierarchy</a></span><span id="nav_prerequisites">  <span class="dim">|</span> 
-                  <a href="#EAlertSink.prerequisites" class="shortcut">Prerequisites</a></span><span id="nav_implementations">  <span class="dim">|</span> 
-                  <a href="#EAlertSink.implementations" class="shortcut">Known Implementations</a></span>
+                  <a href="#EAlertSink.object-hierarchy" class="shortcut">Object Hierarchy</a></span>
 </td>
 <td><a accesskey="h" href="index.html"><img src="home.png" width="16" height="16" border="0" alt="Home"></a></td>
 <td><a accesskey="u" href="ch03.html"><img src="up.png" width="16" height="16" border="0" alt="Up"></a></td>
@@ -36,38 +34,65 @@
 </tr></table></div>
 <div class="refsect1">
 <a name="EAlertSink.functions"></a><h2>Functions</h2>
-<div class="informaltable"><table width="100%" border="0">
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="functions_return">
 <col class="functions_name">
 </colgroup>
-<tbody><tr>
+<tbody>
+<tr>
 <td class="function_type">
 <span class="returnvalue">void</span>
 </td>
 <td class="function_name">
 <a class="link" href="EAlertSink.html#e-alert-sink-submit-alert" title="e_alert_sink_submit_alert ()">e_alert_sink_submit_alert</a> <span class="c_punctuation">()</span>
 </td>
-</tr></tbody>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<span class="c_punctuation">(</span><a class="link" href="EAlertSink.html#EAlertSinkThreadJobFunc" title="EAlertSinkThreadJobFunc ()">*EAlertSinkThreadJobFunc</a><span class="c_punctuation">)</span> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">struct <a class="link" href="EActivity.html" title="EActivity"><span class="returnvalue">_EActivity</span></a> *
+</td>
+<td class="function_name">
+<a class="link" href="EAlertSink.html#e-alert-sink-submit-thread-job" title="e_alert_sink_submit_thread_job ()">e_alert_sink_submit_thread_job</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="EAlertSink.html#e-alert-sink-thread-job-set-alert-ident" title="e_alert_sink_thread_job_set_alert_ident ()">e_alert_sink_thread_job_set_alert_ident</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="EAlertSink.html#e-alert-sink-thread-job-set-alert-arg-0" title="e_alert_sink_thread_job_set_alert_arg_0 ()">e_alert_sink_thread_job_set_alert_arg_0</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+</tbody>
 </table></div>
 </div>
 <div class="refsect1">
 <a name="EAlertSink.other"></a><h2>Types and Values</h2>
-<div class="informaltable"><table width="100%" border="0">
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="name">
 <col class="description">
 </colgroup>
-<tbody>
-<tr>
+<tbody><tr>
 <td class="datatype_keyword"> </td>
-<td class="function_name"><a class="link" href="EAlertSink.html#EAlertSink-struct" title="EAlertSink">EAlertSink</a></td>
-</tr>
-<tr>
-<td class="datatype_keyword">struct</td>
-<td class="function_name"><a class="link" href="EAlertSink.html#EAlertSinkInterface" title="struct EAlertSinkInterface">EAlertSinkInterface</a></td>
-</tr>
-</tbody>
+<td class="function_name"><a class="link" href="EAlertSink.html#EAlertSinkThreadJobData" title="EAlertSinkThreadJobData">EAlertSinkThreadJobData</a></td>
+</tr></tbody>
 </table></div>
 </div>
 <div class="refsect1">
@@ -77,25 +102,13 @@
 </pre>
 </div>
 <div class="refsect1">
-<a name="EAlertSink.prerequisites"></a><h2>Prerequisites</h2>
-<p>
-EAlertSink requires
- <a href="http://developer.gnome.org/gtk2/GtkWidget.html">GtkWidget</a>.</p>
-</div>
-<div class="refsect1">
-<a name="EAlertSink.implementations"></a><h2>Known Implementations</h2>
-<p>
-EAlertSink is implemented by
- <a class="link" href="EPreviewPane.html" title="EPreviewPane">EPreviewPane</a>,  <a class="link" href="ESourceConfigDialog.html" title="ESourceConfigDialog">ESourceConfigDialog</a>,  <a class="link" href="EWebView.html" title="EWebView">EWebView</a> and  <a class="link" href="EWebViewGtkHTML.html" title="EWebViewGtkHTML">EWebViewGtkHTML</a>.</p>
-</div>
-<div class="refsect1">
 <a name="EAlertSink.includes"></a><h2>Includes</h2>
 <pre class="synopsis">#include &lt;e-util/e-util.h&gt;
 </pre>
 </div>
 <div class="refsect1">
 <a name="EAlertSink.description"></a><h2>Description</h2>
-<p>A widget that implements <a class="link" href="EAlertSink.html" title="EAlertSink"><span class="type">EAlertSink</span></a> means it can handle <a href="EAlert.html"><span class="type">EAlerts</span></a>,
+<p>A widget that implements <a class="link" href="EAlertSink.html" title="EAlertSink"><span class="type">EAlertSink</span></a> means it can handle <span class="type">EAlerts</span>,
 usually by displaying them to the user.</p>
 </div>
 <div class="refsect1">
@@ -109,8 +122,8 @@ e_alert_sink_submit_alert (<em class="parameter"><code><a class="link" href="EAl
 well-defined behavior.  It's up to the widget implementing the <a class="link" href="EAlertSink.html" title="EAlertSink"><span class="type">EAlertSink</span></a>
 interface to decide what to do with them.</p>
 <div class="refsect3">
-<a name="id-1.4.5.10.2.5"></a><h4>Parameters</h4>
-<div class="informaltable"><table width="100%" border="0">
+<a name="e-alert-sink-submit-alert.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="parameters_name">
 <col class="parameters_description">
@@ -131,28 +144,180 @@ interface to decide what to do with them.</p>
 </table></div>
 </div>
 </div>
+<hr>
+<div class="refsect2">
+<a name="EAlertSinkThreadJobFunc"></a><h3>EAlertSinkThreadJobFunc ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+<span class="c_punctuation">(</span>*EAlertSinkThreadJobFunc<span class="c_punctuation">)</span> (<em class="parameter"><code><a class="link" href="EAlertSink.html#EAlertSinkThreadJobData" title="EAlertSinkThreadJobData"><span class="type">EAlertSinkThreadJobData</span></a> *job_data</code></em>,
+                            <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> user_data</code></em>,
+                            <em class="parameter"><code><a href="/usr/share/gtk-doc/html/gioGCancellable.html#GCancellable-struct"><span class="type">GCancellable</span></a> *cancellable</code></em>,
+                            <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Error-Reporting.html#GError"><span class="type">GError</span></a> **error</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-alert-sink-submit-thread-job"></a><h3>e_alert_sink_submit_thread_job ()</h3>
+<pre class="programlisting">struct <a class="link" href="EActivity.html" title="EActivity"><span class="returnvalue">_EActivity</span></a> *
+e_alert_sink_submit_thread_job (<em class="parameter"><code><a class="link" href="EAlertSink.html" title="EAlertSink"><span class="type">EAlertSink</span></a> *alert_sink</code></em>,
+                                <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *description</code></em>,
+                                <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *alert_ident</code></em>,
+                                <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *alert_arg_0</code></em>,
+                                <em class="parameter"><code><a class="link" href="EAlertSink.html#EAlertSinkThreadJobFunc" title="EAlertSinkThreadJobFunc ()"><span class="type">EAlertSinkThreadJobFunc</span></a> func</code></em>,
+                                <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> user_data</code></em>,
+                                <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Datasets.html#GDestroyNotify"><span class="type">GDestroyNotify</span></a> free_user_data</code></em>);</pre>
+<p>Runs the <em class="parameter"><code>func</code></em>
+ in a dedicated thread. Any error is propagated to UI.
+The cancellable passed into the <em class="parameter"><code>func</code></em>
+ is a <span class="type">CamelOperation</span>, thus
+the caller can overwrite progress and description message on it.</p>
+<div class="refsect3">
+<a name="e-alert-sink-submit-thread-job.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>alert_sink</p></td>
+<td class="parameter_description"><p>an <a class="link" href="EAlertSink.html" title="EAlertSink"><span class="type">EAlertSink</span></a> instance</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>description</p></td>
+<td class="parameter_description"><p>user-friendly description of the job, to be shown in UI</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>alert_ident</p></td>
+<td class="parameter_description"><p>in case of an error, this alert identificator is used
+for EAlert construction</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>alert_arg_0</p></td>
+<td class="parameter_description"><p> in case of an error, use this string as
+the first argument to the EAlert construction; the second argument
+is the actual error message; can be <a href="/usr/share/gtk-doc/html/glibglib-Standard-Macros.html#NULL:CAPS"><span class="type">NULL</span></a>, in which case only
+the error message is passed to the EAlert construction. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<acronym title="NULL is OK, both for passing and for returning."><span class="acronym">allow-none</span></acronym>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>func</p></td>
+<td class="parameter_description"><p>function to be run in a dedicated thread</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>user_data</p></td>
+<td class="parameter_description"><p> custom data passed into <em class="parameter"><code>func</code></em>
+; can be <a href="/usr/share/gtk-doc/html/glibglib-Standard-Macros.html#NULL:CAPS"><span class="type">NULL</span></a>. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<acronym title="NULL is OK, both for passing and for returning."><span class="acronym">allow-none</span></acronym>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>free_user_data</p></td>
+<td class="parameter_description"><p> function to be called on <em class="parameter"><code>user_data</code></em>
+,
+when the job is over; can be <a href="/usr/share/gtk-doc/html/glibglib-Standard-Macros.html#NULL:CAPS"><span class="type">NULL</span></a>. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<acronym title="NULL is OK, both for passing and for returning."><span class="acronym">allow-none</span></acronym>]</span></td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="e-alert-sink-submit-thread-job.returns"></a><h4>Returns</h4>
+<p> Newly created <a class="link" href="EActivity.html" title="EActivity"><span class="type">EActivity</span></a> on success.
+The caller is responsible to <a href="/usr/share/gtk-doc/html/gobjectgobject-The-Base-Object-Type.html#g-object-unref"><code class="function">g_object_unref()</code></a> it when done with it.</p>
+<p>Note: The <em class="parameter"><code>free_user_data</code></em>
+, if set, is called in the main thread.</p>
+<p>Note: This function should be called only from the main thread. </p>
+<p><span class="annotation">[<acronym title="Free data after the code is done."><span class="acronym">transfer full</span></acronym>]</span></p>
+</div>
+<p class="since">Since: <a class="link" href="api-index-3.16.html" title="Index of new symbols in 3.16">3.16</a></p>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-alert-sink-thread-job-set-alert-ident"></a><h3>e_alert_sink_thread_job_set_alert_ident ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+e_alert_sink_thread_job_set_alert_ident
+                               (<em class="parameter"><code><a class="link" href="EAlertSink.html#EAlertSinkThreadJobData" title="EAlertSinkThreadJobData"><span class="type">EAlertSinkThreadJobData</span></a> *job_data</code></em>,
+                                <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *alert_ident</code></em>);</pre>
+<p>Change an alert identificator to be used for error reporting.
+This can be used within a thread function at <a class="link" href="EAlertSink.html#e-alert-sink-submit-thread-job" title="e_alert_sink_submit_thread_job ()"><code class="function">e_alert_sink_submit_thread_job()</code></a>,
+to overwrite the default error message, in case of a need to more fine-tuned
+infomation to a user being available.</p>
+<p>See: e_alert_sink_thread_job_set_alert_arg_0</p>
+<div class="refsect3">
+<a name="e-alert-sink-thread-job-set-alert-ident.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>job_data</p></td>
+<td class="parameter_description"><p>Thread job data, as passed to a thread
+function specified at <a class="link" href="EAlertSink.html#e-alert-sink-submit-thread-job" title="e_alert_sink_submit_thread_job ()"><code class="function">e_alert_sink_submit_thread_job()</code></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>alert_ident</p></td>
+<td class="parameter_description"><p>A new alert identificator to use; cannot be <a href="/usr/share/gtk-doc/html/glibglib-Standard-Macros.html#NULL:CAPS"><span class="type">NULL</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p class="since">Since: <a class="link" href="api-index-3.16.html" title="Index of new symbols in 3.16">3.16</a></p>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-alert-sink-thread-job-set-alert-arg-0"></a><h3>e_alert_sink_thread_job_set_alert_arg_0 ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+e_alert_sink_thread_job_set_alert_arg_0
+                               (<em class="parameter"><code><a class="link" href="EAlertSink.html#EAlertSinkThreadJobData" title="EAlertSinkThreadJobData"><span class="type">EAlertSinkThreadJobData</span></a> *job_data</code></em>,
+                                <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *alert_arg_0</code></em>);</pre>
+<p>Change an argument 0 for an alert to be used for error reporting.
+This can be used within a thread function at <a class="link" href="EAlertSink.html#e-alert-sink-submit-thread-job" title="e_alert_sink_submit_thread_job ()"><code class="function">e_alert_sink_submit_thread_job()</code></a>,
+to overwrite the default argument 0 of the erorr message. It might be
+usually used with combination of <a class="link" href="EAlertSink.html#e-alert-sink-thread-job-set-alert-ident" title="e_alert_sink_thread_job_set_alert_ident ()"><code class="function">e_alert_sink_thread_job_set_alert_ident()</code></a>.</p>
+<div class="refsect3">
+<a name="e-alert-sink-thread-job-set-alert-arg-0.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>job_data</p></td>
+<td class="parameter_description"><p>Thread job data, as passed to a thread
+function specified at <a class="link" href="EAlertSink.html#e-alert-sink-submit-thread-job" title="e_alert_sink_submit_thread_job ()"><code class="function">e_alert_sink_submit_thread_job()</code></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>alert_arg_0</p></td>
+<td class="parameter_description"><p> A new argument 0 of the alert;
+can be <a href="/usr/share/gtk-doc/html/glibglib-Standard-Macros.html#NULL:CAPS"><span class="type">NULL</span></a>, to unset the previously set value. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<acronym title="NULL is OK, both for passing and for returning."><span class="acronym">allow-none</span></acronym>]</span></td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p class="since">Since: <a class="link" href="api-index-3.16.html" title="Index of new symbols in 3.16">3.16</a></p>
+</div>
 </div>
 <div class="refsect1">
 <a name="EAlertSink.other_details"></a><h2>Types and Values</h2>
 <div class="refsect2">
-<a name="EAlertSink-struct"></a><h3>EAlertSink</h3>
-<pre class="programlisting">typedef struct _EAlertSink EAlertSink;</pre>
-</div>
-<hr>
-<div class="refsect2">
-<a name="EAlertSinkInterface"></a><h3>struct EAlertSinkInterface</h3>
-<pre class="programlisting">struct EAlertSinkInterface {
-	GTypeInterface parent_interface;
-
-	void		(*submit_alert)		(EAlertSink *alert_sink,
-						 EAlert *alert);
-};
-</pre>
+<a name="EAlertSinkThreadJobData"></a><h3>EAlertSinkThreadJobData</h3>
+<pre class="programlisting">typedef struct _EAlertSinkThreadJobData EAlertSinkThreadJobData;</pre>
 </div>
 </div>
 </div>
 <div class="footer">
-<hr>
-          Generated by GTK-Doc V1.21</div>
+<hr>Generated by GTK-Doc V1.25</div>
 </body>
 </html>

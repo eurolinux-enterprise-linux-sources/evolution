@@ -4,7 +4,7 @@
   <info>
     <link type="guide" xref="contacts-using-several-addressbooks"/>
 
-    <revision pkgversion="3.1.5" version="0.3" date="2011-07-28" status="final"/>
+    <revision pkgversion="3.1.5" version="0.4" date="2015-03-09" status="final"/>
 
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
@@ -24,9 +24,15 @@
     <desc>Usar libretas de direcciones compartidas en una red local.</desc>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -63,7 +69,7 @@
       <p>Introduzca la dirección del servidor, el número del puerto (el número predeterminado es 3899 y si quiere conectar de forma segura.</p>
     </item>
     <item>
-      <p>Defina el método de registro y su nombre de usuario.</p>
+      <p>Defina el método de inicio de sesión y su nombre de usuario.</p>
     </item>
     <item>
       <p>Pulse <gui style="button">Aplicar</gui>.</p>
@@ -75,7 +81,8 @@
 	  <p>Base de búsqueda: la base de búsqueda es el punto de partida usado para las búsquedas en directorios. Consulte a su administrador para obtener información acerca de la configuración adecuada.</p>
         </item>
         <item>
-	  <p>Rango de búsqueda: es la extensión de una búsqueda dada. Están disponibles las siguientes:</p>
+	  <p>Objetivo de la búsqueda: es la amplitud de una búsqueda determinada.</p>
+	  <p>Están disponibles las siguientes opciones:</p>
           <list>
             <item>
 	      <p>Una: busca dentro de la raíz y un nivel de subcarpetas debajo.</p>
@@ -128,7 +135,7 @@
       <p>Las carpetas de red sólo están disponibles cuando se conecta a la red. Si usa un equipo portátil o una conexión telefónica, conviene hacer una copia de la carpeta de red o colocar en caché alga carpeta de red. Para ello, arrastre los contactos deseados dentro de la lista de contactos local.</p>
     </item>
     <item>
-      <p>También puede marcar la carpeta de red para su uso desconectado. Para marcar la carpeta, pulse con el botón derecho sobre la carpeta, después pulse Propiedades y seleccione Copiar el contenido de la carpeta localmente para operación desconectada.</p>
+      <p>También puede marcar la carpeta de red para su uso desconectado. Para marcar la carpeta, pulse con el botón derecho sobre la carpeta, después pulse <gui>Propiedades</gui> y seleccione <gui>Copiar el contenido de la carpeta localmente para operación desconectada</gui>.</p>
     </item>
     <item>
       <p>Para prevenir exceso de tráfico en la red, <app>Evolution</app> no descarga los datos del servidor LDAP de una forma normal al iniciarse.</p>

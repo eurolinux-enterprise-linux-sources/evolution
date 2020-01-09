@@ -25,9 +25,27 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
@@ -35,7 +53,7 @@
 
 <section id="search-single">
 <title>Αναζήτηση σε μια απλή υπενθύμιση</title>
-<p>Για την εύρεση κειμένου σε εμφανιζόμενη υπενθύμιση, επιλέξτε <guiseq><gui>Επεξεργασία</gui><gui>Εύρεση στην υπενθύμιση...</gui></guiseq> από το κύριο μενού.</p>
+<p>Για την εύρεση κειμένου σε εμφανιζόμενη υπενθύμιση, επιλέξτε <guiseq><gui>Επεξεργασία</gui><gui>Εύρεση στην υπενθύμιση…</gui></guiseq> από το κύριο μενού.</p>
 </section>
 
 <section id="search-many">
@@ -49,13 +67,13 @@
 <item><p>Πατήστε στο εικονίδιο αναζήτησης <media type="image" mime="image/png" its:translate="no" src="figures/search-icon.png"/> για να επεκτείνετε τον πτυσσόμενο κατάλογο.</p></item>
 <item><p>Επιλέξτε τα κριτήρια αναζήτησης από τη λίστα.</p></item>
 <item><p>Εισάγετε το επιθυμητό κείμενο αναζήτησης και πιέστε <key>Enter</key>.</p></item>
-<item><p>Το Evolution εμφανίζει τα αποτελέσματα αναζήτησης.</p></item>
+<item><p>Το <app>Evolution</app> εμφανίζει τα αποτελέσματα αναζήτησης.</p></item>
 </steps>
 <p>Αναζήτηση ανά κατηγορία:</p>
 <steps>
 <item><p>Κλικ στην πτυσσόμενη λίστα <gui>προβολή</gui>.</p></item>
 <item><p>Επιλέξτε την κατηγορία από τη λίστα.</p></item>
-<item><p>Το Evolution εμφανίζει τα αποτελέσματα αναζήτησης.</p></item>
+<item><p>Το <app>Evolution</app> εμφανίζει τα αποτελέσματα αναζήτησης.</p></item>
 </steps>
 <p>Εάν θέλετε να ορίσετε αρκετά κριτήρια αναζήτησης, θα πρέπει να χρησιμοποιήσετε μια προχωρημένη αναζήτηση, που περιγράφεται παρακάτω.</p>
 </section>

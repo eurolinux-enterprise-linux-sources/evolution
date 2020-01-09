@@ -28,7 +28,6 @@
 
 #include <glib/gi18n.h>
 #include <libxml/tree.h>
-#include <gtkhtml/gtkhtml.h>
 #include <camel/camel.h>
 
 #include <shell/e-shell-utils.h>
@@ -125,7 +124,7 @@ e_mail_reader_confirm_delete (EMailReader *reader)
 	folder = e_mail_reader_ref_folder (reader);
 	window = e_mail_reader_get_window (reader);
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 	prompt_delete_in_vfolder = g_settings_get_boolean (
 		settings, "prompt-on-delete-in-vfolder");
@@ -219,6 +218,7 @@ e_mail_reader_delete_folder (EMailReader *reader,
 	gboolean store_is_local;
 	const gchar *display_name;
 	const gchar *full_name;
+	gchar *full_display_name;
 	CamelFolderInfoFlags flags = 0;
 	gboolean have_flags;
 
@@ -227,6 +227,7 @@ e_mail_reader_delete_folder (EMailReader *reader,
 
 	full_name = camel_folder_get_full_name (folder);
 	display_name = camel_folder_get_display_name (folder);
+	full_display_name = e_mail_folder_to_full_display_name (folder, NULL);
 	parent_store = camel_folder_get_parent_store (folder);
 	provider = camel_service_get_provider (CAMEL_SERVICE (parent_store));
 
@@ -242,17 +243,18 @@ e_mail_reader_delete_folder (EMailReader *reader,
 		mail_reader_is_special_local_folder (full_name)) {
 		e_alert_submit (
 			alert_sink, "mail:no-delete-special-folder",
-			display_name, NULL);
+			full_display_name ? full_display_name : display_name, NULL);
+		g_free (full_display_name);
 		return;
 	}
 
 	shell = e_shell_backend_get_shell (E_SHELL_BACKEND (backend));
 
-	if (!store_is_local && !e_shell_get_online (shell))
-	{
+	if (!store_is_local && !e_shell_get_online (shell)) {
 		e_alert_submit (
 			alert_sink, "mail:online-operation",
-			display_name, NULL);
+			full_display_name ? full_display_name : display_name, NULL);
+		g_free (full_display_name);
 		return;
 	}
 
@@ -262,7 +264,8 @@ e_mail_reader_delete_folder (EMailReader *reader,
 	if (have_flags && (flags & CAMEL_FOLDER_SYSTEM)) {
 		e_alert_submit (
 			alert_sink, "mail:no-delete-special-folder",
-			display_name, NULL);
+			full_display_name ? full_display_name : display_name, NULL);
+		g_free (full_display_name);
 		return;
 	}
 
@@ -270,20 +273,20 @@ e_mail_reader_delete_folder (EMailReader *reader,
 		if (CAMEL_IS_VEE_STORE (parent_store))
 			dialog = e_alert_dialog_new_for_args (
 				parent, "mail:ask-delete-vfolder",
-				display_name, NULL);
+				full_display_name ? full_display_name : display_name, NULL);
 		else
 			dialog = e_alert_dialog_new_for_args (
 				parent, "mail:ask-delete-folder",
-				display_name, NULL);
+				full_display_name ? full_display_name : display_name, NULL);
 	} else {
 		if (CAMEL_IS_VEE_STORE (parent_store))
 			dialog = e_alert_dialog_new_for_args (
 				parent, "mail:ask-delete-vfolder-nochild",
-				display_name, NULL);
+				full_display_name ? full_display_name : display_name, NULL);
 		else
 			dialog = e_alert_dialog_new_for_args (
 				parent, "mail:ask-delete-folder-nochild",
-				display_name, NULL);
+				full_display_name ? full_display_name : display_name, NULL);
 	}
 
 	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_OK) {
@@ -317,6 +320,8 @@ e_mail_reader_delete_folder (EMailReader *reader,
 	} else {
 		gtk_widget_destroy (dialog);
 	}
+
+	g_free (full_display_name);
 }
 
 static void
@@ -385,8 +390,7 @@ e_mail_reader_delete_folder_name (EMailReader *reader,
 
 	camel_store_get_folder (
 		store, folder_name,
-		CAMEL_STORE_FOLDER_INFO_FAST,
-		G_PRIORITY_DEFAULT, cancellable,
+		0, G_PRIORITY_DEFAULT, cancellable,
 		mail_reader_delete_folder_name_cb,
 		async_context);
 
@@ -417,10 +421,16 @@ mail_reader_expunge_folder_cb (GObject *source_object,
 		g_error_free (local_error);
 
 	} else if (local_error != NULL) {
+		gchar *full_display_name;
+
+		full_display_name = e_mail_folder_to_full_display_name (folder, NULL);
+
 		e_alert_submit (
 			alert_sink, "mail:no-expunge-folder",
-			camel_folder_get_display_name (folder),
+			full_display_name ? full_display_name : camel_folder_get_display_name (folder),
 			local_error->message, NULL);
+
+		g_free (full_display_name);
 		g_error_free (local_error);
 
 	} else {
@@ -436,6 +446,7 @@ e_mail_reader_expunge_folder (EMailReader *reader,
 {
 	GtkWindow *window;
 	const gchar *display_name;
+	gchar *full_display_name;
 	gboolean proceed;
 
 	g_return_if_fail (E_IS_MAIL_READER (reader));
@@ -443,10 +454,13 @@ e_mail_reader_expunge_folder (EMailReader *reader,
 
 	window = e_mail_reader_get_window (reader);
 	display_name = camel_folder_get_display_name (folder);
+	full_display_name = e_mail_folder_to_full_display_name (folder, NULL);
 
-	proceed = em_utils_prompt_user (
-		window, "prompt-on-expunge",
-		"mail:ask-expunge", display_name, NULL);
+	proceed = e_util_prompt_user (
+		window, "org.gnome.evolution.mail", "prompt-on-expunge",
+		"mail:ask-expunge", full_display_name ? full_display_name : display_name, NULL);
+
+	g_free (full_display_name);
 
 	if (proceed) {
 		EActivity *activity;
@@ -532,13 +546,90 @@ e_mail_reader_expunge_folder_name (EMailReader *reader,
 
 	camel_store_get_folder (
 		store, folder_name,
-		CAMEL_STORE_FOLDER_INFO_FAST,
-		G_PRIORITY_DEFAULT, cancellable,
+		0, G_PRIORITY_DEFAULT, cancellable,
 		mail_reader_expunge_folder_name_cb,
 		async_context);
 
 	g_object_unref (activity);
 }
+
+struct _process_autoarchive_msg {
+	MailMsg base;
+
+	AsyncContext *async_context;
+};
+
+static gchar *
+process_autoarchive_desc (struct _process_autoarchive_msg *m)
+{
+	gchar *desc, *full_display_name;
+
+	full_display_name = e_mail_folder_to_full_display_name (m->async_context->folder, NULL);
+
+	desc = g_strdup_printf (
+		_("Refreshing folder '%s'"),
+		full_display_name ? full_display_name : camel_folder_get_display_name (m->async_context->folder));
+
+	g_free (full_display_name);
+
+	return desc;
+}
+
+static void
+process_autoarchive_exec (struct _process_autoarchive_msg *m,
+			  GCancellable *cancellable,
+			  GError **error)
+{
+	gchar *folder_uri;
+
+	folder_uri = e_mail_folder_uri_from_folder (m->async_context->folder);
+
+	em_utils_process_autoarchive_sync (
+		e_mail_reader_get_backend (m->async_context->reader),
+		m->async_context->folder, folder_uri, cancellable, error);
+
+	g_free (folder_uri);
+}
+
+static void
+process_autoarchive_done (struct _process_autoarchive_msg *m)
+{
+	EActivity *activity;
+	EAlertSink *alert_sink;
+
+	activity = m->async_context->activity;
+	alert_sink = e_activity_get_alert_sink (activity);
+
+	if (e_activity_handle_cancellation (activity, m->base.error)) {
+	} else if (m->base.error != NULL) {
+		gchar *full_display_name;
+
+		full_display_name = e_mail_folder_to_full_display_name (m->async_context->folder, NULL);
+
+		e_alert_submit (
+			alert_sink, "mail:no-refresh-folder",
+			full_display_name ? full_display_name : camel_folder_get_display_name (m->async_context->folder),
+			m->base.error->message, NULL);
+
+		g_free (full_display_name);
+	} else {
+		e_activity_set_state (activity, E_ACTIVITY_COMPLETED);
+	}
+}
+
+static void
+process_autoarchive_free (struct _process_autoarchive_msg *m)
+{
+	async_context_free (m->async_context);
+}
+
+static MailMsgInfo process_autoarchive_info = {
+	sizeof (struct _process_autoarchive_msg),
+	(MailMsgDescFunc) process_autoarchive_desc,
+	(MailMsgExecFunc) process_autoarchive_exec,
+	(MailMsgDoneFunc) process_autoarchive_done,
+	(MailMsgFreeFunc) process_autoarchive_free
+};
 
 /* Helper for e_mail_reader_refresh_folder() */
 static void
@@ -565,17 +656,35 @@ mail_reader_refresh_folder_cb (GObject *source_object,
 		g_error_free (local_error);
 
 	} else if (local_error != NULL) {
+		gchar *full_display_name;
+
+		full_display_name = e_mail_folder_to_full_display_name (folder, NULL);
+
 		e_alert_submit (
 			alert_sink, "mail:no-refresh-folder",
-			camel_folder_get_display_name (folder),
+			full_display_name ? full_display_name : camel_folder_get_display_name (folder),
 			local_error->message, NULL);
+
+		g_free (full_display_name);
 		g_error_free (local_error);
 
 	} else {
-		e_activity_set_state (activity, E_ACTIVITY_COMPLETED);
+		struct _process_autoarchive_msg *m;
+
+		g_warn_if_fail (async_context->folder == NULL);
+
+		async_context->folder = g_object_ref (folder);
+
+		m = mail_msg_new (&process_autoarchive_info);
+		m->async_context = async_context;
+
+		mail_msg_unordered_push (m);
+
+		async_context = NULL;
 	}
 
-	async_context_free (async_context);
+	if (async_context)
+		async_context_free (async_context);
 }
 
 void
@@ -630,10 +739,18 @@ mail_reader_refresh_folder_name_cb (GObject *source_object,
 		g_error_free (local_error);
 
 	} else if (local_error != NULL) {
+		gchar *full_display_name;
+
+		full_display_name = g_strdup_printf ("%s : %s",
+			camel_service_get_display_name (CAMEL_SERVICE (source_object)),
+			async_context->folder_name);
+
 		e_alert_submit (
 			alert_sink, "mail:no-refresh-folder",
-			async_context->folder_name,
+			full_display_name,
 			local_error->message, NULL);
+
+		g_free (full_display_name);
 		g_error_free (local_error);
 
 	} else {
@@ -667,7 +784,7 @@ e_mail_reader_refresh_folder_name (EMailReader *reader,
 
 	camel_store_get_folder (
 		store, folder_name,
-		CAMEL_STORE_FOLDER_INFO_FAST,
+		CAMEL_STORE_FOLDER_INFO_FAST | CAMEL_STORE_FOLDER_INFO_REFRESH,
 		G_PRIORITY_DEFAULT, cancellable,
 		mail_reader_refresh_folder_name_cb,
 		async_context);
@@ -764,6 +881,16 @@ e_mail_reader_mark_selected (EMailReader *reader,
 			camel_folder_set_message_flags (
 				folder, uids->pdata[ii], mask, set);
 
+		/* This function is called on user interaction, thus make sure the message list
+		   will scroll to the selected message, which can eventually change due to
+		   view filters on the folder. */
+		if (uids->len > 0) {
+			GtkWidget *message_list = e_mail_reader_get_message_list (reader);
+
+			if (message_list)
+				e_tree_show_cursor_after_reflow (E_TREE (message_list));
+		}
+
 		g_ptr_array_unref (uids);
 
 		camel_folder_thaw (folder);
@@ -772,6 +899,308 @@ e_mail_reader_mark_selected (EMailReader *reader,
 	}
 
 	return ii;
+}
+
+static guint
+summary_msgid_hash (gconstpointer key)
+{
+	const CamelSummaryMessageID *id = (const CamelSummaryMessageID *) key;
+
+	return id->id.part.lo;
+}
+
+static gboolean
+summary_msgid_equal (gconstpointer a,
+		     gconstpointer b)
+{
+	return ((const CamelSummaryMessageID *) a)->id.id == ((const CamelSummaryMessageID *) b)->id.id;
+}
+
+typedef struct {
+	CamelFolder *folder;
+	GSList *uids;
+	EIgnoreThreadKind kind;
+} MarkIgnoreThreadData;
+
+static void
+mark_ignore_thread_data_free (gpointer ptr)
+{
+	MarkIgnoreThreadData *mit = ptr;
+
+	if (mit) {
+		g_clear_object (&mit->folder);
+		g_slist_free_full (mit->uids, (GDestroyNotify) camel_pstring_free);
+		g_free (mit);
+	}
+}
+
+static void
+insert_to_checked_msgids (GHashTable *checked_msgids,
+			  const CamelSummaryMessageID *msgid)
+{
+	CamelSummaryMessageID *msgid_copy;
+
+	if (!msgid)
+		return;
+
+	msgid_copy = g_new0 (CamelSummaryMessageID, 1);
+	memcpy (msgid_copy, msgid, sizeof (CamelSummaryMessageID));
+
+	g_hash_table_insert (checked_msgids, msgid_copy, GINT_TO_POINTER (1));
+}
+
+static gboolean
+mark_ignore_thread_traverse_uids (CamelFolder *folder,
+				  const gchar *uid,
+				  GHashTable *checked_uids,
+				  GHashTable *checked_msgids,
+				  gboolean whole_thread,
+				  gboolean ignore_thread,
+				  GCancellable *cancellable,
+				  GError **error)
+{
+	GSList *to_check;
+	GPtrArray *uids;
+	gint ii;
+	gboolean success;
+
+	success = !g_cancellable_set_error_if_cancelled (cancellable, error);
+	if (!success)
+		return success;
+
+	if (g_hash_table_contains (checked_uids, uid))
+		return success;
+
+	to_check = g_slist_prepend (NULL, (gpointer) camel_pstring_strdup (uid));
+
+	while (to_check != NULL && !g_cancellable_set_error_if_cancelled (cancellable, error)) {
+		CamelMessageInfo *mi;
+		const CamelSummaryMessageID *msgid;
+		const CamelSummaryReferences *references;
+		const gchar *uid = to_check->data;
+		gchar *sexp;
+		GError *local_error = NULL;
+
+		to_check = g_slist_remove (to_check, uid);
+
+		if (!uid || g_hash_table_contains (checked_uids, uid)) {
+			camel_pstring_free (uid);
+			continue;
+		}
+
+		g_hash_table_insert (checked_uids, (gpointer) camel_pstring_strdup (uid), GINT_TO_POINTER (1));
+
+		mi = camel_folder_get_message_info (folder, uid);
+		if (!mi || !camel_message_info_get_message_id (mi)) {
+			if (mi)
+				camel_message_info_unref (mi);
+			camel_pstring_free (uid);
+			continue;
+		}
+
+		camel_message_info_set_user_flag (mi, "ignore-thread", ignore_thread);
+
+		msgid = camel_message_info_get_message_id (mi);
+		insert_to_checked_msgids (checked_msgids, msgid);
+
+		if (whole_thread) {
+			/* Search for parents */
+			references = camel_message_info_get_references (mi);
+			if (references) {
+				GString *expr = NULL;
+
+				for (ii = 0; ii < references->size; ii++) {
+					if (references->references[ii].id.id == 0 ||
+					    g_hash_table_contains (checked_msgids, &references->references[ii]))
+						continue;
+
+					insert_to_checked_msgids (checked_msgids, &references->references[ii]);
+
+					if (!expr)
+						expr = g_string_new ("(match-all (or ");
+
+					g_string_append_printf (expr, "(= \"msgid\" \"%lu %lu\")",
+						(gulong) references->references[ii].id.part.hi,
+						(gulong) references->references[ii].id.part.lo);
+				}
+
+				if (expr) {
+					g_string_append (expr, "))");
+
+					uids = camel_folder_search_by_expression (folder, expr->str, cancellable, &local_error);
+					if (uids) {
+						for (ii = 0; ii < uids->len; ii++) {
+							const gchar *refruid = uids->pdata[ii];
+
+							if (refruid && !g_hash_table_contains (checked_uids, refruid))
+								to_check = g_slist_prepend (to_check, (gpointer) camel_pstring_strdup (refruid));
+						}
+
+						camel_folder_search_free (folder, uids);
+					}
+
+					g_string_free (expr, TRUE);
+
+					if (local_error) {
+						g_propagate_error (error, local_error);
+						camel_message_info_unref (mi);
+						camel_pstring_free (uid);
+						success = FALSE;
+						break;
+					}
+				}
+			}
+		}
+
+		/* Search for children */
+		sexp = g_strdup_printf ("(match-all (= \"references\" \"%lu %lu\"))", (gulong) msgid->id.part.hi, (gulong) msgid->id.part.lo);
+		uids = camel_folder_search_by_expression (folder, sexp, cancellable, &local_error);
+		if (uids) {
+			for (ii = 0; ii < uids->len; ii++) {
+				const gchar *refruid = uids->pdata[ii];
+
+				if (refruid && !g_hash_table_contains (checked_uids, refruid)) {
+					CamelMessageInfo *refrmi = camel_folder_get_message_info (folder, refruid);
+
+					if (refrmi && camel_message_info_get_message_id (refrmi) &&
+					    !g_hash_table_contains (checked_msgids, camel_message_info_get_message_id (refrmi))) {
+						/* The 'references' filter search can return false positives */
+						references = camel_message_info_get_references (refrmi);
+						if (references) {
+							gint jj;
+
+							for (jj = 0; jj < references->size; jj++) {
+								if (references->references[jj].id.id == msgid->id.id) {
+									to_check = g_slist_prepend (to_check, (gpointer) camel_pstring_strdup (refruid));
+									break;
+								}
+							}
+						}
+					}
+
+					if (refrmi)
+						camel_message_info_unref (refrmi);
+				}
+			}
+
+			camel_folder_search_free (folder, uids);
+		}
+		g_free (sexp);
+
+		camel_message_info_unref (mi);
+		camel_pstring_free (uid);
+
+		if (local_error) {
+			g_propagate_error (error, local_error);
+			success = FALSE;
+			break;
+		}
+	}
+
+	g_slist_free_full (to_check, (GDestroyNotify) camel_pstring_free);
+
+	return success;
+}
+
+static void
+mail_reader_utils_mark_ignore_thread_thread (EAlertSinkThreadJobData *job_data,
+					     gpointer user_data,
+					     GCancellable *cancellable,
+					     GError **error)
+{
+	MarkIgnoreThreadData *mit = user_data;
+	GHashTable *checked_uids; /* gchar * (UID) ~> 1 */
+	GHashTable *checked_msgids; /* CamelSummaryMessageID * ~> 1 */
+	gboolean ignore_thread, whole_thread;
+	GSList *link;
+
+	g_return_if_fail (mit != NULL);
+
+	camel_folder_freeze (mit->folder);
+
+	whole_thread = mit->kind == E_IGNORE_THREAD_WHOLE_SET || mit->kind == E_IGNORE_THREAD_WHOLE_UNSET;
+	ignore_thread = mit->kind == E_IGNORE_THREAD_WHOLE_SET || mit->kind == E_IGNORE_THREAD_SUBSET_SET;
+
+	checked_uids = g_hash_table_new_full (g_str_hash, g_str_equal, (GDestroyNotify) camel_pstring_free, NULL);
+	checked_msgids = g_hash_table_new_full (summary_msgid_hash, summary_msgid_equal, g_free, NULL);
+
+	for (link = mit->uids; link; link = g_slist_next (link)) {
+		if (!mark_ignore_thread_traverse_uids (mit->folder, link->data, checked_uids, checked_msgids,
+			whole_thread, ignore_thread, cancellable, error)) {
+			break;
+		}
+	}
+
+	camel_folder_thaw (mit->folder);
+
+	g_hash_table_destroy (checked_msgids);
+	g_hash_table_destroy (checked_uids);
+}
+
+void
+e_mail_reader_mark_selected_ignore_thread (EMailReader *reader,
+					   EIgnoreThreadKind kind)
+{
+	CamelFolder *folder;
+
+	g_return_if_fail (E_IS_MAIL_READER (reader));
+
+	folder = e_mail_reader_ref_folder (reader);
+
+	if (folder != NULL) {
+		GPtrArray *uids;
+		guint ii;
+
+		uids = e_mail_reader_get_selected_uids (reader);
+		if (uids && uids->len > 0) {
+			MarkIgnoreThreadData *mit;
+			EAlertSink *alert_sink;
+			EActivity *activity;
+			const gchar *description = NULL, *alert_id = NULL;
+
+			switch (kind) {
+			case E_IGNORE_THREAD_WHOLE_SET:
+				description = _("Marking thread to be ignored");
+				alert_id = "mail:failed-mark-ignore-thread";
+				break;
+			case E_IGNORE_THREAD_WHOLE_UNSET:
+				description = _("Unmarking thread from being ignored");
+				alert_id = "mail:failed-mark-unignore-thread";
+				break;
+			case E_IGNORE_THREAD_SUBSET_SET:
+				description = _("Marking subthread to be ignored");
+				alert_id = "mail:failed-mark-ignore-subthread";
+				break;
+			case E_IGNORE_THREAD_SUBSET_UNSET:
+				description = _("Unmarking subthread from being ignored");
+				alert_id = "mail:failed-mark-unignore-subthread";
+				break;
+			}
+
+			mit = g_new0 (MarkIgnoreThreadData, 1);
+			mit->folder = g_object_ref (folder);
+			mit->kind = kind;
+
+			for (ii = 0; ii < uids->len; ii++) {
+				mit->uids = g_slist_prepend (mit->uids, (gpointer) camel_pstring_strdup (uids->pdata[ii]));
+			}
+
+			alert_sink = e_mail_reader_get_alert_sink (reader);
+
+			activity = e_alert_sink_submit_thread_job (alert_sink, description, alert_id,
+				camel_folder_get_full_name (folder), mail_reader_utils_mark_ignore_thread_thread,
+				mit, mark_ignore_thread_data_free);
+
+
+			if (activity)
+				e_shell_backend_add_activity (E_SHELL_BACKEND (e_mail_reader_get_backend (reader)), activity);
+
+			g_clear_object (&activity);
+		}
+
+		g_ptr_array_unref (uids);
+		g_object_unref (folder);
+	}
 }
 
 static void
@@ -956,8 +1385,10 @@ mail_reader_print_parse_message_cb (GObject *source_object,
 	GCancellable *cancellable;
 	EMailPrinter *printer;
 	EMailPartList *part_list;
+	EMailRemoteContent *remote_content;
 	AsyncContext *async_context;
 	GError *local_error = NULL;
+	gchar *export_basename;
 
 	reader = E_MAIL_READER (source_object);
 	async_context = (AsyncContext *) user_data;
@@ -970,6 +1401,7 @@ mail_reader_print_parse_message_cb (GObject *source_object,
 	if (local_error) {
 		g_warn_if_fail (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_CANCELLED));
 
+		/* coverity[check_return] */
 		e_activity_handle_cancellation (activity, local_error);
 		g_clear_error (&local_error);
 		async_context_free (async_context);
@@ -977,10 +1409,20 @@ mail_reader_print_parse_message_cb (GObject *source_object,
 		return;
 	}
 
-	printer = e_mail_printer_new (part_list);
-
 	mail_display = e_mail_reader_get_mail_display (reader);
 	formatter = e_mail_display_get_formatter (mail_display);
+	remote_content = e_mail_display_ref_remote_content (mail_display);
+
+	printer = e_mail_printer_new (part_list, remote_content);
+	export_basename = em_utils_build_export_basename (
+		CAMEL_FOLDER (async_context->folder),
+		e_mail_part_list_get_message_uid (part_list),
+		NULL);
+	e_filename_make_safe (export_basename);
+	e_mail_printer_set_export_filename (printer, export_basename);
+	g_free (export_basename);
+
+	g_clear_object (&remote_content);
 
 	e_activity_set_text (activity, _("Printing"));
 
@@ -1164,6 +1606,7 @@ mail_reader_remove_duplicates_cb (GObject *source_object,
 	GHashTable *duplicates;
 	GtkWindow *parent_window;
 	guint n_duplicates;
+	gchar *full_display_name;
 	AsyncContext *async_context;
 	GError *local_error = NULL;
 
@@ -1204,12 +1647,13 @@ mail_reader_remove_duplicates_cb (GObject *source_object,
 	g_clear_object (&async_context->activity);
 
 	n_duplicates = g_hash_table_size (duplicates);
+	full_display_name = e_mail_folder_to_full_display_name (folder, NULL);
 
 	if (n_duplicates == 0) {
-		em_utils_prompt_user (
-			parent_window, NULL,
+		e_util_prompt_user (
+			parent_window, "org.gnome.evolution.mail", NULL,
 			"mail:info-no-remove-duplicates",
-			camel_folder_get_display_name (folder), NULL);
+			full_display_name ? full_display_name : camel_folder_get_display_name (folder), NULL);
 	} else {
 		gchar *confirmation;
 		gboolean proceed;
@@ -1222,11 +1666,11 @@ mail_reader_remove_duplicates_cb (GObject *source_object,
 			"Folder '%s' contains %u duplicate messages. "
 			"Are you sure you want to delete them?",
 			n_duplicates),
-			camel_folder_get_display_name (folder),
+			full_display_name ? full_display_name : camel_folder_get_display_name (folder),
 			n_duplicates);
 
-		proceed = em_utils_prompt_user (
-			parent_window, NULL,
+		proceed = e_util_prompt_user (
+			parent_window, "org.gnome.evolution.mail", NULL,
 			"mail:ask-remove-duplicates",
 			confirmation, NULL);
 
@@ -1249,6 +1693,7 @@ mail_reader_remove_duplicates_cb (GObject *source_object,
 	}
 
 	g_hash_table_destroy (duplicates);
+	g_free (full_display_name);
 
 	async_context_free (async_context);
 }
@@ -1290,6 +1735,76 @@ e_mail_reader_remove_duplicates (EMailReader *reader)
 	g_object_unref (activity);
 
 	g_ptr_array_unref (uids);
+}
+
+typedef struct _CreateComposerData {
+	EMailReader *reader;
+	CamelFolder *folder;
+	CamelMimeMessage *message;
+	gchar *message_uid;
+	gboolean keep_signature;
+
+	EMailPartList *part_list;
+	EMailReplyType reply_type;
+	EMailReplyStyle reply_style;
+	CamelInternetAddress *address;
+	EMailPartValidityFlags validity_pgp_sum;
+	EMailPartValidityFlags validity_smime_sum;
+
+	EMailForwardStyle forward_style;
+
+	CamelMimePart *attached_part;
+	gchar *attached_subject;
+	GPtrArray *attached_uids;
+} CreateComposerData;
+
+static void
+create_composer_data_free (CreateComposerData *ccd)
+{
+	if (ccd) {
+		if (ccd->attached_uids)
+			g_ptr_array_unref (ccd->attached_uids);
+
+		g_clear_object (&ccd->reader);
+		g_clear_object (&ccd->folder);
+		g_clear_object (&ccd->message);
+		g_clear_object (&ccd->part_list);
+		g_clear_object (&ccd->address);
+		g_clear_object (&ccd->attached_part);
+		g_free (ccd->message_uid);
+		g_free (ccd->attached_subject);
+		g_free (ccd);
+	}
+}
+
+static void
+mail_reader_edit_messages_composer_created_cb (GObject *source_object,
+					       GAsyncResult *result,
+					       gpointer user_data)
+{
+	CreateComposerData *ccd = user_data;
+	EMsgComposer *composer;
+	GError *error = NULL;
+
+	g_return_if_fail (ccd != NULL);
+
+	composer = e_msg_composer_new_finish (result, &error);
+	if (error) {
+		g_warning ("%s: Failed to create msg composer: %s", G_STRFUNC, error->message);
+		g_clear_error (&error);
+	} else {
+		camel_medium_remove_header (
+			CAMEL_MEDIUM (ccd->message), "X-Mailer");
+
+		em_utils_edit_message (
+			composer, ccd->folder, ccd->message, ccd->message_uid,
+			ccd->keep_signature);
+
+		e_mail_reader_composer_created (
+			ccd->reader, composer, ccd->message);
+	}
+
+	create_composer_data_free (ccd);
 }
 
 static void
@@ -1343,24 +1858,17 @@ mail_reader_edit_messages_cb (GObject *source_object,
 	g_hash_table_iter_init (&iter, hash_table);
 
 	while (g_hash_table_iter_next (&iter, &key, &value)) {
-		EMsgComposer *composer;
-		CamelMimeMessage *message;
-		const gchar *message_uid = NULL;
+		CreateComposerData *ccd;
+
+		ccd = g_new0 (CreateComposerData, 1);
+		ccd->reader = g_object_ref (async_context->reader);
+		ccd->folder = g_object_ref (folder);
+		ccd->message = g_object_ref (CAMEL_MIME_MESSAGE (value));
 
 		if (async_context->replace)
-			message_uid = (const gchar *) key;
+			ccd->message_uid = g_strdup ((const gchar *) key);
 
-		message = CAMEL_MIME_MESSAGE (value);
-
-		camel_medium_remove_header (
-			CAMEL_MEDIUM (message), "X-Mailer");
-
-		composer = em_utils_edit_message (
-			shell, folder, message, message_uid,
-			async_context->keep_signature);
-
-		e_mail_reader_composer_created (
-			async_context->reader, composer, message);
+		e_msg_composer_new (shell, mail_reader_edit_messages_composer_created_cb, ccd);
 	}
 
 	g_hash_table_unref (hash_table);
@@ -1406,6 +1914,44 @@ e_mail_reader_edit_messages (EMailReader *reader,
 }
 
 static void
+mail_reader_forward_attached_composer_created_cb (GObject *source_object,
+						  GAsyncResult *result,
+						  gpointer user_data)
+{
+	CreateComposerData *ccd = user_data;
+	EMsgComposer *composer;
+	GError *error = NULL;
+
+	composer = e_msg_composer_new_finish (result, &error);
+	if (error) {
+		g_warning ("%s: Failed to create msg composer: %s", G_STRFUNC, error->message);
+		g_clear_error (&error);
+	} else {
+		CamelDataWrapper *content;
+
+		em_utils_forward_attachment (composer, ccd->attached_part, ccd->attached_subject, ccd->folder, ccd->attached_uids);
+
+		content = camel_medium_get_content (CAMEL_MEDIUM (ccd->attached_part));
+		if (CAMEL_IS_MIME_MESSAGE (content)) {
+			e_mail_reader_composer_created (ccd->reader, composer, CAMEL_MIME_MESSAGE (content));
+		} else {
+			/* XXX What to do for the multipart/digest case?
+			 *     Extract the first message from the digest, or
+			 *     change the argument type to CamelMimePart and
+			 *     just pass the whole digest through?
+			 *
+			 *     This signal is primarily serving EMailBrowser,
+			 *     which can only forward one message at a time.
+			 *     So for the moment it doesn't matter, but still
+			 *     something to consider. */
+			e_mail_reader_composer_created (ccd->reader, composer, NULL);
+		}
+	}
+
+	create_composer_data_free (ccd);
+}
+
+static void
 mail_reader_forward_attachment_cb (GObject *source_object,
                                    GAsyncResult *result,
                                    gpointer user_data)
@@ -1414,9 +1960,9 @@ mail_reader_forward_attachment_cb (GObject *source_object,
 	EMailBackend *backend;
 	EActivity *activity;
 	EAlertSink *alert_sink;
+	EShell *shell;
 	CamelMimePart *part;
-	CamelDataWrapper *content;
-	EMsgComposer *composer;
+	CreateComposerData *ccd;
 	gchar *subject = NULL;
 	AsyncContext *async_context;
 	GError *local_error = NULL;
@@ -1450,37 +1996,50 @@ mail_reader_forward_attachment_cb (GObject *source_object,
 		goto exit;
 	}
 
+	ccd = g_new0 (CreateComposerData, 1);
+	ccd->reader = g_object_ref (async_context->reader);
+	ccd->folder = g_object_ref (folder);
+	ccd->attached_part = part;
+	ccd->attached_subject = subject;
+	ccd->attached_uids = async_context->uids ? g_ptr_array_ref (async_context->uids) : NULL;
+
 	backend = e_mail_reader_get_backend (async_context->reader);
+	shell = e_shell_backend_get_shell (E_SHELL_BACKEND (backend));
 
-	composer = em_utils_forward_attachment (
-		backend, part, subject, folder, async_context->uids);
-
-	content = camel_medium_get_content (CAMEL_MEDIUM (part));
-	if (CAMEL_IS_MIME_MESSAGE (content)) {
-		e_mail_reader_composer_created (
-			async_context->reader, composer,
-			CAMEL_MIME_MESSAGE (content));
-	} else {
-		/* XXX What to do for the multipart/digest case?
-		 *     Extract the first message from the digest, or
-		 *     change the argument type to CamelMimePart and
-		 *     just pass the whole digest through?
-		 *
-		 *     This signal is primarily serving EMailBrowser,
-		 *     which can only forward one message at a time.
-		 *     So for the moment it doesn't matter, but still
-		 *     something to consider. */
-		e_mail_reader_composer_created (
-			async_context->reader, composer, NULL);
-	}
+	e_msg_composer_new (shell, mail_reader_forward_attached_composer_created_cb, ccd);
 
 	e_activity_set_state (activity, E_ACTIVITY_COMPLETED);
 
-	g_object_unref (part);
-	g_free (subject);
-
 exit:
 	async_context_free (async_context);
+}
+
+static void
+mail_reader_forward_message_composer_created_cb (GObject *source_object,
+						 GAsyncResult *result,
+						 gpointer user_data)
+{
+	CreateComposerData *ccd = user_data;
+	EMsgComposer *composer;
+	GError *error = NULL;
+
+	g_return_if_fail (ccd != NULL);
+
+	composer = e_msg_composer_new_finish (result, &error);
+	if (error) {
+		g_warning ("%s: Failed to create msg composer: %s", G_STRFUNC, error->message);
+		g_clear_error (&error);
+	} else {
+		em_utils_forward_message (
+			composer, ccd->message,
+			ccd->forward_style,
+			ccd->folder, ccd->message_uid);
+
+		e_mail_reader_composer_created (
+			ccd->reader, composer, ccd->message);
+	}
+
+	create_composer_data_free (ccd);
 }
 
 static void
@@ -1492,6 +2051,7 @@ mail_reader_forward_messages_cb (GObject *source_object,
 	EMailBackend *backend;
 	EActivity *activity;
 	EAlertSink *alert_sink;
+	EShell *shell;
 	GHashTable *hash_table;
 	GHashTableIter iter;
 	gpointer key, value;
@@ -1505,6 +2065,7 @@ mail_reader_forward_messages_cb (GObject *source_object,
 	alert_sink = e_activity_get_alert_sink (activity);
 
 	backend = e_mail_reader_get_backend (async_context->reader);
+	shell = e_shell_backend_get_shell (E_SHELL_BACKEND (backend));
 
 	hash_table = e_mail_folder_get_multiple_messages_finish (
 		folder, result, &local_error);
@@ -1532,20 +2093,21 @@ mail_reader_forward_messages_cb (GObject *source_object,
 	g_hash_table_iter_init (&iter, hash_table);
 
 	while (g_hash_table_iter_next (&iter, &key, &value)) {
-		EMsgComposer *composer;
+		CreateComposerData *ccd;
 		CamelMimeMessage *message;
 		const gchar *message_uid;
 
 		message_uid = (const gchar *) key;
 		message = CAMEL_MIME_MESSAGE (value);
 
-		composer = em_utils_forward_message (
-			backend, message,
-			async_context->forward_style,
-			folder, message_uid);
+		ccd = g_new0 (CreateComposerData, 1);
+		ccd->reader = g_object_ref (async_context->reader);
+		ccd->folder = g_object_ref (folder);
+		ccd->message = g_object_ref (message);
+		ccd->message_uid = g_strdup (message_uid);
+		ccd->forward_style = async_context->forward_style;
 
-		e_mail_reader_composer_created (
-			async_context->reader, composer, message);
+		e_msg_composer_new (shell, mail_reader_forward_message_composer_created_cb, ccd);
 	}
 
 	g_hash_table_unref (hash_table);
@@ -1650,6 +2212,41 @@ html_contains_nonwhitespace (const gchar *html,
 }
 
 static void
+mail_reader_reply_composer_created_cb (GObject *object,
+				       GAsyncResult *result,
+				       gpointer user_data)
+{
+	AsyncContext *async_context = user_data;
+	EMsgComposer *composer;
+	GError *error = NULL;
+
+	g_return_if_fail (async_context != NULL);
+
+	composer = e_msg_composer_new_finish (result, &error);
+	if (error) {
+		g_warning ("%s: Failed to create msg composer: %s", G_STRFUNC, error->message);
+		g_clear_error (&error);
+	} else {
+		CamelMimeMessage *message;
+
+		message = e_mail_part_list_get_message (async_context->part_list);
+
+		em_utils_reply_to_message (
+			composer, message,
+			async_context->folder,
+			async_context->message_uid,
+			async_context->reply_type,
+			async_context->reply_style,
+			async_context->part_list,
+			async_context->address);
+
+		e_mail_reader_composer_created (async_context->reader, composer, message);
+	}
+
+	async_context_free (async_context);
+}
+
+static void
 mail_reader_reply_message_parsed (GObject *object,
                                   GAsyncResult *result,
                                   gpointer user_data)
@@ -1657,15 +2254,12 @@ mail_reader_reply_message_parsed (GObject *object,
 	EShell *shell;
 	EMailBackend *backend;
 	EMailReader *reader = E_MAIL_READER (object);
-	EMailPartList *part_list;
-	EMsgComposer *composer;
-	CamelMimeMessage *message;
 	AsyncContext *async_context;
 	GError *local_error = NULL;
 
 	async_context = (AsyncContext *) user_data;
 
-	part_list = e_mail_reader_parse_message_finish (reader, result, &local_error);
+	async_context->part_list = e_mail_reader_parse_message_finish (reader, result, &local_error);
 
 	if (local_error) {
 		g_warn_if_fail (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_CANCELLED));
@@ -1676,25 +2270,10 @@ mail_reader_reply_message_parsed (GObject *object,
 		return;
 	}
 
-	message = e_mail_part_list_get_message (part_list);
-
 	backend = e_mail_reader_get_backend (async_context->reader);
 	shell = e_shell_backend_get_shell (E_SHELL_BACKEND (backend));
 
-	composer = em_utils_reply_to_message (
-		shell, message,
-		async_context->folder,
-		async_context->message_uid,
-		async_context->reply_type,
-		async_context->reply_style,
-		part_list,
-		async_context->address);
-
-	e_mail_reader_composer_created (reader, composer, message);
-
-	g_object_unref (part_list);
-
-	async_context_free (async_context);
+	e_msg_composer_new (shell, mail_reader_reply_composer_created_cb, async_context);
 }
 
 static void
@@ -1749,6 +2328,60 @@ mail_reader_get_message_ready_cb (GObject *source_object,
 	g_object_unref (message);
 }
 
+static void
+mail_reader_reply_to_message_composer_created_cb (GObject *source_object,
+						  GAsyncResult *result,
+						  gpointer user_data)
+{
+	CreateComposerData *ccd = user_data;
+	EMsgComposer *composer;
+	GError *error = NULL;
+
+	g_return_if_fail (ccd != NULL);
+
+	composer = e_msg_composer_new_finish (result, &error);
+	if (error) {
+		g_warning ("%s: failed to create msg composer: %s", G_STRFUNC, error->message);
+		g_clear_error (&error);
+	} else {
+		em_utils_reply_to_message (
+			composer, ccd->message, ccd->folder, ccd->message_uid,
+			ccd->reply_type, ccd->reply_style, ccd->part_list, ccd->address);
+
+		if (ccd->validity_pgp_sum != 0 || ccd->validity_smime_sum != 0) {
+			GtkToggleAction *action;
+
+			if ((ccd->validity_pgp_sum & E_MAIL_PART_VALIDITY_PGP) != 0) {
+				if ((ccd->validity_pgp_sum & E_MAIL_PART_VALIDITY_SIGNED) != 0) {
+					action = GTK_TOGGLE_ACTION (E_COMPOSER_ACTION_PGP_SIGN (composer));
+					gtk_toggle_action_set_active (action, TRUE);
+				}
+
+				if ((ccd->validity_pgp_sum & E_MAIL_PART_VALIDITY_ENCRYPTED) != 0) {
+					action = GTK_TOGGLE_ACTION (E_COMPOSER_ACTION_PGP_ENCRYPT (composer));
+					gtk_toggle_action_set_active (action, TRUE);
+				}
+			}
+
+			if ((ccd->validity_smime_sum & E_MAIL_PART_VALIDITY_SMIME) != 0) {
+				if ((ccd->validity_smime_sum & E_MAIL_PART_VALIDITY_SIGNED) != 0) {
+					action = GTK_TOGGLE_ACTION (E_COMPOSER_ACTION_SMIME_SIGN (composer));
+					gtk_toggle_action_set_active (action, TRUE);
+				}
+
+				if ((ccd->validity_smime_sum & E_MAIL_PART_VALIDITY_ENCRYPTED) != 0) {
+					action = GTK_TOGGLE_ACTION (E_COMPOSER_ACTION_SMIME_ENCRYPT (composer));
+					gtk_toggle_action_set_active (action, TRUE);
+				}
+			}
+		}
+
+		e_mail_reader_composer_created (ccd->reader, composer, ccd->message);
+	}
+
+	create_composer_data_free (ccd);
+}
+
 void
 e_mail_reader_reply_to_message (EMailReader *reader,
                                 CamelMimeMessage *src_message,
@@ -1760,18 +2393,20 @@ e_mail_reader_reply_to_message (EMailReader *reader,
 	EMailDisplay *display;
 	EMailPartList *part_list = NULL;
 	GtkWidget *message_list;
+	CamelContentType *content_type;
 	CamelMimeMessage *new_message;
 	CamelInternetAddress *address = NULL;
 	CamelFolder *folder;
 	EMailReplyStyle reply_style;
 	EWebView *web_view;
 	struct _camel_header_raw *header;
+	gboolean src_is_text_html = FALSE;
 	const gchar *uid;
 	gchar *selection = NULL;
 	gint length;
 	gchar *mail_uri;
 	CamelObjectBag *registry;
-	EMsgComposer *composer;
+	CreateComposerData *ccd;
 	EMailPartValidityFlags validity_pgp_sum = 0;
 	EMailPartValidityFlags validity_smime_sum = 0;
 
@@ -1868,7 +2503,18 @@ e_mail_reader_reply_to_message (EMailReader *reader,
 	if (!e_web_view_is_selection_active (web_view))
 		goto whole_message;
 
-	selection = e_web_view_get_selection_html (web_view);
+	content_type = camel_mime_part_get_content_type (CAMEL_MIME_PART (src_message));
+
+	if (camel_content_type_is (content_type, "text", "plain")) {
+		selection = g_strdup (e_mail_display_get_selection_plain_text_sync (display, NULL, NULL));
+		src_is_text_html = FALSE;
+	} else if (camel_content_type_is (content_type, "text", "html")) {
+		selection = e_web_view_get_selection_content_html_sync (E_WEB_VIEW (display), NULL, NULL);
+		src_is_text_html = TRUE;
+	} else if (camel_content_type_is (content_type, "multipart", "*")) {
+		selection = e_mail_display_get_selection_content_multipart_sync (display, &src_is_text_html, NULL, NULL);
+	}
+
 	if (selection == NULL || *selection == '\0')
 		goto whole_message;
 
@@ -1889,50 +2535,30 @@ e_mail_reader_reply_to_message (EMailReader *reader,
 		header = header->next;
 	}
 
+	camel_medium_add_header (
+		CAMEL_MEDIUM (new_message),
+		"X-Evolution-Content-Source", "selection");
+
 	camel_mime_part_set_encoding (
 		CAMEL_MIME_PART (new_message),
 		CAMEL_TRANSFER_ENCODING_8BIT);
 
 	camel_mime_part_set_content (
 		CAMEL_MIME_PART (new_message),
-		selection, length, "text/html");
+		selection,
+		length,
+		src_is_text_html ? "text/html; charset=utf-8" : "text/plain; charset=utf-8");
 
-	composer = em_utils_reply_to_message (
-		shell, new_message, folder, uid,
-		reply_type, reply_style, NULL, address);
-	if (validity_pgp_sum != 0 || validity_smime_sum != 0) {
-		GtkToggleAction *action;
+	ccd = g_new0 (CreateComposerData, 1);
+	ccd->reader = g_object_ref (reader);
+	ccd->folder = g_object_ref (folder);
+	ccd->message_uid = g_strdup (uid);
+	ccd->message = new_message;
+	ccd->reply_type = reply_type;
+	ccd->reply_style = reply_style;
+	ccd->address = address ? g_object_ref (address) : NULL;
 
-		if ((validity_pgp_sum & E_MAIL_PART_VALIDITY_PGP) != 0) {
-			if ((validity_pgp_sum & E_MAIL_PART_VALIDITY_SIGNED) != 0) {
-				action = GTK_TOGGLE_ACTION (E_COMPOSER_ACTION_PGP_SIGN (composer));
-				gtk_toggle_action_set_active (action, TRUE);
-			}
-
-			if ((validity_pgp_sum & E_MAIL_PART_VALIDITY_ENCRYPTED) != 0) {
-				action = GTK_TOGGLE_ACTION (E_COMPOSER_ACTION_PGP_ENCRYPT (composer));
-				gtk_toggle_action_set_active (action, TRUE);
-			}
-		}
-
-		if ((validity_smime_sum & E_MAIL_PART_VALIDITY_SMIME) != 0) {
-			if ((validity_smime_sum & E_MAIL_PART_VALIDITY_SIGNED) != 0) {
-				action = GTK_TOGGLE_ACTION (E_COMPOSER_ACTION_SMIME_SIGN (composer));
-				gtk_toggle_action_set_active (action, TRUE);
-			}
-
-			if ((validity_smime_sum & E_MAIL_PART_VALIDITY_ENCRYPTED) != 0) {
-				action = GTK_TOGGLE_ACTION (E_COMPOSER_ACTION_SMIME_ENCRYPT (composer));
-				gtk_toggle_action_set_active (action, TRUE);
-			}
-		}
-	}
-
-	e_mail_reader_composer_created (reader, composer, new_message);
-
-	g_object_unref (new_message);
-
-	g_free (selection);
+	e_msg_composer_new (shell, mail_reader_reply_to_message_composer_created_cb, ccd);
 
 	goto exit;
 
@@ -1967,14 +2593,21 @@ whole_message:
 		g_object_unref (activity);
 
 	} else {
-		composer = em_utils_reply_to_message (
-			shell, src_message, folder, uid,
-			reply_type, reply_style, part_list, address);
+		ccd = g_new0 (CreateComposerData, 1);
+		ccd->reader = g_object_ref (reader);
+		ccd->folder = g_object_ref (folder);
+		ccd->message_uid = g_strdup (uid);
+		ccd->message = g_object_ref (src_message);
+		ccd->reply_type = reply_type;
+		ccd->reply_style = reply_style;
+		ccd->part_list = part_list ? g_object_ref (part_list) : NULL;
+		ccd->address = address ? g_object_ref (address) : NULL;
 
-		e_mail_reader_composer_created (reader, composer, src_message);
+		e_msg_composer_new (shell, mail_reader_reply_to_message_composer_created_cb, ccd);
 	}
 
 exit:
+	g_free (selection);
 	g_clear_object (&address);
 	g_clear_object (&folder);
 }
@@ -2050,7 +2683,7 @@ e_mail_reader_save_messages (EMailReader *reader)
 	if (info != NULL) {
 		const gchar *subject;
 
-		subject = camel_message_info_subject (info);
+		subject = camel_message_info_get_subject (info);
 		if (subject != NULL)
 			suggestion = g_strconcat (subject, ".mbox", NULL);
 		camel_message_info_unref (info);

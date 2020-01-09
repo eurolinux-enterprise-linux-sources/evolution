@@ -23,8 +23,10 @@
 #endif
 
 #include <string.h>
+#include <glib/gi18n-lib.h>
 
-#include "e-cell-renderer-color.h"
+#include <libedataserverui/libedataserverui.h>
+
 #include "e-source-selector.h"
 
 #define E_SOURCE_SELECTOR_GET_PRIVATE(obj) \
@@ -54,6 +56,13 @@ struct _ESourceSelectorPrivate {
 	gboolean show_colors;
 	gboolean show_icons;
 	gboolean show_toggles;
+
+	GtkCellRenderer *busy_renderer;
+	guint n_busy_sources;
+	gulong update_busy_renderer_id;
+
+	GHashTable *hidden_groups;
+	GSList *groups_order;
 };
 
 struct _AsyncContext {
@@ -76,6 +85,8 @@ enum {
 	PRIMARY_SELECTION_CHANGED,
 	POPUP_EVENT,
 	DATA_DROPPED,
+	SOURCE_SELECTED,
+	SOURCE_UNSELECTED,
 	NUM_SIGNALS
 };
 
@@ -89,6 +100,8 @@ enum {
 	COLUMN_SHOW_TOGGLE,
 	COLUMN_WEIGHT,
 	COLUMN_SOURCE,
+	COLUMN_TOOLTIP,
+	COLUMN_IS_BUSY,
 	NUM_COLUMNS
 };
 
@@ -124,7 +137,7 @@ safe_toggle_activate (GtkCellRenderer *cell,
 {
 	gboolean point_in_cell_area = TRUE;
 
-	if (event->type == GDK_BUTTON_PRESS && cell_area != NULL) {
+	if (event && event->type == GDK_BUTTON_PRESS && cell_area != NULL) {
 		cairo_region_t *region;
 
 		region = cairo_region_create_rectangle (cell_area);
@@ -159,6 +172,80 @@ static GtkCellRenderer *
 e_cell_renderer_safe_toggle_new (void)
 {
 	return g_object_new (e_cell_renderer_safe_toggle_get_type (), NULL);
+}
+
+static gboolean
+source_selector_pulse_busy_renderer_cb (gpointer user_data)
+{
+	ESourceSelector *selector = user_data;
+	GObject *busy_renderer;
+	guint pulse;
+	GHashTableIter iter;
+	gpointer key, value;
+
+	g_return_val_if_fail (E_IS_SOURCE_SELECTOR (selector), FALSE);
+
+	if (!selector->priv->busy_renderer)
+		return FALSE;
+
+	busy_renderer = G_OBJECT (selector->priv->busy_renderer);
+
+	g_object_get (busy_renderer, "pulse", &pulse, NULL);
+
+	pulse++;
+
+	g_object_set (busy_renderer, "pulse", pulse, NULL);
+
+	g_hash_table_iter_init (&iter, selector->priv->source_index);
+	while (g_hash_table_iter_next (&iter, &key, &value)) {
+		GtkTreeRowReference *reference = value;
+		GtkTreeModel *model;
+		GtkTreePath *path;
+		GtkTreeIter tree_iter;
+
+		if (reference && gtk_tree_row_reference_valid (reference)) {
+			gboolean is_busy = FALSE;
+
+			model = gtk_tree_row_reference_get_model (reference);
+			path = gtk_tree_row_reference_get_path (reference);
+			gtk_tree_model_get_iter (model, &tree_iter, path);
+
+			gtk_tree_model_get (
+				model, &tree_iter,
+				COLUMN_IS_BUSY, &is_busy,
+				-1);
+
+			if (is_busy)
+				gtk_tree_model_row_changed (model, path, &tree_iter);
+
+			gtk_tree_path_free (path);
+		}
+	}
+
+	return TRUE;
+}
+
+static void
+source_selector_inc_busy_sources (ESourceSelector *selector)
+{
+	selector->priv->n_busy_sources++;
+
+	if (selector->priv->busy_renderer && !selector->priv->update_busy_renderer_id)
+		selector->priv->update_busy_renderer_id =
+			e_named_timeout_add (123, source_selector_pulse_busy_renderer_cb, selector);
+}
+
+static void
+source_selector_dec_busy_sources (ESourceSelector *selector)
+{
+	g_return_if_fail (selector->priv->n_busy_sources > 0);
+
+	selector->priv->n_busy_sources--;
+
+	if (selector->priv->n_busy_sources == 0 && selector->priv->update_busy_renderer_id) {
+		g_source_remove (selector->priv->update_busy_renderer_id);
+		selector->priv->update_busy_renderer_id = 0;
+	}
 }
 
 static void
@@ -278,6 +365,108 @@ source_selector_get_icon_name (ESourceSelector *selector,
 }
 
 static gboolean
+source_selector_source_is_enabled_and_selected (ESource *source,
+						const gchar *extension_name)
+{
+	gpointer extension;
+
+	g_return_val_if_fail (E_IS_SOURCE (source), FALSE);
+
+	if (!extension_name ||
+	    !e_source_get_enabled (source))
+		return e_source_get_enabled (source);
+
+	if (!e_source_has_extension (source, extension_name))
+		return FALSE;
+
+	extension = e_source_get_extension (source, extension_name);
+	if (!E_IS_SOURCE_SELECTABLE (extension))
+		return TRUE;
+
+	return e_source_selectable_get_selected (extension);
+}
+
+typedef struct {
+	const gchar *extension_name;
+	gboolean any_selected;
+} LookupSelectedData;
+
+static gboolean
+source_selector_lookup_selected_cb (GNode *node,
+				    gpointer user_data)
+{
+	LookupSelectedData *data = user_data;
+	ESource *source;
+
+	g_return_val_if_fail (data != NULL, TRUE);
+	g_return_val_if_fail (data->extension_name != NULL, TRUE);
+
+	source = node->data;
+	if (!E_IS_SOURCE (source))
+		return TRUE;
+
+	data->any_selected = source_selector_source_is_enabled_and_selected (source, data->extension_name);
+
+	return data->any_selected;
+}
+
+static gboolean
+source_selector_node_is_hidden (ESourceSelector *selector,
+				GNode *main_node)
+{
+	GNode *node;
+	ESource *source;
+	const gchar *extension_name;
+	LookupSelectedData data;
+	gboolean hidden;
+
+	g_return_val_if_fail (E_IS_SOURCE_SELECTOR (selector), FALSE);
+	g_return_val_if_fail (main_node != NULL, FALSE);
+
+	if (G_NODE_IS_ROOT (main_node))
+		return FALSE;
+
+	extension_name = e_source_selector_get_extension_name (selector);
+	hidden = FALSE;
+
+	/* Check the path to the root, any is hidden, this one can be also hidden */
+	node = main_node;
+	while (node) {
+		source = node->data;
+
+		if (!source || G_NODE_IS_ROOT (node))
+			break;
+
+		if (source_selector_source_is_enabled_and_selected (source, extension_name)) {
+			hidden = FALSE;
+			break;
+		}
+
+		hidden = hidden || g_hash_table_contains (selector->priv->hidden_groups, e_source_get_uid (source));
+
+		node = node->parent;
+	}
+
+	if (!hidden)
+		return FALSE;
+
+	/* If any source in this subtree/group is enabled and selected,
+	   then the group cannot be hidden */
+
+	node = main_node;
+	if (node->parent && !G_NODE_IS_ROOT (node->parent)) {
+		node = node->parent;
+	}
+
+	data.extension_name = extension_name;
+	data.any_selected = FALSE;
+
+	g_node_traverse (node, G_IN_ORDER, G_TRAVERSE_ALL, -1, source_selector_lookup_selected_cb, &data);
+
+	return !data.any_selected;
+}
+
+static gboolean
 source_selector_traverse (GNode *node,
                           ESourceSelector *selector)
 {
@@ -290,6 +479,9 @@ source_selector_traverse (GNode *node,
 
 	/* Skip the root node. */
 	if (G_NODE_IS_ROOT (node))
+		return FALSE;
+
+	if (source_selector_node_is_hidden (selector, node))
 		return FALSE;
 
 	source_index = selector->priv->source_index;
@@ -338,6 +530,174 @@ source_selector_save_expanded (GtkTreeView *tree_view,
 	g_queue_push_tail (queue, source);
 }
 
+typedef struct _SavedStatus
+{
+	gboolean is_busy;
+	gchar *tooltip;
+} SavedStatusData;
+
+static void
+saved_status_data_free (gpointer ptr)
+{
+	SavedStatusData *data = ptr;
+
+	if (data) {
+		g_free (data->tooltip);
+		g_free (data);
+	}
+}
+
+static GHashTable *
+source_selector_save_sources_status (ESourceSelector *selector)
+{
+	GHashTable *status;
+	GHashTableIter iter;
+	gpointer key, value;
+
+	status = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, saved_status_data_free);
+
+	g_hash_table_iter_init (&iter, selector->priv->source_index);
+	while (g_hash_table_iter_next (&iter, &key, &value)) {
+		ESource *source = key;
+		GtkTreeRowReference *reference = value;
+		GtkTreeModel *model;
+		GtkTreePath *path;
+		GtkTreeIter tree_iter;
+
+		if (reference && gtk_tree_row_reference_valid (reference)) {
+			SavedStatusData *data;
+
+			model = gtk_tree_row_reference_get_model (reference);
+			path = gtk_tree_row_reference_get_path (reference);
+			gtk_tree_model_get_iter (model, &tree_iter, path);
+
+			data = g_new0 (SavedStatusData, 1);
+
+			gtk_tree_model_get (
+				model, &tree_iter,
+				COLUMN_IS_BUSY, &data->is_busy,
+				COLUMN_TOOLTIP, &data->tooltip,
+				-1);
+
+			if (data->is_busy)
+				source_selector_dec_busy_sources (selector);
+
+			gtk_tree_path_free (path);
+
+			g_hash_table_insert (status, g_strdup (e_source_get_uid (source)), data);
+		}
+	}
+
+	return status;
+}
+
+static void
+source_selector_load_sources_status (ESourceSelector *selector,
+				     GHashTable *status)
+{
+	GHashTableIter iter;
+	gpointer key, value;
+
+	g_hash_table_iter_init (&iter, selector->priv->source_index);
+	while (g_hash_table_iter_next (&iter, &key, &value)) {
+		ESource *source = key;
+		GtkTreeRowReference *reference = value;
+		GtkTreeModel *model;
+		GtkTreePath *path;
+		GtkTreeIter tree_iter;
+
+		if (reference && gtk_tree_row_reference_valid (reference)) {
+			SavedStatusData *data;
+
+			model = gtk_tree_row_reference_get_model (reference);
+			path = gtk_tree_row_reference_get_path (reference);
+			gtk_tree_model_get_iter (model, &tree_iter, path);
+
+			gtk_tree_path_free (path);
+
+			data = g_hash_table_lookup (status, e_source_get_uid (source));
+			if (!data)
+				continue;
+
+			gtk_tree_store_set (
+				GTK_TREE_STORE (model), &tree_iter,
+				COLUMN_IS_BUSY, data->is_busy,
+				COLUMN_TOOLTIP, data->tooltip,
+				-1);
+
+			if (data->is_busy)
+				source_selector_inc_busy_sources (selector);
+		}
+	}
+}
+
+static void
+source_selector_sort_groups (ESourceSelector *selector,
+			     GNode *root)
+{
+	GHashTable *groups; /* gchar *uid, GUINT index into node_sources */
+	GPtrArray *node_sources; /* GNode * as stored in the root first sub-level */
+	ESource *source;
+	GNode *node;
+	GSList *link;
+	guint ii;
+
+	g_return_if_fail (E_IS_SOURCE_SELECTOR (selector));
+	g_return_if_fail (G_NODE_IS_ROOT (root));
+
+	if (!selector->priv->groups_order ||
+	    !g_node_n_children (root))
+		return;
+
+	groups = g_hash_table_new (g_str_hash, g_str_equal);
+	node_sources = g_ptr_array_sized_new (g_node_n_children (root));
+
+	node = g_node_first_child (root);
+	while (node) {
+		GNode *next_node = g_node_next_sibling (node);
+
+		source = node->data;
+
+		if (source) {
+			g_node_unlink (node);
+
+			g_hash_table_insert (groups, (gpointer) e_source_get_uid (source), GUINT_TO_POINTER (node_sources->len));
+			g_ptr_array_add (node_sources, node);
+		}
+
+		node = next_node;
+	}
+
+	/* First add known nodes as defined by the user... */
+	for (link = selector->priv->groups_order; link; link = g_slist_next (link)) {
+		const gchar *uid = link->data;
+
+		if (!uid || !g_hash_table_contains (groups, uid))
+			continue;
+
+		ii = GPOINTER_TO_UINT (g_hash_table_lookup (groups, uid));
+		g_warn_if_fail (ii < node_sources->len);
+
+		node = node_sources->pdata[ii];
+		node_sources->pdata[ii] = NULL;
+
+		if (node)
+			g_node_append (root, node);
+	}
+
+	/* ... then add all unknown (new) sources in the order
+	   as they were in the passed-in tree */
+	for (ii = 0; ii < node_sources->len; ii++) {
+		node = node_sources->pdata[ii];
+
+		if (node)
+			g_node_append (root, node);
+	}
+
+	g_ptr_array_unref (node_sources);
+	g_hash_table_destroy (groups);
+}
+
 static void
 source_selector_build_model (ESourceSelector *selector)
 {
@@ -347,6 +707,7 @@ source_selector_build_model (ESourceSelector *selector)
 	GtkTreeView *tree_view;
 	GtkTreeSelection *selection;
 	GtkTreeModel *model;
+	GHashTable *saved_status;
 	ESource *selected;
 	const gchar *extension_name;
 	GNode *root;
@@ -364,6 +725,7 @@ source_selector_build_model (ESourceSelector *selector)
 	source_index = selector->priv->source_index;
 	selected = e_source_selector_ref_primary_selection (selector);
 	selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (selector));
+	saved_status = source_selector_save_sources_status (selector);
 
 	/* Signal is blocked to avoid "primary-selection-changed" signal
 	 * on model clear. */
@@ -382,6 +744,8 @@ source_selector_build_model (ESourceSelector *selector)
 	g_hash_table_remove_all (source_index);
 
 	root = e_source_registry_build_display_tree (registry, extension_name);
+
+	source_selector_sort_groups (selector, root);
 
 	g_node_traverse (
 		root, G_PRE_ORDER, G_TRAVERSE_ALL, -1,
@@ -432,6 +796,9 @@ source_selector_build_model (ESourceSelector *selector)
 		e_source_selector_set_primary_selection (selector, selected);
 		g_object_unref (selected);
 	}
+
+	source_selector_load_sources_status (selector, saved_status);
+	g_hash_table_destroy (saved_status);
 }
 
 static void
@@ -476,6 +843,9 @@ source_selector_source_added_cb (ESourceRegistry *registry,
 	source_selector_build_model (selector);
 
 	source_selector_expand_to_source (selector, source);
+
+	if (e_source_selector_source_is_selected (selector, source))
+		g_signal_emit (selector, signals[SOURCE_SELECTED], 0, source);
 }
 
 static void
@@ -513,6 +883,12 @@ source_selector_source_removed_cb (ESourceRegistry *registry,
 	if (!e_source_has_extension (source, extension_name))
 		return;
 
+	if (e_source_selector_get_source_is_busy (selector, source))
+		source_selector_dec_busy_sources (selector);
+
+	if (e_source_selector_source_is_selected (selector, source))
+		g_signal_emit (selector, signals[SOURCE_UNSELECTED], 0, source);
+
 	source_selector_build_model (selector);
 }
 
@@ -534,6 +910,9 @@ source_selector_source_enabled_cb (ESourceRegistry *registry,
 	source_selector_build_model (selector);
 
 	source_selector_expand_to_source (selector, source);
+
+	if (e_source_selector_source_is_selected (selector, source))
+		g_signal_emit (selector, signals[SOURCE_SELECTED], 0, source);
 }
 
 static void
@@ -550,6 +929,12 @@ source_selector_source_disabled_cb (ESourceRegistry *registry,
 
 	if (!e_source_has_extension (source, extension_name))
 		return;
+
+	if (e_source_selector_get_source_is_busy (selector, source))
+		source_selector_dec_busy_sources (selector);
+
+	if (e_source_selector_source_is_selected (selector, source))
+		g_signal_emit (selector, signals[SOURCE_UNSELECTED], 0, source);
 
 	source_selector_build_model (selector);
 }
@@ -813,6 +1198,11 @@ source_selector_dispose (GObject *object)
 
 	priv = E_SOURCE_SELECTOR_GET_PRIVATE (object);
 
+	if (priv->update_busy_renderer_id) {
+		g_source_remove (priv->update_busy_renderer_id);
+		priv->update_busy_renderer_id = 0;
+	}
+
 	if (priv->source_added_handler_id > 0) {
 		g_signal_handler_disconnect (
 			priv->registry,
@@ -849,9 +1239,14 @@ source_selector_dispose (GObject *object)
 	}
 
 	g_clear_object (&priv->registry);
+	g_clear_object (&priv->busy_renderer);
 
 	g_hash_table_remove_all (priv->source_index);
 	g_hash_table_remove_all (priv->pending_writes);
+	g_hash_table_remove_all (priv->hidden_groups);
+
+	g_slist_free_full (priv->groups_order, g_free);
+	priv->groups_order = NULL;
 
 	clear_saved_primary_selection (E_SOURCE_SELECTOR (object));
 
@@ -868,6 +1263,7 @@ source_selector_finalize (GObject *object)
 
 	g_hash_table_destroy (priv->source_index);
 	g_hash_table_destroy (priv->pending_writes);
+	g_hash_table_destroy (priv->hidden_groups);
 
 	g_free (priv->extension_name);
 
@@ -1254,7 +1650,7 @@ source_selector_get_source_selected (ESourceSelector *selector,
 	return selected;
 }
 
-static void
+static gboolean
 source_selector_set_source_selected (ESourceSelector *selector,
                                      ESource *source,
                                      gboolean selected)
@@ -1265,17 +1661,21 @@ source_selector_set_source_selected (ESourceSelector *selector,
 	extension_name = e_source_selector_get_extension_name (selector);
 
 	if (!e_source_has_extension (source, extension_name))
-		return;
+		return FALSE;
 
 	extension = e_source_get_extension (source, extension_name);
 
 	if (!E_IS_SOURCE_SELECTABLE (extension))
-		return;
+		return FALSE;
 
 	if (selected != e_source_selectable_get_selected (extension)) {
 		e_source_selectable_set_selected (extension, selected);
 		e_source_selector_queue_write (selector, source);
+
+		return TRUE;
 	}
+
+	return FALSE;
 }
 
 static gboolean
@@ -1431,6 +1831,22 @@ e_source_selector_class_init (ESourceSelectorClass *class)
 		E_TYPE_SOURCE,
 		GDK_TYPE_DRAG_ACTION,
 		G_TYPE_UINT);
+
+	signals[SOURCE_SELECTED] = g_signal_new (
+		"source-selected",
+		G_OBJECT_CLASS_TYPE (object_class),
+		G_SIGNAL_RUN_LAST,
+		G_STRUCT_OFFSET (ESourceSelectorClass, source_selected),
+		NULL, NULL, NULL,
+		G_TYPE_NONE, 1, E_TYPE_SOURCE);
+
+	signals[SOURCE_UNSELECTED] = g_signal_new (
+		"source-unselected",
+		G_OBJECT_CLASS_TYPE (object_class),
+		G_SIGNAL_RUN_LAST,
+		G_STRUCT_OFFSET (ESourceSelectorClass, source_unselected),
+		NULL, NULL, NULL,
+		G_TYPE_NONE, 1, E_TYPE_SOURCE);
 }
 
 static void
@@ -1452,6 +1868,7 @@ e_source_selector_init (ESourceSelector *selector)
 	selector->priv = E_SOURCE_SELECTOR_GET_PRIVATE (selector);
 
 	selector->priv->pending_writes = pending_writes;
+	selector->priv->hidden_groups = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
 	selector->priv->main_context = g_main_context_get_thread_default ();
 	if (selector->priv->main_context != NULL)
@@ -1475,14 +1892,16 @@ e_source_selector_init (ESourceSelector *selector)
 	tree_store = gtk_tree_store_new (
 		NUM_COLUMNS,
 		G_TYPE_STRING,		/* COLUMN_NAME */
-		GDK_TYPE_COLOR,		/* COLUMN_COLOR */
+		GDK_TYPE_RGBA,		/* COLUMN_COLOR */
 		G_TYPE_BOOLEAN,		/* COLUMN_ACTIVE */
 		G_TYPE_STRING,		/* COLUMN_ICON_NAME */
 		G_TYPE_BOOLEAN,		/* COLUMN_SHOW_COLOR */
 		G_TYPE_BOOLEAN,		/* COLUMN_SHOW_ICON */
 		G_TYPE_BOOLEAN,		/* COLUMN_SHOW_TOGGLE */
 		G_TYPE_INT,		/* COLUMN_WEIGHT */
-		E_TYPE_SOURCE);		/* COLUMN_SOURCE */
+		E_TYPE_SOURCE,		/* COLUMN_SOURCE */
+		G_TYPE_STRING,		/* COLUMN_TOOLTIP */
+		G_TYPE_BOOLEAN);	/* COLUMN_IS_BUSY */
 
 	gtk_tree_view_set_model (tree_view, GTK_TREE_MODEL (tree_store));
 
@@ -1496,7 +1915,7 @@ e_source_selector_init (ESourceSelector *selector)
 		GTK_CELL_RENDERER_MODE_ACTIVATABLE, NULL);
 	gtk_tree_view_column_pack_start (column, renderer, FALSE);
 	gtk_tree_view_column_add_attribute (
-		column, renderer, "color", COLUMN_COLOR);
+		column, renderer, "rgba", COLUMN_COLOR);
 	gtk_tree_view_column_add_attribute (
 		column, renderer, "visible", COLUMN_SHOW_COLOR);
 
@@ -1534,6 +1953,15 @@ e_source_selector_init (ESourceSelector *selector)
 		"weight", COLUMN_WEIGHT,
 		NULL);
 
+	renderer = gtk_cell_renderer_spinner_new ();
+	selector->priv->busy_renderer = g_object_ref (renderer);
+	gtk_tree_view_column_pack_end (column, renderer, FALSE);
+	gtk_tree_view_column_set_attributes (
+		column, renderer,
+		"visible", COLUMN_IS_BUSY,
+		"active", COLUMN_IS_BUSY,
+		NULL);
+
 	selection = gtk_tree_view_get_selection (tree_view);
 	gtk_tree_selection_set_select_function (
 		selection, (GtkTreeSelectionFunc)
@@ -1544,6 +1972,8 @@ e_source_selector_init (ESourceSelector *selector)
 		G_OBJECT (selector), 0);
 
 	gtk_tree_view_set_headers_visible (tree_view, FALSE);
+	gtk_tree_view_set_tooltip_column (tree_view, COLUMN_TOOLTIP);
+	gtk_widget_set_has_tooltip (GTK_WIDGET (tree_view), TRUE);
 }
 
 /**
@@ -1807,6 +2237,93 @@ e_source_selector_get_selection (ESourceSelector *selector)
 	return g_queue_peek_head_link (&closure.queue);
 }
 
+struct CountData {
+	ESourceSelector *selector;
+	guint count;
+	gboolean selected;
+};
+
+static gboolean
+source_selector_count_sources (GtkTreeModel *model,
+			       GtkTreePath *path,
+			       GtkTreeIter *iter,
+			       gpointer user_data)
+{
+	struct CountData *cd = user_data;
+	ESource *source;
+
+	gtk_tree_model_get (model, iter, COLUMN_SOURCE, &source, -1);
+
+	if (e_source_has_extension (source, e_source_selector_get_extension_name (cd->selector))) {
+		if (cd->selected) {
+			if (e_source_selector_source_is_selected (cd->selector, source))
+				cd->count++;
+		} else {
+			cd->count++;
+		}
+	}
+
+	g_object_unref (source);
+
+	return FALSE;
+}
+
+/**
+ * e_source_selector_count_total:
+ * @selector: an #ESourceSelector
+ *
+ * Counts how many ESource-s are shown in the @selector.
+ *
+ * Returns: How many ESource-s are shown in the @selector.
+ *
+ * Since: 3.20
+ **/
+guint
+e_source_selector_count_total (ESourceSelector *selector)
+{
+	struct CountData cd;
+
+	g_return_val_if_fail (E_IS_SOURCE_SELECTOR (selector), 0);
+
+	cd.selector = selector;
+	cd.count = 0;
+	cd.selected = FALSE;
+
+	gtk_tree_model_foreach (
+		gtk_tree_view_get_model (GTK_TREE_VIEW (selector)),
+		source_selector_count_sources, &cd);
+
+	return cd.count;
+}
+
+/**
+ * e_source_selector_count_selected:
+ * @selector: an #ESourceSelector
+ *
+ * Counts how many ESource-s are selected in the @selector.
+ *
+ * Returns: How many ESource-s are selected in the @selector.
+ *
+ * Since: 3.20
+ **/
+guint
+e_source_selector_count_selected (ESourceSelector *selector)
+{
+	struct CountData cd;
+
+	g_return_val_if_fail (E_IS_SOURCE_SELECTOR (selector), 0);
+
+	cd.selector = selector;
+	cd.count = 0;
+	cd.selected = TRUE;
+
+	gtk_tree_model_foreach (
+		gtk_tree_view_get_model (GTK_TREE_VIEW (selector)),
+		source_selector_count_sources, &cd);
+
+	return cd.count;
+}
+
 /**
  * e_source_selector_select_source:
  * @selector: An #ESourceSelector widget
@@ -1833,9 +2350,10 @@ e_source_selector_select_source (ESourceSelector *selector,
 	class = E_SOURCE_SELECTOR_GET_CLASS (selector);
 	g_return_if_fail (class->set_source_selected != NULL);
 
-	class->set_source_selected (selector, source, TRUE);
-
-	g_signal_emit (selector, signals[SELECTION_CHANGED], 0);
+	if (class->set_source_selected (selector, source, TRUE)) {
+		g_signal_emit (selector, signals[SOURCE_SELECTED], 0, source);
+		g_signal_emit (selector, signals[SELECTION_CHANGED], 0);
+	}
 }
 
 /**
@@ -1869,9 +2387,10 @@ e_source_selector_unselect_source (ESourceSelector *selector,
 	class = E_SOURCE_SELECTOR_GET_CLASS (selector);
 	g_return_if_fail (class->set_source_selected != NULL);
 
-	class->set_source_selected (selector, source, FALSE);
-
-	g_signal_emit (selector, signals[SELECTION_CHANGED], 0);
+	if (class->set_source_selected (selector, source, FALSE)) {
+		g_signal_emit (selector, signals[SOURCE_UNSELECTED], 0, source);
+		g_signal_emit (selector, signals[SELECTION_CHANGED], 0);
+	}
 }
 
 /**
@@ -1891,6 +2410,7 @@ e_source_selector_select_exclusive (ESourceSelector *selector,
 	GHashTable *source_index;
 	GHashTableIter iter;
 	gpointer key;
+	gboolean any_changed = FALSE;
 
 	g_return_if_fail (E_IS_SOURCE_SELECTOR (selector));
 	g_return_if_fail (E_IS_SOURCE (source));
@@ -1903,10 +2423,53 @@ e_source_selector_select_exclusive (ESourceSelector *selector,
 
 	while (g_hash_table_iter_next (&iter, &key, NULL)) {
 		gboolean selected = e_source_equal (key, source);
-		class->set_source_selected (selector, key, selected);
+		if (class->set_source_selected (selector, key, selected)) {
+			any_changed = TRUE;
+			if (selected)
+				g_signal_emit (selector, signals[SOURCE_SELECTED], 0, key);
+			else
+				g_signal_emit (selector, signals[SOURCE_UNSELECTED], 0, key);
+		}
 	}
 
-	g_signal_emit (selector, signals[SELECTION_CHANGED], 0);
+	if (any_changed)
+		g_signal_emit (selector, signals[SELECTION_CHANGED], 0);
+}
+
+/**
+ * e_source_selector_select_all:
+ * @selector: An #ESourceSelector widget
+ *
+ * Selects all ESource-s in the @selector.
+ *
+ * Since: 3.20
+ **/
+void
+e_source_selector_select_all (ESourceSelector *selector)
+{
+	ESourceSelectorClass *class;
+	GHashTable *source_index;
+	GHashTableIter iter;
+	gpointer key;
+	gboolean any_changed = FALSE;
+
+	g_return_if_fail (E_IS_SOURCE_SELECTOR (selector));
+
+	class = E_SOURCE_SELECTOR_GET_CLASS (selector);
+	g_return_if_fail (class->set_source_selected != NULL);
+
+	source_index = selector->priv->source_index;
+	g_hash_table_iter_init (&iter, source_index);
+
+	while (g_hash_table_iter_next (&iter, &key, NULL)) {
+		if (class->set_source_selected (selector, key, TRUE)) {
+			any_changed = TRUE;
+			g_signal_emit (selector, signals[SOURCE_SELECTED], 0, key);
+		}
+	}
+
+	if (any_changed)
+		g_signal_emit (selector, signals[SELECTION_CHANGED], 0);
 }
 
 /**
@@ -1932,6 +2495,11 @@ e_source_selector_source_is_selected (ESourceSelector *selector,
 	/* Make sure the ESource is in our tree model. */
 	source_index = selector->priv->source_index;
 	reference = g_hash_table_lookup (source_index, source);
+
+	/* Can be NULL when the source was just removed */
+	if (!reference)
+		return FALSE;
+
 	g_return_val_if_fail (gtk_tree_row_reference_valid (reference), FALSE);
 
 	class = E_SOURCE_SELECTOR_GET_CLASS (selector);
@@ -2311,7 +2879,7 @@ e_source_selector_update_row (ESourceSelector *selector,
 		extension = e_source_get_extension (source, extension_name);
 
 	if (extension != NULL) {
-		GdkColor color;
+		GdkRGBA rgba;
 		const gchar *color_spec = NULL;
 		const gchar *icon_name;
 		gboolean show_color;
@@ -2327,7 +2895,7 @@ e_source_selector_update_row (ESourceSelector *selector,
 				E_SOURCE_SELECTABLE (extension));
 
 		if (color_spec != NULL && *color_spec != '\0')
-			show_color = gdk_color_parse (color_spec, &color);
+			show_color = gdk_rgba_parse (&rgba, color_spec);
 
 		show_icons = e_source_selector_get_show_icons (selector);
 		icon_name = source_selector_get_icon_name (selector, source);
@@ -2337,7 +2905,7 @@ e_source_selector_update_row (ESourceSelector *selector,
 		gtk_tree_store_set (
 			GTK_TREE_STORE (model), &iter,
 			COLUMN_NAME, display_name,
-			COLUMN_COLOR, show_color ? &color : NULL,
+			COLUMN_COLOR, show_color ? &rgba : NULL,
 			COLUMN_ACTIVE, selected,
 			COLUMN_ICON_NAME, icon_name,
 			COLUMN_SHOW_COLOR, show_color,
@@ -2393,3 +2961,740 @@ e_source_selector_update_all_rows (ESourceSelector *selector)
 	g_list_free_full (list, (GDestroyNotify) g_object_unref);
 }
 
+/**
+ * e_source_selector_set_source_tooltip:
+ * @selector: an #ESourceSelector
+ * @source: an #ESource for which to set the tooltip
+ *
+ * Updates tooltip for the given @source.
+ *
+ * Since: 3.16
+ **/
+void
+e_source_selector_set_source_tooltip (ESourceSelector *selector,
+				      ESource *source,
+				      const gchar *tooltip)
+{
+	GtkTreeRowReference *reference;
+	GtkTreeModel *model;
+	GtkTreePath *path;
+	GtkTreeIter iter;
+
+	g_return_if_fail (E_IS_SOURCE_SELECTOR (selector));
+	g_return_if_fail (E_IS_SOURCE (source));
+
+	reference = g_hash_table_lookup (selector->priv->source_index, source);
+
+	/* If the ESource is not in our tree model then return silently. */
+	if (reference == NULL)
+		return;
+
+	/* If we do have a row reference, it should be valid. */
+	g_return_if_fail (gtk_tree_row_reference_valid (reference));
+
+	model = gtk_tree_row_reference_get_model (reference);
+	path = gtk_tree_row_reference_get_path (reference);
+	gtk_tree_model_get_iter (model, &iter, path);
+	gtk_tree_path_free (path);
+
+	gtk_tree_store_set (
+		GTK_TREE_STORE (model), &iter,
+		COLUMN_TOOLTIP, tooltip && *tooltip ? tooltip : NULL,
+		-1);
+}
+
+/**
+ * e_source_selector_dup_source_tooltip:
+ * @selector: an #ESourceSelector
+ * @source: an #ESource for which to read the tooltip
+ *
+ * Returns: Current tooltip for the given @source. Free the returned
+ *    string with g_free() when done with it.
+ *
+ * Since: 3.16
+ **/
+gchar *
+e_source_selector_dup_source_tooltip (ESourceSelector *selector,
+				      ESource *source)
+{
+	GtkTreeRowReference *reference;
+	GtkTreeModel *model;
+	GtkTreePath *path;
+	GtkTreeIter iter;
+	gchar *tooltip = NULL;
+
+	g_return_val_if_fail (E_IS_SOURCE_SELECTOR (selector), NULL);
+	g_return_val_if_fail (E_IS_SOURCE (source), NULL);
+
+	reference = g_hash_table_lookup (selector->priv->source_index, source);
+
+	/* If the ESource is not in our tree model then return silently. */
+	if (reference == NULL)
+		return NULL;
+
+	/* If we do have a row reference, it should be valid. */
+	g_return_val_if_fail (gtk_tree_row_reference_valid (reference), FALSE);
+
+	model = gtk_tree_row_reference_get_model (reference);
+	path = gtk_tree_row_reference_get_path (reference);
+	gtk_tree_model_get_iter (model, &iter, path);
+	gtk_tree_path_free (path);
+
+	gtk_tree_model_get (
+		model, &iter,
+		COLUMN_TOOLTIP, &tooltip,
+		-1);
+
+	return tooltip;
+}
+
+/**
+ * e_source_selector_set_source_is_busy:
+ * @selector: an #ESourceSelector
+ * @source: an #ESource for which to set the is-busy status
+ *
+ * Updates the is-busy flag status for the given @source.
+ *
+ * Since: 3.16
+ **/
+void
+e_source_selector_set_source_is_busy (ESourceSelector *selector,
+				      ESource *source,
+				      gboolean is_busy)
+{
+	GtkTreeRowReference *reference;
+	GtkTreeModel *model;
+	GtkTreePath *path;
+	GtkTreeIter iter;
+	gboolean old_is_busy = FALSE;
+
+	g_return_if_fail (E_IS_SOURCE_SELECTOR (selector));
+	g_return_if_fail (E_IS_SOURCE (source));
+
+	reference = g_hash_table_lookup (selector->priv->source_index, source);
+
+	/* If the ESource is not in our tree model then return silently. */
+	if (reference == NULL)
+		return;
+
+	/* If we do have a row reference, it should be valid. */
+	g_return_if_fail (gtk_tree_row_reference_valid (reference));
+
+	model = gtk_tree_row_reference_get_model (reference);
+	path = gtk_tree_row_reference_get_path (reference);
+	gtk_tree_model_get_iter (model, &iter, path);
+	gtk_tree_path_free (path);
+
+	gtk_tree_model_get (
+		GTK_TREE_MODEL (model), &iter,
+		COLUMN_IS_BUSY, &old_is_busy,
+		-1);
+
+	if ((old_is_busy ? 1 : 0) == (is_busy ? 1 : 0))
+		return;
+
+	gtk_tree_store_set (
+		GTK_TREE_STORE (model), &iter,
+		COLUMN_IS_BUSY, is_busy,
+		-1);
+
+	if (is_busy)
+		source_selector_inc_busy_sources (selector);
+	else
+		source_selector_dec_busy_sources (selector);
+}
+
+/**
+ * e_source_selector_get_source_is_busy:
+ * @selector: an #ESourceSelector
+ * @source: an #ESource for which to read the is-busy status
+ *
+ * Returns: Current is-busy flag status for the given @source.
+ *
+ * Since: 3.16
+ **/
+gboolean
+e_source_selector_get_source_is_busy (ESourceSelector *selector,
+				      ESource *source)
+{
+	GtkTreeRowReference *reference;
+	GtkTreeModel *model;
+	GtkTreePath *path;
+	GtkTreeIter iter;
+	gboolean is_busy = FALSE;
+
+	g_return_val_if_fail (E_IS_SOURCE_SELECTOR (selector), FALSE);
+	g_return_val_if_fail (E_IS_SOURCE (source), FALSE);
+
+	reference = g_hash_table_lookup (selector->priv->source_index, source);
+
+	/* If the ESource is not in our tree model then return silently. */
+	if (reference == NULL)
+		return FALSE;
+
+	/* If we do have a row reference, it should be valid. */
+	g_return_val_if_fail (gtk_tree_row_reference_valid (reference), FALSE);
+
+	model = gtk_tree_row_reference_get_model (reference);
+	path = gtk_tree_row_reference_get_path (reference);
+	gtk_tree_model_get_iter (model, &iter, path);
+	gtk_tree_path_free (path);
+
+	gtk_tree_model_get (
+		model, &iter,
+		COLUMN_IS_BUSY, &is_busy,
+		-1);
+
+	return is_busy;
+}
+
+static gboolean
+source_selector_get_source_hidden (ESourceSelector *selector,
+				   ESource *source)
+{
+	g_return_val_if_fail (E_IS_SOURCE_SELECTOR (selector), FALSE);
+	g_return_val_if_fail (E_IS_SOURCE (source), FALSE);
+	g_return_val_if_fail (e_source_get_uid (source) != NULL, FALSE);
+
+	return g_hash_table_contains (selector->priv->hidden_groups, e_source_get_uid (source));
+}
+
+static void
+tree_show_toggled (GtkCellRendererToggle *renderer,
+		   gchar *path_str,
+		   gpointer user_data)
+{
+	GtkWidget *table = user_data;
+	GtkTreeModel *model;
+	GtkTreePath *path;
+	GtkTreeIter iter;
+
+	path = gtk_tree_path_new_from_string (path_str);
+	model = gtk_tree_view_get_model (GTK_TREE_VIEW (table));
+
+	if (gtk_tree_model_get_iter (model, &iter, path)) {
+		gboolean shown = TRUE;
+
+		gtk_tree_model_get (model, &iter, 2, &shown, -1);
+		shown = !shown;
+		gtk_list_store_set (GTK_LIST_STORE (model), &iter, 2, shown, -1);
+
+		/* to have buttons synced with the change */
+		g_signal_emit_by_name (table, "cursor-changed");
+	}
+
+	gtk_tree_path_free (path);
+}
+
+static GtkWidget *
+create_tree (ESourceSelector *selector,
+	     GtkWidget **tree)
+{
+	ESourceRegistry *registry;
+	GtkWidget *table, *scrolled;
+	GtkTreeSelection *selection;
+	GtkCellRenderer *renderer;
+	GtkListStore *model;
+	GNode *root;
+
+	scrolled = gtk_scrolled_window_new (NULL, NULL);
+	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scrolled), GTK_SHADOW_IN);
+	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled),
+					GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+
+	model = gtk_list_store_new (3, G_TYPE_STRING, E_TYPE_SOURCE, G_TYPE_BOOLEAN);
+	table = gtk_tree_view_new_with_model (GTK_TREE_MODEL (model));
+	gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (table), FALSE);
+
+	/* Cannot select/unselect sources, thus also cannot hide them */
+	if (e_source_selector_get_show_toggles (selector)) {
+		renderer = gtk_cell_renderer_toggle_new ();
+		g_object_set (G_OBJECT (renderer), "activatable", TRUE, NULL);
+		gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (table), -1,
+							     _("Show"), renderer,
+							     "active", 2, NULL);
+		g_signal_connect (renderer, "toggled", G_CALLBACK (tree_show_toggled), table);
+	}
+
+	renderer = gtk_cell_renderer_text_new ();
+	gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (table), -1,
+						     _("Group name"), renderer,
+						     "text", 0, NULL);
+
+	selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (table));
+	gtk_tree_selection_set_mode (selection, GTK_SELECTION_SINGLE);
+
+	gtk_container_add (GTK_CONTAINER (scrolled), table);
+
+	*tree = table;
+
+	registry = e_source_selector_get_registry (selector);
+	root = e_source_registry_build_display_tree (registry, e_source_selector_get_extension_name (selector));
+
+	source_selector_sort_groups (selector, root);
+
+	if (root) {
+		GNode *node;
+
+		for (node = g_node_first_child (root); node; node = g_node_next_sibling (node)) {
+			GtkTreeIter iter;
+			ESource *source;
+
+			source = node->data;
+
+			if (source) {
+				gtk_list_store_append (model, &iter);
+				gtk_list_store_set (model, &iter,
+						0, e_source_get_display_name (source),
+						1, source,
+						2, !source_selector_get_source_hidden (selector, source),
+						-1);
+			}
+		}
+	}
+
+	e_source_registry_free_display_tree (root);
+
+	g_object_unref (model);
+
+	return scrolled;
+}
+
+static void
+process_move_button (GtkButton *button,
+		     GtkTreeView *tree,
+		     gboolean is_up,
+		     gboolean do_move)
+{
+	GtkTreeModel *model;
+	GtkTreeSelection *selection;
+	GtkTreeIter iter;
+	gboolean enable = FALSE;
+
+	g_return_if_fail (button != NULL);
+	g_return_if_fail (tree != NULL);
+
+	selection = gtk_tree_view_get_selection (tree);
+
+	if (gtk_tree_selection_get_selected (selection, &model, &iter)) {
+		gpointer ptr = NULL, ptr2;
+		GtkTreeIter iter2;
+		int i, cnt = gtk_tree_model_iter_n_children (model, NULL);
+		gboolean can_move = FALSE;
+
+		gtk_tree_model_get (model, &iter, 1, &ptr, -1);
+
+		for (i = 0; i < cnt; i++) {
+			if (!gtk_tree_model_iter_nth_child (model, &iter2, NULL, i))
+				break;
+
+			ptr2 = NULL;
+			gtk_tree_model_get (model, &iter2, 1, &ptr2, -1);
+
+			if (ptr == ptr2 || (is_up && !do_move && i > 0)) {
+				can_move = TRUE;
+				break;
+			}
+		}
+
+		if (can_move)
+			can_move = ((is_up && i > 0) || (!is_up && i + 1 < cnt)) && i < cnt;
+
+		if (can_move && do_move) {
+			i = i + (is_up ? -1 : 1);
+			if (gtk_tree_model_iter_nth_child (model, &iter2, NULL, i)) {
+				GtkTreePath *path;
+
+				gtk_list_store_swap (GTK_LIST_STORE (model), &iter, &iter2);
+				gtk_tree_selection_select_iter (selection, &iter);
+
+				/* scroll to the selected cell */
+				path = gtk_tree_model_get_path (model, &iter);
+				gtk_tree_view_scroll_to_cell (tree, path, NULL, FALSE, 0.0, 0.0);
+				gtk_tree_path_free (path);
+
+				/* cursor has been moved to the other row */
+				can_move = (is_up && i > 0) || (!is_up && i + 1 < cnt);
+
+				g_signal_emit_by_name (tree, "cursor-changed");
+			}
+		}
+
+		enable = can_move;
+	}
+
+	if (!do_move)
+		gtk_widget_set_sensitive (GTK_WIDGET (button), enable);
+}
+
+static void
+up_clicked (GtkButton *button,
+	    GtkTreeView *tree)
+{
+	process_move_button (button, tree, TRUE, TRUE);
+}
+
+static void
+up_cursor_changed (GtkTreeView *tree,
+		   GtkButton *button)
+{
+	process_move_button (button, tree, TRUE, FALSE);
+}
+
+static void
+down_clicked (GtkButton *button,
+	      GtkTreeView *tree)
+{
+	process_move_button (button, tree, FALSE, TRUE);
+}
+
+static void
+down_cursor_changed (GtkTreeView *tree,
+		     GtkButton *button)
+{
+	process_move_button (button, tree, FALSE, FALSE);
+}
+
+static void
+show_hide_cursor_changed (GtkTreeView *tree,
+			  GtkButton *button)
+{
+	GtkTreeModel *model;
+	GtkTreeSelection *selection;
+	GtkTreeIter iter;
+
+	g_return_if_fail (button != NULL);
+	g_return_if_fail (tree != NULL);
+
+	selection = gtk_tree_view_get_selection (tree);
+
+	if (gtk_tree_selection_get_selected (selection, &model, &iter)) {
+		gboolean shown = FALSE;
+
+		gtk_tree_model_get (model, &iter, 2, &shown, -1);
+
+		gtk_button_set_label (button, shown ? _("_Hide") : _("_Show"));
+	}
+}
+
+static void
+show_hide_clicked (GtkButton *button,
+		   GtkTreeView *tree)
+{
+	GtkTreeModel *model;
+	GtkTreeSelection *selection;
+	GtkTreeIter iter;
+
+	g_return_if_fail (button != NULL);
+	g_return_if_fail (tree != NULL);
+
+	selection = gtk_tree_view_get_selection (tree);
+
+	if (gtk_tree_selection_get_selected (selection, &model, &iter)) {
+		gboolean shown = TRUE;
+
+		gtk_tree_model_get (model, &iter, 2, &shown, -1);
+		shown = !shown;
+		gtk_list_store_set (GTK_LIST_STORE (model), &iter, 2, shown, -1);
+
+		show_hide_cursor_changed (tree, button);
+	}
+}
+
+/**
+ * e_source_selector_manage_groups:
+ * @selector: an #ESourceSelector
+ *
+ * Manages list of groups, like their order in the source selector,
+ * and a hidden property of the group.
+ *
+ * Returns: Whether user confirmed changes in the dialog.
+ *
+ * Since: 3.20
+ **/
+gboolean
+e_source_selector_manage_groups (ESourceSelector *selector)
+{
+	GtkWidget *dlg, *box, *pbox, *tree, *w, *w2;
+	gchar *txt;
+	gboolean confirmed = FALSE;
+
+	g_return_val_if_fail (E_IS_SOURCE_SELECTOR (selector), FALSE);
+
+	w = gtk_widget_get_toplevel (GTK_WIDGET (selector));
+	if (!w || !gtk_widget_is_toplevel (w))
+		w = NULL;
+
+	dlg = gtk_dialog_new_with_buttons (_("Manage Groups"),
+			w ? GTK_WINDOW (w) : NULL,
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_STOCK_CANCEL, GTK_RESPONSE_REJECT,
+			GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
+			NULL);
+
+	w = gtk_dialog_get_content_area (GTK_DIALOG (dlg));
+	box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 2);
+	gtk_container_set_border_width (GTK_CONTAINER (box), 12);
+	gtk_box_pack_start (GTK_BOX (w), box, TRUE, TRUE, 0);
+
+	txt = g_strconcat ("<b>", _("Available Groups:"), "</b>", NULL);
+	w = gtk_label_new ("");
+	gtk_label_set_markup (GTK_LABEL (w), txt);
+	g_free (txt);
+	gtk_misc_set_alignment (GTK_MISC (w), 0.0, 0.5);
+	gtk_box_pack_start (GTK_BOX (box), w, FALSE, FALSE, 2);
+
+	pbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
+	gtk_box_pack_start (GTK_BOX (box), pbox, TRUE, TRUE, 2);
+
+	/* space on the left */
+	w = gtk_label_new ("");
+	gtk_box_pack_start (GTK_BOX (pbox), w, FALSE, FALSE, 6);
+
+	w = create_tree (selector, &tree);
+	gtk_widget_set_size_request (w, 200, 240);
+	gtk_box_pack_start (GTK_BOX (pbox), w, TRUE, TRUE, 2);
+
+	/* box of buttons */
+	w2 = gtk_button_box_new (GTK_ORIENTATION_VERTICAL);
+	gtk_button_box_set_layout (GTK_BUTTON_BOX (w2), GTK_BUTTONBOX_START);
+	gtk_box_pack_start (GTK_BOX (pbox), w2, FALSE, FALSE, 2);
+
+	#define add_button(_x,_y,_cb,_cb2) \
+		w = (_x) ? gtk_button_new_from_icon_name (_x, GTK_ICON_SIZE_BUTTON) : gtk_button_new (); \
+		gtk_button_set_label (GTK_BUTTON (w), _y); \
+		gtk_button_set_use_underline (GTK_BUTTON (w), TRUE); \
+		gtk_box_pack_start (GTK_BOX (w2), w, FALSE, FALSE, 2); \
+		g_signal_connect (w, "clicked", (GCallback)_cb, tree); \
+		g_signal_connect (tree, "cursor-changed", (GCallback)_cb2, w);
+
+	add_button ("go-up", _("_Up"), up_clicked, up_cursor_changed);
+	add_button ("go-down", _("_Down"), down_clicked, down_cursor_changed);
+
+	if (e_source_selector_get_show_toggles (selector)) {
+		add_button (NULL, _("_Show"), show_hide_clicked, show_hide_cursor_changed);
+		gtk_button_set_use_underline (GTK_BUTTON (w), TRUE);
+	}
+
+	#undef add_button
+
+	gtk_widget_show_all (box);
+
+	if (gtk_dialog_run (GTK_DIALOG (dlg)) == GTK_RESPONSE_ACCEPT) {
+		GtkTreeModel *model = gtk_tree_view_get_model (GTK_TREE_VIEW (tree));
+		GtkTreeIter iter;
+		gint ii, cnt = gtk_tree_model_iter_n_children (model, NULL);
+
+		g_hash_table_remove_all (selector->priv->hidden_groups);
+		g_slist_free_full (selector->priv->groups_order, g_free);
+		selector->priv->groups_order = NULL;
+
+		for (ii = 0; ii < cnt; ii++) {
+			gpointer group = NULL;
+			gboolean shown = TRUE;
+
+			if (!gtk_tree_model_iter_nth_child (model, &iter, NULL, ii))
+				break;
+
+			gtk_tree_model_get (model, &iter, 1, &group, 2, &shown, -1);
+
+			if (group) {
+				const gchar *uid = e_source_get_uid (group);
+
+				selector->priv->groups_order = g_slist_prepend (selector->priv->groups_order, g_strdup (uid));
+
+				if (!shown)
+					g_hash_table_insert (selector->priv->hidden_groups, g_strdup (uid), GINT_TO_POINTER (1));
+			}
+		}
+
+		selector->priv->groups_order = g_slist_reverse (selector->priv->groups_order);
+
+		source_selector_build_model (selector);
+
+		confirmed = TRUE;
+	}
+
+	gtk_widget_destroy (dlg);
+
+	return confirmed;
+}
+
+static gboolean
+source_selector_store_value (GKeyFile *key_file,
+			     const gchar *group_key,
+			     const gchar * const *value,
+			     gsize value_length)
+{
+	gchar **stored;
+	gsize length = 0, ii;
+	gboolean changed = FALSE;
+
+	g_return_val_if_fail (key_file != NULL, FALSE);
+	g_return_val_if_fail (group_key != NULL, FALSE);
+
+	stored = g_key_file_get_string_list (key_file, E_SOURCE_SELECTOR_GROUPS_SETUP_NAME, group_key, &length, NULL);
+	if (stored) {
+		changed = value_length != length;
+		if (!changed) {
+			for (ii = 0; ii < length && !changed; ii++) {
+				changed = g_strcmp0 (value[ii], stored[ii]) != 0;
+			}
+		}
+
+		g_strfreev (stored);
+	} else {
+		changed = value != NULL;
+	}
+
+	if (changed) {
+		if (value)
+			g_key_file_set_string_list (key_file, E_SOURCE_SELECTOR_GROUPS_SETUP_NAME, group_key, value, value_length);
+		else
+			changed = g_key_file_remove_key (key_file, E_SOURCE_SELECTOR_GROUPS_SETUP_NAME, group_key, NULL);
+	}
+
+	return changed;
+}
+
+/**
+ * e_source_selector_save_groups_setup:
+ * @selector: an #ESourceSelector
+ * @key_file: a #GKeyFile to store the sgroups setup to
+ *
+ * Stores current setup of the groups in the @key_file.
+ *
+ * Use e_source_selector_load_groups_setup() to pass the settings
+ * back to the @selector.
+ *
+ * Returns: Whether the saved values are different, aka whether it's
+ *    required to store the changes.
+ *
+ * Since: 3.20
+ **/
+gboolean
+e_source_selector_save_groups_setup (ESourceSelector *selector,
+				     GKeyFile *key_file)
+{
+	GPtrArray *value;
+	const gchar *extension_name;
+	gchar *group_key;
+	gboolean changed;
+
+	g_return_val_if_fail (E_IS_SOURCE_SELECTOR (selector), FALSE);
+	g_return_val_if_fail (key_file != NULL, FALSE);
+
+	extension_name = e_source_selector_get_extension_name (selector);
+	g_return_val_if_fail (extension_name != NULL, FALSE);
+
+	group_key = g_strconcat (extension_name, "-hidden-groups", NULL);
+
+	if (g_hash_table_size (selector->priv->hidden_groups) > 0) {
+		GHashTableIter iter;
+		gpointer key, unused;
+
+		value = g_ptr_array_sized_new (g_hash_table_size (selector->priv->hidden_groups));
+
+		g_hash_table_iter_init (&iter, selector->priv->hidden_groups);
+		while (g_hash_table_iter_next (&iter, &key, &unused)) {
+			if (key)
+				g_ptr_array_add (value, key);
+		}
+
+		/* expects NULL-terminated array of strings, thus terminate it */
+		g_ptr_array_add (value, NULL);
+
+		changed = source_selector_store_value (key_file, group_key, (const gchar * const *) value->pdata, value->len - 1);
+
+		g_ptr_array_unref (value);
+	} else {
+		changed = source_selector_store_value (key_file, group_key, NULL, 0);
+	}
+
+	g_free (group_key);
+	group_key = g_strconcat (extension_name, "-groups-order", NULL);
+
+	if (selector->priv->groups_order) {
+		GSList *link;
+
+		value = g_ptr_array_sized_new (g_slist_length (selector->priv->groups_order));
+
+		for (link = selector->priv->groups_order; link; link = g_slist_next (link)) {
+			if (link->data)
+				g_ptr_array_add (value, link->data);
+		}
+
+		/* expects NULL-terminated array of strings, thus terminate it */
+		g_ptr_array_add (value, NULL);
+
+		changed = source_selector_store_value (key_file, group_key, (const gchar * const *) value->pdata, value->len - 1) || changed;
+
+		g_ptr_array_unref (value);
+	} else {
+		changed = source_selector_store_value (key_file, group_key, NULL, 0) || changed;
+	}
+
+	g_free (group_key);
+
+	return changed;
+}
+
+/**
+ * e_source_selector_load_groups_setup:
+ * @selector: an #ESourceSelector
+ * @key_file: a #GKeyFile to load the groups setup from
+ *
+ * Loads setup of the groups from the @key_file.
+ *
+ * Use e_source_selector_save_groups_setup() to store
+ * the settings of the @selector.
+ *
+ * Since: 3.20
+ **/
+void
+e_source_selector_load_groups_setup (ESourceSelector *selector,
+				     GKeyFile *key_file)
+{
+	const gchar *extension_name;
+	gchar **stored;
+	gchar *group_key;
+	gsize ii;
+
+	g_return_if_fail (E_IS_SOURCE_SELECTOR (selector));
+
+	extension_name = e_source_selector_get_extension_name (selector);
+	g_return_if_fail (extension_name != NULL);
+
+	g_hash_table_remove_all (selector->priv->hidden_groups);
+	g_slist_free_full (selector->priv->groups_order, g_free);
+	selector->priv->groups_order = NULL;
+
+	group_key = g_strconcat (extension_name, "-hidden-groups", NULL);
+
+	stored = g_key_file_get_string_list (key_file, E_SOURCE_SELECTOR_GROUPS_SETUP_NAME, group_key, NULL, NULL);
+	if (stored) {
+		for (ii = 0; stored[ii]; ii++) {
+			g_hash_table_insert (selector->priv->hidden_groups, g_strdup (stored[ii]), GINT_TO_POINTER (1));
+		}
+
+		g_strfreev (stored);
+	}
+
+	g_free (group_key);
+	group_key = g_strconcat (extension_name, "-groups-order", NULL);
+
+	stored = g_key_file_get_string_list (key_file, E_SOURCE_SELECTOR_GROUPS_SETUP_NAME, group_key, NULL, NULL);
+	if (stored) {
+		for (ii = 0; stored[ii]; ii++) {
+			selector->priv->groups_order = g_slist_prepend (selector->priv->groups_order, g_strdup (stored[ii]));
+		}
+
+		g_strfreev (stored);
+	}
+
+	g_free (group_key);
+
+	selector->priv->groups_order = g_slist_reverse (selector->priv->groups_order);
+
+	source_selector_build_model (selector);
+}

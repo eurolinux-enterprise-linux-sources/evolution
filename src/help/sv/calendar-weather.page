@@ -13,50 +13,57 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Display the weather in the calendar.</desc>
+    <desc>Visa vädret i kalendern.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Using a weather calendar</title>
+  <title>Användning av en väderkalender</title>
 
-  <p>Calendars of this type are read-only.</p>
+  <p>Kalendrar av denna typ är skrivskyddade.</p>
 
-  <p>To add such a calendar to <app>Evolution</app>, perform the following
-  steps:</p>
+  <p>För att lägga till en sådan kalender i <app>Evolution</app>, utför följande steg:</p>
 
   <steps>
     <item>
-      <p>Click
-      <guiseq><gui>File</gui><gui>New</gui><gui>Calendar</gui></guiseq>.</p>
+      <p>Klicka på <guiseq><gui>Arkiv</gui><gui>Nytt</gui><gui>Kalender</gui></guiseq>.</p>
     </item>
     <item>
-      <p>Select the type <gui>Weather</gui>.</p>
+      <p>Välj typen <gui>Väder</gui>.</p>
     </item>
     <item>
-      <p>Enter a name that you prefer.</p>
+      <p>Ange ett namn du föredrar.</p>
     </item>
     <item>
-      <p>Optionally choose a color that you prefer.</p>
+      <p>Du kan välja en valfri färg du gillar.</p>
     </item>
     <item>
-      <p>Choose if you want to be able to view the content also when being
-      offline.</p>
+      <p>Välj om du vill kunna visa innehåll även när du är frånkopplad.</p>
     </item>
     <item>
-      <p>Choose a location by selecting continent, country and city.</p>
+      <p>Välj en plats genom att välja kontinent, land och stad.</p>
     </item>
     <item>
-      <p>Choose <gui>Use secure connection</gui> if you want to connect
-      securely.</p>
+      <p>Välj <gui>Använd en säker anslutning</gui> om du vill ansluta säkert.</p>
     </item>
     <item>
-      <p>Choose the temperature unit.</p>
+      <p>Välj temperaturenheten.</p>
     </item>
     <item>
-      <p>Click <gui style="button">Apply</gui>.</p>
+      <p>Klicka på <gui style="button">Verkställ</gui>.</p>
     </item>
   </steps>
 
-  <p>The calendar will be added to the list of calendars in
-  <app>Evolution</app>.</p>
+  <p>Kalendern kommer att läggas till i listan över kalendrar i <app>Evolution</app>.</p>
 
 </page>

@@ -2,11 +2,11 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-encryption-gpg-getting-keys" xml:lang="cs">
 
   <info>
-    <desc>Getting and Using GPG Public Keys.</desc>
+    <desc>Jak získat a používat veřejné klíče GPG.</desc>
 
     <link type="guide" xref="mail-encryption#gpg"/>
 
-    <revision pkgversion="2.32.1" version="0.2" date="2011-07-27" status="final"/>
+    <revision pkgversion="3.13.90" version="0.3" date="2015-03-09" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -18,14 +18,21 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Getting and using GPG public keys</title>
-<!-- TODO:POST-3-8: Update and rewrite using Seahorse. Needs a complete rewrite once https://bugzilla.gnome.org/show_bug.cgi?id=508744 is fixed. -->
+  <title>Získávání a používání veřejných klíčů GPG</title>
 
-<p>Pro odeslání zašifrované zprávy musíte použít veřejný klíč příjemce v kombinaci s vaším privátním klíčem. Evolution se postará o šifrování, ale vy musíte získat veřejný klíč a přidat ho do vaší klíčenky.</p>
-
-<p>To get public keys from a public key server, enter the command <cmd>gpg --recv-keys --keyserver wwwkeys.pgp.net keyid</cmd>, substituting <code>keyid</code> by your recipient's ID. You need to enter your password, and the ID is automatically added to your keyring.</p>
-
-<p>If someone sends you a public key directly, save it as a plain text file and enter the command <cmd>gpg --import</cmd> to add it to your keyring.</p>
+<p>Pro odeslání zašifrované zprávy musíte použít veřejný klíč příjemce v kombinaci s vaším privátním klíčem. <app>Evolution</app> se postará o šifrování, ale na vás je <link xref="help:seahorse/pgp-import" href="https://help.gnome.org/users/seahorse/stable/pgp-import">získat veřejný klíč a přidat jej do své klíčenky</link>.</p>
 </page>

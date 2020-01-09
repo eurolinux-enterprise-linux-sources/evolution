@@ -32,6 +32,9 @@
 #include "e-mail-inline-filter.h"
 #include "e-mail-part-headers.h"
 
+#define HEADER_PREFIX "<div class=\"-x-evo-paragraph\" data-headers>"
+#define HEADER_SUFFIX "</div>"
+
 typedef EMailFormatterExtension EMailFormatterQuoteHeaders;
 typedef EMailFormatterExtensionClass EMailFormatterQuoteHeadersClass;
 
@@ -69,12 +72,16 @@ emfqe_format_text_header (EMailFormatter *emf,
 	else
 		html = value;
 
+	g_string_append_printf (buffer, HEADER_PREFIX);
+
 	if (flags & E_MAIL_FORMATTER_HEADER_FLAG_BOLD)
 		g_string_append_printf (
-			buffer, "<b>%s</b>: %s<br>", label, html);
+			buffer, "<b>%s</b>: %s", label, html);
 	else
 		g_string_append_printf (
-			buffer, "%s: %s<br>", label, html);
+			buffer, "%s: %s", label, html);
+
+	g_string_append_printf (buffer, HEADER_SUFFIX);
 
 	g_free (mhtml);
 }
@@ -88,6 +95,7 @@ static const gchar *addrspec_hdrs[] = {
 
 static void
 emfqe_format_header (EMailFormatter *formatter,
+		     EMailFormatterContext *context,
                      GString *buffer,
                      EMailPart *part,
                      const gchar *header_name,
@@ -100,6 +108,11 @@ emfqe_format_header (EMailFormatter *formatter,
 	gboolean addrspec = FALSE;
 	gint is_html = FALSE;
 	gint i;
+
+	/* Skip Face header in prints, which includes also message forward */
+	if (context->mode == E_MAIL_FORMATTER_MODE_PRINTING &&
+	    g_ascii_strcasecmp (header_name, "Face") == 0)
+		return;
 
 	flags = E_MAIL_FORMATTER_HEADER_FLAG_NOELIPSIZE;
 
@@ -248,12 +261,14 @@ emqfe_headers_format (EMailFormatterExtension *extension,
 
 	for (ii = 0; ii < length; ii++)
 		emfqe_format_header (
-			formatter, buffer, part,
+			formatter, context, buffer, part,
 			default_headers[ii], charset);
 
 	g_strfreev (default_headers);
 
-	g_string_append (buffer, "<br>\n");
+	g_string_append (buffer, HEADER_PREFIX);
+	g_string_append (buffer, "<br>");
+	g_string_append (buffer, HEADER_SUFFIX);
 
 	g_output_stream_write_all (
 		stream, buffer->str, buffer->len, NULL, cancellable, NULL);

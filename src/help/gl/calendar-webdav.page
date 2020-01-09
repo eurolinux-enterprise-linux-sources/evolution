@@ -50,7 +50,8 @@
       <p>Enter the address in the <gui>URL</gui> field.</p>
     </item>
     <item>
-      <p>Seleccione <gui>Usar conexión segura</gui> se quere conectarse de forma segura.</p>
+      <p>Choose <gui>Use a secure connection</gui> if you want to connect
+      securely.</p>
     </item>
     <item>
       <p>Escriba o seu nome de usuario.</p>

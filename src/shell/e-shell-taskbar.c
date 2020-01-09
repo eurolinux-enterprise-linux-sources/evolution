@@ -67,7 +67,7 @@ enum {
 G_DEFINE_TYPE_WITH_CODE (
 	EShellTaskbar,
 	e_shell_taskbar,
-	GTK_TYPE_HBOX,
+	GTK_TYPE_BOX,
 	G_IMPLEMENT_INTERFACE (
 		E_TYPE_EXTENSIBLE, NULL))
 
@@ -364,18 +364,26 @@ shell_taskbar_size_allocate (GtkWidget *widget,
                              GtkAllocation *allocation)
 {
 	EShellTaskbar *shell_taskbar;
-	gint fixed_height;
+	gint fixed_height, minimum_height = 0, natural_height = 0;
+	gboolean height_changed;
+
+	if (GTK_WIDGET_CLASS (e_shell_taskbar_parent_class)->get_preferred_height)
+		GTK_WIDGET_CLASS (e_shell_taskbar_parent_class)->get_preferred_height (widget, &minimum_height, &natural_height);
 
 	shell_taskbar = E_SHELL_TASKBAR (widget);
 
 	/* Maximum height allocation sticks. */
 	fixed_height = shell_taskbar->priv->fixed_height;
-	fixed_height = MAX (fixed_height, allocation->height);
+	fixed_height = MAX (fixed_height, MAX (allocation->height, minimum_height));
+	height_changed = fixed_height != shell_taskbar->priv->fixed_height;
 	shell_taskbar->priv->fixed_height = fixed_height;
 
 	/* Chain up to parent's size_allocate() method. */
 	GTK_WIDGET_CLASS (e_shell_taskbar_parent_class)->
 		size_allocate (widget, allocation);
+
+	if (height_changed)
+		g_object_set (G_OBJECT (shell_taskbar), "height-request", fixed_height, NULL);
 }
 
 static void
@@ -473,6 +481,7 @@ e_shell_taskbar_init (EShellTaskbar *shell_taskbar)
 	shell_taskbar->priv->main_thread = g_thread_self ();
 
 	gtk_box_set_spacing (GTK_BOX (shell_taskbar), 12);
+	gtk_orientable_set_orientation (GTK_ORIENTABLE (shell_taskbar), GTK_ORIENTATION_HORIZONTAL);
 
 	widget = gtk_label_new (NULL);
 	gtk_label_set_ellipsize (GTK_LABEL (widget), PANGO_ELLIPSIZE_END);

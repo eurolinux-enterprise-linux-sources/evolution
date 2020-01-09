@@ -20,9 +20,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -41,7 +47,7 @@
   <title>Outlook</title>
 <!-- "Import data and settings from older programs" cannot recognize Outlook, as there obviously is no default storage location for Outlook *under Linux* -->
 
-<p>Estos pasos hablan sobre datos almacenados localmente tales como cuentas POP. Esto no es necesario para los datos remotos (como IMAP), ya que los datos están en el servidor y no se necesita su transferencia manual. Puede configurar la cuenta correspondiente en Evolution y se descargarán los datos.</p>
+<p>Estos pasos hablan sobre datos almacenados localmente tales como cuentas POP. Esto no es necesario para los datos remotos (como IMAP), ya que los datos están en el servidor y no se necesita su transferencia manual. Puede configurar la cuenta correspondiente en <app>Evolution</app> y se descargarán los datos.</p>
 
 <section id="prerequisites">
 <title>Prerequisitos bajo Windows</title>
@@ -62,17 +68,17 @@
 <p>(Reemplace «nombre_de_usuario» por su nombre de usuario.)</p>
 </item>
 <!-- File locations taken from http://support.microsoft.com/kb/2291280 and http://answers.microsoft.com/en-us/windows/forum/windows_7-files/where-is-location-of-outlookpst-file-in-windows-7/3a4c03c3-e8ad-4912-9e37-f1c62057d1f9 -->
-<item><p>Copie los archivos de Outlook al sistema o a la partición en la que esté instalado Evolution.</p>
+<item><p>Copie los archivos de Outlook al sistema o a la partición en la que esté instalado <app>Evolution</app>.</p>
 <p>Probablemente su disco duro está en formato NTFS algunos sistemas Linux no pueden leer sin software adicional. Quizá encuentre más fácil copiar las carpetas de correo a una unidad diferente o grabar un CD.</p></item>
 </steps>
 </section>
 
 <section id="importing">
-<title>Importar en Evolution</title>
+<title>Importar en <app>Evolution</app></title>
 <steps>
 <item><p>Dependiendo de su último paso, conecte el disco o la unidad USB con los datos y espere hasta que se abra la ventana del gestor de archivos o monte su unidad Windows.</p></item>
 <item><p>Copie todos los archivos de correo en su carpeta personal o cualquier otro lugar conveniente.</p></item>
-<item><p>Inicie Evolution.</p></item>
+<item><p>Inicie <app>Evolution</app>.</p></item>
 <item><p>opcionalmente, seleccione <guiseq><gui>Archivo</gui><gui>Nuevo</gui><gui>Carpeta de correo</gui></guiseq> para crear las <link xref="mail-folders">carpetas</link> que quiera.</p></item>
 
 <item><p>Pulse <guiseq><gui>Archivo</gui><gui>Importar</gui></guiseq>.</p></item>
@@ -80,7 +86,7 @@
 <item><p>Seleccione el archivo de carpetas personales de Outlook (.pst) que quiere importar.</p><p>Se determinará automáticamente el tipo de archivo.</p>
 <note style="tip"><p>Si la opción para importar carpetas personales de Outlook (archivos .pst) no está disponible en <guiseq><gui>Archivo</gui><gui>Importar</gui><gui>Importar un único archivo</gui><gui>Tipo de archivo</gui></guiseq>, es posible que su distribución tenga activada esta funcionalidad.</p></note>
 </item>
-<item><p>Elija el destino (ej. la carpeta en Evolution) para los datos importados.</p></item>
+<item><p>Elija el destino (ej. la carpeta en <app>Evolution</app>) para los datos importados.</p></item>
 <item><p>Repita los pasos de importación hasta que haya importado todos sus datos.</p></item>
 </steps>
 

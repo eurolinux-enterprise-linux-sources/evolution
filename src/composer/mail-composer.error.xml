@@ -28,15 +28,16 @@
   <_secondary>Error saving to autosave because &quot;{1}&quot;.</_secondary>
  </error>
  
-  <error id="ask-send-message-pending-download" type="question" default="GTK_RESPONSE_YES">
-  <_primary>Download in progress. Do you want to send the mail?</_primary>
-  <_secondary xml:space="preserve"> There are few attachments getting downloaded. Sending the mail will cause the mail to be sent without those pending attachments </_secondary>
-  <button stock="gtk-cancel" response="GTK_RESPONSE_CANCEL"/>
-  <button _label="_Send" response="GTK_RESPONSE_YES"/>
- </error>
-
  <error id="exit-unsaved" type="warning" default="GTK_RESPONSE_CANCEL">
   <_primary>Are you sure you want to discard the message, titled '{0}', you are composing?</_primary>
+  <_secondary>Closing this composer window will discard the message permanently, unless you choose to save the message in your Drafts folder. This will allow you to continue the message at a later date.</_secondary>
+  <button _label="_Discard Changes" response="GTK_RESPONSE_NO"/>
+  <button _label="_Continue Editing" response="GTK_RESPONSE_CANCEL"/>
+  <button _label="_Save Draft" response="GTK_RESPONSE_YES"/>
+ </error>
+
+ <error id="exit-unsaved-no-subject" type="warning" default="GTK_RESPONSE_CANCEL">
+  <_primary>Are you sure you want to discard the message you are composing?</_primary>
   <_secondary>Closing this composer window will discard the message permanently, unless you choose to save the message in your Drafts folder. This will allow you to continue the message at a later date.</_secondary>
   <button _label="_Discard Changes" response="GTK_RESPONSE_NO"/>
   <button _label="_Continue Editing" response="GTK_RESPONSE_CANCEL"/>
@@ -85,6 +86,25 @@
  <error id="saving-to-outbox" type="info">
   <_primary>Saving message to Outbox.</_primary>
   <_secondary>The message will be saved to your local Outbox folder, because the destination service is currently unavailable. You can send the message by clicking the Send/Receive button in Evolution's toolbar.</_secondary>
+ </error>
+
+ <error id="prompt-accel-send" type="question" default="GTK_RESPONSE_YES">
+  <_primary>Are you sure you want to send the message?</_primary>
+  <_secondary xml:space="preserve">A keyboard accelerator to send the message has been pressed. Either cancel sending the message, if it was done by an accident, or send the message.</_secondary>
+  <button stock="gtk-cancel" response="GTK_RESPONSE_CANCEL"/>
+  <button _label="_Send" response="GTK_RESPONSE_YES"/>
+ </error>
+
+  <error id="prompt-composer-mode-switch" type="question" default="GTK_RESPONSE_YES">
+  <_primary>Are you sure you want to change the composer mode?</_primary>
+  <_secondary xml:space="preserve">Turning HTML mode off will cause the text to lose all formatting. Do you want to continue?</_secondary>
+  <button _label="_Don't lose formatting" response="GTK_RESPONSE_NO"/>
+  <button _label="Lose _formatting" response="GTK_RESPONSE_YES"/>
+ </error>
+
+ <error id="failed-save-template" type="error">
+  <_primary>An error occurred while saving to your Templates folder.</_primary>
+  <_secondary>The reported error was &quot;{0}&quot;. The message has most likely not been saved.</_secondary>
  </error>
 
 </error-list>

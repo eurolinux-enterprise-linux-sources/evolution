@@ -24,16 +24,16 @@ libemail_engine_la_CPPFLAGS = \
 	-DLIBEMAIL_ENGINE_COMPILATION \
 	$(EVOLUTION_DATA_SERVER_CFLAGS) \
 	$(GNOME_PLATFORM_CFLAGS) \
-	$(GTKHTML_CFLAGS) \
 	-DEVOLUTION_PRIVDATADIR=\""$(privdatadir)"\" \
+	$(CODE_COVERAGE_CFLAGS) \
 	$(NULL)
 
 libmailengineincludedir = $(privincludedir)/libemail-engine
 libmailengineinclude_HEADERS =  \
 	libemail-engine.h \
 	camel-null-store.h \
+	camel-sasl-oauth2-google.h \
 	camel-sasl-xoauth2.h \
-	e-mail-authenticator.h \
 	e-mail-engine-enums.h \
 	e-mail-engine-enumtypes.h \
 	e-mail-folder-utils.h \
@@ -56,8 +56,8 @@ libmailengineinclude_HEADERS =  \
 libemail_engine_la_SOURCES =  \
 	$(libmailengineinclude_HEADERS) \
 	camel-null-store.c \
+	camel-sasl-oauth2-google.c \
 	camel-sasl-xoauth2.c \
-	e-mail-authenticator.c \
 	e-mail-engine-enumtypes.c \
 	e-mail-folder-utils.c \
 	e-mail-junk-filter.c \
@@ -80,10 +80,9 @@ libemail_engine_la_LIBADD = \
 	$(top_builddir)/e-util/libevolution-util.la \
 	$(EVOLUTION_DATA_SERVER_LIBS) \
 	$(GNOME_PLATFORM_LIBS) \
-	$(GTKHTML_LIBS) \
 	$(NULL)
 
-libemail_engine_la_LDFLAGS = -avoid-version $(NO_UNDEFINED)
+libemail_engine_la_LDFLAGS = -avoid-version $(NO_UNDEFINED) $(CODE_COVERAGE_LDFLAGS)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libemail-engine.pc

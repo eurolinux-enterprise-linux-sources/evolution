@@ -132,8 +132,8 @@ empe_inlinepgp_signed_parse (EMailParserExtension *extension,
 	len = part_id->len;
 	g_string_append (part_id, ".inlinepgp_signed");
 
-	e_mail_parser_parse_part (
-		parser, opart, part_id, cancellable, &work_queue);
+	g_warn_if_fail (e_mail_parser_parse_part (
+		parser, opart, part_id, cancellable, &work_queue));
 
 	head = g_queue_peek_head_link (&work_queue);
 
@@ -160,7 +160,7 @@ empe_inlinepgp_signed_parse (EMailParserExtension *extension,
 
 		e_mail_parser_parse_part_as (
 			parser, part, part_id,
-			"application/vnd.evolution.widget.secure-button",
+			"application/vnd.evolution.secure-button",
 			cancellable, &work_queue);
 
 		mail_part = g_queue_peek_head (&work_queue);

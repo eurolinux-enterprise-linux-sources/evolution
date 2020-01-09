@@ -15,6 +15,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "e-composer-autosave.h"
 
 #include <composer/e-msg-composer.h>
@@ -30,10 +34,6 @@
 struct _EComposerAutosavePrivate {
 	GCancellable *cancellable;
 	guint timeout_id;
-
-	/* Composer contents have changed since
-	 * the last auto-save or explicit save. */
-	gboolean changed;
 
 	/* Prevent error dialogs from piling up. */
 	gboolean error_shown;
@@ -99,25 +99,19 @@ composer_autosave_timeout_cb (gpointer user_data)
 	autosave = E_COMPOSER_AUTOSAVE (user_data);
 	extensible = e_extension_get_extensible (E_EXTENSION (autosave));
 
-	/* User may have reverted or explicitly saved
-	 * the changes since the timeout was scheduled. */
-	if (autosave->priv->changed) {
+	/* Cancel the previous snapshot if it's still in
+	 * progress and start a new snapshot operation. */
+	g_cancellable_cancel (autosave->priv->cancellable);
+	g_object_unref (autosave->priv->cancellable);
+	autosave->priv->cancellable = g_cancellable_new ();
 
-		/* Cancel the previous snapshot if it's still in
-		 * progress and start a new snapshot operation. */
-		g_cancellable_cancel (autosave->priv->cancellable);
-		g_object_unref (autosave->priv->cancellable);
-		autosave->priv->cancellable = g_cancellable_new ();
-
-		e_composer_save_snapshot (
-			E_MSG_COMPOSER (extensible),
-			autosave->priv->cancellable,
-			composer_autosave_finished_cb,
-			g_object_ref (autosave));
-	}
+	e_composer_save_snapshot (
+		E_MSG_COMPOSER (extensible),
+		autosave->priv->cancellable,
+		composer_autosave_finished_cb,
+		g_object_ref (autosave));
 
 	autosave->priv->timeout_id = 0;
-	autosave->priv->changed = FALSE;
 
 	return FALSE;
 }
@@ -125,15 +119,16 @@ composer_autosave_timeout_cb (gpointer user_data)
 static void
 composer_autosave_changed_cb (EComposerAutosave *autosave)
 {
-	GtkhtmlEditor *editor;
+	EHTMLEditor *editor;
+	EContentEditor *cnt_editor;
 	EExtensible *extensible;
 
 	extensible = e_extension_get_extensible (E_EXTENSION (autosave));
 
-	editor = GTKHTML_EDITOR (extensible);
-	autosave->priv->changed = gtkhtml_editor_get_changed (editor);
+	editor = e_msg_composer_get_editor (E_MSG_COMPOSER (extensible));
+	cnt_editor = e_html_editor_get_content_editor (editor);
 
-	if (autosave->priv->changed && autosave->priv->timeout_id == 0) {
+	if (autosave->priv->timeout_id == 0 && e_content_editor_get_changed (cnt_editor)) {
 		autosave->priv->timeout_id = e_named_timeout_add_seconds (
 			AUTOSAVE_INTERVAL,
 			composer_autosave_timeout_cb, autosave);
@@ -164,17 +159,21 @@ composer_autosave_dispose (GObject *object)
 static void
 composer_autosave_constructed (GObject *object)
 {
+	EHTMLEditor *editor;
+	EContentEditor *cnt_editor;
 	EExtensible *extensible;
 
 	/* Chain up to parent's constructed() method. */
 	G_OBJECT_CLASS (e_composer_autosave_parent_class)->constructed (object);
 
 	extensible = e_extension_get_extensible (E_EXTENSION (object));
+	editor = e_msg_composer_get_editor (E_MSG_COMPOSER (extensible));
+	cnt_editor = e_html_editor_get_content_editor (editor);
 
 	/* Do not use e_signal_connect_notify_swapped() here,
 	   this module relies on "false" change notifications. */
 	g_signal_connect_swapped (
-		extensible, "notify::changed",
+		cnt_editor, "notify::changed",
 		G_CALLBACK (composer_autosave_changed_cb), object);
 }
 

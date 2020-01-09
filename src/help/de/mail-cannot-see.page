@@ -25,19 +25,25 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
@@ -54,11 +60,11 @@
   <p>Wenn Sie überhaupt keine Nachrichten in einem Ordner sehen, so stellen Sie sicher, dass die Nachrichtenvorschau nicht maximiert ist (und damit die Nachrichtenliste versteckt ist). Klicken Sie dazu auf <guiseq><gui>Ansicht</gui><gui>Vorschau</gui><gui>Nachrichtenvorschau anzeigen</gui></guiseq>.</p>
  </item>
  <item>
-  <p>Schauen Sie in den <gui>Unerwünscht</gui>-Ordner. Als unerwünscht markierte Nachrichten verschwinden aus dem Originalordner und werden in den Unerwünscht-Ordner verschoben.</p>
+  <p>Schauen Sie in den <gui>Unerwünscht</gui>-Ordner. Als unerwünscht markierte Nachrichten verschwinden aus dem Originalordner und werden in den <gui>Unerwünscht</gui>-Ordner verschoben.</p>
  </item>
  <!-- Does the following option still exist? -->
  <item>
-  <p>Klicken Sie auf <guiseq><gui>Bearbeiten</gui><gui>Gelöschte Nachrichten anzeigen</gui></guiseq>, um sicherzugehen, dass alle Nachrichten sichtbar sind.</p>
+  <p>Klicken Sie auf <guiseq><gui>Ansicht</gui><gui>Gelöschte Nachrichten anzeigen</gui></guiseq>, um sicherzugehen, dass alle Nachrichten sichtbar sind.</p>
  </item>
  <item>
   <p>Prüfen Sie den Vorgabeordner unter <guiseq><gui>Bearbeiten</gui><gui>Einstellungen</gui><gui>E-Mail-Konten</gui><gui>Bearbeiten</gui><gui>Vorgabeeinstellungen</gui></guiseq>. Eventuell ist hier ein anderer als der von Ihnen erwartete Ordner festgelegt.</p>

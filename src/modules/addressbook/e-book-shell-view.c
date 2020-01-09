@@ -167,15 +167,17 @@ book_shell_view_execute_search (EShellView *shell_view)
 			GList *categories;
 			const gchar *category_name;
 
-			categories = e_util_get_searchable_categories ();
+			categories = e_util_dup_searchable_categories ();
 			category_name = g_list_nth_data (categories, filter_id);
-			g_list_free (categories);
 
 			temp = g_strdup_printf (
 				"(and (is \"category_list\" \"%s\") %s)",
 				category_name, query);
 			g_free (query);
 			query = temp;
+
+			g_list_free_full (categories, g_free);
+			break;
 		}
 	}
 

@@ -20,13 +20,31 @@
     
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
-  <title>Διαθέσιμα κριτήρια φακέλου αναζήτησης</title>
+  <title>Available <gui>Search</gui> folder conditions</title>
 
 <list>
 
@@ -35,7 +53,7 @@ included by XInclude. See http://blogs.gnome.org/shaunm/2011/07/21/understanding
 <include xmlns="http://www.w3.org/2001/XInclude" href="xinclude-filter-vfolder-conditions.xml" xpointer="xmlns(mal=http://projectmallard.org/1.0/)xpointer(/mal:info/mal:item)"/>
 
 <item><p>Τοποθεσία μηνύματος:</p>
-<p>Ελέγχει αν το μήνυμα βρίσκεται σε έναν ειδικό φάκελο.</p><p>Από προεπιλογή, οι φάκελοι <gui>Απορρίμματα</gui> και <gui>Ανεπιθύμητα</gui> του Evolution είναι <link xref="mail-search-folders">φάκελοι αναζήτησης</link>, έτσι δεν μπορούν να επιλεγούν εδώ.</p></item>
+<p>Ελέγχει αν το μήνυμα βρίσκεται σε έναν ειδικό φάκελο.</p><p>Note that by default, <app>Evolution</app>'s <gui>Trash</gui> and <gui>Junk</gui> folders are <link xref="mail-search-folders"><gui>Search</gui> folders</link> so they cannot be selected here.</p></item>
 
 <item><p>Συμφωνία όλων:</p>
 <p>Εφαρμόζει μια ενέργεια πάντα σε κάθε μήνυμα, χωρίς παραπέρα συνθήκες. Αυτό μπορεί να είναι χρήσιμο στο τέλος του καταλόγου των φακέλων αναζήτησης για να καλύψει αυτά τα μηνύματα που δεν ταιριάζουν σε οποιαδήποτε συνθήκη για τους προηγούμενους φακέλους αναζήτησης στον κατάλογο.</p></item>

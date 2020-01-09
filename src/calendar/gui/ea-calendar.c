@@ -34,7 +34,6 @@
 #include "calendar/gui/ea-day-view-main-item.h"
 #include "calendar/gui/ea-week-view.h"
 #include "calendar/gui/ea-week-view-main-item.h"
-#include "calendar/gui/ea-gnome-calendar.h"
 
 EA_FACTORY_GOBJECT (
 	EA_TYPE_DAY_VIEW_MAIN_ITEM,
@@ -42,7 +41,6 @@ EA_FACTORY_GOBJECT (
 EA_FACTORY_GOBJECT (
 	EA_TYPE_WEEK_VIEW_MAIN_ITEM,
 	ea_week_view_main_item, ea_week_view_main_item_new)
-EA_FACTORY (EA_TYPE_GNOME_CALENDAR, ea_gnome_calendar, ea_gnome_calendar_new)
 
 static gboolean ea_calendar_focus_watcher (GSignalInvocationHint *ihint,
                                            guint n_param_values,
@@ -53,7 +51,7 @@ static gpointer e_text_type, pixbuf_type, e_day_view_type, e_week_view_type;
 static gpointer e_day_view_main_item_type, e_week_view_main_item_type;
 
 void
-gnome_calendar_a11y_init (void)
+e_calendar_a11y_init (void)
 {
 	/* we only add focus watcher when accessibility is enabled
 	 */
@@ -63,8 +61,6 @@ gnome_calendar_a11y_init (void)
 		/* first initialize ATK support in gnome-canvas and also gail-canvas */
 		gnome_canvas = gnome_canvas_new ();
 		gtk_widget_destroy (gnome_canvas);
-
-		EA_SET_FACTORY (gnome_calendar_get_type (), ea_gnome_calendar);
 
 		/* force loading some types */
 		e_text_type = g_type_class_ref (E_TYPE_TEXT);
@@ -135,15 +131,12 @@ ea_calendar_focus_watcher (GSignalInvocationHint *ihint,
 
 		canvas_item = GNOME_CANVAS_ITEM (object);
 		if (event->type == GDK_FOCUS_CHANGE) {
-			if (event->focus_change.in) {
-				ea_event =
-					ea_calendar_helpers_get_accessible_for (canvas_item);
-				if (!ea_event)
-					/* not canvas item we want */
-					return TRUE;
-
-			}
-			atk_focus_tracker_notify (ea_event);
+			ea_event =
+				ea_calendar_helpers_get_accessible_for (canvas_item);
+			if (!ea_event)
+				/* not canvas item we want */
+				return TRUE;
+			atk_object_notify_state_change (ea_event, ATK_STATE_FOCUSED, event->focus_change.in);
 		}
 	}
 	else if (E_IS_DAY_VIEW (object)) {
@@ -157,17 +150,12 @@ ea_calendar_focus_watcher (GSignalInvocationHint *ihint,
 	}
 	else if (E_IS_DAY_VIEW_MAIN_ITEM (object)) {
 		if (event->type == GDK_FOCUS_CHANGE) {
-			if (event->focus_change.in) {
-				/* we should emit focus on main item */
-				ea_event = atk_gobject_accessible_for_object (object);
-			}
-			else
-				/* focus out */
-				ea_event = NULL;
+			/* we should emit focus on main item */
+			ea_event = atk_gobject_accessible_for_object (object);
 #ifdef ACC_DEBUG
 			printf ("EvoAcc: focus notify on day main item %p\n", (gpointer) object);
 #endif
-			atk_focus_tracker_notify (ea_event);
+			atk_object_notify_state_change (ea_event, ATK_STATE_FOCUSED, event->focus_change.in);
 		}
 	} else if (E_IS_WEEK_VIEW (object)) {
 		EWeekView *week_view = E_WEEK_VIEW (object);
@@ -180,14 +168,9 @@ ea_calendar_focus_watcher (GSignalInvocationHint *ihint,
 	}
 	else if (E_IS_WEEK_VIEW_MAIN_ITEM (object)) {
 		if (event->type == GDK_FOCUS_CHANGE) {
-			if (event->focus_change.in) {
-				/* we should emit focus on main item */
-				ea_event = atk_gobject_accessible_for_object (object);
-			}
-			else
-				/* focus out */
-				ea_event = NULL;
-			atk_focus_tracker_notify (ea_event);
+			/* we should emit focus on main item */
+			ea_event = atk_gobject_accessible_for_object (object);
+			atk_object_notify_state_change (ea_event, ATK_STATE_FOCUSED, event->focus_change.in);
 		}
 	}
 	return TRUE;

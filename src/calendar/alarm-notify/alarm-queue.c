@@ -112,6 +112,10 @@ typedef struct {
 	/* original trigger of the instance from component */
 	time_t orig_trigger;
 
+	#ifdef HAVE_LIBNOTIFY
+	NotifyNotification *notify;
+	#endif
+
 	/* Whether this is a snoozed queued alarm or a normal one */
 	guint snooze : 1;
 } QueuedAlarm;
@@ -392,6 +396,12 @@ remove_queued_alarm (CompQueuedAlarms *cqa,
 		}
 	}
 
+	#ifdef HAVE_LIBNOTIFY
+	if (qa->notify) {
+		notify_notification_close (qa->notify, NULL);
+		g_clear_object (&qa->notify);
+	}
+	#endif
 	g_free (qa);
 
 	/* If this was the last queued alarm for this component, remove the
@@ -471,6 +481,17 @@ alarm_trigger_cb (gpointer alarm_id,
 	config_data_set_last_notification_time (
 		cqa->parent_client->cal_client, trigger);
 	debug (("Setting Last notification time to %s", e_ctime (&trigger)));
+
+	if (e_cal_component_get_vtype (comp) == E_CAL_COMPONENT_TODO) {
+		icalproperty_status status = ICAL_STATUS_NONE;
+
+		e_cal_component_get_status (comp, &status);
+
+		if (status == ICAL_STATUS_COMPLETED &&
+		    !config_data_get_task_reminder_for_completed ()) {
+			return;
+		}
+	}
 
 	qa = lookup_queued_alarm (cqa, alarm_id);
 	if (!qa)
@@ -557,7 +578,7 @@ add_component_alarms (ClientAlarms *ca,
 		if (!alarm_id)
 			continue;
 
-		qa = g_new (QueuedAlarm, 1);
+		qa = g_new0 (QueuedAlarm, 1);
 		qa->alarm_id = alarm_id;
 		qa->instance = instance;
 		qa->orig_trigger = instance->trigger;
@@ -710,7 +731,8 @@ remove_alarms (CompQueuedAlarms *cqa,
 		l = l->next;
 
 		alarm_remove (qa->alarm_id);
-		remove_queued_alarm (cqa, qa->alarm_id, free_object, FALSE);
+		if (remove_queued_alarm (cqa, qa->alarm_id, free_object, FALSE))
+			break;
 	}
 }
 
@@ -908,7 +930,7 @@ query_objects_changed_async (struct _query_msg *msg)
 			if (!alarm_id)
 				continue;
 
-			qa = g_new (QueuedAlarm, 1);
+			qa = g_new0 (QueuedAlarm, 1);
 			qa->alarm_id = alarm_id;
 			qa->instance = instance;
 			qa->snooze = FALSE;
@@ -1014,7 +1036,13 @@ create_snooze (CompQueuedAlarms *cqa,
 	orig_qa->instance->trigger = t;
 	orig_qa->alarm_id = new_id;
 	orig_qa->snooze = TRUE;
-	debug (("Adding a alarm at %s", e_ctime (&t)));
+	#ifdef HAVE_LIBNOTIFY
+	if (orig_qa->notify) {
+		notify_notification_close (orig_qa->notify, NULL);
+		g_clear_object (&orig_qa->notify);
+	}
+	#endif
+	debug (("Adding an alarm at %s", e_ctime (&t)));
 }
 
 /* Launches a component editor for a component */
@@ -1481,7 +1509,7 @@ open_alarm_dialog (TrayIconData *tray_data)
 				tray_data->trigger,
 				qa->instance->occur_start,
 				qa->instance->occur_end,
-				e_cal_component_get_vtype (tray_data->comp),
+				tray_data->comp,
 				tray_data->summary,
 				tray_data->description,
 				tray_data->location,
@@ -1666,7 +1694,7 @@ display_notification (time_t trigger,
 	TrayIconData *tray_data;
 	ECalComponentText text;
 	GSList *text_list;
-	gchar *str, *start_str, *end_str, *alarm_str, *time_str;
+	gchar *str, *start_str, *alarm_str, *time_str;
 	icaltimezone *current_zone;
 	ECalComponentOrganizer organiser;
 
@@ -1706,7 +1734,7 @@ display_notification (time_t trigger,
 		location = _("No location information available.");
 
 	/* create the tray icon */
-	if (tray_icon == NULL) {
+	if (!tray_icon && !e_util_is_running_gnome ()) {
 		tray_icon = gtk_status_icon_new ();
 		gtk_status_icon_set_title (tray_icon, _("Evolution Reminders"));
 		gtk_status_icon_set_from_icon_name (
@@ -1720,9 +1748,8 @@ display_notification (time_t trigger,
 	}
 
 	current_zone = config_data_get_timezone ();
-	alarm_str = timet_to_str_with_zone (trigger, current_zone);
-	start_str = timet_to_str_with_zone (qa->instance->occur_start, current_zone);
-	end_str = timet_to_str_with_zone (qa->instance->occur_end, current_zone);
+	alarm_str = timet_to_str_with_zone (trigger, current_zone, FALSE);
+	start_str = timet_to_str_with_zone (qa->instance->occur_start, current_zone, datetime_is_date_only (comp, DATETIME_CHECK_DTSTART));
 	time_str = calculate_time (qa->instance->occur_start, qa->instance->occur_end);
 
 	str = g_strdup_printf (
@@ -1755,15 +1782,14 @@ display_notification (time_t trigger,
 			"You have %d reminder", "You have %d reminders",
 			g_list_length (tray_icons_list)),
 			g_list_length (tray_icons_list));
-		gtk_status_icon_set_tooltip_text (tray_icon, tip);
-	}
-	else {
+		if (tray_icon)
+			gtk_status_icon_set_tooltip_text (tray_icon, tip);
+	} else if (tray_icon) {
 		gtk_status_icon_set_tooltip_text (tray_icon, str);
 	}
 
 	g_free (alarm_summary);
 	g_free (start_str);
-	g_free (end_str);
 	g_free (alarm_str);
 	g_free (time_str);
 	g_free (str);
@@ -1780,7 +1806,7 @@ display_notification (time_t trigger,
 			gtk_window_stick (GTK_WINDOW (
 				alarm_notifications_dialog->dialog));
 	} else {
-		if (tray_blink_id == -1) {
+		if (tray_blink_id == -1 && tray_icon) {
 			tray_blink_countdown = 30;
 			tray_blink_id = e_named_timeout_add (
 				500, tray_icon_blink_cb, tray_data);
@@ -1789,6 +1815,51 @@ display_notification (time_t trigger,
 }
 
 #ifdef HAVE_LIBNOTIFY
+
+static void
+notify_open_appointments_cb (NotifyNotification *notification,
+			     gchar *action,
+			     gpointer user_data)
+{
+	GdkEvent event;
+
+	notify_notification_close (notification, NULL);
+
+	event.type = GDK_BUTTON_PRESS;
+	event.button.button = 1;
+	event.button.time = gtk_get_current_event_time ();
+
+	tray_icon_clicked_cb (NULL, &event, NULL);
+}
+
+/* Check if actions are supported by the notification daemon.
+ * This is really only for Ubuntu's Notify OSD, which does not
+ * support actions.  Pretty much all other implementations do. */
+static gboolean
+can_support_actions (void)
+{
+	static gboolean supports_actions = FALSE;
+	static gboolean have_checked = FALSE;
+
+	if (!have_checked) {
+		GList *caps = NULL;
+		GList *match;
+
+		have_checked = TRUE;
+
+		caps = notify_get_server_caps ();
+
+		match = g_list_find_custom (
+			caps, "actions", (GCompareFunc) strcmp);
+		supports_actions = (match != NULL);
+
+		g_list_foreach (caps, (GFunc) g_free, NULL);
+		g_list_free (caps);
+	}
+
+	return supports_actions;
+}
+
 static void
 popup_notification (time_t trigger,
                     CompQueuedAlarms *cqa,
@@ -1799,11 +1870,11 @@ popup_notification (time_t trigger,
 	ECalComponent *comp;
 	const gchar *summary, *location;
 	gchar *alarm_summary;
-	gchar *str, *start_str, *end_str, *alarm_str, *time_str;
+	gchar *str, *start_str, *alarm_str, *time_str;
 	icaltimezone *current_zone;
 	ECalComponentOrganizer organiser;
-	NotifyNotification *notify;
 	gchar *body;
+	GError *error = NULL;
 
 	debug (("..."));
 
@@ -1828,9 +1899,8 @@ popup_notification (time_t trigger,
 	/* create the tray icon */
 
 	current_zone = config_data_get_timezone ();
-	alarm_str = timet_to_str_with_zone (trigger, current_zone);
-	start_str = timet_to_str_with_zone (qa->instance->occur_start, current_zone);
-	end_str = timet_to_str_with_zone (qa->instance->occur_end, current_zone);
+	alarm_str = timet_to_str_with_zone (trigger, current_zone, FALSE);
+	start_str = timet_to_str_with_zone (qa->instance->occur_start, current_zone, datetime_is_date_only (comp, DATETIME_CHECK_DTSTART));
 	time_str = calculate_time (qa->instance->occur_start, qa->instance->occur_end);
 
 	str = g_strdup_printf (
@@ -1858,21 +1928,32 @@ popup_notification (time_t trigger,
 				"%s %s", start_str, time_str);
 	}
 
-	notify = notify_notification_new (summary, body, "appointment-soon");
+	if (qa->notify) {
+		notify_notification_close (qa->notify, NULL);
+		g_clear_object (&qa->notify);
+	}
+
+	qa->notify = notify_notification_new (summary, body, "appointment-soon");
 
 	/* If the user wants Evolution notifications suppressed, honor
 	 * it even though evolution-alarm-notify is a separate process
 	 * with its own .desktop file. */
 	notify_notification_set_hint (
-		notify, "desktop-entry",
+		qa->notify, "desktop-entry",
 		g_variant_new_string (PACKAGE));
 
-	if (!notify_notification_show (notify, NULL))
-		g_warning ("Could not send notification to daemon\n");
+	if (can_support_actions ()) {
+		notify_notification_add_action (
+			qa->notify, "open-appointments", _("Appointments"),
+			notify_open_appointments_cb, NULL, NULL);
+	}
 
+	if (!notify_notification_show (qa->notify, &error))
+		g_warning ("Could not send notification to daemon: %s\n", error ? error->message : "Unknown error");
+
+	g_clear_error (&error);
 	g_free (alarm_summary);
 	g_free (start_str);
-	g_free (end_str);
 	g_free (alarm_str);
 	g_free (time_str);
 	g_free (str);

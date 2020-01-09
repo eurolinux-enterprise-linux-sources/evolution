@@ -27,9 +27,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -51,7 +57,7 @@
 
 <section id="marking-junk">
 <title>Marcar correo manualmente como SPAM</title>
-<p>Si Evolution deja pasar spam, pulse con el botón derecho sobre el mensaje y elija <gui>Marcar como spam</gui>, o marque el mensaje y pulse <keyseq><key>Ctrl</key><key>J</key></keyseq> o pulse el botón <gui>Spam</gui> en la barra de herramientas. Cuando le corrige, el filtro es capaz de reconocer mensajes similares en el futuro, por lo que se hace más preciso con el paso del tiempo.</p>
+<p>Si <app>Evolution</app> deja pasar spam, pulse con el botón derecho sobre el mensaje y elija <gui>Marcar como spam</gui>, o marque el mensaje y pulse <keyseq><key>Ctrl</key><key>J</key></keyseq> o pulse el botón <gui>Spam</gui> en la barra de herramientas. Cuando le corrige, el filtro es capaz de reconocer mensajes similares en el futuro, por lo que se hace más preciso con el paso del tiempo.</p>
 <p>Si el correo legítimo se marca incorrectamente, quítelo de la carpeta <gui>Spam</gui> pulsando con el botón derecho y seleccionando <gui>Marcar como no SPAM</gui> o pulsando <keyseq><key>Mayús</key><key>Ctrl</key><key>J</key></keyseq>, o marque el mensaje y pulse el botón <gui>No es Spam</gui></p>
 
 </section>

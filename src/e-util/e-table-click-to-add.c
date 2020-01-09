@@ -79,25 +79,23 @@ static void
 etcta_style_updated (ETableClickToAdd *etcta)
 {
 	GtkWidget *widget;
-	GdkColor fg, bg, text;
+	GdkColor fg, bg;
 
 	widget = GTK_WIDGET (GNOME_CANVAS_ITEM (etcta)->canvas);
 
-	e_utils_get_theme_color_color (widget, "theme_fg_color", E_UTILS_DEFAULT_THEME_FG_COLOR, &fg);
-	e_utils_get_theme_color_color (widget, "theme_bg_color", E_UTILS_DEFAULT_THEME_BG_COLOR, &bg);
-	e_utils_get_theme_color_color (widget, "theme_text_color,theme_fg_color", E_UTILS_DEFAULT_THEME_TEXT_COLOR, &text);
+	e_utils_get_theme_color_color (widget, "theme_selected_fg_color", E_UTILS_DEFAULT_THEME_SELECTED_FG_COLOR, &fg);
+	e_utils_get_theme_color_color (widget, "theme_selected_bg_color", E_UTILS_DEFAULT_THEME_SELECTED_BG_COLOR, &bg);
 
 	if (etcta->rect)
 		gnome_canvas_item_set (
 			etcta->rect,
-			"outline_color_gdk", &fg,
 			"fill_color_gdk", &bg,
 			NULL);
 
 	if (etcta->text)
 		gnome_canvas_item_set (
 			etcta->text,
-			"fill_color_gdk", &text,
+			"fill_color_gdk", &fg,
 			NULL);
 }
 
@@ -245,7 +243,7 @@ etcta_set_property (GObject *object,
 		if (etcta->rect)
 			gnome_canvas_item_set (
 				etcta->rect,
-				"x2", etcta->width - 1,
+				"x2", etcta->width,
 				NULL);
 		break;
 	default:
@@ -260,23 +258,21 @@ static void
 create_rect_and_text (ETableClickToAdd *etcta)
 {
 	GtkWidget *widget;
-	GdkColor fg, bg, text;
+	GdkColor fg, bg;
 
 	widget = GTK_WIDGET (GNOME_CANVAS_ITEM (etcta)->canvas);
 
-	e_utils_get_theme_color_color (widget, "theme_fg_color", E_UTILS_DEFAULT_THEME_FG_COLOR, &fg);
-	e_utils_get_theme_color_color (widget, "theme_bg_color", E_UTILS_DEFAULT_THEME_BG_COLOR, &bg);
-	e_utils_get_theme_color_color (widget, "theme_text_color,theme_fg_color", E_UTILS_DEFAULT_THEME_TEXT_COLOR, &text);
+	e_utils_get_theme_color_color (widget, "theme_selected_fg_color", E_UTILS_DEFAULT_THEME_SELECTED_FG_COLOR, &fg);
+	e_utils_get_theme_color_color (widget, "theme_selected_bg_color", E_UTILS_DEFAULT_THEME_SELECTED_BG_COLOR, &bg);
 
 	if (!etcta->rect)
 		etcta->rect = gnome_canvas_item_new (
 			GNOME_CANVAS_GROUP (etcta),
 			gnome_canvas_rect_get_type (),
 			"x1", (gdouble) 0,
-			"y1", (gdouble) 0,
-			"x2", (gdouble) etcta->width - 1,
-			"y2", (gdouble) etcta->height - 1,
-			"outline_color_gdk", &fg,
+			"y1", (gdouble) 1,
+			"x2", (gdouble) etcta->width,
+			"y2", (gdouble) etcta->height,
 			"fill_color_gdk", &bg,
 			NULL);
 
@@ -286,7 +282,7 @@ create_rect_and_text (ETableClickToAdd *etcta)
 			e_text_get_type (),
 			"text", etcta->message ? etcta->message : "",
 			"width", etcta->width - 4,
-			"fill_color_gdk", &text,
+			"fill_color_gdk", &fg,
 			NULL);
 }
 
@@ -396,6 +392,15 @@ finish_editing (ETableClickToAdd *etcta)
 		etcta_drop_one (etcta);
 		g_object_run_dispose (G_OBJECT (etcta->row));
 		etcta->row = NULL;
+
+		if (etcta->text) {
+			g_object_run_dispose (G_OBJECT (etcta->text));
+			etcta->text = NULL;
+		}
+		if (etcta->rect) {
+			g_object_run_dispose (G_OBJECT (etcta->rect));
+			etcta->rect = NULL;
+		}
 
 		one = e_table_one_new (etcta->model);
 		etcta_add_one (etcta, one);

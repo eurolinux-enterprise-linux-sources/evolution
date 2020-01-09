@@ -28,19 +28,25 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
@@ -65,11 +71,11 @@
 <p>Um eine gemeinsame Notiz zu verschicken,</p>
 <steps>
 <item><p>Klicken Sie auf <guiseq><gui>Datei</gui><gui>Neu</gui><gui>Gemeinsame Notiz</gui></guiseq> oder drücken Sie <keyseq><key>Umschalttaste</key><key>Strg</key><key>H</key></keyseq>.</p></item>
-<item><p>Wählen Sie den Kontonamen des Organisators aus der Auswahlliste neben dem Feld »Organisator«.</p></item>
-<item><p>Geben Sie im Feld »An:« einen Benutzernamen ein und drücken Sie die Eingabetaste. Wiederholen Sie dies für weitere Benutzer.</p></item>
+<item><p>Wählen Sie den Kontonamen des Organisators aus der Auswahlliste neben dem Feld <gui>Organisator</gui>.</p></item>
+<item><p>Geben Sie im Feld <gui>An:</gui> einen Benutzernamen ein und drücken Sie die <key>Eingabetaste</key>. Wiederholen Sie dies für weitere Benutzer.</p></item>
 <item><p>Wählen Sie die Aufgabenliste (unter <gui>Liste</gui>), in welcher der Eintrag angelegt werden soll.</p></item>
-<item><p>Geben Sie eine kurze Zusammenfassung in das »Zusammenfassung«-Feld ein.</p></item>
-<item><p>Geben Sie in das Feld »Startdatum« ein, an welchem Datum die gemeinsame Notiz im Kalender des Empfängers angezeigt werden soll.</p></item>
+<item><p>Geben Sie eine kurze Zusammenfassung im <gui>Zusammenfassung</gui>-Feld ein.</p></item>
+<item><p>Geben Sie in das Feld <gui>Startdatum</gui> ein, an welchem Datum die gemeinsame Notiz im Kalender des Empfängers angezeigt werden soll.</p></item>
 <item><p>Klicken Sie auf den <gui style="button">Speichern</gui>-Knopf oder <guiseq><gui>Datei</gui><gui>Speichern</gui></guiseq>.</p></item>
 </steps>
 </section>

@@ -47,6 +47,8 @@
 	(G_TYPE_INSTANCE_GET_CLASS \
 	((obj), E_TYPE_SOURCE_SELECTOR, ESourceSelectorClass))
 
+#define E_SOURCE_SELECTOR_GROUPS_SETUP_NAME "SourceSelector"
+
 G_BEGIN_DECLS
 
 typedef struct _ESourceSelector ESourceSelector;
@@ -64,7 +66,7 @@ struct _ESourceSelectorClass {
 	/* Methods */
 	gboolean	(*get_source_selected)	(ESourceSelector *selector,
 						 ESource *source);
-	void		(*set_source_selected)	(ESourceSelector *selector,
+	gboolean	(*set_source_selected)	(ESourceSelector *selector,
 						 ESource *source,
 						 gboolean selected);
 
@@ -80,6 +82,10 @@ struct _ESourceSelectorClass {
 						 ESource *destination,
 						 GdkDragAction action,
 						 guint target_info);
+	void		(*source_selected)	(ESourceSelector *selector,
+						 ESource *source);
+	void		(*source_unselected)	(ESourceSelector *selector,
+						 ESource *source);
 
 	gpointer padding1;
 	gpointer padding2;
@@ -116,10 +122,13 @@ void		e_source_selector_unselect_source
 void		e_source_selector_select_exclusive
 						(ESourceSelector *selector,
 						 ESource *source);
+void		e_source_selector_select_all	(ESourceSelector *selector);
 gboolean	e_source_selector_source_is_selected
 						(ESourceSelector *selector,
 						 ESource *source);
 GList *		e_source_selector_get_selection	(ESourceSelector *selector);
+guint		e_source_selector_count_total	(ESourceSelector *selector);
+guint		e_source_selector_count_selected(ESourceSelector *selector);
 void		e_source_selector_edit_primary_selection
 						(ESourceSelector *selector);
 ESource *	e_source_selector_ref_primary_selection
@@ -139,6 +148,27 @@ void		e_source_selector_update_row	(ESourceSelector *selector,
 						 ESource *source);
 void		e_source_selector_update_all_rows
 						(ESourceSelector *selector);
+void		e_source_selector_set_source_tooltip
+						(ESourceSelector *selector,
+						 ESource *source,
+						 const gchar *tooltip);
+gchar *		e_source_selector_dup_source_tooltip
+						(ESourceSelector *selector,
+						 ESource *source);
+void		e_source_selector_set_source_is_busy
+						(ESourceSelector *selector,
+						 ESource *source,
+						 gboolean is_busy);
+gboolean	e_source_selector_get_source_is_busy
+						(ESourceSelector *selector,
+						 ESource *source);
+gboolean	e_source_selector_manage_groups	(ESourceSelector *selector);
+gboolean	e_source_selector_save_groups_setup
+						(ESourceSelector *selector,
+						 GKeyFile *key_file);
+void		e_source_selector_load_groups_setup
+						(ESourceSelector *selector,
+						 GKeyFile *key_file);
 
 G_END_DECLS
 

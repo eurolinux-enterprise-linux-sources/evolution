@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="guide" id="mail-composer-custom-header-lines" xml:lang="oc">
 
   <info>
-    <desc>Using custom fields in the header of composed messages</desc>
+    <desc>Using custom fields in the header of composed messages.</desc>
 
     <link type="guide" xref="index#mail-composing-advanced"/>
 

@@ -42,6 +42,7 @@
 #include "e-mail-backend.h"
 #include "e-mail-browser.h"
 #include "e-mail-enumtypes.h"
+#include "e-mail-notes.h"
 #include "e-mail-reader-utils.h"
 #include "e-mail-ui-session.h"
 #include "e-mail-view.h"
@@ -89,11 +90,16 @@ struct _EMailReaderPrivate {
 	guint did_try_to_open_message : 1;
 
 	guint group_by_threads : 1;
+	guint mark_seen_always : 1;
 
 	/* to be able to start the mark_seen timeout only after
 	 * the message is loaded into the EMailDisplay */
 	gboolean schedule_mark_seen;
 	guint schedule_mark_seen_interval;
+
+	gpointer remote_content_alert; /* EAlert */
+
+	gpointer followup_alert; /* weak pointer to an EAlert */
 };
 
 enum {
@@ -178,7 +184,7 @@ action_mail_add_sender_cb (GtkAction *action,
 	if (info == NULL)
 		goto exit;
 
-	address = camel_message_info_from (info);
+	address = camel_message_info_get_from (info);
 	if (address == NULL || *address == '\0')
 		goto exit;
 
@@ -341,11 +347,14 @@ mail_reader_copy_or_move_selected_messages (EMailReader *reader,
 
 	model = em_folder_tree_model_get_default ();
 
-	dialog = em_folder_selector_new (window, model,EM_FOLDER_SELECTOR_CAN_CREATE,
-		is_move ? _("Move to Folder") : _("Copy to Folder"), NULL,
-		is_move ? _("_Move") : _("C_opy"));
+	dialog = em_folder_selector_new (window, model);
+
+	gtk_window_set_title (GTK_WINDOW (dialog), is_move ? _("Move to Folder") : _("Copy to Folder"));
 
 	selector = EM_FOLDER_SELECTOR (dialog);
+	em_folder_selector_set_can_create (selector, TRUE);
+	em_folder_selector_set_default_button_label (selector, is_move ? _("_Move") : _("C_opy"));
+
 	folder_tree = em_folder_selector_get_folder_tree (selector);
 
 	em_folder_tree_set_excluded (
@@ -398,6 +407,100 @@ action_mail_copy_cb (GtkAction *action,
                      EMailReader *reader)
 {
 	mail_reader_copy_or_move_selected_messages (reader, FALSE);
+}
+
+static void
+action_mail_edit_note_cb (GtkAction *action,
+			  EMailReader *reader)
+{
+	CamelFolder *folder;
+	GPtrArray *uids;
+
+	folder = e_mail_reader_ref_folder (reader);
+	uids = e_mail_reader_get_selected_uids (reader);
+
+	if (uids && uids->len == 1) {
+		e_mail_notes_edit (e_mail_reader_get_window (reader), folder, uids->pdata[0]);
+	} else {
+		g_warn_if_reached ();
+	}
+
+	g_clear_object (&folder);
+	g_ptr_array_unref (uids);
+}
+
+typedef struct {
+	CamelFolder *folder;
+	gchar *uid;
+} DeleteNoteData;
+
+static void
+delete_note_data_free (gpointer ptr)
+{
+	DeleteNoteData *dnd = ptr;
+
+	if (dnd) {
+		g_clear_object (&dnd->folder);
+		g_free (dnd->uid);
+		g_free (dnd);
+	}
+}
+
+static void
+mail_delete_note_thread (EAlertSinkThreadJobData *job_data,
+			 gpointer user_data,
+			 GCancellable *cancellable,
+			 GError **error)
+{
+	DeleteNoteData *dnd = user_data;
+
+	g_return_if_fail (dnd != NULL);
+	g_return_if_fail (CAMEL_IS_FOLDER (dnd->folder));
+	g_return_if_fail (dnd->uid != NULL);
+
+	e_mail_notes_remove_sync (dnd->folder, dnd->uid, cancellable, error);
+}
+
+static void
+action_mail_delete_note_cb (GtkAction *action,
+			    EMailReader *reader)
+{
+	CamelFolder *folder;
+	GPtrArray *uids;
+
+	folder = e_mail_reader_ref_folder (reader);
+	uids = e_mail_reader_get_selected_uids (reader);
+
+	if (uids && uids->len == 1) {
+		DeleteNoteData *dnd;
+		EAlertSink *alert_sink;
+		EActivity *activity;
+		gchar *full_display_name;
+
+		dnd = g_new0 (DeleteNoteData, 1);
+		dnd->folder = g_object_ref (folder);
+		dnd->uid = g_strdup (uids->pdata[0]);
+
+		full_display_name = e_mail_folder_to_full_display_name (folder, NULL);
+		alert_sink = e_mail_reader_get_alert_sink (reader);
+
+		activity = e_alert_sink_submit_thread_job (alert_sink,
+			_("Deleting message note..."),
+			"mail:failed-delete-note",
+			full_display_name ? full_display_name : camel_folder_get_full_name (folder),
+			mail_delete_note_thread, dnd, delete_note_data_free);
+
+		if (activity)
+			e_shell_backend_add_activity (E_SHELL_BACKEND (e_mail_reader_get_backend (reader)), activity);
+
+		g_clear_object (&activity);
+		g_free (full_display_name);
+	} else {
+		g_warn_if_reached ();
+	}
+
+	g_clear_object (&folder);
+	g_ptr_array_unref (uids);
 }
 
 static void
@@ -688,21 +791,8 @@ action_mail_mark_junk_cb (GtkAction *action,
 		CAMEL_MESSAGE_JUNK |
 		CAMEL_MESSAGE_JUNK_LEARN;
 
-	if (e_mail_reader_mark_selected (reader, mask, set) == 1) {
-		CamelFolder *folder;
-		gboolean select_next_message;
-
-		folder = e_mail_reader_ref_folder (reader);
-
-		select_next_message =
-			(folder != NULL) &&
-			(folder->folder_flags & CAMEL_FOLDER_IS_JUNK);
-
-		if (select_next_message)
-			e_mail_reader_select_next_message (reader, TRUE);
-
-		g_clear_object (&folder);
-	}
+	if (e_mail_reader_mark_selected (reader, mask, set) != 0)
+		e_mail_reader_select_next_message (reader, TRUE);
 }
 
 static void
@@ -717,19 +807,8 @@ action_mail_mark_notjunk_cb (GtkAction *action,
 		CAMEL_MESSAGE_NOTJUNK |
 		CAMEL_MESSAGE_JUNK_LEARN;
 
-	if (e_mail_reader_mark_selected (reader, mask, set) == 1) {
-		CamelFolder *folder;
-		gboolean select_next_message;
-
-		folder = e_mail_reader_ref_folder (reader);
-
-		select_next_message =
-			(folder != NULL) &&
-			(folder->folder_flags & CAMEL_FOLDER_IS_JUNK);
-
-		if (select_next_message)
-			e_mail_reader_select_next_message (reader, TRUE);
-	}
+	if (e_mail_reader_mark_selected (reader, mask, set) != 0)
+		e_mail_reader_select_next_message (reader, TRUE);
 }
 
 static void
@@ -750,6 +829,34 @@ action_mail_mark_unimportant_cb (GtkAction *action,
 	guint32 set = 0;
 
 	e_mail_reader_mark_selected (reader, mask, set);
+}
+
+static void
+action_mail_mark_ignore_thread_sub_cb (GtkAction *action,
+					 EMailReader *reader)
+{
+	e_mail_reader_mark_selected_ignore_thread (reader, E_IGNORE_THREAD_SUBSET_SET);
+}
+
+static void
+action_mail_mark_unignore_thread_sub_cb (GtkAction *action,
+					 EMailReader *reader)
+{
+	e_mail_reader_mark_selected_ignore_thread (reader, E_IGNORE_THREAD_SUBSET_UNSET);
+}
+
+static void
+action_mail_mark_ignore_thread_whole_cb (GtkAction *action,
+					 EMailReader *reader)
+{
+	e_mail_reader_mark_selected_ignore_thread (reader, E_IGNORE_THREAD_WHOLE_SET);
+}
+
+static void
+action_mail_mark_unignore_thread_whole_cb (GtkAction *action,
+					   EMailReader *reader)
+{
+	e_mail_reader_mark_selected_ignore_thread (reader, E_IGNORE_THREAD_WHOLE_UNSET);
 }
 
 static void
@@ -808,6 +915,43 @@ action_mail_message_edit_cb (GtkAction *action,
 	g_ptr_array_unref (uids);
 }
 
+typedef struct _CreateComposerData {
+	EMailReader *reader;
+	CamelMimeMessage *message;
+	CamelFolder *folder;
+	gboolean is_redirect;
+} CreateComposerData;
+
+static void
+mail_reader_new_composer_created_cb (GObject *source_object,
+				     GAsyncResult *result,
+				     gpointer user_data)
+{
+	CreateComposerData *ccd = user_data;
+	EMsgComposer *composer;
+	GError *error = NULL;
+
+	g_return_if_fail (ccd != NULL);
+
+	composer = e_msg_composer_new_finish (result, &error);
+	if (error) {
+		g_warning ("%s: Failed to create msg composer: %s", G_STRFUNC, error->message);
+		g_clear_error (&error);
+	} else {
+		if (ccd->is_redirect)
+			em_utils_redirect_message (composer, ccd->message);
+		else
+			em_utils_compose_new_message (composer, ccd->folder);
+
+		e_mail_reader_composer_created (ccd->reader, composer, ccd->message);
+	}
+
+	g_clear_object (&ccd->reader);
+	g_clear_object (&ccd->message);
+	g_clear_object (&ccd->folder);
+	g_free (ccd);
+}
+
 static void
 action_mail_message_new_cb (GtkAction *action,
                             EMailReader *reader)
@@ -816,7 +960,7 @@ action_mail_message_new_cb (GtkAction *action,
 	EMailBackend *backend;
 	EShellBackend *shell_backend;
 	CamelFolder *folder;
-	EMsgComposer *composer;
+	CreateComposerData *ccd;
 
 	folder = e_mail_reader_ref_folder (reader);
 	backend = e_mail_reader_get_backend (reader);
@@ -824,11 +968,12 @@ action_mail_message_new_cb (GtkAction *action,
 	shell_backend = E_SHELL_BACKEND (backend);
 	shell = e_shell_backend_get_shell (shell_backend);
 
-	composer = em_utils_compose_new_message (shell, folder);
+	ccd = g_new0 (CreateComposerData, 1);
+	ccd->reader = g_object_ref (reader);
+	ccd->folder = folder;
+	ccd->is_redirect = FALSE;
 
-	e_mail_reader_composer_created (reader, composer, NULL);
-
-	g_clear_object (&folder);
+	e_msg_composer_new (shell, mail_reader_new_composer_created_cb, ccd);
 }
 
 static void
@@ -836,6 +981,35 @@ action_mail_message_open_cb (GtkAction *action,
                              EMailReader *reader)
 {
 	e_mail_reader_open_selected_mail (reader);
+}
+
+static void
+action_mail_archive_cb (GtkAction *action,
+			EMailReader *reader)
+{
+	CamelFolder *folder;
+	EMailBackend *backend;
+	EMailSession *session;
+	GPtrArray *uids;
+	gchar *archive_folder;
+
+	backend = e_mail_reader_get_backend (reader);
+	session = e_mail_backend_get_session (backend);
+
+	uids = e_mail_reader_get_selected_uids (reader);
+	g_return_if_fail (uids != NULL);
+
+	folder = e_mail_reader_ref_folder (reader);
+	archive_folder = em_utils_get_archive_folder_uri_from_folder (folder, backend, uids, TRUE);
+
+	if (archive_folder != NULL)
+		mail_transfer_messages (
+			session, folder, uids,
+			TRUE, archive_folder, 0, NULL, NULL);
+
+	g_clear_object (&folder);
+	g_ptr_array_unref (uids);
+	g_free (archive_folder);
 }
 
 static void
@@ -1004,7 +1178,7 @@ mail_reader_redirect_cb (CamelFolder *folder,
 	EMailBackend *backend;
 	EAlertSink *alert_sink;
 	CamelMimeMessage *message;
-	EMsgComposer *composer;
+	CreateComposerData *ccd;
 	GError *error = NULL;
 
 	alert_sink = e_activity_get_alert_sink (closure->activity);
@@ -1032,11 +1206,12 @@ mail_reader_redirect_cb (CamelFolder *folder,
 	backend = e_mail_reader_get_backend (closure->reader);
 	shell = e_shell_backend_get_shell (E_SHELL_BACKEND (backend));
 
-	composer = em_utils_redirect_message (shell, message);
+	ccd = g_new0 (CreateComposerData, 1);
+	ccd->reader = g_object_ref (closure->reader);
+	ccd->message = message;
+	ccd->is_redirect = TRUE;
 
-	e_mail_reader_composer_created (closure->reader, composer, message);
-
-	g_object_unref (message);
+	e_msg_composer_new (shell, mail_reader_new_composer_created_cb, ccd);
 
 	mail_reader_closure_free (closure);
 }
@@ -1143,7 +1318,7 @@ action_mail_reply_all_check (CamelFolder *folder,
 			GSettings *settings;
 			const gchar *key;
 
-			settings = g_settings_new ("org.gnome.evolution.mail");
+			settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 			key = "prompt-on-reply-many-recips";
 			g_settings_set_boolean (settings, key, FALSE);
@@ -1184,7 +1359,7 @@ action_mail_reply_all_cb (GtkAction *action,
 
 	state = e_mail_reader_check_state (reader);
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 	key = "prompt-on-reply-many-recips";
 	ask = g_settings_get_boolean (settings, key);
@@ -1236,7 +1411,7 @@ action_mail_reply_group_cb (GtkAction *action,
 
 	state = e_mail_reader_check_state (reader);
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 	key = "composer-group-reply-to-list";
 	reply_list = g_settings_get_boolean (settings, key);
@@ -1313,7 +1488,7 @@ action_mail_reply_sender_check (CamelFolder *folder,
 		return;
 	}
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 	key = "composer-ignore-list-reply-to";
 	ask_ignore_list_reply_to = g_settings_get_boolean (settings, key);
@@ -1449,7 +1624,7 @@ action_mail_reply_sender_cb (GtkAction *action,
 
 	state = e_mail_reader_check_state (reader);
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 	key = "prompt-on-list-reply-to";
 	ask_list_reply_to = g_settings_get_boolean (settings, key);
@@ -1587,6 +1762,7 @@ mail_source_retrieved (GObject *source_object,
 			closure->reader, display,
 			closure->message_uid, message,
 			CAMEL_FOLDER (source_object));
+		g_object_unref (message);
 	} else {
 		gchar *status;
 
@@ -1714,7 +1890,7 @@ action_mail_zoom_100_cb (GtkAction *action,
 
 	display = e_mail_reader_get_mail_display (reader);
 
-	webkit_web_view_set_zoom_level (WEBKIT_WEB_VIEW (display), 1.0);
+	e_web_view_zoom_100 (E_WEB_VIEW (display));
 }
 
 static void
@@ -1725,7 +1901,7 @@ action_mail_zoom_in_cb (GtkAction *action,
 
 	display = e_mail_reader_get_mail_display (reader);
 
-	webkit_web_view_zoom_in (WEBKIT_WEB_VIEW (display));
+	e_web_view_zoom_in (E_WEB_VIEW (display));
 }
 
 static void
@@ -1736,7 +1912,7 @@ action_mail_zoom_out_cb (GtkAction *action,
 
 	display = e_mail_reader_get_mail_display (reader);
 
-	webkit_web_view_zoom_out (WEBKIT_WEB_VIEW (display));
+	e_web_view_zoom_out (E_WEB_VIEW (display));
 }
 
 static void
@@ -1830,10 +2006,17 @@ static GtkActionEntry mail_reader_entries[] = {
 	  N_("Add sender to address book"),
 	  G_CALLBACK (action_mail_add_sender_cb) },
 
+	{ "mail-archive",
+	  "mail-archive",
+	  N_("_Archive..."),
+	  "<Alt><Control>a",
+	  N_("Move selected messages to the Archive folder for the account"),
+	  G_CALLBACK (action_mail_archive_cb) },
+
 	{ "mail-check-for-junk",
 	  "mail-mark-junk",
 	  N_("Check for _Junk"),
-	  NULL,
+	  "<Control><Alt>j",
 	  N_("Filter the selected messages for junk status"),
 	  G_CALLBACK (action_mail_check_for_junk_cb) },
 
@@ -1850,6 +2033,27 @@ static GtkActionEntry mail_reader_entries[] = {
 	  "<Control>d",
 	  N_("Mark the selected messages for deletion"),
 	  G_CALLBACK (action_mail_delete_cb) },
+
+	{ "mail-add-note",
+	  "evolution-memos",
+	  N_("_Add note..."),
+	  NULL,
+	  N_("Add a note for the selected message"),
+	  G_CALLBACK (action_mail_edit_note_cb) },
+
+	{ "mail-delete-note",
+	  NULL,
+	  N_("Delete no_te"),
+	  NULL,
+	  N_("Delete the note for the selected message"),
+	  G_CALLBACK (action_mail_delete_note_cb) },
+
+	{ "mail-edit-note",
+	  "evolution-memos",
+	  N_("_Edit note..."),
+	  NULL,
+	  N_("Edit a note for the selected message"),
+	  G_CALLBACK (action_mail_edit_note_cb) },
 
 	{ "mail-filter-rule-for-mailing-list",
 	  NULL,
@@ -1963,6 +2167,20 @@ static GtkActionEntry mail_reader_entries[] = {
 	  N_("Force images in HTML mail to be loaded"),
 	  G_CALLBACK (action_mail_load_images_cb) },
 
+	{ "mail-mark-ignore-thread-sub",
+	  NULL,
+	  N_("_Ignore Subthread"),
+	  NULL,
+	  N_("Mark new mails in a subthread as read automatically"),
+	  G_CALLBACK (action_mail_mark_ignore_thread_sub_cb) },
+
+	{ "mail-mark-ignore-thread-whole",
+	  NULL,
+	  N_("_Ignore Thread"),
+	  NULL,
+	  N_("Mark new mails in this thread as read automatically"),
+	  G_CALLBACK (action_mail_mark_ignore_thread_whole_cb) },
+
 	{ "mail-mark-important",
 	  "mail-mark-important",
 	  N_("_Important"),
@@ -1990,6 +2208,20 @@ static GtkActionEntry mail_reader_entries[] = {
 	  "<Control>k",
 	  N_("Mark the selected messages as having been read"),
 	  G_CALLBACK (action_mail_mark_read_cb) },
+
+	{ "mail-mark-unignore-thread-sub",
+	  NULL,
+	  N_("Do not _Ignore Subthread"),
+	  NULL,
+	  N_("Do not mark new mails in a subthread as read automatically"),
+	  G_CALLBACK (action_mail_mark_unignore_thread_sub_cb) },
+
+	{ "mail-mark-unignore-thread-whole",
+	  NULL,
+	  N_("Do not _Ignore Thread"),
+	  NULL,
+	  N_("Do not mark new mails in this thread as read automatically"),
+	  G_CALLBACK (action_mail_mark_unignore_thread_whole_cb) },
 
 	{ "mail-mark-unimportant",
 	  NULL,
@@ -2055,7 +2287,7 @@ static GtkActionEntry mail_reader_entries[] = {
 	  G_CALLBACK (action_mail_next_thread_cb) },
 
 	{ "mail-next-unread",
-	  NULL,
+	  "go-jump",
 	  N_("Next _Unread Message"),
 	  "<Control>bracketright",
 	  N_("Display the next unread message"),
@@ -2225,7 +2457,7 @@ static GtkActionEntry mail_reader_entries[] = {
 	  NULL },
 
 	{ "mail-goto-menu",
-	  "go-jump",
+	  NULL,
 	  N_("_Go To"),
 	  NULL,
 	  NULL,
@@ -2286,6 +2518,10 @@ static GtkActionEntry mail_reader_search_folder_entries[] = {
 
 static EPopupActionEntry mail_reader_popup_entries[] = {
 
+	{ "mail-popup-archive",
+	  NULL,
+	  "mail-archive" },
+
 	{ "mail-popup-copy",
 	  NULL,
 	  "mail-copy" },
@@ -2293,6 +2529,18 @@ static EPopupActionEntry mail_reader_popup_entries[] = {
 	{ "mail-popup-delete",
 	  NULL,
 	  "mail-delete" },
+
+	{ "mail-popup-add-note",
+	  NULL,
+	  "mail-add-note" },
+
+	{ "mail-popup-delete-note",
+	  NULL,
+	  "mail-delete-note" },
+
+	{ "mail-popup-edit-note",
+	  NULL,
+	  "mail-edit-note" },
 
 	{ "mail-popup-flag-clear",
 	  NULL,
@@ -2310,6 +2558,14 @@ static EPopupActionEntry mail_reader_popup_entries[] = {
 	  NULL,
 	  "mail-forward" },
 
+	{ "mail-popup-mark-ignore-thread-sub",
+	  N_("_Ignore Subthread"),
+	  "mail-mark-ignore-thread-sub" },
+
+	{ "mail-popup-mark-ignore-thread-whole",
+	  N_("_Ignore Thread"),
+	  "mail-mark-ignore-thread-whole" },
+
 	{ "mail-popup-mark-important",
 	  N_("Mark as _Important"),
 	  "mail-mark-important" },
@@ -2325,6 +2581,14 @@ static EPopupActionEntry mail_reader_popup_entries[] = {
 	{ "mail-popup-mark-read",
 	  N_("Mar_k as Read"),
 	  "mail-mark-read" },
+
+	{ "mail-popup-mark-unignore-thread-sub",
+	  N_("Do not _Ignore Subthread"),
+	  "mail-mark-unignore-thread-sub" },
+
+	{ "mail-popup-mark-unignore-thread-whole",
+	  N_("Do not _Ignore Thread"),
+	  "mail-mark-unignore-thread-whole" },
 
 	{ "mail-popup-mark-unimportant",
 	  N_("Mark as Uni_mportant"),
@@ -2415,33 +2679,12 @@ mail_reader_key_press_event_cb (EMailReader *reader,
 	const gchar *action_name;
 
 	if (!gtk_widget_has_focus (GTK_WIDGET (reader))) {
-		WebKitWebFrame *frame;
-		WebKitDOMDocument *dom;
-		WebKitDOMElement *element;
 		EMailDisplay *display;
-		gchar *name = NULL;
 
 		display = e_mail_reader_get_mail_display (reader);
-		frame = webkit_web_view_get_focused_frame (WEBKIT_WEB_VIEW (display));
-
-		if (frame != NULL) {
-			dom = webkit_web_frame_get_dom_document (frame);
-			/* intentionally used "static_cast" */
-			element = webkit_dom_html_document_get_active_element ((WebKitDOMHTMLDocument *) dom);
-
-			if (element != NULL)
-				name = webkit_dom_node_get_node_name (WEBKIT_DOM_NODE (element));
-
-			/* If INPUT or TEXTAREA has focus,
-			 * then any key press should go there. */
-			if (name != NULL &&
-			    (g_ascii_strcasecmp (name, "INPUT") == 0 ||
-			     g_ascii_strcasecmp (name, "TEXTAREA") == 0)) {
-				g_free (name);
-				return FALSE;
-			}
-			g_free (name);
-		}
+		if (e_web_view_get_need_input (E_WEB_VIEW (display)) &&
+		    gtk_widget_has_focus (GTK_WIDGET (display)))
+			return FALSE;
 	}
 
 	if ((event->state & GDK_CONTROL_MASK) != 0)
@@ -2457,6 +2700,9 @@ mail_reader_key_press_event_cb (EMailReader *reader,
 		case GDK_KEY_Return:
 		case GDK_KEY_KP_Enter:
 		case GDK_KEY_ISO_Enter:
+			if (E_IS_MAIL_BROWSER (reader))
+				return FALSE;
+
 			action_name = "mail-message-open";
 			break;
 
@@ -2620,13 +2866,13 @@ schedule_timeout_mark_seen (EMailReader *reader)
 }
 
 static void
-mail_reader_load_status_changed_cb (EMailReader *reader,
-                                    GParamSpec *pspec,
-                                    EMailDisplay *display)
+mail_reader_load_changed_cb (EMailReader *reader,
+                             WebKitLoadEvent event,
+                             EMailDisplay *display)
 {
 	EMailReaderPrivate *priv;
 
-	if (webkit_web_view_get_load_status (WEBKIT_WEB_VIEW (display)) != WEBKIT_LOAD_FINISHED)
+	if (event != WEBKIT_LOAD_FINISHED)
 		return;
 
 	priv = E_MAIL_READER_GET_PRIVATE (reader);
@@ -2658,7 +2904,7 @@ maybe_schedule_timeout_mark_seen (EMailReader *reader)
 	    e_tree_is_dragging (E_TREE (message_list)))
 		return FALSE;
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 	/* FIXME These should be EMailReader properties. */
 	schedule_timeout =
@@ -2700,6 +2946,107 @@ discard_timeout_mark_seen_cb (EMailReader *reader)
 	}
 
 	return FALSE;
+}
+
+
+static void
+mail_reader_preview_pane_visible_changed_cb (EMailReader *reader,
+					     GParamSpec *param,
+					     GtkWidget *widget)
+{
+	g_return_if_fail (E_IS_MAIL_READER (reader));
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+
+	if (!gtk_widget_get_visible (widget))
+		discard_timeout_mark_seen_cb (reader);
+}
+
+static void
+mail_reader_remove_followup_alert (EMailReader *reader)
+{
+	EMailReaderPrivate *priv;
+
+	g_return_if_fail (E_IS_MAIL_READER (reader));
+
+	priv = E_MAIL_READER_GET_PRIVATE (reader);
+	if (!priv)
+		return;
+
+	if (priv->followup_alert)
+		e_alert_response (priv->followup_alert, GTK_RESPONSE_OK);
+}
+
+static void
+mail_reader_manage_followup_flag (EMailReader *reader,
+				  CamelFolder *folder,
+				  const gchar *message_uid)
+{
+	EMailReaderPrivate *priv;
+	CamelMessageInfo *info;
+	const gchar *followup, *completed_on, *due_by;
+	time_t date;
+	gchar *date_str = NULL;
+	gboolean alert_added = FALSE;
+
+	g_return_if_fail (E_IS_MAIL_READER (reader));
+	g_return_if_fail (CAMEL_IS_FOLDER (folder));
+	g_return_if_fail (message_uid != NULL);
+
+	priv = E_MAIL_READER_GET_PRIVATE (reader);
+	if (!priv)
+		return;
+
+	info = camel_folder_get_message_info (folder, message_uid);
+	if (!info)
+		return;
+
+	followup = camel_message_info_get_user_tag (info, "follow-up");
+	if (followup && *followup) {
+		EPreviewPane *preview_pane;
+		const gchar *alert_tag;
+		EAlert *alert;
+
+		completed_on = camel_message_info_get_user_tag (info, "completed-on");
+		due_by = camel_message_info_get_user_tag (info, "due-by");
+
+		if (completed_on && *completed_on) {
+			alert_tag = "mail:follow-up-completed-info";
+			date = camel_header_decode_date (completed_on, NULL);
+			date_str = e_datetime_format_format ("mail", "header", DTFormatKindDateTime, date);
+		} else if (due_by && *due_by) {
+			time_t now;
+
+			alert_tag = "mail:follow-up-dueby-info";
+			date = camel_header_decode_date (due_by, NULL);
+			date_str = e_datetime_format_format ("mail", "header", DTFormatKindDateTime, date);
+
+			now = time (NULL);
+			if (now > date)
+				alert_tag = "mail:follow-up-overdue-error";
+		} else {
+			alert_tag = "mail:follow-up-flag-info";
+		}
+
+		alert = e_alert_new (alert_tag, followup, date_str ? date_str : "???", NULL);
+
+		g_free (date_str);
+
+		preview_pane = e_mail_reader_get_preview_pane (reader);
+		e_alert_sink_submit_alert (E_ALERT_SINK (preview_pane), alert);
+
+		alert_added = TRUE;
+
+		mail_reader_remove_followup_alert (reader);
+		priv->followup_alert = alert;
+		g_object_add_weak_pointer (G_OBJECT (priv->followup_alert), &priv->followup_alert);
+
+		g_object_unref (alert);
+	}
+
+	camel_message_info_unref (info);
+
+	if (!alert_added)
+		mail_reader_remove_followup_alert (reader);
 }
 
 static void
@@ -2745,10 +3092,13 @@ mail_reader_message_loaded_cb (CamelFolder *folder,
 		goto exit;
 	}
 
-	if (message != NULL)
+	if (message != NULL) {
+		mail_reader_manage_followup_flag (reader, folder, message_uid);
+
 		g_signal_emit (
 			reader, signals[MESSAGE_LOADED], 0,
 			message_uid, message);
+	}
 
 exit:
 	if (error != NULL) {
@@ -2758,10 +3108,18 @@ exit:
 		preview_pane = e_mail_reader_get_preview_pane (reader);
 		web_view = e_preview_pane_get_web_view (preview_pane);
 
-		e_alert_submit (
-			E_ALERT_SINK (web_view),
-			"mail:no-retrieve-message",
-			error->message, NULL);
+		if (g_error_matches (error, CAMEL_SERVICE_ERROR, CAMEL_SERVICE_ERROR_UNAVAILABLE) &&
+		    CAMEL_IS_OFFLINE_FOLDER (folder) &&
+		    camel_service_get_connection_status (CAMEL_SERVICE (camel_folder_get_parent_store (folder))) != CAMEL_SERVICE_CONNECTED)
+			e_alert_submit (
+				E_ALERT_SINK (web_view),
+				"mail:no-retrieve-message-offline",
+				NULL);
+		else
+			e_alert_submit (
+				E_ALERT_SINK (web_view),
+				"mail:no-retrieve-message",
+				error->message, NULL);
 	}
 
 	g_clear_error (&error);
@@ -2983,6 +3341,15 @@ mail_reader_get_alert_sink (EMailReader *reader)
 
 	preview_pane = e_mail_reader_get_preview_pane (reader);
 
+	if (!gtk_widget_is_visible (GTK_WIDGET (preview_pane))) {
+		GtkWindow *window;
+
+		window = e_mail_reader_get_window (reader);
+
+		if (E_IS_SHELL_WINDOW (window))
+			return E_ALERT_SINK (window);
+	}
+
 	return E_ALERT_SINK (preview_pane);
 }
 
@@ -3040,7 +3407,7 @@ mail_reader_set_folder (EMailReader *reader,
 	if (folder != previous_folder) {
 		e_web_view_clear (E_WEB_VIEW (display));
 
-		priv->folder_was_just_selected = (folder != NULL);
+		priv->folder_was_just_selected = (folder != NULL) && !priv->mark_seen_always;
 		priv->did_try_to_open_message = FALSE;
 
 		/* This is to make sure any post-poned changes in Search
@@ -3253,6 +3620,8 @@ mail_reader_update_actions (EMailReader *reader,
 	gboolean multiple_messages_selected;
 	gboolean selection_has_attachment_messages;
 	gboolean selection_has_deleted_messages;
+	gboolean selection_has_ignore_thread_messages;
+	gboolean selection_has_notignore_thread_messages;
 	gboolean selection_has_important_messages;
 	gboolean selection_has_junk_messages;
 	gboolean selection_has_not_junk_messages;
@@ -3260,6 +3629,7 @@ mail_reader_update_actions (EMailReader *reader,
 	gboolean selection_has_undeleted_messages;
 	gboolean selection_has_unimportant_messages;
 	gboolean selection_has_unread_messages;
+	gboolean selection_has_mail_note;
 	gboolean selection_is_mailing_list;
 	gboolean single_message_selected;
 	gboolean first_message_selected = FALSE;
@@ -3282,6 +3652,10 @@ mail_reader_update_actions (EMailReader *reader,
 		(state & E_MAIL_READER_SELECTION_HAS_ATTACHMENTS);
 	selection_has_deleted_messages =
 		(state & E_MAIL_READER_SELECTION_HAS_DELETED);
+	selection_has_ignore_thread_messages =
+		(state & E_MAIL_READER_SELECTION_HAS_IGNORE_THREAD);
+	selection_has_notignore_thread_messages =
+		(state & E_MAIL_READER_SELECTION_HAS_NOTIGNORE_THREAD);
 	selection_has_important_messages =
 		(state & E_MAIL_READER_SELECTION_HAS_IMPORTANT);
 	selection_has_junk_messages =
@@ -3296,6 +3670,8 @@ mail_reader_update_actions (EMailReader *reader,
 		(state & E_MAIL_READER_SELECTION_HAS_UNIMPORTANT);
 	selection_has_unread_messages =
 		(state & E_MAIL_READER_SELECTION_HAS_UNREAD);
+	selection_has_mail_note =
+		(state & E_MAIL_READER_SELECTION_HAS_MAIL_NOTE);
 	selection_is_mailing_list =
 		(state & E_MAIL_READER_SELECTION_IS_MAILING_LIST);
 
@@ -3331,6 +3707,11 @@ mail_reader_update_actions (EMailReader *reader,
 	action = e_mail_reader_get_action (reader, action_name);
 	gtk_action_set_sensitive (action, sensitive);
 
+	action_name = "mail-archive";
+	sensitive = any_messages_selected && (state & E_MAIL_READER_FOLDER_ARCHIVE_FOLDER_SET) != 0;
+	action = e_mail_reader_get_action (reader, action_name);
+	gtk_action_set_sensitive (action, sensitive);
+
 	action_name = "mail-check-for-junk";
 	sensitive = any_messages_selected;
 	action = e_mail_reader_get_action (reader, action_name);
@@ -3356,8 +3737,31 @@ mail_reader_update_actions (EMailReader *reader,
 	action = e_mail_reader_get_action (reader, action_name);
 	gtk_action_set_sensitive (action, sensitive);
 
+	action_name = "mail-add-note";
+	sensitive = single_message_selected && !selection_has_mail_note;
+	action = e_mail_reader_get_action (reader, action_name);
+	gtk_action_set_sensitive (action, sensitive);
+	gtk_action_set_visible (action, sensitive);
+
+	action_name = "mail-edit-note";
+	sensitive = single_message_selected && selection_has_mail_note;
+	action = e_mail_reader_get_action (reader, action_name);
+	gtk_action_set_sensitive (action, sensitive);
+	gtk_action_set_visible (action, sensitive);
+
+	action_name = "mail-delete-note";
+	sensitive = single_message_selected && selection_has_mail_note;
+	action = e_mail_reader_get_action (reader, action_name);
+	gtk_action_set_sensitive (action, sensitive);
+	gtk_action_set_visible (action, sensitive);
+
 	action_name = "mail-filters-apply";
 	sensitive = any_messages_selected;
+	action = e_mail_reader_get_action (reader, action_name);
+	gtk_action_set_sensitive (action, sensitive);
+
+	action_name = "mail-filter-rule-for-mailing-list";
+	sensitive = single_message_selected && selection_is_mailing_list;
 	action = e_mail_reader_get_action (reader, action_name);
 	gtk_action_set_sensitive (action, sensitive);
 
@@ -3436,15 +3840,25 @@ mail_reader_update_actions (EMailReader *reader,
 	action = e_mail_reader_get_action (reader, action_name);
 	gtk_action_set_sensitive (action, sensitive);
 
+	action_name = "mail-mark-ignore-thread-sub";
+	sensitive = selection_has_notignore_thread_messages;
+	action = e_mail_reader_get_action (reader, action_name);
+	gtk_action_set_sensitive (action, sensitive);
+	gtk_action_set_visible (action, sensitive);
+
+	action_name = "mail-mark-ignore-thread-whole";
+	sensitive = selection_has_notignore_thread_messages;
+	action = e_mail_reader_get_action (reader, action_name);
+	gtk_action_set_sensitive (action, sensitive);
+	gtk_action_set_visible (action, sensitive);
+
 	action_name = "mail-mark-important";
 	sensitive = selection_has_unimportant_messages;
 	action = e_mail_reader_get_action (reader, action_name);
 	gtk_action_set_sensitive (action, sensitive);
 
 	action_name = "mail-mark-junk";
-	sensitive =
-		selection_has_not_junk_messages &&
-		!(state & E_MAIL_READER_FOLDER_IS_JUNK);
+	sensitive = selection_has_not_junk_messages;
 	action = e_mail_reader_get_action (reader, action_name);
 	gtk_action_set_sensitive (action, sensitive);
 
@@ -3457,6 +3871,18 @@ mail_reader_update_actions (EMailReader *reader,
 	sensitive = selection_has_unread_messages;
 	action = e_mail_reader_get_action (reader, action_name);
 	gtk_action_set_sensitive (action, sensitive);
+
+	action_name = "mail-mark-unignore-thread-sub";
+	sensitive = selection_has_ignore_thread_messages;
+	action = e_mail_reader_get_action (reader, action_name);
+	gtk_action_set_sensitive (action, sensitive);
+	gtk_action_set_visible (action, sensitive);
+
+	action_name = "mail-mark-unignore-thread-whole";
+	sensitive = selection_has_ignore_thread_messages;
+	action = e_mail_reader_get_action (reader, action_name);
+	gtk_action_set_sensitive (action, sensitive);
+	gtk_action_set_visible (action, sensitive);
 
 	action_name = "mail-mark-unimportant";
 	sensitive = selection_has_important_messages;
@@ -3683,6 +4109,15 @@ e_mail_reader_default_init (EMailReaderInterface *iface)
 			E_MAIL_REPLY_STYLE_QUOTED,
 			G_PARAM_READWRITE));
 
+	g_object_interface_install_property (
+		iface,
+		g_param_spec_boolean (
+			"mark-seen-always",
+			"Mark Seen Always",
+			"Whether to mark unread message seen even after folder change",
+			FALSE,
+			G_PARAM_READWRITE));
+
 	signals[CHANGED] = g_signal_new (
 		"changed",
 		G_OBJECT_CLASS_TYPE (iface),
@@ -3776,7 +4211,7 @@ e_mail_reader_init (EMailReader *reader,
 		g_slice_new0 (EMailReaderPrivate),
 		(GDestroyNotify) mail_reader_private_free);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		reader, "group-by-threads",
 		message_list, "group-by-threads",
 		G_BINDING_SYNC_CREATE);
@@ -3853,7 +4288,7 @@ e_mail_reader_init (EMailReader *reader,
 
 	/* Bind GObject properties to GSettings keys. */
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 	action_name = "mail-caret-mode";
 	action = e_mail_reader_get_action (reader, action_name);
@@ -3934,7 +4369,7 @@ e_mail_reader_init (EMailReader *reader,
 #ifndef G_OS_WIN32
 	/* Lockdown integration. */
 
-	settings = g_settings_new ("org.gnome.desktop.lockdown");
+	settings = e_util_ref_settings ("org.gnome.desktop.lockdown");
 
 	action_name = "mail-print";
 	action = e_mail_reader_get_action (reader, action_name);
@@ -3971,7 +4406,7 @@ e_mail_reader_init (EMailReader *reader,
 	action_name = "mail-caret-mode";
 	action = e_mail_reader_get_action (reader, action_name);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		action, "active",
 		display, "caret-mode",
 		G_BINDING_BIDIRECTIONAL |
@@ -3987,9 +4422,9 @@ connect_signals:
 		display, "key-press-event",
 		G_CALLBACK (mail_reader_key_press_event_cb), reader);
 
-	e_signal_connect_notify_swapped (
-		display, "notify::load-status",
-		G_CALLBACK (mail_reader_load_status_changed_cb), reader);
+	g_signal_connect_swapped (
+		display, "load-changed",
+		G_CALLBACK (mail_reader_load_changed_cb), reader);
 
 	g_signal_connect_swapped (
 		message_list, "message-selected",
@@ -4013,6 +4448,10 @@ connect_signals:
 		message_list, "right-click",
 		G_CALLBACK (discard_timeout_mark_seen_cb), reader);
 
+	g_signal_connect_swapped (
+		e_mail_reader_get_preview_pane (reader), "notify::visible",
+		G_CALLBACK (mail_reader_preview_pane_visible_changed_cb), reader);
+
 	g_signal_connect_after (
 		message_list, "message-list-built",
 		G_CALLBACK (mail_reader_message_list_built_cb), reader);
@@ -4033,9 +4472,16 @@ connect_signals:
 void
 e_mail_reader_changed (EMailReader *reader)
 {
+	MessageList *message_list;
+
 	g_return_if_fail (E_IS_MAIL_READER (reader));
 
 	g_signal_emit (reader, signals[CHANGED], 0);
+
+	message_list = MESSAGE_LIST (e_mail_reader_get_message_list (reader));
+
+	if (!message_list || message_list_selected_count (message_list) != 1)
+		mail_reader_remove_followup_alert (reader);
 }
 
 guint32
@@ -4055,6 +4501,8 @@ e_mail_reader_check_state (EMailReader *reader)
 	gboolean can_flag_for_followup = FALSE;
 	gboolean has_attachments = FALSE;
 	gboolean has_deleted = FALSE;
+	gboolean has_ignore_thread = FALSE;
+	gboolean has_notignore_thread = FALSE;
 	gboolean has_important = FALSE;
 	gboolean has_junk = FALSE;
 	gboolean has_not_junk = FALSE;
@@ -4062,12 +4510,13 @@ e_mail_reader_check_state (EMailReader *reader)
 	gboolean has_undeleted = FALSE;
 	gboolean has_unimportant = FALSE;
 	gboolean has_unread = FALSE;
+	gboolean has_mail_note = FALSE;
 	gboolean have_enabled_account = FALSE;
 	gboolean drafts_or_outbox = FALSE;
-	gboolean store_supports_vjunk = FALSE;
 	gboolean is_mailing_list;
 	gboolean is_junk_folder = FALSE;
 	gboolean is_vtrash_folder = FALSE;
+	gboolean archive_folder_set = FALSE;
 	guint32 state = 0;
 	guint ii;
 
@@ -4084,14 +4533,21 @@ e_mail_reader_check_state (EMailReader *reader)
 	uids = e_mail_reader_get_selected_uids (reader);
 
 	if (folder != NULL) {
+		gchar *archive_folder;
+
 		store = camel_folder_get_parent_store (folder);
-		store_supports_vjunk = (store->flags & CAMEL_STORE_VJUNK);
 		is_junk_folder =
 			(folder->folder_flags & CAMEL_FOLDER_IS_JUNK) != 0;
 		is_vtrash_folder = (store->flags & CAMEL_STORE_VTRASH) != 0 && (folder->folder_flags & CAMEL_FOLDER_IS_TRASH) != 0;
 		drafts_or_outbox =
 			em_utils_folder_is_drafts (registry, folder) ||
 			em_utils_folder_is_outbox (registry, folder);
+
+		archive_folder = em_utils_get_archive_folder_uri_from_folder (folder, backend, uids, TRUE);
+		if (archive_folder && *archive_folder)
+			archive_folder_set = TRUE;
+
+		g_free (archive_folder);
 	}
 
 	/* Initialize this flag based on whether there are any
@@ -4108,7 +4564,10 @@ e_mail_reader_check_state (EMailReader *reader)
 		if (info == NULL)
 			continue;
 
-		flags = camel_message_info_flags (info);
+		if (camel_message_info_get_user_flag (info, E_MAIL_NOTES_USER_FLAG))
+			has_mail_note = TRUE;
+
+		flags = camel_message_info_get_flags (info);
 
 		if (flags & CAMEL_MESSAGE_SEEN)
 			has_read = TRUE;
@@ -4121,7 +4580,7 @@ e_mail_reader_check_state (EMailReader *reader)
 		if (drafts_or_outbox) {
 			has_junk = FALSE;
 			has_not_junk = FALSE;
-		} else if (store_supports_vjunk) {
+		} else {
 			guint32 bitmask;
 
 			/* XXX Strictly speaking, this logic is correct.
@@ -4144,10 +4603,6 @@ e_mail_reader_check_state (EMailReader *reader)
 				has_junk = TRUE;
 				has_not_junk = TRUE;
 			}
-
-		} else {
-			has_junk = TRUE;
-			has_not_junk = TRUE;
 		}
 
 		if (flags & CAMEL_MESSAGE_DELETED)
@@ -4160,18 +4615,23 @@ e_mail_reader_check_state (EMailReader *reader)
 		else
 			has_unimportant = TRUE;
 
-		tag = camel_message_info_user_tag (info, "follow-up");
+		tag = camel_message_info_get_user_tag (info, "follow-up");
 		if (tag != NULL && *tag != '\0') {
 			can_clear_flags = TRUE;
-			tag = camel_message_info_user_tag (
+			tag = camel_message_info_get_user_tag (
 				info, "completed-on");
 			if (tag == NULL || *tag == '\0')
 				can_flag_completed = TRUE;
 		} else
 			can_flag_for_followup = TRUE;
 
-		string = camel_message_info_mlist (info);
+		string = camel_message_info_get_mlist (info);
 		is_mailing_list &= (string != NULL && *string != '\0');
+
+		has_ignore_thread = has_ignore_thread ||
+			camel_message_info_get_user_flag (info, "ignore-thread");
+		has_notignore_thread = has_notignore_thread ||
+			!camel_message_info_get_user_flag (info, "ignore-thread");
 
 		camel_message_info_unref (info);
 	}
@@ -4198,6 +4658,10 @@ e_mail_reader_check_state (EMailReader *reader)
 		state |= E_MAIL_READER_SELECTION_HAS_ATTACHMENTS;
 	if (has_deleted)
 		state |= E_MAIL_READER_SELECTION_HAS_DELETED;
+	if (has_ignore_thread)
+		state |= E_MAIL_READER_SELECTION_HAS_IGNORE_THREAD;
+	if (has_notignore_thread)
+		state |= E_MAIL_READER_SELECTION_HAS_NOTIGNORE_THREAD;
 	if (has_important)
 		state |= E_MAIL_READER_SELECTION_HAS_IMPORTANT;
 	if (has_junk)
@@ -4218,6 +4682,10 @@ e_mail_reader_check_state (EMailReader *reader)
 		state |= E_MAIL_READER_FOLDER_IS_JUNK;
 	if (is_vtrash_folder)
 		state |= E_MAIL_READER_FOLDER_IS_VTRASH;
+	if (archive_folder_set)
+		state |= E_MAIL_READER_FOLDER_ARCHIVE_FOLDER_SET;
+	if (has_mail_note)
+		state |= E_MAIL_READER_SELECTION_HAS_MAIL_NOTE;
 
 	g_clear_object (&folder);
 	g_ptr_array_unref (uids);
@@ -4369,13 +4837,19 @@ GtkMenu *
 e_mail_reader_get_popup_menu (EMailReader *reader)
 {
 	EMailReaderInterface *iface;
+	GtkMenu *menu;
 
 	g_return_val_if_fail (E_IS_MAIL_READER (reader), NULL);
 
 	iface = E_MAIL_READER_GET_INTERFACE (reader);
 	g_return_val_if_fail (iface->get_popup_menu != NULL, NULL);
 
-	return iface->get_popup_menu (reader);
+	menu = iface->get_popup_menu (reader);
+	if (!gtk_menu_get_attach_widget (GTK_MENU (menu)))
+		gtk_menu_attach_to_widget (GTK_MENU (menu),
+					   GTK_WIDGET (reader),
+					   NULL);
+	return menu;
 }
 
 EPreviewPane *
@@ -4561,6 +5035,36 @@ e_mail_reader_set_reply_style (EMailReader *reader,
 	g_object_notify (G_OBJECT (reader), "reply-style");
 }
 
+gboolean
+e_mail_reader_get_mark_seen_always (EMailReader *reader)
+{
+	EMailReaderPrivate *priv;
+
+	g_return_val_if_fail (E_IS_MAIL_READER (reader), FALSE);
+
+	priv = E_MAIL_READER_GET_PRIVATE (reader);
+
+	return priv->mark_seen_always;
+}
+
+void
+e_mail_reader_set_mark_seen_always (EMailReader *reader,
+                                    gboolean mark_seen_always)
+{
+	EMailReaderPrivate *priv;
+
+	g_return_if_fail (E_IS_MAIL_READER (reader));
+
+	priv = E_MAIL_READER_GET_PRIVATE (reader);
+
+	if (priv->mark_seen_always == mark_seen_always)
+		return;
+
+	priv->mark_seen_always = mark_seen_always;
+
+	g_object_notify (G_OBJECT (reader), "mark-seen-always");
+}
+
 void
 e_mail_reader_create_charset_menu (EMailReader *reader,
                                    GtkUIManager *ui_manager,
@@ -4625,6 +5129,19 @@ e_mail_reader_avoid_next_mark_as_seen (EMailReader *reader)
 	priv->avoid_next_mark_as_seen = TRUE;
 }
 
+void
+e_mail_reader_unset_folder_just_selected (EMailReader *reader)
+{
+	EMailReaderPrivate *priv;
+
+	g_return_if_fail (reader != NULL);
+
+	priv = E_MAIL_READER_GET_PRIVATE (reader);
+	g_return_if_fail (priv != NULL);
+
+	priv->folder_was_just_selected = FALSE;
+}
+
 /**
  * e_mail_reader_composer_created:
  * @reader: an #EMailReader
@@ -4652,3 +5169,413 @@ e_mail_reader_composer_created (EMailReader *reader,
 		reader, signals[COMPOSER_CREATED], 0, composer, message);
 }
 
+static void
+e_mail_reader_load_remote_content_clicked_cb (GtkButton *button,
+					      EMailReader *reader)
+{
+	EMailDisplay *mail_display;
+
+	g_return_if_fail (E_IS_MAIL_READER (reader));
+
+	mail_display = e_mail_reader_get_mail_display (reader);
+
+	/* This causes reload, thus also alert removal */
+	e_mail_display_load_images (mail_display);
+}
+
+static GList *
+e_mail_reader_get_from_mails (EMailDisplay *mail_display)
+{
+	EMailPartList *part_list;
+	CamelMimeMessage *message;
+	CamelInternetAddress *from;
+	GList *mails = NULL;
+
+	g_return_val_if_fail (E_IS_MAIL_DISPLAY (mail_display), NULL);
+
+	part_list = e_mail_display_get_part_list (mail_display);
+	if (!part_list)
+		return NULL;
+
+	message = e_mail_part_list_get_message (part_list);
+	if (!message)
+		return NULL;
+
+	from = camel_mime_message_get_from (message);
+	if (from) {
+		GHashTable *domains;
+		GHashTableIter iter;
+		gpointer key, value;
+		gint ii, len;
+
+		domains = g_hash_table_new (camel_strcase_hash, camel_strcase_equal);
+
+		len = camel_address_length (CAMEL_ADDRESS (from));
+		for (ii = 0; ii < len; ii++) {
+			const gchar *mail = NULL;
+
+			if (!camel_internet_address_get	(from, ii, NULL, &mail))
+				break;
+
+			if (mail && *mail) {
+				const gchar *at;
+
+				mails = g_list_prepend (mails, g_strdup (mail));
+
+				at = strchr (mail, '@');
+				if (at && at != mail && at[1])
+					g_hash_table_insert (domains, (gpointer) at, NULL);
+			}
+		}
+
+		g_hash_table_iter_init (&iter, domains);
+		while (g_hash_table_iter_next (&iter, &key, &value)) {
+			const gchar *domain = key;
+
+			mails = g_list_prepend (mails, g_strdup (domain));
+		}
+
+		g_hash_table_destroy (domains);
+	}
+
+	return g_list_reverse (mails);
+}
+
+static void
+e_mail_reader_remote_content_menu_position (GtkMenu *menu,
+					    gint *x,
+					    gint *y,
+					    gboolean *push_in,
+					    gpointer user_data)
+{
+	GtkRequisition menu_requisition;
+	GtkTextDirection direction;
+	GtkAllocation allocation;
+	GdkRectangle monitor;
+	GdkScreen *screen;
+	GdkWindow *window;
+	GtkWidget *widget = user_data;
+	gint monitor_num;
+
+	gtk_widget_get_preferred_size (GTK_WIDGET (menu), &menu_requisition, NULL);
+
+	window = gtk_widget_get_parent_window (widget);
+	screen = gtk_widget_get_screen (GTK_WIDGET (menu));
+	monitor_num = gdk_screen_get_monitor_at_window (screen, window);
+	if (monitor_num < 0)
+		monitor_num = 0;
+	gdk_screen_get_monitor_geometry (screen, monitor_num, &monitor);
+
+	gtk_widget_get_allocation (widget, &allocation);
+
+	gdk_window_get_origin (window, x, y);
+	*x += allocation.x;
+	*y += allocation.y;
+
+	direction = gtk_widget_get_direction (widget);
+	if (direction == GTK_TEXT_DIR_LTR)
+		*x += MAX (allocation.width - menu_requisition.width, 0);
+	else if (menu_requisition.width > allocation.width)
+		*x -= menu_requisition.width - allocation.width;
+
+	gtk_widget_get_allocation (widget, &allocation);
+
+	if ((*y + allocation.height +
+		menu_requisition.height) <= monitor.y + monitor.height)
+		*y += allocation.height;
+	else if ((*y - menu_requisition.height) >= monitor.y)
+		*y -= menu_requisition.height;
+	else if (monitor.y + monitor.height -
+		(*y + allocation.height) > *y)
+		*y += allocation.height;
+	else
+		*y -= menu_requisition.height;
+
+	*push_in = FALSE;
+}
+
+static void
+e_mail_reader_remote_content_menu_deactivate_cb (GtkMenuShell *popup_menu,
+						 GtkToggleButton *toggle_button)
+{
+	g_return_if_fail (GTK_IS_TOGGLE_BUTTON (toggle_button));
+
+	gtk_toggle_button_set_active (toggle_button, FALSE);
+	gtk_menu_detach (GTK_MENU (popup_menu));
+}
+
+#define REMOTE_CONTENT_KEY_IS_MAIL	"remote-content-key-is-mail"
+#define REMOTE_CONTENT_KEY_VALUE	"remote-content-key-value"
+
+static void
+e_mail_reader_remote_content_menu_activate_cb (GObject *item,
+					       EMailReader *reader)
+{
+	EMailDisplay *mail_display;
+	EMailRemoteContent *remote_content;
+	gboolean is_mail;
+	const gchar *value;
+
+	g_return_if_fail (GTK_IS_MENU_ITEM (item));
+	g_return_if_fail (E_IS_MAIL_READER (reader));
+
+	is_mail = GPOINTER_TO_INT (g_object_get_data (item, REMOTE_CONTENT_KEY_IS_MAIL)) == 1;
+	value = g_object_get_data (item, REMOTE_CONTENT_KEY_VALUE);
+
+	g_return_if_fail (value && *value);
+
+	mail_display = e_mail_reader_get_mail_display (reader);
+	if (!mail_display)
+		return;
+
+	remote_content = e_mail_display_ref_remote_content (mail_display);
+	if (!remote_content)
+		return;
+
+	if (is_mail)
+		e_mail_remote_content_add_mail (remote_content, value);
+	else
+		e_mail_remote_content_add_site (remote_content, value);
+
+	g_clear_object (&remote_content);
+
+	e_mail_display_reload (mail_display);
+}
+
+static void
+e_mail_reader_remote_content_disable_activate_cb (GObject *item,
+						  EMailReader *reader)
+{
+	EMailDisplay *mail_display;
+	GSettings *settings;
+
+	g_return_if_fail (E_IS_MAIL_READER (reader));
+
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
+	g_settings_set_boolean (settings, "notify-remote-content", FALSE);
+	g_clear_object (&settings);
+
+	mail_display = e_mail_reader_get_mail_display (reader);
+	if (mail_display)
+		e_mail_display_reload (mail_display);
+}
+
+static void
+e_mail_reader_add_remote_content_menu_item (EMailReader *reader,
+					    GtkWidget *popup_menu,
+					    const gchar *label,
+					    gboolean is_mail,
+					    const gchar *value)
+{
+	GtkWidget *item;
+	GObject *object;
+
+	g_return_if_fail (E_IS_MAIL_READER (reader));
+	g_return_if_fail (GTK_IS_MENU (popup_menu));
+	g_return_if_fail (label != NULL);
+	g_return_if_fail (value != NULL);
+
+	item = gtk_menu_item_new_with_label (label);
+	object = G_OBJECT (item);
+
+	g_object_set_data (object, REMOTE_CONTENT_KEY_IS_MAIL, is_mail ? GINT_TO_POINTER (1) : NULL);
+	g_object_set_data_full (object, REMOTE_CONTENT_KEY_VALUE, g_strdup (value), g_free);
+
+	g_signal_connect (item, "activate", G_CALLBACK (e_mail_reader_remote_content_menu_activate_cb), reader);
+
+	gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), item);
+}
+
+static void
+e_mail_reader_show_remote_content_popup (EMailReader *reader,
+					 GdkEventButton *event,
+					 GtkToggleButton *toggle_button)
+{
+	EMailDisplay *mail_display;
+	GList *mails, *sites, *link;
+	GtkWidget *popup_menu = NULL;
+
+	g_return_if_fail (E_IS_MAIL_READER (reader));
+
+	mail_display = e_mail_reader_get_mail_display (reader);
+	mails = e_mail_reader_get_from_mails (mail_display);
+	sites = e_mail_display_get_skipped_remote_content_sites (mail_display);
+
+	for (link = mails; link; link = g_list_next (link)) {
+		const gchar *mail = link->data;
+		gchar *label;
+
+		if (!mail || !*mail)
+			continue;
+
+		if (!popup_menu)
+			popup_menu = gtk_menu_new ();
+
+		if (*mail == '@')
+			label = g_strdup_printf (_("Allow remote content for anyone from %s"), mail);
+		else
+			label = g_strdup_printf (_("Allow remote content for %s"), mail);
+
+		e_mail_reader_add_remote_content_menu_item (reader, popup_menu, label, TRUE, mail);
+
+		g_free (label);
+	}
+
+	for (link = sites; link; link = g_list_next (link)) {
+		const gchar *site = link->data;
+		gchar *label;
+
+		if (!site || !*site)
+			continue;
+
+		if (!popup_menu)
+			popup_menu = gtk_menu_new ();
+
+		label = g_strdup_printf (_("Allow remote content from %s"), site);
+
+		e_mail_reader_add_remote_content_menu_item (reader, popup_menu, label, FALSE, site);
+
+		g_free (label);
+	}
+
+	g_list_free_full (mails, g_free);
+	g_list_free_full (sites, g_free);
+
+	if (popup_menu) {
+		GtkWidget *box = gtk_widget_get_parent (GTK_WIDGET (toggle_button));
+		GtkWidget *item;
+
+		item = gtk_separator_menu_item_new ();
+		gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), item);
+
+		item = gtk_menu_item_new_with_label (_("Do not show this message again"));
+		gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), item);
+		g_signal_connect (item, "activate", G_CALLBACK (e_mail_reader_remote_content_disable_activate_cb), reader);
+
+		gtk_toggle_button_set_active (toggle_button, TRUE);
+
+		g_signal_connect (
+			popup_menu, "deactivate",
+			G_CALLBACK (e_mail_reader_remote_content_menu_deactivate_cb), toggle_button);
+
+		gtk_widget_show_all (popup_menu);
+
+		gtk_menu_attach_to_widget (GTK_MENU (popup_menu), box, NULL);
+		if (event)
+			gtk_menu_popup (GTK_MENU (popup_menu), NULL, NULL,
+				e_mail_reader_remote_content_menu_position,
+				box, event->button, event->time);
+		else
+			gtk_menu_popup (GTK_MENU (popup_menu), NULL, NULL,
+				e_mail_reader_remote_content_menu_position,
+				box, 0, gtk_get_current_event_time ());
+	}
+}
+
+static gboolean
+e_mail_reader_options_remote_content_button_press_cb (GtkToggleButton *toggle_button,
+						      GdkEventButton *event,
+						      EMailReader *reader)
+{
+	g_return_val_if_fail (E_IS_MAIL_READER (reader), FALSE);
+
+	if (event && event->button == 1) {
+		e_mail_reader_show_remote_content_popup (reader, event, toggle_button);
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+static GtkWidget *
+e_mail_reader_create_remote_content_alert_button (EMailReader *reader)
+{
+	GtkWidget *box, *button, *arrow;
+
+	box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
+
+	gtk_style_context_add_class (gtk_widget_get_style_context (box), "linked");
+
+	button = gtk_button_new_with_label (_("Load remote content"));
+	gtk_container_add (GTK_CONTAINER (box), button);
+
+	g_signal_connect (button, "clicked",
+		G_CALLBACK (e_mail_reader_load_remote_content_clicked_cb), reader);
+
+	button = gtk_toggle_button_new ();
+	gtk_box_pack_start (GTK_BOX (box), button, FALSE, FALSE, 0);
+
+	g_signal_connect (button, "button-press-event",
+		G_CALLBACK (e_mail_reader_options_remote_content_button_press_cb), reader);
+
+	arrow = gtk_arrow_new (GTK_ARROW_DOWN, GTK_SHADOW_NONE);
+	gtk_container_add (GTK_CONTAINER (button), arrow);
+
+	gtk_widget_show_all (box);
+
+	return box;
+}
+
+static void
+mail_reader_display_load_changed_cb (EMailDisplay *mail_display,
+				     WebKitLoadEvent load_event,
+				     EMailReader *reader)
+{
+	EMailReaderPrivate *priv;
+
+	g_return_if_fail (E_IS_MAIL_DISPLAY (mail_display));
+	g_return_if_fail (E_IS_MAIL_READER (reader));
+
+	priv = E_MAIL_READER_GET_PRIVATE (reader);
+	g_return_if_fail (priv != NULL);
+
+	if (load_event == WEBKIT_LOAD_STARTED) {
+		if (priv->remote_content_alert)
+			e_alert_response (priv->remote_content_alert, GTK_RESPONSE_CLOSE);
+		return;
+	}
+
+	if (load_event != WEBKIT_LOAD_FINISHED)
+		return;
+
+	if (!e_mail_display_has_skipped_remote_content_sites (mail_display))
+		return;
+
+	if (!priv->remote_content_alert) {
+		EPreviewPane *preview_pane;
+		GtkWidget *button;
+		EAlert *alert;
+
+		alert = e_alert_new ("mail:remote-content-info", NULL);
+		button = e_mail_reader_create_remote_content_alert_button (reader);
+		e_alert_add_widget (alert, button); /* button is consumed by the alert */
+		preview_pane = e_mail_reader_get_preview_pane (reader);
+		e_alert_sink_submit_alert (E_ALERT_SINK (preview_pane), alert);
+
+		priv->remote_content_alert = alert;
+		g_object_add_weak_pointer (G_OBJECT (priv->remote_content_alert), &priv->remote_content_alert);
+
+		g_object_unref (alert);
+	}
+}
+
+/**
+ * e_mail_reader_connect_remote_content:
+ * @reader: an #EMailReader
+ *
+ * Connects signal handlers to manage remote content download around
+ * the internal #EMailDisplay.
+ **/
+void
+e_mail_reader_connect_remote_content (EMailReader *reader)
+{
+	EMailDisplay *mail_display;
+
+	g_return_if_fail (E_IS_MAIL_READER (reader));
+
+	mail_display = e_mail_reader_get_mail_display (reader);
+	g_return_if_fail (E_IS_MAIL_DISPLAY (mail_display));
+
+	g_signal_connect (mail_display, "load-changed",
+		G_CALLBACK (mail_reader_display_load_changed_cb), reader);
+}

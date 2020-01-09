@@ -27,6 +27,9 @@
 #include <glib/gi18n.h>
 
 #include <shell/e-shell.h>
+#include <shell/e-shell-content.h>
+#include <shell/e-shell-view.h>
+#include <shell/e-shell-window.h>
 #include <e-util/e-util.h>
 
 #include "e-mail-account-store.h"
@@ -196,6 +199,9 @@ static void
 free_send_data (void)
 {
 	struct _send_data *data = send_data;
+
+	if (!data)
+		return;
 
 	g_return_if_fail (g_hash_table_size (data->active) == 0);
 
@@ -428,6 +434,113 @@ format_service_name (CamelService *service)
 	return pretty_url;
 }
 
+struct ReportErrorToUIData
+{
+	gchar *display_name;
+	gchar *error_ident;
+	GError *error;
+};
+
+static gboolean
+report_error_to_ui_cb (gpointer user_data)
+{
+	struct ReportErrorToUIData *data = user_data;
+	EShellView *shell_view = NULL;
+
+	g_return_val_if_fail (data != NULL, FALSE);
+	g_return_val_if_fail (data->display_name != NULL, FALSE);
+	g_return_val_if_fail (data->error_ident != NULL, FALSE);
+	g_return_val_if_fail (data->error != NULL, FALSE);
+
+	if (send_recv_dialog) {
+		GtkWidget *parent;
+
+		parent = gtk_widget_get_parent (send_recv_dialog);
+		if (parent && E_IS_SHELL_WINDOW (parent)) {
+			EShellWindow *shell_window = E_SHELL_WINDOW (parent);
+
+			shell_view = e_shell_window_get_shell_view (shell_window, "mail");
+		}
+	}
+
+	if (!shell_view) {
+		EShell *shell;
+		GtkWindow *active_window;
+
+		shell = e_shell_get_default ();
+		active_window = e_shell_get_active_window (shell);
+
+		if (E_IS_SHELL_WINDOW (active_window)) {
+			EShellWindow *shell_window = E_SHELL_WINDOW (active_window);
+
+			shell_view = e_shell_window_get_shell_view (shell_window, "mail");
+		}
+	}
+
+	if (shell_view) {
+		EShellContent *shell_content;
+		EAlertSink *alert_sink;
+		EAlert *alert;
+
+		shell_content = e_shell_view_get_shell_content (shell_view);
+		alert_sink = E_ALERT_SINK (shell_content);
+
+		alert = e_alert_new (data->error_ident, data->display_name,
+			data->error->message ? data->error->message : _("Unknown error"), NULL);
+
+		e_alert_sink_submit_alert (alert_sink, alert);
+
+		g_object_unref (alert);
+	} else {
+		/* This may not happen, but just in case... */
+		g_warning ("%s: %s '%s': %s\n", G_STRFUNC, data->error_ident, data->display_name, data->error->message);
+	}
+
+	g_free (data->display_name);
+	g_free (data->error_ident);
+	g_error_free (data->error);
+	g_free (data);
+
+	return FALSE;
+}
+
+static void
+report_error_to_ui (CamelService *service,
+		    const gchar *folder_name,
+		    const GError *error)
+{
+	gchar *tmp = NULL;
+	const gchar *display_name, *ident;
+	struct ReportErrorToUIData *data;
+
+	g_return_if_fail (CAMEL_IS_SERVICE (service));
+	g_return_if_fail (error != NULL);
+
+	/* Ignore 'offline' errors */
+	if (g_error_matches (error, CAMEL_SERVICE_ERROR, CAMEL_SERVICE_ERROR_UNAVAILABLE))
+		return;
+
+	if (folder_name) {
+		tmp = g_strdup_printf ("%s : %s",
+			camel_service_get_display_name (service),
+			folder_name);
+		display_name = tmp;
+		ident = "mail:no-refresh-folder";
+	} else {
+		display_name = camel_service_get_display_name (service);
+		ident = "mail:failed-connect";
+	}
+
+	data = g_new0 (struct ReportErrorToUIData, 1);
+	data->display_name = g_strdup (display_name);
+	data->error_ident = g_strdup (ident);
+	data->error = g_error_copy (error);
+
+	g_idle_add_full (G_PRIORITY_DEFAULT, report_error_to_ui_cb, data, NULL);
+
+	g_free (tmp);
+}
+
 static send_info_t
 get_receive_type (CamelService *service)
 {
@@ -489,7 +602,7 @@ get_keep_on_server (CamelService *service)
 	return keep_on_server;
 }
 
-static struct _send_data *
+static void
 build_dialog (GtkWindow *parent,
               EMailSession *session,
               CamelFolder *outbox,
@@ -747,8 +860,6 @@ build_dialog (GtkWindow *parent,
 	g_object_weak_ref ((GObject *) gd, (GWeakNotify) dialog_destroy_cb, data);
 
 	data->infos = list;
-
-	return data;
 }
 
 static void
@@ -836,6 +947,7 @@ receive_done (gpointer data)
 			local_outbox,
 			CAMEL_TRANSPORT (info->service),
 			E_FILTER_SOURCE_OUTGOING,
+			TRUE,
 			info->cancellable,
 			receive_get_folder, info,
 			receive_status, info,
@@ -850,7 +962,7 @@ receive_done (gpointer data)
 			GTK_PROGRESS_BAR (info->progress_bar), 1.0);
 
 		if (info->state == SEND_CANCELLED)
-			text = _("Canceled");
+			text = _("Cancelled");
 		else {
 			text = _("Complete");
 			info->state = SEND_COMPLETE;
@@ -951,6 +1063,126 @@ receive_get_folder (CamelFilterDriver *d,
 
 /* ********************************************************************** */
 
+static gboolean
+delete_junk_sync (CamelStore *store,
+		  GCancellable *cancellable,
+		  GError **error)
+{
+	CamelFolder *folder;
+	GPtrArray *uids;
+	guint32 flags;
+	guint32 mask;
+	guint ii;
+
+	g_return_val_if_fail (CAMEL_IS_STORE (store), FALSE);
+
+	folder = camel_store_get_junk_folder_sync (store, cancellable, error);
+	if (folder == NULL)
+		return FALSE;
+
+	uids = camel_folder_get_uids (folder);
+	flags = mask = CAMEL_MESSAGE_DELETED | CAMEL_MESSAGE_SEEN;
+
+	camel_folder_freeze (folder);
+
+	for (ii = 0; ii < uids->len; ii++) {
+		const gchar *uid = uids->pdata[ii];
+		camel_folder_set_message_flags (folder, uid, flags, mask);
+	}
+
+	camel_folder_thaw (folder);
+
+	camel_folder_free_uids (folder, uids);
+	g_object_unref (folder);
+
+	return TRUE;
+}
+
+struct TestShouldData
+{
+	gint64 last_delete_junk;
+	gint64 last_expunge;
+};
+
+static void
+test_should_delete_junk_or_expunge (CamelStore *store,
+				    gboolean *should_delete_junk,
+				    gboolean *should_expunge)
+{
+	static GMutex mutex;
+	static GHashTable *last_expunge = NULL;
+
+	GSettings *settings;
+	const gchar *uid;
+	gint64 trash_empty_date = 0, junk_empty_date = 0;
+	gint trash_empty_days = 0, junk_empty_days = 0;
+	gint64 now;
+
+	g_return_if_fail (CAMEL_IS_STORE (store));
+	g_return_if_fail (should_delete_junk != NULL);
+	g_return_if_fail (should_expunge != NULL);
+
+	*should_delete_junk = FALSE;
+	*should_expunge = FALSE;
+
+	uid = camel_service_get_uid (CAMEL_SERVICE (store));
+	g_return_if_fail (uid != NULL);
+
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
+
+	now = time (NULL) / 60 / 60 / 24;
+
+	*should_delete_junk = g_settings_get_boolean (settings, "junk-empty-on-exit");
+	*should_expunge = g_settings_get_boolean (settings, "trash-empty-on-exit");
+
+	if (*should_delete_junk || *should_expunge) {
+		junk_empty_days = g_settings_get_int (settings, "junk-empty-on-exit-days");
+		junk_empty_date = g_settings_get_int (settings, "junk-empty-date");
+
+		trash_empty_days = g_settings_get_int (settings, "trash-empty-on-exit-days");
+		trash_empty_date = g_settings_get_int (settings, "trash-empty-date");
+
+		g_mutex_lock (&mutex);
+		if (!last_expunge) {
+			last_expunge = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+		} else {
+			struct TestShouldData *tsd;
+
+			tsd = g_hash_table_lookup (last_expunge, uid);
+			if (tsd) {
+				junk_empty_date = tsd->last_delete_junk;
+				trash_empty_date = tsd->last_expunge;
+			}
+		}
+		g_mutex_unlock (&mutex);
+	}
+
+	*should_delete_junk = *should_delete_junk && junk_empty_days > 0 && junk_empty_date + junk_empty_days <= now;
+	*should_expunge = *should_expunge && trash_empty_days > 0 && trash_empty_date + trash_empty_days <= now;
+
+	if (*should_delete_junk || *should_expunge) {
+		struct TestShouldData *tsd;
+
+		if (*should_delete_junk)
+			junk_empty_date = now;
+		if (*should_expunge)
+			trash_empty_date = now;
+
+		g_mutex_lock (&mutex);
+		tsd = g_hash_table_lookup (last_expunge, uid);
+		if (!tsd) {
+			tsd = g_new0 (struct TestShouldData, 1);
+			g_hash_table_insert (last_expunge, g_strdup (uid), tsd);
+		}
+
+		tsd->last_delete_junk = junk_empty_date;
+		tsd->last_expunge = trash_empty_date;
+		g_mutex_unlock (&mutex);
+	}
+
+	g_object_unref (settings);
+}
+
 static void
 get_folders (CamelStore *store,
              GPtrArray *folders,
@@ -1004,6 +1236,9 @@ refresh_folders_exec (struct _refresh_folders_msg *m,
 	CamelFolder *folder;
 	gint i;
 	gboolean success;
+	gboolean delete_junk = FALSE, expunge = FALSE;
+	GHashTable *known_errors;
+	EMailBackend *mail_backend;
 	GError *local_error = NULL;
 	gulong handler_id = 0;
 
@@ -1012,40 +1247,67 @@ refresh_folders_exec (struct _refresh_folders_msg *m,
 			m->info->cancellable, "cancelled",
 			G_CALLBACK (main_op_cancelled_cb), cancellable);
 
-	success = camel_service_connect_sync (
-		CAMEL_SERVICE (m->store), cancellable, error);
-	if (!success)
+	success = camel_service_connect_sync (CAMEL_SERVICE (m->store), cancellable, &local_error);
+	if (!success) {
+		if (g_error_matches (local_error, CAMEL_SERVICE_ERROR, CAMEL_SERVICE_ERROR_UNAVAILABLE))
+			g_clear_error (&local_error);
+		else
+			g_propagate_error (error, local_error);
 		goto exit;
+	}
 
 	get_folders (m->store, m->folders, m->finfo);
 
 	camel_operation_push_message (m->info->cancellable, _("Updating..."));
+
+	test_should_delete_junk_or_expunge (m->store, &delete_junk, &expunge);
+
+	if (delete_junk && !delete_junk_sync (m->store, cancellable, error)) {
+		camel_operation_pop_message (m->info->cancellable);
+		goto exit;
+	}
+
+	mail_backend = E_MAIL_BACKEND (e_shell_get_backend_by_name (e_shell_get_default (), "mail"));
+
+	known_errors = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
 	for (i = 0; i < m->folders->len; i++) {
 		folder = e_mail_session_uri_to_folder_sync (
 			E_MAIL_SESSION (m->info->session),
 			m->folders->pdata[i], 0,
 			cancellable, &local_error);
-		if (folder && camel_folder_synchronize_sync (folder, FALSE, cancellable, &local_error))
+		if (folder && camel_folder_synchronize_sync (folder, expunge, cancellable, &local_error))
 			camel_folder_refresh_info_sync (folder, cancellable, &local_error);
 
+		if (folder && !local_error && mail_backend) {
+			em_utils_process_autoarchive_sync (mail_backend, folder, m->folders->pdata[i], cancellable, &local_error);
+		}
+
 		if (local_error != NULL) {
-			if (!g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_CANCELLED)) {
-				const gchar *account_name = NULL, *full_name;
+			const gchar *error_message = local_error->message ? local_error->message : _("Unknown error");
+
+			if (g_hash_table_contains (known_errors, error_message)) {
+				/* Received the same error message multiple times; there can be some
+				   connection issue probably, thus skip the rest folder updates for now */
+				g_clear_object (&folder);
+				g_clear_error (&local_error);
+				break;
+			} else if (!g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_CANCELLED)) {
+				CamelStore *store;
+				const gchar *full_name;
 
 				if (folder) {
-					CamelStore *store = camel_folder_get_parent_store (folder);
-
-					account_name = camel_service_get_display_name (CAMEL_SERVICE (store));
+					store = camel_folder_get_parent_store (folder);
 					full_name = camel_folder_get_full_name (folder);
-				} else
+				} else {
+					store = m->store;
 					full_name = (const gchar *) m->folders->pdata[i];
+				}
 
-				g_warning (
-					"Failed to refresh folder '%s%s%s': %s",
-					account_name ? account_name : "",
-					account_name ? ": " : "",
-					full_name, local_error->message);
+				report_error_to_ui (CAMEL_SERVICE (store), full_name, local_error);
+
+				/* To not report one error for multiple folders multiple times */
+				g_hash_table_insert (known_errors, g_strdup (error_message), GINT_TO_POINTER (1));
 			}
 
 			g_clear_error (&local_error);
@@ -1064,6 +1326,7 @@ refresh_folders_exec (struct _refresh_folders_msg *m,
 	}
 
 	camel_operation_pop_message (m->info->cancellable);
+	g_hash_table_destroy (known_errors);
 
 exit:
 	if (handler_id > 0)
@@ -1120,7 +1383,7 @@ receive_update_got_folderinfo (GObject *source_object,
 	/* XXX Need to hand this off to an EAlertSink. */
 	} else if (local_error != NULL) {
 		g_warn_if_fail (info == NULL);
-		g_warning ("%s: %s", G_STRFUNC, local_error->message);
+		report_error_to_ui (send_info->service, NULL, local_error);
 		g_error_free (local_error);
 
 		receive_done (send_info);
@@ -1169,6 +1432,85 @@ receive_update_got_store (CamelStore *store,
 	} else {
 		receive_done (info);
 	}
+}
+
+
+struct _refresh_local_store_msg {
+	MailMsg base;
+
+	CamelStore *store;
+	gboolean delete_junk;
+	gboolean expunge_trash;
+};
+
+static gchar *
+refresh_local_store_desc (struct _refresh_local_store_msg *m)
+{
+	const gchar *display_name;
+
+	display_name = camel_service_get_display_name (CAMEL_SERVICE (m->store));
+
+	if (m->delete_junk && m->expunge_trash)
+		return g_strdup_printf (_("Deleting junk and expunging trash at '%s'"), display_name);
+	else if (m->delete_junk)
+		return g_strdup_printf (_("Deleting junk at '%s'"), display_name);
+	else
+		return g_strdup_printf (_("Expunging trash at '%s'"), display_name);
+}
+
+static void
+refresh_local_store_exec (struct _refresh_local_store_msg *m,
+			  GCancellable *cancellable,
+			  GError **error)
+{
+	if (m->delete_junk && !delete_junk_sync (m->store, cancellable, error))
+		return;
+
+	if (m->expunge_trash) {
+		CamelFolder *trash;
+
+		trash = camel_store_get_trash_folder_sync (m->store, cancellable, error);
+
+		if (trash != NULL) {
+			e_mail_folder_expunge_sync (trash, cancellable, error);
+			g_object_unref (trash);
+		}
+	}
+}
+
+static void
+refresh_local_store_free (struct _refresh_local_store_msg *m)
+{
+	g_object_unref (m->store);
+}
+
+static MailMsgInfo refresh_local_store_info = {
+	sizeof (struct _refresh_local_store_msg),
+	(MailMsgDescFunc) refresh_local_store_desc,
+	(MailMsgExecFunc) refresh_local_store_exec,
+	(MailMsgDoneFunc) NULL,
+	(MailMsgFreeFunc) refresh_local_store_free
+};
+
+static void
+maybe_delete_junk_or_expunge_local_store (EMailSession *session)
+{
+	CamelStore *store;
+	gboolean delete_junk = FALSE, expunge_trash = FALSE;
+	struct _refresh_local_store_msg *m;
+
+	store = e_mail_session_get_local_store (session);
+	test_should_delete_junk_or_expunge (store, &delete_junk, &expunge_trash);
+
+	if (!delete_junk && !expunge_trash)
+		return;
+
+	m = mail_msg_new (&refresh_local_store_info);
+	m->store = g_object_ref (store);
+	m->delete_junk = delete_junk;
+	m->expunge_trash = expunge_trash;
+
+	mail_msg_unordered_push (m);
 }
 
 static CamelService *
@@ -1221,7 +1563,6 @@ send_receive (GtkWindow *parent,
 {
 	CamelFolder *local_outbox;
 	CamelService *transport;
-	struct _send_data *data;
 	GList *scan, *siter;
 
 	if (send_recv_dialog != NULL) {
@@ -1237,13 +1578,17 @@ send_receive (GtkWindow *parent,
 		e_mail_session_get_local_folder (
 		session, E_MAIL_LOCAL_FOLDER_OUTBOX);
 
-	data = build_dialog (
-		parent, session, local_outbox, transport, allow_send);
+	build_dialog (parent, session, local_outbox, transport, allow_send);
 
 	if (transport != NULL)
 		g_object_unref (transport);
 
-	scan = g_list_copy (data->infos);
+	maybe_delete_junk_or_expunge_local_store (session);
+
+	if (!send_data)
+		return NULL;
+
+	scan = g_list_copy (send_data->infos);
 
 	for (siter = scan; siter != NULL; siter = siter->next) {
 		struct _send_info *info = siter->data;
@@ -1268,14 +1613,14 @@ send_receive (GtkWindow *parent,
 				session, local_outbox,
 				CAMEL_TRANSPORT (info->service),
 				E_FILTER_SOURCE_OUTGOING,
+				TRUE,
 				info->cancellable,
 				receive_get_folder, info,
 				receive_status, info,
 				send_done, info);
 			break;
 		case SEND_UPDATE:
-			receive_update_got_store (
-				CAMEL_STORE (info->service), info);
+			receive_update_got_store (CAMEL_STORE (info->service), info);
 			break;
 		default:
 			break;
@@ -1283,6 +1628,12 @@ send_receive (GtkWindow *parent,
 	}
 
 	g_list_free (scan);
+
+	if (send_data && g_hash_table_size (send_data->active) == 0) {
+		if (send_data->gd)
+			gtk_widget_destroy ((GtkWidget *) send_data->gd);
+		free_send_data ();
+	}
 
 	return send_recv_dialog;
 }
@@ -1371,6 +1722,7 @@ mail_receive_service (CamelService *service)
 			local_outbox,
 			CAMEL_TRANSPORT (service),
 			E_FILTER_SOURCE_OUTGOING,
+			FALSE,
 			info->cancellable,
 			receive_get_folder, info,
 			receive_status, info,
@@ -1387,8 +1739,9 @@ exit:
 	g_object_unref (session);
 }
 
-void
-mail_send (EMailSession *session)
+static void
+do_mail_send (EMailSession *session,
+	      gboolean immediately)
 {
 	CamelFolder *local_outbox;
 	CamelService *service;
@@ -1444,10 +1797,23 @@ mail_send (EMailSession *session)
 		session, local_outbox,
 		CAMEL_TRANSPORT (service),
 		E_FILTER_SOURCE_OUTGOING,
+		immediately,
 		info->cancellable,
 		receive_get_folder, info,
 		receive_status, info,
 		send_done, info);
 
 	g_object_unref (service);
+}
+
+void
+mail_send (EMailSession *session)
+{
+	do_mail_send (session, FALSE);
+}
+
+void
+mail_send_immediately (EMailSession *session)
+{
+	do_mail_send (session, TRUE);
 }

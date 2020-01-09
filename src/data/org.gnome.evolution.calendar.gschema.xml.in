@@ -54,6 +54,11 @@
       <_summary>Month view vertical pane position</_summary>
       <_description>Position of the vertical pane, between the calendar lists and the date navigator calendar</_description>
     </key>
+    <key name="date-navigator-pane-position-sub" type="i">
+      <default>150</default>
+      <_summary>Month view vertical pane position</_summary>
+      <_description>Position of the vertical pane, between the calendar lists and the date navigator calendar</_description>
+    </key>
     <key name="day-end-hour" type="i">
       <default>17</default>
       <_summary>Workday end hour</_summary>
@@ -73,6 +78,76 @@
       <default>0</default>
       <_summary>Workday start minute</_summary>
       <_description>Minute the workday starts on, 0 to 59.</_description>
+    </key>
+    <key name="day-start-mon" type="i">
+      <default>-1</default>
+      <_summary>Workday start time for Monday</_summary>
+      <_description>Time the workday starts on, in twenty four hour format HHMM, 0000 to 2359, or -1 to use day-start-hour and day-start-minute</_description>
+    </key>
+    <key name="day-end-mon" type="i">
+      <default>-1</default>
+      <_summary>Workday end time for Monday</_summary>
+      <_description>Time the workday ends on, in twenty four hour format HHMM, 0000 to 2359, or -1 to use day-end-hour and day-end-minute</_description>
+    </key>
+    <key name="day-start-tue" type="i">
+      <default>-1</default>
+      <_summary>Workday start time for Tuesday</_summary>
+      <_description>Time the workday ends on, in twenty four hour format HHMM, 0000 to 2359, or -1 to use day-start-hour and day-start-minute</_description>
+    </key>
+    <key name="day-end-tue" type="i">
+      <default>-1</default>
+      <_summary>Workday end time for Tuesday</_summary>
+      <_description>Time the workday ends on, in twenty four hour format HHMM, 0000 to 2359, or -1 to use day-end-hour and day-end-minute</_description>
+    </key>
+    <key name="day-start-wed" type="i">
+      <default>-1</default>
+      <_summary>Workday start time for Wednesday</_summary>
+      <_description>Time the workday ends on, in twenty four hour format HHMM, 0000 to 2359, or -1 to use day-start-hour and day-start-minute</_description>
+    </key>
+    <key name="day-end-wed" type="i">
+      <default>-1</default>
+      <_summary>Workday end time for Wednesday</_summary>
+      <_description>Time the workday ends on, in twenty four hour format HHMM, 0000 to 2359, or -1 to use day-end-hour and day-end-minute</_description>
+    </key>
+    <key name="day-start-thu" type="i">
+      <default>-1</default>
+      <_summary>Workday start time for Thursday</_summary>
+      <_description>Time the workday ends on, in twenty four hour format HHMM, 0000 to 2359, or -1 to use day-start-hour and day-start-minute</_description>
+    </key>
+    <key name="day-end-thu" type="i">
+      <default>-1</default>
+      <_summary>Workday end time for Thursday</_summary>
+      <_description>Time the workday ends on, in twenty four hour format HHMM, 0000 to 2359, or -1 to use day-end-hour and day-end-minute</_description>
+    </key>
+    <key name="day-start-fri" type="i">
+      <default>-1</default>
+      <_summary>Workday start time for Friday</_summary>
+      <_description>Time the workday ends on, in twenty four hour format HHMM, 0000 to 2359, or -1 to use day-start-hour and day-start-minute</_description>
+    </key>
+    <key name="day-end-fri" type="i">
+      <default>-1</default>
+      <_summary>Workday end time for Friday</_summary>
+      <_description>Time the workday ends on, in twenty four hour format HHMM, 0000 to 2359, or -1 to use day-end-hour and day-end-minute</_description>
+    </key>
+    <key name="day-start-sat" type="i">
+      <default>-1</default>
+      <_summary>Workday start time for Saturday</_summary>
+      <_description>Time the workday ends on, in twenty four hour format HHMM, 0000 to 2359, or -1 to use day-start-hour and day-start-minute</_description>
+    </key>
+    <key name="day-end-sat" type="i">
+      <default>-1</default>
+      <_summary>Workday end time for Saturday</_summary>
+      <_description>Time the workday ends on, in twenty four hour format HHMM, 0000 to 2359, or -1 to use day-end-hour and day-end-minute</_description>
+    </key>
+    <key name="day-start-sun" type="i">
+      <default>-1</default>
+      <_summary>Workday start time for Sunday</_summary>
+      <_description>Time the workday ends on, in twenty four hour format HHMM, 0000 to 2359, or -1 to use day-start-hour and day-start-minute</_description>
+    </key>
+    <key name="day-end-sun" type="i">
+      <default>-1</default>
+      <_summary>Workday end time for Sunday</_summary>
+      <_description>Time the workday ends on, in twenty four hour format HHMM, 0000 to 2359, or -1 to use day-end-hour and day-end-minute</_description>
     </key>
     <key name="day-second-zone" type="s">
       <default>''</default>
@@ -99,6 +174,11 @@
       <_summary>Default reminder units</_summary>
       <_description>Units for a default reminder, "minutes", "hours" or "days"</_description>
     </key>
+    <key name="default-snooze-minutes" type="i">
+      <default>5</default>
+      <_summary>Default reminder snooze interval, in minutes</_summary>
+      <_description>Default reminder snooze interval, in minutes, to be filled in the reminder notification dialog</_description>
+    </key>
     <key name="editor-show-categories" type="b">
       <default>false</default>
       <_summary>Show categories field in the event/meeting/task editor</_summary>
@@ -115,7 +195,7 @@
       <_description>Whether to show RSVP field in the event/task/meeting editor</_description>
     </key>
     <key name="editor-show-status" type="b">
-      <default>false</default>
+      <default>true</default>
       <_summary>Show status field in the event/task/meeting editor</_summary>
       <_description>Whether to show status field in the event/task/meeting editor</_description>
     </key>
@@ -244,6 +324,11 @@
       <_summary>Show appointment end times in week and month views</_summary>
       <_description>Whether to display the end time of events in the week and month views</_description>
     </key>
+    <key name="show-icons-month-view" type="b">
+      <default>false</default>
+      <_summary>Show appointment icons in the month view</_summary>
+      <_description>Whether to show icons of events in the month view</_description>
+    </key>
     <key name="show-memo-preview" type="b">
       <default>true</default>
       <_summary>Show the memo preview pane</_summary>
@@ -288,6 +373,11 @@
       <default>400</default>
       <_summary>Task preview pane position (vertical)</_summary>
       <_description>Position of the task preview pane when oriented vertically</_description>
+    </key>
+    <key name="task-reminder-for-completed" type="b">
+      <default>false</default>
+      <_summary>Show reminders for completed tasks</_summary>
+      <_description>Whether to show reminders for completed tasks. When set to false, reminders for completed tasks are suppressed.</_description>
     </key>
     <key name="task-overdue-highlight" type="b">
       <default>true</default>
@@ -360,6 +450,10 @@
     <key name="work-day-sunday" type="b">
       <default>false</default>
       <_summary>Sunday is a work day</_summary>
+    </key>
+    <key name="classify-private" type="b">
+      <default>false</default>
+      <_summary>Create events, memos and tasks as Private by default</_summary>
     </key>
 
     <!-- The following keys are deprecated. -->

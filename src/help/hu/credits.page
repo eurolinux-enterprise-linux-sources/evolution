@@ -15,6 +15,30 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
 <title>Köszönetnyilvánítás</title>
@@ -31,8 +55,8 @@
 
 <section id="translators">
 <title>Az <app>Evolution</app> felhasználói dokumentáció fordítói</title>
-<!-- TO TRANSLATORS: This is shown in the 'Translators of the User Documentation' section. Please REPLACE this string by adding your own names here so you get some well-deserved fame on the interwebs! Do NOT use "\n" for linebreaks or square brakets (<>) for potential email addresses here as this will not work. Thanks for all your hard work! andre -->
-<p its:locNote="TO TRANSLATORS: This is shown in the 'Translators of the User Documentation' section. Please REPLACE this string by adding your own names here so you get some well-deserved fame on the interwebs! Do NOT use '\n' for linebreaks or square brakets for potential email addresses here as this will not work. Thanks for all your hard work! andre">Lukács Bence
+<!-- TO TRANSLATORS: This is shown in the 'Translators of the User Documentation' section. Please REPLACE this string by adding your own names here so you get some well-deserved fame on the interwebs! Do NOT use "\n" for linebreaks or square brackets (<>) for potential email addresses here as this will not work. Thanks for all your hard work! andre -->
+<p its:locNote="TO TRANSLATORS: This is shown in the 'Translators of the User Documentation' section. Please REPLACE this string by adding your own names here so you get some well-deserved fame on the interwebs! Do NOT use '\n' for linebreaks or square brackets for potential email addresses here as this will not work. Thanks for all your hard work! andre">Lukács Bence
 Kelemen Gábor
 Nagy Zoltán</p>
 </section>
@@ -81,8 +105,8 @@ Srinivasa Ragavan
 <title>Névjegy-információk</title>
 <p>GNOME dokumentációs projekt:</p>
 <list>
-<item><p><link href="http://live.gnome.org/DocumentationProject">Weboldal</link></p></item>
-<item><p><link href="http://mail.gnome.org/mailman/listinfo/gnome-doc-list">Levelezőlista</link></p></item>
+<item><p><link href="https://wiki.gnome.org/DocumentationProject">Weboldal</link></p></item>
+<item><p><link href="https://mail.gnome.org/mailman/listinfo/gnome-doc-list">Levelezőlista</link></p></item>
 </list>
 </section>
 

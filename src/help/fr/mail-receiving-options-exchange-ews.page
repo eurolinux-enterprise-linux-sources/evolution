@@ -6,7 +6,7 @@
 
     <link type="guide" xref="mail-receiving-options#corporate-server-types"/>
     <link type="guide" xref="mail-account-manage-microsoft-exchange-evo-ews#receiving-email"/>
-    <revision pkgversion="3.1.91" version="0.2" date="2013-06-22" status="draft"/>
+    <revision pkgversion="3.12.9" version="0.3" date="2015-02-15" status="draft"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -49,7 +49,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -64,7 +64,7 @@
 <item><p>Saisissez votre nom d'utilisateur pour ce serveur.</p></item>
 <item><p>Saisissez manuellement l'URL de l'hôte et l'URL OAB ou cliquez sur <gui style="button">Récupérer l'URL</gui> ce qui vous demande votre mot de passe puis essaie de remplir automatiquement les valeurs.</p>
 <note style="tip"><p>Si vous êtes dans un environnement d'organisation, contactez votre administrateur système pour obtenir de plus amples informations.</p></note></item>
-<item><p>Sélectionnez le type d'authentification dans la liste Authentification ou cliquez sur <gui style="button">Vérifier les types pris en charge</gui> pour qu'Evolution vérifie les mécanismes d'authentification pris en charge. Certains serveurs ne signalent pas les mécanismes d'authentification qu'ils prennent en charge, ce qui signifie que cette fonction ne garantit pas que les mécanismes disponibles fonctionnent réellement.</p></item>
+<item><p>Select your authentication type in the Authentication list, or click <gui style="button">Check for Supported Types</gui> to have <app>Evolution</app> check for supported authentication mechanisms. Some servers do not announce the authentication mechanisms they support, so clicking this button is not a guarantee that available mechanisms actually work.</p></item>
 </list>
 
 </section>
@@ -75,10 +75,10 @@
 <p>Dans l'onglet <gui>Options de réception</gui> (accessible via <guiseq><gui>Édition</gui><gui>Préférences</gui><gui>Compte de messagerie</gui><gui style="button">Édition</gui><gui>Options de réception</gui></guiseq>) :</p>
 
 <list>
-<item><p>Si vous voulez qu'Evolution vérifie automatiquement les nouveaux messages, activez l'option <gui>Vérifier les nouveaux messages toutes les ... minutes</gui> et sélectionnez la fréquence en minutes.</p></item>
-<item><p>Choisissez si vous voulez qu'Evolution relève les nouveaux messages dans tous les dossiers.</p></item>
+<item><p>If you want <app>Evolution</app> to check automatically for new messages, click the <gui>Check for new messages every … minutes</gui> option and select the frequency in minutes.</p></item>
+<item><p>You can also define if <app>Evolution</app> checks for new messages in all folders.</p></item>
 <item><p>Si vous désirez avoir une copie du carnet d'adresses sur le serveur pour y accéder hors-ligne, activez <gui>Mettre en cache le carnet d'adresses hors-ligne</gui> et cliquez sur <gui style="button">Récupérer la liste</gui>. Ensuite, sélectionnez le carnet d'adresses parmi les options disponibles.</p></item>
-<item><p>Si vous voulez que des <link xref="mail-filters">filtres</link> soient automatiquement utilisés pour les nouveaux messages dans votre Boîte de réception, activez <gui>Appliquer les filtres aux nouveaux messages dans la boîte de réception sur le serveur</gui>.</p></item>
+<item><p>Choisissez si vous voulez que les <link xref="mail-filters">filtres</link> soient automatiquement appliqués au courrier que vous recevez, si les <link xref="mail-spam-marking">pourriels</link> doivent être automatiquement filtrés, et si <link xref="mail-working-offline">le courrier sur le serveur doit être synchronisé avec votre copie locale pour pouvoir y accéder "hors-ligne</link>.</p></item>
 </list>
 
 </section>

@@ -485,7 +485,7 @@ mail_account_store_constructed (GObject *object)
 
 	/* Bind the default mail account ESource to our default
 	 * CamelService, with help from some transform functions. */
-	g_object_bind_property_full (
+	e_binding_bind_property_full (
 		registry, "default-mail-account",
 		store, "default-service",
 		G_BINDING_BIDIRECTIONAL |
@@ -501,6 +501,20 @@ mail_account_store_constructed (GObject *object)
 		config_dir, "sortorder.ini", NULL);
 
 	e_extensible_load_extensions (E_EXTENSIBLE (object));
+}
+
+static void
+call_allow_auth_prompt (ESource *source)
+{
+	EShell *shell;
+
+	if (!source)
+		return;
+
+	g_return_if_fail (E_IS_SOURCE (source));
+
+	shell = e_shell_get_default ();
+	e_shell_allow_auth_prompt_for (shell, source);
 }
 
 static void
@@ -592,7 +606,7 @@ mail_account_store_service_enabled (EMailAccountStore *store,
 		if (uid != NULL)
 			identity = e_source_registry_ref_source (registry, uid);
 
-		if (identity != NULL && e_source_get_writable (identity)) {
+		if (identity != NULL && e_source_get_writable (identity) && !e_source_get_enabled (identity)) {
 			e_source_set_enabled (identity, TRUE);
 
 			store->priv->busy_count++;
@@ -622,7 +636,7 @@ mail_account_store_service_enabled (EMailAccountStore *store,
 		}
 	}
 
-	if (source != NULL && e_source_get_writable (source)) {
+	if (source != NULL && e_source_get_writable (source) && !e_source_get_enabled (source)) {
 		e_source_set_enabled (source, TRUE);
 
 		store->priv->busy_count++;
@@ -666,14 +680,18 @@ mail_account_store_service_disabled (EMailAccountStore *store,
 		ESourceMailAccount *extension;
 		const gchar *extension_name;
 
+		call_allow_auth_prompt (source);
+
 		extension_name = E_SOURCE_EXTENSION_MAIL_ACCOUNT;
 		extension = e_source_get_extension (source, extension_name);
 		uid = e_source_mail_account_get_identity_uid (extension);
 
-		if (uid != NULL)
+		if (uid != NULL) {
 			identity = e_source_registry_ref_source (registry, uid);
+			call_allow_auth_prompt (identity);
+		}
 
-		if (identity != NULL && e_source_get_writable (identity)) {
+		if (identity != NULL && e_source_get_writable (identity) && e_source_get_enabled (identity)) {
 			e_source_set_enabled (identity, FALSE);
 
 			store->priv->busy_count++;
@@ -698,12 +716,14 @@ mail_account_store_service_disabled (EMailAccountStore *store,
 		collection = e_source_registry_find_extension (
 			registry, source, E_SOURCE_EXTENSION_COLLECTION);
 		if (collection != NULL) {
+			call_allow_auth_prompt (collection);
+
 			g_object_unref (source);
 			source = collection;
 		}
 	}
 
-	if (source != NULL && e_source_get_writable (source)) {
+	if (source != NULL && e_source_get_writable (source) && e_source_get_enabled (source)) {
 		e_source_set_enabled (source, FALSE);
 
 		store->priv->busy_count++;
@@ -998,7 +1018,7 @@ e_mail_account_store_init (EMailAccountStore *store)
 	types[ii++] = G_TYPE_BOOLEAN;		/* COLUMN_ONLINE_ACCOUNT */
 	types[ii++] = G_TYPE_BOOLEAN;		/* COLUMN_ENABLED_VISIBLE */
 
-	g_assert (ii == E_MAIL_ACCOUNT_STORE_NUM_COLUMNS);
+	g_return_if_fail (ii == E_MAIL_ACCOUNT_STORE_NUM_COLUMNS);
 
 	gtk_list_store_set_column_types (
 		GTK_LIST_STORE (store),

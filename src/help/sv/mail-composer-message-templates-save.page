@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-composer-message-templates-save" xml:lang="sv">
 
   <info>
-   <desc>Store an existing or new message as a template</desc>
+   <desc>Lagra ett existerande eller nytt meddelande som en mall</desc>
    
    <link type="guide" xref="mail-composer-message-templates#options"/>
 
@@ -18,22 +18,34 @@
  <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
      
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-<title>Saving Messages as Templates</title>
+<title>Spara meddelanden som mallar</title>
 
 <section id="save-existing">
-<title>Saving an Existing Message as a Template</title>
+<title>Spara ett existerande meddelande som en mall</title>
 <steps>
-  <item><p>Select the message.</p></item>
-  <item><p>Right-click the message and choose <gui>Move to folder</gui> or <gui>Copy to folder</gui>.</p></item>
-  <item><p>Select the <gui>Templates</gui> folder under <gui>On This Computer</gui>.</p></item>
+  <item><p>Välj meddelandet.</p></item>
+  <item><p>Högerklicka på meddelande och välj <gui>Flytta till mapp</gui> eller <gui>Kopiera till mapp</gui>.</p></item>
+  <item><p>Välj mappen <gui>Mallar</gui> under <gui>På denna dator</gui>.</p></item>
 </steps>
-<p>You can also edit an existing message and save it as a template:</p>
+<p>Du kan också redigera ett existerande meddelande och spara det som en mall:</p>
 <steps>
-  <item><p>Open the message and click <gui>Reply</gui>.</p></item>
-  <item><p>Edit the message body or the addresses according to your requirements.</p></item>
-  <item><p>Select <guiseq><gui>File</gui><gui>Save as Template</gui></guiseq>.</p></item>
+  <item><p>Öppna meddelandet och klicka på <gui>Svara</gui>.</p></item>
+  <item><p>Redigera meddelandekroppen eller adresserna enligt dina krav.</p></item>
+  <item><p>Välj <guiseq><gui>Arkiv</gui><gui>Spara som mall</gui></guiseq>.</p></item>
  </steps>
 </section>
 
@@ -41,10 +53,10 @@
  <title>Spara ett nytt meddelande som en mall</title>
  <steps>
   <item>
-<p>Click <gui>New</gui> and enter in the composer window what you need for the template.</p>
+<p>Klicka på <gui>Nytt</gui> och skriv in det du behöver i mallen i redigerarfönstret.</p>
   </item>
   <item>
-<p>Select <guiseq><gui>File</gui><gui>Save as Template</gui></guiseq>.</p>
+<p>Välj <guiseq><gui>Arkiv</gui><gui>Spara som mall</gui></guiseq>.</p>
   </item>
  </steps>
 </section>

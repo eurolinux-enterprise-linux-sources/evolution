@@ -57,7 +57,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -91,28 +91,16 @@
     </item>
     <item>
       <p>Grille horaire :</p>
-      <p>The Schedule Grid shows the published Free/Busy information for the
-      people you have invited. This is where you compare schedules to find free
-      time to schedule the appointment. Individuals have visible scheduling
-      information only if they use the same Novell GroupWise or Microsoft
-      Exchange server you do (that is, if they are in the same organization as
-      you), or if they publish free/busy information at a web address (URL)
-      that you can reach and you have entered that web address for the specific
-      contact in the
-      <link xref="contacts-usage-edit-contact">Contact Editor</link> under
-      <guiseq><gui>Personal information</gui>
-      <gui>Web Addresses</gui><gui>Free/Busy</gui></guiseq>.</p>
+      <p>La grille horaire affiche les informations Libre/Occupé des personnes invitées. Cela vous permet de comparer les agendas pour trouver une période libre pour organiser la réunion. Les données de disponibilité des individus ne sont disponibles que si elles se trouvent sur un même serveur Novell GroupWise ou Microsoft Exchange que vous (c'est-à-dire, si les personnes font partie de la même organisation que vous), ou si ces données sont publiées à un URL accessible et que vous avez saisi cette adresse Web pour le contact particulier dans <link xref="contacts-usage-edit-contact">l'éditeur de contact</link> sous <guiseq><gui>Informations personnelles</gui><gui>Adresses Web</gui><gui>Libre/Occupé</gui></guiseq>.</p>
     </item>
   </list>
 
   <p>Vous pouvez publier des informations d'agenda ou de disponibilité sur un serveur WebDAV ou FTP, ou sur une machine distante via SSH ou encore sur un serveur Web prenant en charge HTTP PUT.</p>
 
-  <p>Dans les environnements appartenant à une société, vous pouvez publier vos informations d'agenda et Libre/Occupé vers un serveur Exchange ou Groupwise. Notez que vous devez utiliser l'agenda Exchange de haut-niveau si vous voulez que les autres soient capables d'accéder à vos informations Libre/Occupé lorsqu'ils veulent vous inviter à une réunion.</p> <p>The default server
-  can be defined under
-  <guiseq><gui>Edit</gui><gui>Preferences</gui>
-  <gui>Calendar and Tasks</gui>
-  <gui>Publishing Information</gui>
-  <gui>Default Free/Busy Server</gui></guiseq>.</p>
+  <p>In corporate environments you can publish Calendar and Free/Busy
+  information to an Exchange or Groupwise server. Note that you must use the
+  top-level Exchange calendar if you want others to be able to access your
+  Free/Busy information when inviting you to a meeting.</p> <p>Le serveur par défaut peut être défini sous <guiseq><gui>Édition</gui><gui>Préférences</gui><gui>Agenda et tâches</gui><gui>Publication d'informations</gui><gui>Serveur Libre/Occupé par défaut</gui></guiseq>.</p>
 
   <!-- This is the location since 3.1.5, see bug
        https://bugzilla.gnome.org/show_bug.cgi?id=655666 -->
@@ -120,12 +108,7 @@
 <section id="no-groupware">
   <title>Accès aux données de disponibilité sans serveur collaboratif</title>
 
-  <p>If individuals give you a URL for Free/Busy data or for their web
-  calendar, you can add the URL under
-  <guiseq><gui>Personal Information</gui><gui>Web Addresses</gui></guiseq> in
-  the <link xref="contacts-usage-edit-contact">Contact Editor</link>. Then,
-  when you schedule a meeting with them,<app>Evolution</app> looks up the
-  schedule and displays it in the Free/Busy data.</p>
+  <p>Si une personne vous donne un URL vers ses données de disponibilité ou vers son agenda Web, vous pouvez ajouter l'URL sous <guiseq><gui>Informations personnelles</gui><gui>Sites Web</gui></guiseq> dans <link xref="contacts-usage-edit-contact">l'éditeur des contacts</link>. Dès lors, lorsque vous planifiez une réunion avec elle, <app>Evolution</app> consulte son agenda et l'affiche dans les informations de disponibilité.</p>
 
 </section>
 

@@ -57,13 +57,13 @@
 <p>Выдаёт системный сигнал.</p></item>
 
 <item><p>Воспроизвести звук:</p>
-<p>Выберите звуковой файл, чтобы Evolution его воспроизвела.</p></item>
+<p>Select a sound file for <app>Evolution</app> to play.</p></item>
 
 <item><p>Запустить программу:</p>
-<p>Evolution запускает приложение.</p></item>
+<p><app>Evolution</app> runs an application.</p></item>
 
 <item><p>Передать программе через канал:</p>
-<p>Sends the message to an application of your choice. No return value is expected. This feature can be used to create automatic Web postings from email messages or to perform additional message post processing not supported by Evolution.</p></item>
+<p>Sends the message to an application of your choice. No return value is expected. This feature can be used to create automatic Web postings from email messages or to perform additional message post processing not supported by <app>Evolution</app>.</p></item>
 
 <item><p>Forward to:</p>
 <p>Forwards the message to another email address.</p></item>

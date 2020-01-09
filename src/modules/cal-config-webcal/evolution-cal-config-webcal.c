@@ -138,7 +138,7 @@ cal_config_webcal_insert_widgets (ESourceConfigBackend *backend,
 	extension_name = E_SOURCE_EXTENSION_WEBDAV_BACKEND;
 	extension = e_source_get_extension (scratch_source, extension_name);
 
-	g_object_bind_property_full (
+	e_binding_bind_property_full (
 		extension, "soup-uri",
 		context->url_entry, "text",
 		G_BINDING_BIDIRECTIONAL |
@@ -180,6 +180,8 @@ cal_config_webcal_check_complete (ESourceConfigBackend *backend,
 
 	if (soup_uri != NULL)
 		soup_uri_free (soup_uri);
+
+	e_util_set_entry_issue_hint (context->url_entry, complete ? NULL : _("URL is not a valid http:// nor https:// URL"));
 
 	return complete;
 }

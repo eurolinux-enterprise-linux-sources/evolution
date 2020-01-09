@@ -313,7 +313,7 @@ get_status (ECalModelComponent *comp_data)
 		case ICAL_STATUS_COMPLETED:
 			return (gpointer) _("Completed");
 		case ICAL_STATUS_CANCELLED:
-			return (gpointer) _("Canceled");
+			return (gpointer) _("Cancelled");
 		default:
 			return (gpointer) "";
 		}
@@ -555,7 +555,7 @@ set_status (ECalModelComponent *comp_data,
 		status = ICAL_STATUS_INPROCESS;
 	else if (!e_util_utf8_strcasecmp (value, _("Completed")))
 		status = ICAL_STATUS_COMPLETED;
-	else if (!e_util_utf8_strcasecmp (value, _("Canceled")))
+	else if (!e_util_utf8_strcasecmp (value, _("Cancelled")))
 		status = ICAL_STATUS_CANCELLED;
 	else {
 		g_warning ("Invalid status: %s\n", value);
@@ -684,34 +684,6 @@ set_url (ECalModelComponent *comp_data,
 	}
 }
 
-/**
- * commit_component_changes
- * @comp_data: Component of our interest, which has been changed.
- *
- * Commits changes to the backend calendar of the component.
- **/
-static void
-commit_component_changes (ECalModelComponent *comp_data)
-{
-	GError *error = NULL;
-
-	g_return_if_fail (comp_data != NULL);
-
-	/* FIXME ask about mod type */
-	e_cal_client_modify_object_sync (
-		comp_data->client, comp_data->icalcomp,
-		CALOBJ_MOD_ALL, NULL, &error);
-
-	if (error != NULL) {
-		g_warning (
-			G_STRLOC ": Could not modify the object! %s",
-			error->message);
-
-		/* FIXME Show error dialog */
-		g_error_free (error);
-	}
-}
-
 static void
 cal_model_tasks_set_property (GObject *object,
                               guint property_id,
@@ -834,41 +806,51 @@ cal_model_tasks_get_color_for_component (ECalModel *model,
 }
 
 static void
-cal_model_tasks_fill_component_from_model (ECalModel *model,
-                                           ECalModelComponent *comp_data,
-                                           ETableModel *source_model,
-                                           gint row)
+cal_model_tasks_store_values_from_model (ECalModel *model,
+					 ETableModel *source_model,
+					 gint row,
+					 GHashTable *values)
+{
+	g_return_if_fail (E_IS_CAL_MODEL_TASKS (model));
+	g_return_if_fail (E_IS_TABLE_MODEL (source_model));
+	g_return_if_fail (values != NULL);
+
+	e_cal_model_util_set_value (values, source_model, E_CAL_MODEL_TASKS_FIELD_COMPLETED, row);
+	e_cal_model_util_set_value (values, source_model, E_CAL_MODEL_TASKS_FIELD_PERCENT, row);
+	e_cal_model_util_set_value (values, source_model, E_CAL_MODEL_TASKS_FIELD_STATUS, row);
+	e_cal_model_util_set_value (values, source_model, E_CAL_MODEL_TASKS_FIELD_DUE, row);
+	e_cal_model_util_set_value (values, source_model, E_CAL_MODEL_TASKS_FIELD_GEO, row);
+	e_cal_model_util_set_value (values, source_model, E_CAL_MODEL_TASKS_FIELD_PRIORITY, row);
+	e_cal_model_util_set_value (values, source_model, E_CAL_MODEL_TASKS_FIELD_URL, row);
+}
+
+static void
+cal_model_tasks_fill_component_from_values (ECalModel *model,
+					    ECalModelComponent *comp_data,
+					    GHashTable *values)
 {
 	gpointer value;
 
 	g_return_if_fail (E_IS_CAL_MODEL_TASKS (model));
 	g_return_if_fail (comp_data != NULL);
-	g_return_if_fail (E_IS_TABLE_MODEL (source_model));
+	g_return_if_fail (values != NULL);
 
 	/* This just makes sure if anything indicates completion, all
 	 * three fields do or if percent is 0, status is sane */
 
-	value = e_table_model_value_at (source_model, E_CAL_MODEL_TASKS_FIELD_COMPLETED, row);
+	value = e_cal_model_util_get_value (values, E_CAL_MODEL_TASKS_FIELD_COMPLETED);
 	set_completed ((ECalModelTasks *) model, comp_data, value);
 	if (!value) {
-		value = e_table_model_value_at (source_model, E_CAL_MODEL_TASKS_FIELD_PERCENT, row);
+		value = e_cal_model_util_get_value (values, E_CAL_MODEL_TASKS_FIELD_PERCENT);
 		set_percent (comp_data, value);
 		if (GPOINTER_TO_INT (value) != 100 && GPOINTER_TO_INT (value) != 0)
-			set_status (comp_data, e_table_model_value_at (source_model, E_CAL_MODEL_TASKS_FIELD_STATUS, row));
+			set_status (comp_data, e_cal_model_util_get_value (values, E_CAL_MODEL_TASKS_FIELD_STATUS));
 	}
 
-	set_due (
-		model, comp_data,
-		e_table_model_value_at (source_model, E_CAL_MODEL_TASKS_FIELD_DUE, row));
-	set_geo (
-		comp_data,
-		e_table_model_value_at (source_model, E_CAL_MODEL_TASKS_FIELD_GEO, row));
-	set_priority (
-		comp_data,
-		e_table_model_value_at (source_model, E_CAL_MODEL_TASKS_FIELD_PRIORITY, row));
-	set_url (
-		comp_data,
-		e_table_model_value_at (source_model, E_CAL_MODEL_TASKS_FIELD_URL, row));
+	set_due (model, comp_data, e_cal_model_util_get_value (values, E_CAL_MODEL_TASKS_FIELD_DUE));
+	set_geo (comp_data, e_cal_model_util_get_value (values, E_CAL_MODEL_TASKS_FIELD_GEO));
+	set_priority (comp_data, e_cal_model_util_get_value (values, E_CAL_MODEL_TASKS_FIELD_PRIORITY));
+	set_url (comp_data, e_cal_model_util_get_value (values, E_CAL_MODEL_TASKS_FIELD_URL));
 }
 
 static gint
@@ -973,7 +955,7 @@ cal_model_tasks_set_value_at (ETableModel *etm,
 		break;
 	}
 
-	commit_component_changes (comp_data);
+	e_cal_model_modify_component (E_CAL_MODEL (model), comp_data, E_CAL_OBJ_MOD_ALL);
 }
 
 static gboolean
@@ -1020,15 +1002,14 @@ cal_model_tasks_duplicate_value (ETableModel *etm,
 		return table_model_parent_interface->duplicate_value (etm, col, value);
 
 	switch (col) {
-	case E_CAL_MODEL_TASKS_FIELD_GEO :
-	case E_CAL_MODEL_TASKS_FIELD_PRIORITY :
-	case E_CAL_MODEL_TASKS_FIELD_STATUS :
-	case E_CAL_MODEL_TASKS_FIELD_URL :
-		return g_strdup (value);
 	case E_CAL_MODEL_TASKS_FIELD_COMPLETED :
 	case E_CAL_MODEL_TASKS_FIELD_DUE :
 		return e_cal_model_copy_cell_date_value (value);
 
+	case E_CAL_MODEL_TASKS_FIELD_GEO :
+	case E_CAL_MODEL_TASKS_FIELD_PRIORITY :
+	case E_CAL_MODEL_TASKS_FIELD_STATUS :
+	case E_CAL_MODEL_TASKS_FIELD_URL :
 	case E_CAL_MODEL_TASKS_FIELD_COMPLETE :
 	case E_CAL_MODEL_TASKS_FIELD_PERCENT :
 	case E_CAL_MODEL_TASKS_FIELD_OVERDUE :
@@ -1180,7 +1161,8 @@ e_cal_model_tasks_class_init (ECalModelTasksClass *class)
 
 	cal_model_class = E_CAL_MODEL_CLASS (class);
 	cal_model_class->get_color_for_component = cal_model_tasks_get_color_for_component;
-	cal_model_class->fill_component_from_model = cal_model_tasks_fill_component_from_model;
+	cal_model_class->store_values_from_model = cal_model_tasks_store_values_from_model;
+	cal_model_class->fill_component_from_values = cal_model_tasks_fill_component_from_values;
 
 	g_object_class_install_property (
 		object_class,
@@ -1255,13 +1237,20 @@ e_cal_model_tasks_init (ECalModelTasks *model)
 }
 
 ECalModel *
-e_cal_model_tasks_new (ESourceRegistry *registry)
+e_cal_model_tasks_new (ECalDataModel *data_model,
+		       ESourceRegistry *registry,
+		       EShell *shell)
 {
+	g_return_val_if_fail (E_IS_CAL_DATA_MODEL (data_model), NULL);
 	g_return_val_if_fail (E_IS_SOURCE_REGISTRY (registry), NULL);
+	g_return_val_if_fail (E_IS_SHELL (shell), NULL);
 
 	return g_object_new (
 		E_TYPE_CAL_MODEL_TASKS,
-		"registry", registry, NULL);
+		"data-model", data_model,
+		"registry", registry,
+		"shell", shell,
+		NULL);
 }
 
 gboolean
@@ -1377,7 +1366,7 @@ e_cal_model_tasks_mark_comp_complete (ECalModelTasks *model,
 
 	/*e_table_model_row_changed (E_TABLE_MODEL (model), model_row);*/
 
-	commit_component_changes (comp_data);
+	e_cal_model_modify_component (E_CAL_MODEL (model), comp_data, E_CAL_OBJ_MOD_ALL);
 }
 
 /**
@@ -1422,7 +1411,7 @@ e_cal_model_tasks_mark_comp_incomplete (ECalModelTasks *model,
 
 	/*e_table_model_row_changed (E_TABLE_MODEL (model), model_row);*/
 
-	commit_component_changes (comp_data);
+	e_cal_model_modify_component (E_CAL_MODEL (model), comp_data, E_CAL_OBJ_MOD_ALL);
 }
 
 void

@@ -2,11 +2,11 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-encryption-gpg-set-up" xml:lang="sv">
 
   <info>
-    <desc>Setting up GPG for your mail account to sign and/or encrypt and decrypt messages.</desc>
+    <desc>Ställ in GPG för ditt e-postkonto för att signera och/eller kryptera och dekryptera meddelanden.</desc>
 
     <link type="guide" xref="mail-encryption#gpg"/>
 
-    <revision pkgversion="2.32.1" version="0.3" date="2012-02-18" status="final"/>
+    <revision pkgversion="3.13.90" version="0.4" date="2015-03-09" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -18,23 +18,35 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Setting up GPG for your mail account</title>
-<!-- TODO:POST-3-8: Update and rewrite using Seahorse. Needs a complete rewrite once https://bugzilla.gnome.org/show_bug.cgi?id=508744 is fixed. -->
+  <title>Ställ in GPG för ditt e-postkonto</title>
+<!-- TODO:POST-3-8: Update and rewrite using Seahorse. Needs a rewrite once https://bugzilla.gnome.org/show_bug.cgi?id=745872 and https://bugzilla.gnome.org/show_bug.cgi?id=508744 is fixed. -->
 
-<note style="tip"><p>You need a GPG key to do this. If you do not have one yet, please refer to <link xref="mail-encryption-gpg-create-key">Creating a GPG key</link>.</p></note>
+<note style="tip"><p>Du behöver en GPG-nyckel för att göra detta. Om du inte har en ännu, se <link xref="mail-encryption-gpg-create-key">Skapa en GPG-nyckel</link>.</p></note>
 
 <steps>
-<item><p>Select <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Mail Accounts</gui></guiseq>.</p></item>
-<item><p>Select the account you want to use securely, then click <gui style="button">Edit</gui>.</p></item>
-<item><p>Click the <gui>Security</gui> tab.</p></item>
-<item><p>Specify your key ID in the <gui>PGP/GPG Key ID</gui> field.</p>
-<note style="tip"><p>Below the field you can choose whether to always sign outgoing messages when using this account, and other options.</p></note>
+<item><p>Välj <guiseq><gui>Redigera</gui><gui>Inställningar</gui><gui>E-postkonton</gui></guiseq>.</p></item>
+<item><p>Välj kontot som du vill använda säkert, klicka sedan på <gui style="button">Redigera</gui>.</p></item>
+<item><p>Klicka på fliken <gui>Säkerhet</gui>.</p></item>
+<item><p>Ange ditt nyckel-ID i fältet <gui>OpenPGP-nyckel-ID</gui>.</p>
+<note style="tip"><p>Nedanför fältet kan du välja huruvida utgående meddelanden alltid ska signeras när detta konto används, samt andra inställningar.</p></note>
 </item>
-<item><p>Click <gui style="button">OK</gui>.</p></item>
-<item><p>Click <gui style="button">Close</gui>.</p></item>
+<item><p>Klicka på <gui style="button">OK</gui>.</p></item>
+<item><p>Klicka på <gui style="button">Stäng</gui>.</p></item>
 </steps>
-<p>Evolution requires that you know your key ID. If you do not remember it, you can find it by typing <cmd>gpg --list-keys</cmd> in the <app>Terminal</app> application. Your key ID is an eight-character string with random numbers and letters.</p>
+<p><app>Evolution</app> kräver att du vet ditt nyckel-ID. Om du inte kommer ihåg det starta <app>Lösenord och nycklar</app>, gå till <gui>GnuPG-nycklar</gui>, välj den föredragna GPG-nyckeln, högerklicka på den, välj <gui>Egenskaper</gui> och kopiera <gui>Nyckel-ID</gui>. Ditt nyckel-ID är en åtta tecken lång sträng med slumpmässiga siffror och bokstäver.</p>
 
 </page>

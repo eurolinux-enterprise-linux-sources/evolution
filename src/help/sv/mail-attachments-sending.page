@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="guide" id="mail-attachments-sending" xml:lang="sv">
 
   <info>
-    <desc>Attaching files to emails you want to send.</desc>
+    <desc>Lägga till filer till e-postmeddelanden du vill skicka.</desc>
 
     <link type="guide" xref="index#mail-composing"/>
     <link type="guide" xref="mail-attachments"/>
@@ -19,36 +19,48 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-<title>Adding attachments to an email</title>
+<title>Lägga till bilagor till ett meddelande</title>
 
 <section id="attaching">
-<title>Attaching files</title>
-<p>To attach a file to your email in the composer:</p>
+<title>Bifoga fil(er)</title>
+<p>För att bifoga en fil med ditt e-postmeddelande i meddelanderedigeraren:</p>
 <steps>
-<item><p>Click <gui>Add Attachment...</gui>, or click <guiseq><gui>Insert</gui><gui>Attachment</gui></guiseq>, or press <keyseq><key>Ctrl</key><key>M</key></keyseq>.</p></item>
+<item><p>Klicka på <gui>Lägg till bilaga…</gui>, eller klicka på <guiseq><gui>Infoga</gui><gui>Bilaga</gui></guiseq>, eller tryck på <keyseq><key>Ctrl</key><key>M</key></keyseq>.</p></item>
 <item><p>Välj filen som du vill bifoga.</p></item>
-<item><p>Click <gui style="button">OK</gui>.</p></item>
+<item><p>Klicka på <gui style="button">OK</gui>.</p></item>
 </steps>
-<p>You can also drag a file to the attachment bar of the composer window.</p>
+<p>Du kan också dra en fil till bilagefältet i meddelanderedigerarfönstret.</p>
 
-<p>When you send the message, a copy of the attached file goes with it. Be aware that large attachments can take a long time to send and receive.</p>
+<p>När du skickar meddelandet kommer en kopia av den bifogade filen att följa med. Var uppmärksam på att stora bilagor kan ta en lång tid att skicka och ta emot.</p>
 </section>
 
 <section id="reminders">
-<title>Attachment Reminder</title>
+<title>Bilagepåminnare</title>
 
-<p>Evolution has an Attachment Reminder plugin you can use to remind yourself to attach a file to an email. If it determines that you have not attached the file, it displays a reminder window before the email is sent.</p>
+<p><app>Evolution</app> har en insticksmodul för påminnelser om bilagor som du kan använda för att påminna dig själv om att bifoga en fil med ett e-postmeddelande. Om den avgör att du inte har bifogat filen, visar den ett påminnelsefönster innan e-postmeddelandet skickas.</p>
 
-<p>To enable the Attachment Reminder:</p>
+<p>För att aktivera bilagepåminnaren:</p>
 <steps>
-<item><p>Select <guiseq><gui>Edit</gui><gui>Plugins</gui></guiseq>.</p></item>
-<item><p>Enable <gui>Attachment Reminder</gui>.</p></item>
-<item><p>Click the <gui>Configuration</gui> tab.</p></item>
-<item><p>Click <gui style="button">Add</gui>, then enter keywords in your language such as "Attach" or "enclosed".</p></item>
+<item><p>Välj <guiseq><gui>Redigera</gui><gui>Insticksmoduler</gui></guiseq>.</p></item>
+<item><p>Aktivera <gui>Bilagepåminnelse</gui>.</p></item>
+<item><p>Klicka på fliken <gui>Konfiguration</gui>.</p></item>
+<item><p>Klicka på <gui style="button">Lägg till</gui>, skriv sedan in nyckelorden på ditt språk, så som ”bifogad” eller ”bifogade”.</p></item>
 </steps>
-<p>Based on the keywords you have added, Evolution searches the text of every mail you are going to send. If it finds any of the keywords in your email and there is no actual attached file, the reminder window is displayed.</p>
+<p>Baserat på nyckelorden som du har lagt till söker <app>Evolution</app> genom texten för varje e-postmeddelande du ska skicka. Om det hittar något av nyckelorden i ditt e-postmeddelanden och det inte finns någon fil bifogad kommer påminnelsefönstret att visas.</p>
 
 </section>
 

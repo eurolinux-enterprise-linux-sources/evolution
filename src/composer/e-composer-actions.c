@@ -22,6 +22,8 @@
 #include "e-composer-actions.h"
 #include "e-composer-private.h"
 
+#include <e-util/e-util.h>
+
 #include <errno.h>
 #include <fcntl.h>
 
@@ -63,36 +65,57 @@ action_close_cb (GtkAction *action,
 }
 
 static void
+action_new_message_composer_created_cb (GObject *source_object,
+					GAsyncResult *result,
+					gpointer user_data)
+{
+	EMsgComposer *composer;
+	GError *error = NULL;
+
+	composer = e_msg_composer_new_finish (result, &error);
+	if (error) {
+		g_warning ("%s: Failed to create msg composer: %s", G_STRFUNC, error->message);
+		g_clear_error (&error);
+	} else {
+		gtk_widget_show (GTK_WIDGET (composer));
+	}
+}
+
+static void
 action_new_message_cb (GtkAction *action,
                        EMsgComposer *composer)
 {
-	EMsgComposer *new_composer;
 	EShell *shell;
 
 	shell = e_msg_composer_get_shell (composer);
 
-	new_composer = e_msg_composer_new (shell);
-	gtk_widget_show (GTK_WIDGET (new_composer));
+	e_msg_composer_new (shell, action_new_message_composer_created_cb, NULL);
+}
+
+static void
+composer_set_content_editor_changed (EMsgComposer *composer)
+{
+	EHTMLEditor *editor;
+	EContentEditor *cnt_editor;
+
+	editor = e_msg_composer_get_editor (composer);
+	cnt_editor = e_html_editor_get_content_editor (editor);
+	e_content_editor_set_changed (cnt_editor, TRUE);
+
 }
 
 static void
 action_pgp_encrypt_cb (GtkToggleAction *action,
                        EMsgComposer *composer)
 {
-	GtkhtmlEditor *editor;
-
-	editor = GTKHTML_EDITOR (composer);
-	gtkhtml_editor_set_changed (editor, TRUE);
+	composer_set_content_editor_changed (composer);
 }
 
 static void
 action_pgp_sign_cb (GtkToggleAction *action,
                     EMsgComposer *composer)
 {
-	GtkhtmlEditor *editor;
-
-	editor = GTKHTML_EDITOR (composer);
-	gtkhtml_editor_set_changed (editor, TRUE);
+	composer_set_content_editor_changed (composer);
 }
 
 static void
@@ -143,12 +166,13 @@ static void
 action_save_cb (GtkAction *action,
                 EMsgComposer *composer)
 {
-	GtkhtmlEditor *editor = GTKHTML_EDITOR (composer);
+	EHTMLEditor *editor;
 	const gchar *filename;
 	gint fd;
 	GError *error = NULL;
 
-	filename = gtkhtml_editor_get_filename (editor);
+	editor = e_msg_composer_get_editor (composer);
+	filename = e_html_editor_get_filename (editor);
 	if (filename == NULL) {
 		gtk_action_activate (ACTION (SAVE_AS));
 		return;
@@ -178,7 +202,7 @@ action_save_cb (GtkAction *action,
 	} else
 		close (fd);
 
-	if (!gtkhtml_editor_save (editor, filename, TRUE, &error)) {
+	if (!e_html_editor_save (editor, filename, TRUE, &error)) {
 		e_alert_submit (
 			E_ALERT_SINK (composer),
 			E_ALERT_NO_SAVE_FILE,
@@ -187,13 +211,14 @@ action_save_cb (GtkAction *action,
 		return;
 	}
 
-	gtkhtml_editor_run_command (GTKHTML_EDITOR (composer), "saved");
+	composer_set_content_editor_changed (composer);
 }
 
 static void
 action_save_as_cb (GtkAction *action,
                    EMsgComposer *composer)
 {
+	EHTMLEditor *editor;
 	GtkWidget *dialog;
 	gchar *filename;
 	gint response;
@@ -212,13 +237,17 @@ action_save_as_cb (GtkAction *action,
 	gtk_window_set_icon_name (
 		GTK_WINDOW (dialog), "mail-message-new");
 
+	e_util_load_file_chooser_folder (GTK_FILE_CHOOSER (dialog));
 	response = gtk_dialog_run (GTK_DIALOG (dialog));
 
 	if (response != GTK_RESPONSE_OK)
 		goto exit;
 
+	e_util_save_file_chooser_folder (GTK_FILE_CHOOSER (dialog));
+
+	editor = e_msg_composer_get_editor (composer);
 	filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
-	gtkhtml_editor_set_filename (GTKHTML_EDITOR (composer), filename);
+	e_html_editor_set_filename (editor, filename);
 	g_free (filename);
 
 	gtk_action_activate (ACTION (SAVE));
@@ -245,20 +274,45 @@ static void
 action_smime_encrypt_cb (GtkToggleAction *action,
                          EMsgComposer *composer)
 {
-	GtkhtmlEditor *editor;
-
-	editor = GTKHTML_EDITOR (composer);
-	gtkhtml_editor_set_changed (editor, TRUE);
+	composer_set_content_editor_changed (composer);
 }
 
 static void
 action_smime_sign_cb (GtkToggleAction *action,
                       EMsgComposer *composer)
 {
-	GtkhtmlEditor *editor;
+	composer_set_content_editor_changed (composer);
+}
 
-	editor = GTKHTML_EDITOR (composer);
-	gtkhtml_editor_set_changed (editor, TRUE);
+static void
+composer_actions_toolbar_option_toggled_cb (GtkToggleAction *toggle_action,
+					    EMsgComposer *composer)
+{
+	GtkAction *action;
+
+	action = GTK_ACTION (toggle_action);
+
+	/* Show the action only after the first time the option is used */
+	if (!gtk_action_get_visible (action) &&
+	    gtk_toggle_action_get_active (toggle_action))
+		gtk_action_set_visible (action, TRUE);
+}
+
+static gboolean
+composer_actions_accel_activate_cb (GtkAccelGroup *accel_group,
+				    GObject *acceleratable,
+				    guint keyval,
+				    GdkModifierType modifier,
+				    gpointer user_data)
+{
+	EMsgComposer *composer = user_data;
+
+	if (keyval == GDK_KEY_Return && (modifier & GDK_MODIFIER_MASK) == GDK_CONTROL_MASK &&
+	    !e_util_prompt_user (GTK_WINDOW (composer), "org.gnome.evolution.mail",
+		"prompt-on-accel-send", "mail-composer:prompt-accel-send", NULL)) {
+		return TRUE;
+	}
+	return FALSE;
 }
 
 static GtkActionEntry entries[] = {
@@ -411,6 +465,54 @@ static GtkToggleActionEntry toggle_entries[] = {
 	  G_CALLBACK (action_smime_sign_cb),
 	  FALSE },
 
+	{ "toolbar-pgp-encrypt",
+	  "security-high",
+	  NULL,
+	  NULL,
+	  NULL,
+	  NULL,
+	  FALSE },
+
+	{ "toolbar-pgp-sign",
+	  "stock_signature",
+	  NULL,
+	  NULL,
+	  NULL,
+	  NULL,
+	  FALSE },
+
+	{ "toolbar-prioritize-message",
+	  "emblem-important",
+	  NULL,
+	  NULL,
+	  NULL,
+	  NULL,
+	  FALSE },
+
+	{ "toolbar-request-read-receipt",
+	  "mail-forward",
+	  NULL,
+	  NULL,
+	  NULL,
+	  NULL,
+	  FALSE },
+
+	{ "toolbar-smime-encrypt",
+	  "security-high",
+	  NULL,
+	  NULL,
+	  NULL,
+	  NULL,
+	  FALSE },
+
+	{ "toolbar-smime-sign",
+	  "stock_signature",
+	  NULL,
+	  NULL,
+	  NULL,
+	  NULL,
+	  FALSE },
+
 	{ "view-bcc",
 	  NULL,
 	  N_("_Bcc Field"),
@@ -427,29 +529,39 @@ static GtkToggleActionEntry toggle_entries[] = {
 	  NULL,  /* Handled by property bindings */
 	  FALSE },
 
+	{ "view-from-override",
+	  NULL,
+	  N_("_From Override Field"),
+	  NULL,
+	  N_("Toggles whether the From override field to change name or email address is displayed"),
+	  NULL,  /* Handled by property bindings */
+	  FALSE },
+
 	{ "view-reply-to",
 	  NULL,
 	  N_("_Reply-To Field"),
 	  NULL,
 	  N_("Toggles whether the Reply-To field is displayed"),
 	  NULL,  /* Handled by property bindings */
-	  FALSE },
+	  FALSE }
 };
 
 void
 e_composer_actions_init (EMsgComposer *composer)
 {
 	GtkActionGroup *action_group;
+	GtkAccelGroup *accel_group;
 	GtkUIManager *ui_manager;
-	GtkhtmlEditor *editor;
-	EWebViewGtkHTML *web_view;
+	EHTMLEditor *editor;
+	EContentEditor *cnt_editor;
 	gboolean visible;
+	GIcon *gcr_gnupg_icon;
 
 	g_return_if_fail (E_IS_MSG_COMPOSER (composer));
 
-	editor = GTKHTML_EDITOR (composer);
-	web_view = e_msg_composer_get_web_view (composer);
-	ui_manager = gtkhtml_editor_get_ui_manager (editor);
+	editor = e_msg_composer_get_editor (composer);
+	cnt_editor = e_html_editor_get_content_editor (editor);
+	ui_manager = e_html_editor_get_ui_manager (editor);
 
 	/* Composer Actions */
 	action_group = composer->priv->composer_actions;
@@ -492,24 +604,94 @@ e_composer_actions_init (EMsgComposer *composer)
 	g_object_set (
 		ACTION (SAVE_DRAFT), "short-label", _("Save Draft"), NULL);
 
-	g_object_bind_property (
-		composer, "html-mode",
+	#define init_toolbar_option(x, always_visible)	\
+		gtk_action_set_visible (ACTION (TOOLBAR_ ## x), always_visible); \
+		e_binding_bind_property ( \
+			ACTION (x), "active", \
+			ACTION (TOOLBAR_ ## x), "active", \
+			G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL); \
+		e_binding_bind_property ( \
+			ACTION (x), "label", \
+			ACTION (TOOLBAR_ ## x), "label", \
+			G_BINDING_SYNC_CREATE); \
+		e_binding_bind_property ( \
+			ACTION (x), "tooltip", \
+			ACTION (TOOLBAR_ ## x), "tooltip", \
+			G_BINDING_SYNC_CREATE); \
+		e_binding_bind_property ( \
+			ACTION (x), "sensitive", \
+			ACTION (TOOLBAR_ ## x), "sensitive", \
+			G_BINDING_SYNC_CREATE); \
+		g_signal_connect (ACTION (TOOLBAR_ ## x), "toggled", \
+			G_CALLBACK (composer_actions_toolbar_option_toggled_cb), composer);
+
+	init_toolbar_option (PGP_SIGN, FALSE);
+	init_toolbar_option (PGP_ENCRYPT, FALSE);
+	init_toolbar_option (PRIORITIZE_MESSAGE, TRUE);
+	init_toolbar_option (REQUEST_READ_RECEIPT, TRUE);
+	init_toolbar_option (SMIME_SIGN, FALSE);
+	init_toolbar_option (SMIME_ENCRYPT, FALSE);
+
+	#undef init_toolbar_option
+
+	/* Borrow a GnuPG icon from gcr to distinguish between GPG and S/MIME Sign/Encrypt actions */
+	gcr_gnupg_icon = g_themed_icon_new ("gcr-gnupg");
+	if (gcr_gnupg_icon) {
+		GIcon *temp_icon;
+		GIcon *action_icon;
+		GEmblem *emblem;
+		GtkAction *action;
+
+		emblem = g_emblem_new (gcr_gnupg_icon);
+
+		action = ACTION (TOOLBAR_PGP_SIGN);
+		action_icon = g_themed_icon_new (gtk_action_get_icon_name (action));
+		temp_icon = g_emblemed_icon_new (action_icon, emblem);
+		g_object_unref (action_icon);
+
+		gtk_action_set_gicon (action, temp_icon);
+		g_object_unref (temp_icon);
+
+		action = ACTION (TOOLBAR_PGP_ENCRYPT);
+		action_icon = g_themed_icon_new (gtk_action_get_icon_name (action));
+		temp_icon = g_emblemed_icon_new (action_icon, emblem);
+		g_object_unref (action_icon);
+
+		gtk_action_set_gicon (action, temp_icon);
+		g_object_unref (temp_icon);
+
+		g_object_unref (emblem);
+		g_object_unref (gcr_gnupg_icon);
+	}
+
+	e_binding_bind_property (
+		cnt_editor, "html-mode",
 		ACTION (PICTURE_GALLERY), "sensitive",
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
-		web_view, "editable",
-		GTKHTML_EDITOR_ACTION_EDIT_MENU (editor), "sensitive",
+	e_binding_bind_property (
+		cnt_editor, "editable",
+		e_html_editor_get_action (editor, "edit-menu"), "sensitive",
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
-		web_view, "editable",
-		GTKHTML_EDITOR_ACTION_FORMAT_MENU (editor), "sensitive",
+	e_binding_bind_property (
+		cnt_editor, "editable",
+		e_html_editor_get_action (editor, "format-menu"), "sensitive",
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
-		web_view, "editable",
-		GTKHTML_EDITOR_ACTION_INSERT_MENU (editor), "sensitive",
+	e_binding_bind_property (
+		cnt_editor, "editable",
+		e_html_editor_get_action (editor, "insert-menu"), "sensitive",
+		G_BINDING_SYNC_CREATE);
+
+	e_binding_bind_property (
+		cnt_editor, "editable",
+		e_html_editor_get_action (editor, "options-menu"), "sensitive",
+		G_BINDING_SYNC_CREATE);
+
+	e_binding_bind_property (
+		cnt_editor, "editable",
+		e_html_editor_get_action (editor, "picture-gallery"), "sensitive",
 		G_BINDING_SYNC_CREATE);
 
 #if defined (HAVE_NSS)
@@ -520,4 +702,8 @@ e_composer_actions_init (EMsgComposer *composer)
 
 	gtk_action_set_visible (ACTION (SMIME_ENCRYPT), visible);
 	gtk_action_set_visible (ACTION (SMIME_SIGN), visible);
+
+	accel_group = gtk_ui_manager_get_accel_group (ui_manager);
+	g_signal_connect (accel_group, "accel-activate",
+		G_CALLBACK (composer_actions_accel_activate_cb), composer);
 }

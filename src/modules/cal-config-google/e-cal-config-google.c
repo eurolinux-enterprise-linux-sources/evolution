@@ -23,7 +23,6 @@
 #include <e-util/e-util.h>
 
 #include "e-google-chooser-button.h"
-#include "e-google-chooser-dialog.h"
 #include "module-cal-config-google.h"
 
 typedef ESourceConfigBackend ECalConfigGoogle;
@@ -33,6 +32,7 @@ typedef struct _Context Context;
 
 struct _Context {
 	GtkWidget *google_button;
+	GtkWidget *user_entry;
 };
 
 /* Forward Declarations */
@@ -47,6 +47,7 @@ static void
 cal_config_google_context_free (Context *context)
 {
 	g_object_unref (context->google_button);
+	g_object_unref (context->user_entry);
 
 	g_slice_free (Context, context);
 }
@@ -86,9 +87,9 @@ cal_config_google_insert_widgets (ESourceConfigBackend *backend,
 	e_cal_source_config_add_offline_toggle (
 		E_CAL_SOURCE_CONFIG (config), scratch_source);
 
-	e_source_config_add_user_entry (config, scratch_source);
+	context->user_entry = g_object_ref (e_source_config_add_user_entry (config, scratch_source));
 
-	widget = e_google_chooser_button_new (scratch_source);
+	widget = e_google_chooser_button_new (scratch_source, config);
 	e_source_config_insert_widget (
 		config, scratch_source, _("Calendar:"), widget);
 	context->google_button = g_object_ref (widget);
@@ -103,6 +104,8 @@ cal_config_google_commit_changes (ESourceConfigBackend *backend,
 {
 	ESourceBackend *calendar_extension;
 	ESourceWebdav *webdav_extension;
+	ESourceAuthentication *authentication_extension;
+	gboolean can_google_auth;
 	SoupURI *soup_uri;
 
 	/* We need to hard-code a few settings. */
@@ -113,23 +116,36 @@ cal_config_google_commit_changes (ESourceConfigBackend *backend,
 	webdav_extension = e_source_get_extension (
 		scratch_source, E_SOURCE_EXTENSION_WEBDAV_BACKEND);
 
+	authentication_extension = e_source_get_extension (
+		scratch_source, E_SOURCE_EXTENSION_AUTHENTICATION);
+
+	can_google_auth = e_source_credentials_google_is_supported () &&
+			  g_strcmp0 (e_source_authentication_get_method (authentication_extension), "OAuth2") != 0;
+
 	/* The backend name is actually "caldav" even though the
 	 * ESource is a child of the built-in "Google" source. */
 	e_source_backend_set_backend_name (calendar_extension, "caldav");
 
 	soup_uri = e_source_webdav_dup_soup_uri (webdav_extension);
 
+	if (can_google_auth || g_strcmp0 (e_source_authentication_get_method (authentication_extension), "Google") == 0) {
+		/* Prefer 'Google', aka internal OAuth2, authentication method, if available */
+		e_source_authentication_set_method (authentication_extension, "Google");
+
+		/* See https://developers.google.com/google-apps/calendar/caldav/v2/guide */
+		soup_uri_set_host (soup_uri, "apidata.googleusercontent.com");
+	} else {
+		soup_uri_set_host (soup_uri, "www.google.com");
+	}
+
 	if (!soup_uri->path || !*soup_uri->path || g_strcmp0 (soup_uri->path, "/") == 0) {
 		ESourceAuthentication *authentication_extension
 			= e_source_get_extension (scratch_source, E_SOURCE_EXTENSION_AUTHENTICATION);
 
-		e_google_chooser_construct_default_uri (
+		e_google_chooser_button_construct_default_uri (
 			soup_uri,
 			e_source_authentication_get_user (authentication_extension));
 	}
-
-	/* The host name is fixed, obviously. */
-	soup_uri_set_host (soup_uri, "www.google.com");
 
 	/* Google's CalDAV interface requires a secure connection. */
 	soup_uri_set_scheme (soup_uri, SOUP_URI_SCHEME_HTTPS);
@@ -144,14 +160,23 @@ cal_config_google_check_complete (ESourceConfigBackend *backend,
                                   ESource *scratch_source)
 {
 	ESourceAuthentication *extension;
+	Context *context;
+	gboolean correct;
 	const gchar *extension_name;
 	const gchar *user;
+
+	context = g_object_get_data (G_OBJECT (backend), e_source_get_uid (scratch_source));
+	g_return_val_if_fail (context != NULL, FALSE);
 
 	extension_name = E_SOURCE_EXTENSION_AUTHENTICATION;
 	extension = e_source_get_extension (scratch_source, extension_name);
 	user = e_source_authentication_get_user (extension);
 
-	return (user != NULL);
+	correct = (user != NULL);
+
+	e_util_set_entry_issue_hint (context->user_entry, correct ? NULL : _("User name cannot be empty"));
+
+	return correct;
 }
 
 static void

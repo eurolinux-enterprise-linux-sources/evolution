@@ -29,26 +29,32 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
 <title>Umgang mit Anlagen in empfangenen Nachrichten</title>
 
-<p>Wenn Sie eine E-Mail mit einem oder mehreren Anhängen erhalten, so zeigt Evolution die Anzahl der Anhänge an und den Knopf <gui style="button">Speichern</gui> bzw. <gui style="button">Alle speichern</gui> zwischen den Kopfzeilen und dem Nachrichtentext der E-Mail.</p>
-<note style="tip"><p>Evolution unterstützt nicht das gleichzeitige Speichern aller Dateianhänge aller Nachrichten eines Ordners.</p></note>
+<p>Wenn Sie eine E-Mail mit einem oder mehreren Anhängen erhalten, so zeigt <gui>Evolution</gui> die Anzahl der Anhänge an und den Knopf <gui style="button">Speichern</gui> bzw. <gui style="button">Alle speichern</gui> zwischen den Kopfzeilen und dem Nachrichtentext der E-Mail.</p>
+<note style="tip"><p><app>Evolution</app> unterstützt nicht das gleichzeitige Speichern aller Dateianhänge aller Nachrichten eines Ordners.</p></note>
 
 <p>Am Ende der E-Mail ist ebenfalls eine Liste aller Anhänge aufgeführt.</p>
 <p>Um einen Anhang auf einen Datenträger abzuspeichern, klicken Sie auf den Abwärtspfeil neben dem Symbol für den Anhang und wählen Sie <gui>Speichern unter</gui>.</p>

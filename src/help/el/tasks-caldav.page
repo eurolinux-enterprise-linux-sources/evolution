@@ -17,15 +17,33 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
 <title>Χρησιμοποιώντας μια εργασία CalDAV ή κατάλογο υπενθυμίσεων</title>
 
-<p>Για την προσθήκη ενός τέτοιου καταλόγου εργασιών ή υπενθυμίσεων στο Evolution, κάντε τα επόμενα βήματα:</p>
+<p>To add such a task list or memo list to <app>Evolution</app>, perform the following steps:</p>
 <steps>
 <item><p>Πατήστε <guiseq><gui>Αρχείο</gui><gui>Νέο</gui><gui>Κατάλογος εργασιών</gui></guiseq> ή <guiseq><gui>Αρχείο</gui><gui>Νέο</gui><gui>Κατάλογος υπενθυμίσεων</gui></guiseq>.</p></item>
 <item><p>Επιλέξτε τον τύπο <gui>στον ιστό</gui>.</p></item>
@@ -33,11 +51,11 @@
 <item><p>Προαιρετικά επιλέξτε ένα χρώμα που επιθυμείτε.</p></item>
 <item><p>Επιλέξτε εάν θέλετε να μπορείτε να δείτε το περιεχόμενο επίσης εκτός σύνδεσης.</p></item>
 <item><p>Εισάγετε τη διεύθυνση στο πεδίο <gui>URL</gui>.</p></item>
-<item><p>Επιλέξτε <gui>χρήση ασφαλούς σύνδεσης</gui> εάν θέλετε να συνδεθείτε με ασφάλεια.</p></item>
+<item><p>Choose <gui>Use a secure connection</gui> if you want to connect securely.</p></item>
 <item><p>Εισάγετε το όνομα χρήστη και την διεύθυνση μηνυμάτων σας.</p></item>
 <item><p>Κλικ στο <gui style="button">εφαρμογή</gui>.</p></item>
 </steps>
 
-<p>Ο κατάλογος εργασιών θα προστεθεί στον κατάλογο των καταλόγων εργασιών στο Evolution.</p>
+<p>The task list will be added to the list of task lists in <app>Evolution</app>.</p>
 
 </page>

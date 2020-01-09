@@ -52,7 +52,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -62,7 +62,7 @@
 <item><p>Cliquez sur <guiseq><gui>Fichier</gui><gui>Nouveau</gui><gui>Tâche</gui></guiseq> ou utilisez la combinaison de touches <keyseq><key>Maj</key><key>Ctrl</key><key>T</key></keyseq>.</p></item>
 <item><p>Sélectionnez une liste de tâches dans la liste déroulante <gui>Liste</gui>.</p></item>
 <item><p>Saisissez les informations de la tâche.</p></item>
-<item><p>cliquez sur le bouton <gui style="button">Enregistrer</gui> ou utilisez le menu <guiseq><gui>Fichier</gui><gui>Enregistrer</gui></guiseq>.</p></item>
+<item><p>Cliquez sur le bouton <gui style="button">Enregistrer</gui> ou utilisez le menu <guiseq><gui>Fichier</gui><gui>Enregistrer</gui></guiseq>.</p></item>
 </steps>
 
 <p>Si vous voulez juste ajouter rapidement une tâche en saisissant un résumé, vous pouvez le saisir directement dans la liste des tâches.</p>
@@ -72,10 +72,10 @@
 <section id="assigned-tasks">
 <title>Tâches attribuées</title>
 
-<p>Evolution permet d'attribuer des tâches à plusieurs personnes.</p>
+<p><app>Evolution</app> can be used to assign a task to multiple people.</p>
 <p>Lorsque vous attribuez une tâche, vous pouvez indiquer les participants dans plusieurs catégories, telles que « président » ou « attendus ». Lorsque vous enregistrez la tâche, chaque participant reçoit un courriel avec les informations de la tâche, qui leur donnent également la possibilité de répondre.</p>
 <p>Il s'agit d'une chose similaire aux <link xref="calendar-meetings-sending-invitation">réunions</link>.</p>
-<p>Pour créer une tâche attribuée, cliquez sur <guiseq><gui>Fichier</gui><gui>Nouveau</gui><gui> Tâche attribuée</gui></guiseq>.</p>
+<p>To create an assigned task, click <guiseq><gui>File</gui><gui>New</gui><gui>Assigned Task</gui></guiseq>.</p>
 </section>
 
 </page>

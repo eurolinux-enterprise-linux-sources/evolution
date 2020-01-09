@@ -13,15 +13,23 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Deleting a contact from your address book.</desc>
+    <desc>Jak smazat kontakt ze svého adresáře.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Deleting a Contact</title>
+  <title>Mazání kontaktů</title>
 
-  <p>If you want to delete a contact in your address books, right-click on the
-  contact and select <gui>Delete</gui>, or click on the contact and click
-  <gui>Delete</gui> in the tool bar or press
-  <keyseq><key>Ctrl</key><key>D</key></keyseq>, or click
-  <guiseq><gui>Edit</gui><gui>Delete Contact</gui></guiseq>.</p>
+  <p>Když chcete zmazat kontakt ve svém adresáři, klikněte na něj pravým tlačítkem a vyberte <gui>Smazat</gui>, nebo klikněte na kontakt a pak klikněte na <gui>Smazat</gui> na nástrojové liště, nebo zmáčkněte <keyseq><key>Ctrl</key> <key>D</key></keyseq> a nebo klikněte na <guiseq><gui>Upravit</gui> <gui>Smazat kontakt</gui></guiseq>.</p>
 
 </page>

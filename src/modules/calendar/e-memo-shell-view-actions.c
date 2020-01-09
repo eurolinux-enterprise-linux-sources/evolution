@@ -22,7 +22,12 @@
 #include <config.h>
 #endif
 
+#include "calendar/gui/e-cal-ops.h"
+#include "calendar/gui/itip-utils.h"
+
+#include "e-cal-base-shell-view.h"
 #include "e-memo-shell-view-private.h"
+#include "e-cal-shell-view.h"
 
 static void
 action_memo_delete_cb (GtkAction *action,
@@ -55,21 +60,10 @@ action_memo_forward_cb (GtkAction *action,
                         EMemoShellView *memo_shell_view)
 {
 	EMemoShellContent *memo_shell_content;
-	EShell *shell;
-	EShellView *shell_view;
-	EShellWindow *shell_window;
-	ESourceRegistry *registry;
 	EMemoTable *memo_table;
 	ECalModelComponent *comp_data;
 	ECalComponent *comp;
-	icalcomponent *clone;
 	GSList *list;
-
-	shell_view = E_SHELL_VIEW (memo_shell_view);
-	shell_window = e_shell_view_get_shell_window (shell_view);
-	shell = e_shell_window_get_shell (shell_window);
-
-	registry = e_shell_get_registry (shell);
 
 	memo_shell_content = memo_shell_view->priv->memo_shell_content;
 	memo_table = e_memo_shell_content_get_memo_table (memo_shell_content);
@@ -80,52 +74,28 @@ action_memo_forward_cb (GtkAction *action,
 	g_slist_free (list);
 
 	/* XXX We only forward the first selected memo. */
-	comp = e_cal_component_new ();
-	clone = icalcomponent_new_clone (comp_data->icalcomp);
-	e_cal_component_set_icalcomponent (comp, clone);
+	comp = e_cal_component_new_from_icalcomponent (icalcomponent_new_clone (comp_data->icalcomp));
+	g_return_if_fail (comp != NULL);
 
-	itip_send_comp (
-		registry, E_CAL_COMPONENT_METHOD_PUBLISH, comp,
-		comp_data->client, NULL, NULL, NULL, TRUE, FALSE);
+	itip_send_component_with_model (e_memo_table_get_model (memo_table),
+		E_CAL_COMPONENT_METHOD_PUBLISH, comp,
+		comp_data->client, NULL, NULL, NULL, TRUE, FALSE, TRUE);
 
 	g_object_unref (comp);
 }
 
 static void
 action_memo_list_copy_cb (GtkAction *action,
-                          EMemoShellView *memo_shell_view)
+			  EShellView *shell_view)
 {
-	EMemoShellSidebar *memo_shell_sidebar;
-	EShell *shell;
-	EShellView *shell_view;
-	EShellWindow *shell_window;
-	ESourceRegistry *registry;
-	ESourceSelector *selector;
-	ESource *source;
-
-	shell_view = E_SHELL_VIEW (memo_shell_view);
-	shell_window = e_shell_view_get_shell_window (shell_view);
-	shell = e_shell_window_get_shell (shell_window);
-
-	registry = e_shell_get_registry (shell);
-
-	memo_shell_sidebar = memo_shell_view->priv->memo_shell_sidebar;
-	selector = e_memo_shell_sidebar_get_selector (memo_shell_sidebar);
-	source = e_source_selector_ref_primary_selection (selector);
-	g_return_if_fail (source != NULL);
-
-	copy_source_dialog (
-		GTK_WINDOW (shell_window), registry,
-		source, E_CAL_CLIENT_SOURCE_TYPE_MEMOS);
-
-	g_object_unref (source);
+	e_cal_base_shell_view_copy_calendar (shell_view);
 }
 
 static void
 action_memo_list_delete_cb (GtkAction *action,
                             EMemoShellView *memo_shell_view)
 {
-	EMemoShellSidebar *memo_shell_sidebar;
+	ECalBaseShellSidebar *memo_shell_sidebar;
 	EShellWindow *shell_window;
 	EShellView *shell_view;
 	ESource *source;
@@ -136,7 +106,7 @@ action_memo_list_delete_cb (GtkAction *action,
 	shell_window = e_shell_view_get_shell_window (shell_view);
 
 	memo_shell_sidebar = memo_shell_view->priv->memo_shell_sidebar;
-	selector = e_memo_shell_sidebar_get_selector (memo_shell_sidebar);
+	selector = e_cal_base_shell_sidebar_get_selector (memo_shell_sidebar);
 
 	source = e_source_selector_ref_primary_selection (selector);
 	g_return_if_fail (source != NULL);
@@ -161,6 +131,21 @@ action_memo_list_delete_cb (GtkAction *action,
 	}
 
 	g_object_unref (source);
+}
+
+static void
+action_memo_list_manage_groups_cb (GtkAction *action,
+				   EMemoShellView *memo_shell_view)
+{
+	EShellView *shell_view;
+	ESourceSelector *selector;
+
+	shell_view = E_SHELL_VIEW (memo_shell_view);
+	selector = e_cal_base_shell_sidebar_get_selector (memo_shell_view->priv->memo_shell_sidebar);
+
+	if (e_source_selector_manage_groups (selector) &&
+	    e_source_selector_save_groups_setup (selector, e_shell_view_get_state_key_file (shell_view)))
+		e_shell_view_set_state_dirty (shell_view);
 }
 
 static void
@@ -233,7 +218,7 @@ action_memo_list_properties_cb (GtkAction *action,
 {
 	EShellView *shell_view;
 	EShellWindow *shell_window;
-	EMemoShellSidebar *memo_shell_sidebar;
+	ECalBaseShellSidebar *memo_shell_sidebar;
 	ECalClientSourceType source_type;
 	ESource *source;
 	ESourceSelector *selector;
@@ -246,7 +231,7 @@ action_memo_list_properties_cb (GtkAction *action,
 	shell_window = e_shell_view_get_shell_window (shell_view);
 
 	memo_shell_sidebar = memo_shell_view->priv->memo_shell_sidebar;
-	selector = e_memo_shell_sidebar_get_selector (memo_shell_sidebar);
+	selector = e_cal_base_shell_sidebar_get_selector (memo_shell_sidebar);
 	source = e_source_selector_ref_primary_selection (selector);
 	g_return_if_fail (source != NULL);
 
@@ -273,14 +258,13 @@ static void
 action_memo_list_refresh_cb (GtkAction *action,
                              EMemoShellView *memo_shell_view)
 {
-	EMemoShellSidebar *memo_shell_sidebar;
+	ECalBaseShellSidebar *memo_shell_sidebar;
 	ESourceSelector *selector;
 	EClient *client = NULL;
 	ESource *source;
-	GError *error = NULL;
 
 	memo_shell_sidebar = memo_shell_view->priv->memo_shell_sidebar;
-	selector = e_memo_shell_sidebar_get_selector (memo_shell_sidebar);
+	selector = e_cal_base_shell_sidebar_get_selector (memo_shell_sidebar);
 
 	source = e_source_selector_ref_primary_selection (selector);
 
@@ -295,15 +279,7 @@ action_memo_list_refresh_cb (GtkAction *action,
 
 	g_return_if_fail (e_client_check_refresh_supported (client));
 
-	e_client_refresh_sync (client, NULL, &error);
-
-	if (error != NULL) {
-		g_warning (
-			"%s: Failed to refresh '%s', %s",
-			G_STRFUNC, e_source_get_display_name (source),
-			error->message);
-		g_error_free (error);
-	}
+	e_cal_base_shell_view_allow_auth_prompt_and_refresh (E_SHELL_VIEW (memo_shell_view), client);
 
 	g_object_unref (client);
 }
@@ -312,25 +288,38 @@ static void
 action_memo_list_rename_cb (GtkAction *action,
                             EMemoShellView *memo_shell_view)
 {
-	EMemoShellSidebar *memo_shell_sidebar;
+	ECalBaseShellSidebar *memo_shell_sidebar;
 	ESourceSelector *selector;
 
 	memo_shell_sidebar = memo_shell_view->priv->memo_shell_sidebar;
-	selector = e_memo_shell_sidebar_get_selector (memo_shell_sidebar);
+	selector = e_cal_base_shell_sidebar_get_selector (memo_shell_sidebar);
 
 	e_source_selector_edit_primary_selection (selector);
+}
+
+static void
+action_memo_list_select_all_cb (GtkAction *action,
+				EMemoShellView *memo_shell_view)
+{
+	ECalBaseShellSidebar *memo_shell_sidebar;
+	ESourceSelector *selector;
+
+	memo_shell_sidebar = memo_shell_view->priv->memo_shell_sidebar;
+	selector = e_cal_base_shell_sidebar_get_selector (memo_shell_sidebar);
+
+	e_source_selector_select_all (selector);
 }
 
 static void
 action_memo_list_select_one_cb (GtkAction *action,
                                 EMemoShellView *memo_shell_view)
 {
-	EMemoShellSidebar *memo_shell_sidebar;
+	ECalBaseShellSidebar *memo_shell_sidebar;
 	ESourceSelector *selector;
 	ESource *primary;
 
 	memo_shell_sidebar = memo_shell_view->priv->memo_shell_sidebar;
-	selector = e_memo_shell_sidebar_get_selector (memo_shell_sidebar);
+	selector = e_cal_base_shell_sidebar_get_selector (memo_shell_sidebar);
 
 	primary = e_source_selector_ref_primary_selection (selector);
 	g_return_if_fail (primary != NULL);
@@ -344,30 +333,21 @@ static void
 action_memo_new_cb (GtkAction *action,
                     EMemoShellView *memo_shell_view)
 {
-	EShell *shell;
 	EShellView *shell_view;
 	EShellWindow *shell_window;
 	EMemoShellContent *memo_shell_content;
 	EMemoTable *memo_table;
-	ECalClient *client;
-	ECalComponent *comp;
-	CompEditor *editor;
+	EClient *client = NULL;
 	GSList *list;
 
 	shell_view = E_SHELL_VIEW (memo_shell_view);
 	shell_window = e_shell_view_get_shell_window (shell_view);
-	shell = e_shell_window_get_shell (shell_window);
 
 	memo_shell_content = memo_shell_view->priv->memo_shell_content;
 	memo_table = e_memo_shell_content_get_memo_table (memo_shell_content);
 
 	list = e_memo_table_get_selected (memo_table);
-	if (list == NULL) {
-		ECalModel *model;
-
-		model = e_memo_table_get_model (memo_table);
-		client = e_cal_model_ref_default_client (model);
-	} else {
+	if (list) {
 		ECalModelComponent *comp_data;
 
 		comp_data = list->data;
@@ -375,18 +355,10 @@ action_memo_new_cb (GtkAction *action,
 		g_slist_free (list);
 	}
 
-	g_return_if_fail (client != NULL);
+	e_cal_ops_new_component_editor (shell_window, E_CAL_CLIENT_SOURCE_TYPE_MEMOS,
+		client ? e_source_get_uid (e_client_get_source (client)) : NULL, FALSE);
 
-	comp = cal_comp_memo_new_with_defaults (client);
-	cal_comp_update_time_by_active_window (comp, shell);
-	editor = memo_editor_new (client, shell, COMP_EDITOR_NEW_ITEM);
-	comp_editor_edit_comp (editor, comp);
-
-	gtk_window_present (GTK_WINDOW (editor));
-
-	g_object_unref (comp);
-
-	g_object_unref (client);
+	g_clear_object (&client);
 }
 
 static void
@@ -616,6 +588,13 @@ static GtkActionEntry memo_entries[] = {
 	  N_("Delete the selected memo list"),
 	  G_CALLBACK (action_memo_list_delete_cb) },
 
+	{ "memo-list-manage-groups",
+	  NULL,
+	  N_("_Manage Memo List groups..."),
+	  NULL,
+	  N_("Manage Memo List groups order and visibility"),
+	  G_CALLBACK (action_memo_list_manage_groups_cb) },
+
 	{ "memo-list-new",
 	  "stock_notes",
 	  N_("_New Memo List"),
@@ -650,6 +629,13 @@ static GtkActionEntry memo_entries[] = {
 	  NULL,
 	  NULL,  /* XXX Add a tooltip! */
 	  G_CALLBACK (action_memo_list_select_one_cb) },
+
+	{ "memo-list-select-all",
+	  "stock_check-filled",
+	  N_("Sho_w All Memo Lists"),
+	  NULL,
+	  NULL,  /* XXX Add a tooltip! */
+	  G_CALLBACK (action_memo_list_select_all_cb) },
 
 	{ "memo-new",
 	  "stock_insert-note",
@@ -692,6 +678,10 @@ static EPopupActionEntry memo_popup_entries[] = {
 	  N_("_Delete"),
 	  "memo-list-delete" },
 
+	{ "memo-list-popup-manage-groups",
+	  N_("_Manage groups..."),
+	  "memo-list-manage-groups" },
+
 	{ "memo-list-popup-properties",
 	  NULL,
 	  "memo-list-properties" },
@@ -703,6 +693,10 @@ static EPopupActionEntry memo_popup_entries[] = {
 	{ "memo-list-popup-rename",
 	  NULL,
 	  "memo-list-rename" },
+
+	{ "memo-list-popup-select-all",
+	  NULL,
+	  "memo-list-select-all" },
 
 	{ "memo-list-popup-select-one",
 	  NULL,
@@ -924,7 +918,7 @@ e_memo_shell_view_actions_init (EMemoShellView *memo_shell_view)
 
 	/* Bind GObject properties to settings keys. */
 
-	memo_settings = g_settings_new ("org.gnome.evolution.calendar");
+	memo_settings = e_util_ref_settings ("org.gnome.evolution.calendar");
 
 	g_settings_bind (
 		memo_settings, "show-memo-preview",
@@ -940,12 +934,12 @@ e_memo_shell_view_actions_init (EMemoShellView *memo_shell_view)
 
 	/* Fine tuning. */
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		ACTION (MEMO_PREVIEW), "active",
 		ACTION (MEMO_VIEW_CLASSIC), "sensitive",
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		ACTION (MEMO_PREVIEW), "active",
 		ACTION (MEMO_VIEW_VERTICAL), "sensitive",
 		G_BINDING_SYNC_CREATE);
@@ -991,10 +985,10 @@ e_memo_shell_view_update_search_filter (EMemoShellView *memo_shell_view)
 
 	/* Build the category actions. */
 
-	list = e_util_get_searchable_categories ();
+	list = e_util_dup_searchable_categories ();
 	for (iter = list, ii = 0; iter != NULL; iter = iter->next, ii++) {
 		const gchar *category_name = iter->data;
-		const gchar *filename;
+		gchar *filename;
 		GtkAction *action;
 		gchar *action_name;
 
@@ -1005,7 +999,7 @@ e_memo_shell_view_update_search_filter (EMemoShellView *memo_shell_view)
 		g_free (action_name);
 
 		/* Convert the category icon file to a themed icon name. */
-		filename = e_categories_get_icon_file_for (category_name);
+		filename = e_categories_dup_icon_file_for (category_name);
 		if (filename != NULL && *filename != '\0') {
 			gchar *basename;
 			gchar *cp;
@@ -1022,6 +1016,8 @@ e_memo_shell_view_update_search_filter (EMemoShellView *memo_shell_view)
 			g_free (basename);
 		}
 
+		g_free (filename);
+
 		gtk_radio_action_set_group (radio_action, group);
 		group = gtk_radio_action_get_group (radio_action);
 
@@ -1030,7 +1026,7 @@ e_memo_shell_view_update_search_filter (EMemoShellView *memo_shell_view)
 		gtk_action_group_add_action (action_group, action);
 		g_object_unref (radio_action);
 	}
-	g_list_free (list);
+	g_list_free_full (list, g_free);
 
 	memo_shell_content = memo_shell_view->priv->memo_shell_content;
 	searchbar = e_memo_shell_content_get_searchbar (memo_shell_content);

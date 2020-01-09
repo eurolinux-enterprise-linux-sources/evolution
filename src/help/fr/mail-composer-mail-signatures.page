@@ -6,7 +6,7 @@
     
     <link type="guide" xref="index#mail-composing"/>
 
-    <revision pkgversion="3.0.2" version="0.2" date="2011-07-30" status="final"/>
+    <revision pkgversion="3.13.90" version="0.3" date="2015-03-09" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -49,7 +49,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -57,5 +57,6 @@
 <title>Utilisation des signatures de courriels</title>
 
 <p>Une signature consiste en une ou plusieurs lignes de texte (ou même une image) qui seront ajoutées en bas d'un courriel que vous envoyez. Elle peut contenir des informations pour vous contacter ou d'autres choses. Une signature commence toujours par deux tirets et une espace (<code>-- </code>).</p>
-<note style="tip"><p>Le terme « signature » possèdent également un autre sens pour ce qui concerne le <link xref="mail-encryption">chiffrement</link>.</p></note>
+<note style="tip"><p>Le terme « signature » possède également un autre sens pour ce qui concerne le <link xref="mail-encryption">chiffrement</link>.</p></note>
 </page>
+<!-- TODO: The two dashes and a space signature delimiter can be disabled via dconf in org.gnome.evolution.mail.composer-no-signature.delim but don't really want to advertise that -->

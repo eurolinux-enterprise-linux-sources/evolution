@@ -48,7 +48,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -83,9 +83,7 @@
       <p>(facultatif) Saisissez une description dans le champ <gui>Description</gui>.</p>
     </item>
     <item>
-      <p>To show the time as <link xref="calendar-free-busy">busy</link> to
-      others, click <guiseq><gui>Options</gui>
-      <gui>Show Time as Busy</gui></guiseq>.</p>
+      <p>Pour afficher la période comme <link xref="calendar-free-busy">occupée</link> pour les autres, cliquez sur <guiseq><gui>Options</gui><gui>Afficher la période comme occupée</gui></guiseq>.</p>
     </item>
   </steps>
 

@@ -27,6 +27,7 @@
 #include <glib/gi18n.h>
 
 #include "mail/e-mail-backend.h"
+#include "mail/e-mail-reader.h"
 #include "mail/em-composer-utils.h"
 
 #define E_MAIL_ATTACHMENT_HANDLER_GET_PRIVATE(obj) \
@@ -44,9 +45,19 @@ static const gchar *ui =
 "<ui>"
 "  <popup name='context'>"
 "    <placeholder name='custom-actions'>"
+"      <menuitem action='mail-message-edit'/>"
+"      <separator/>"
 "      <menuitem action='mail-reply-sender'/>"
+"      <menuitem action='mail-reply-list'/>"
 "      <menuitem action='mail-reply-all'/>"
 "      <menuitem action='mail-forward'/>"
+"      <menu action='mail-forward-as-menu'>"
+"        <menuitem action='mail-forward-attached'/>"
+"        <menuitem action='mail-forward-inline'/>"
+"        <menuitem action='mail-forward-quoted'/>"
+"        <separator/>"
+"        <menuitem action='mail-redirect'/>"
+"      </menu>"
 "    </placeholder>"
 "  </popup>"
 "</ui>";
@@ -56,6 +67,29 @@ static GtkTargetEntry target_table[] = {
 	{ (gchar *) "message/rfc822",	0, 0 },
 	{ (gchar *) "x-uid-list",	0, 0 }
 };
+
+static CamelFolder *
+mail_attachment_handler_guess_folder_ref (EAttachmentHandler *handler)
+{
+	EAttachmentView *view;
+	GtkWidget *widget;
+
+	view = e_attachment_handler_get_view (handler);
+
+	if (!view || !GTK_IS_WIDGET (view))
+		return NULL;
+
+	widget = GTK_WIDGET (view);
+	while (widget) {
+		if (E_IS_MAIL_READER (widget)) {
+			return e_mail_reader_ref_folder (E_MAIL_READER (widget));
+		}
+
+		widget = gtk_widget_get_parent (widget);
+	}
+
+	return NULL;
+}
 
 static CamelMimeMessage *
 mail_attachment_handler_get_selected_message (EAttachmentHandler *handler)
@@ -133,27 +167,104 @@ exit:
 	return message;
 }
 
+typedef struct _CreateComposerData {
+	CamelMimeMessage *message;
+	CamelFolder *folder;
+	gboolean is_redirect;
+
+	gboolean is_reply;
+	EMailReplyType reply_type;
+
+	gboolean is_forward;
+	EMailForwardStyle forward_style;
+} CreateComposerData;
+
 static void
-mail_attachment_handler_forward (GtkAction *action,
-                                 EAttachmentHandler *handler)
+create_composer_data_free (CreateComposerData *ccd)
+{
+	if (ccd) {
+		g_clear_object (&ccd->message);
+		g_clear_object (&ccd->folder);
+		g_free (ccd);
+	}
+}
+
+static void
+mail_attachment_handler_composer_created_cb (GObject *source_object,
+					     GAsyncResult *result,
+					     gpointer user_data)
+{
+	CreateComposerData *ccd = user_data;
+	EMsgComposer *composer;
+	GError *error = NULL;
+
+	g_return_if_fail (ccd != NULL);
+
+	composer = e_msg_composer_new_finish (result, &error);
+	if (error) {
+		g_warning ("%s: Failed to create msg composer: %s", G_STRFUNC, error->message);
+		g_clear_error (&error);
+	} else {
+		if (ccd->is_redirect) {
+			em_utils_redirect_message (composer, ccd->message);
+		} else if (ccd->is_reply) {
+			GSettings *settings;
+			EMailReplyStyle style;
+
+			settings = e_util_ref_settings ("org.gnome.evolution.mail");
+			style = g_settings_get_enum (settings, "reply-style-name");
+			g_object_unref (settings);
+
+			em_utils_reply_to_message (composer, ccd->message, NULL, NULL, ccd->reply_type, style, NULL, NULL);
+		} else if (ccd->is_forward) {
+			em_utils_forward_message (composer, ccd->message, ccd->forward_style, ccd->folder, NULL);
+		} else {
+			em_utils_edit_message (composer, ccd->folder, ccd->message, NULL, TRUE);
+		}
+	}
+
+	create_composer_data_free (ccd);
+}
+
+static void
+mail_attachment_handler_forward_with_style (EAttachmentHandler *handler,
+					    EMailForwardStyle style)
 {
 	EMailAttachmentHandlerPrivate *priv;
-	GSettings *settings;
-	EMailForwardStyle style;
 	CamelMimeMessage *message;
+	CamelFolder *folder;
+	CreateComposerData *ccd;
+	EShell *shell;
 
 	priv = E_MAIL_ATTACHMENT_HANDLER_GET_PRIVATE (handler);
 
 	message = mail_attachment_handler_get_selected_message (handler);
 	g_return_if_fail (message != NULL);
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	folder = mail_attachment_handler_guess_folder_ref (handler);
+	shell = e_shell_backend_get_shell (E_SHELL_BACKEND (priv->backend));
+
+	ccd = g_new0 (CreateComposerData, 1);
+	ccd->message = message;
+	ccd->folder = folder;
+	ccd->is_forward = TRUE;
+	ccd->forward_style = style;
+
+	e_msg_composer_new (shell, mail_attachment_handler_composer_created_cb, ccd);
+}
+
+static void
+mail_attachment_handler_forward (GtkAction *action,
+                                 EAttachmentHandler *handler)
+{
+	GSettings *settings;
+	EMailForwardStyle style;
+
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 	style = g_settings_get_enum (settings, "forward-style-name");
 	g_object_unref (settings);
 
-	em_utils_forward_message (priv->backend, message, style, NULL, NULL);
-
-	g_object_unref (message);
+	mail_attachment_handler_forward_with_style (handler, style);
 }
 
 static void
@@ -161,9 +272,8 @@ mail_attachment_handler_reply (EAttachmentHandler *handler,
                                EMailReplyType reply_type)
 {
 	EMailAttachmentHandlerPrivate *priv;
-	GSettings *settings;
-	EMailReplyStyle style;
 	CamelMimeMessage *message;
+	CreateComposerData *ccd;
 	EShellBackend *shell_backend;
 	EShell *shell;
 
@@ -172,17 +282,15 @@ mail_attachment_handler_reply (EAttachmentHandler *handler,
 	message = mail_attachment_handler_get_selected_message (handler);
 	g_return_if_fail (message != NULL);
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
-	style = g_settings_get_enum (settings, "reply-style-name");
-	g_object_unref (settings);
-
 	shell_backend = E_SHELL_BACKEND (priv->backend);
 	shell = e_shell_backend_get_shell (shell_backend);
 
-	em_utils_reply_to_message (
-		shell, message, NULL, NULL, reply_type, style, NULL, NULL);
+	ccd = g_new0 (CreateComposerData, 1);
+	ccd->message = message;
+	ccd->reply_type = reply_type;
+	ccd->is_reply = TRUE;
 
-	g_object_unref (message);
+	e_msg_composer_new (shell, mail_attachment_handler_composer_created_cb, ccd);
 }
 
 static void
@@ -193,10 +301,86 @@ mail_attachment_handler_reply_all (GtkAction *action,
 }
 
 static void
+mail_attachment_handler_reply_list (GtkAction *action,
+                                    EAttachmentHandler *handler)
+{
+	mail_attachment_handler_reply (handler, E_MAIL_REPLY_TO_LIST);
+}
+
+static void
 mail_attachment_handler_reply_sender (GtkAction *action,
                                       EAttachmentHandler *handler)
 {
 	mail_attachment_handler_reply (handler, E_MAIL_REPLY_TO_SENDER);
+}
+
+static void
+mail_attachment_handler_message_edit (GtkAction *action,
+				      EAttachmentHandler *handler)
+{
+	EMailAttachmentHandlerPrivate *priv;
+	CamelMimeMessage *message;
+	CamelFolder *folder;
+	CreateComposerData *ccd;
+	EShell *shell;
+
+	priv = E_MAIL_ATTACHMENT_HANDLER_GET_PRIVATE (handler);
+
+	message = mail_attachment_handler_get_selected_message (handler);
+	g_return_if_fail (message != NULL);
+
+	shell = e_shell_backend_get_shell (E_SHELL_BACKEND (priv->backend));
+	folder = mail_attachment_handler_guess_folder_ref (handler);
+
+	ccd = g_new0 (CreateComposerData, 1);
+	ccd->message = message;
+	ccd->folder = folder;
+
+	e_msg_composer_new (shell, mail_attachment_handler_composer_created_cb, ccd);
+}
+
+static void
+mail_attachment_handler_forward_attached (GtkAction *action,
+					  EAttachmentHandler *handler)
+{
+	mail_attachment_handler_forward_with_style (handler, E_MAIL_FORWARD_STYLE_ATTACHED);
+}
+static void
+mail_attachment_handler_forward_inline (GtkAction *action,
+					     EAttachmentHandler *handler)
+{
+	mail_attachment_handler_forward_with_style (handler, E_MAIL_FORWARD_STYLE_INLINE);
+}
+
+static void
+mail_attachment_handler_forward_quoted (GtkAction *action,
+					EAttachmentHandler *handler)
+{
+	mail_attachment_handler_forward_with_style (handler, E_MAIL_FORWARD_STYLE_QUOTED);
+}
+
+static void
+mail_attachment_handler_redirect (GtkAction *action,
+				  EAttachmentHandler *handler)
+{
+	EMailAttachmentHandlerPrivate *priv;
+	CamelMimeMessage *message;
+	CreateComposerData *ccd;
+	EShell *shell;
+
+	priv = E_MAIL_ATTACHMENT_HANDLER_GET_PRIVATE (handler);
+
+	message = mail_attachment_handler_get_selected_message (handler);
+	g_return_if_fail (message != NULL);
+
+	shell = e_shell_backend_get_shell (E_SHELL_BACKEND (priv->backend));
+
+	ccd = g_new0 (CreateComposerData, 1);
+	ccd->message = message;
+	ccd->folder = NULL;
+	ccd->is_redirect = TRUE;
+
+	e_msg_composer_new (shell, mail_attachment_handler_composer_created_cb, ccd);
 }
 
 static GtkActionEntry standard_entries[] = {
@@ -205,23 +389,87 @@ static GtkActionEntry standard_entries[] = {
 	  "mail-forward",
 	  N_("_Forward"),
 	  NULL,
-	  NULL,  /* XXX Add a tooltip! */
+	  N_("Forward the selected message to someone"),
 	  G_CALLBACK (mail_attachment_handler_forward) },
 
 	{ "mail-reply-all",
 	  "mail-reply-all",
 	  N_("Reply to _All"),
 	  NULL,
-	  NULL,  /* XXX Add a tooltip! */
+	  N_("Compose a reply to all the recipients of the selected message"),
 	  G_CALLBACK (mail_attachment_handler_reply_all) },
+
+	{ "mail-reply-list",
+	  NULL,
+	  N_("Reply to _List"),
+	  NULL,
+	  N_("Compose a reply to the mailing list of the selected message"),
+	  G_CALLBACK (mail_attachment_handler_reply_list) },
 
 	{ "mail-reply-sender",
 	  "mail-reply-sender",
 	  N_("_Reply to Sender"),
 	  NULL,
-	  NULL,  /* XXX Add a tooltip! */
-	  G_CALLBACK (mail_attachment_handler_reply_sender) }
+	  N_("Compose a reply to the sender of the selected message"),
+	  G_CALLBACK (mail_attachment_handler_reply_sender) },
+
+	{ "mail-message-edit",
+	  NULL,
+	  N_("_Edit as New Message..."),
+	  NULL,
+	  N_("Open the selected messages in the composer for editing"),
+	  G_CALLBACK (mail_attachment_handler_message_edit) },
+
+	{ "mail-forward-as-menu",
+	  NULL,
+	  N_("F_orward As"),
+	  NULL,
+	  NULL,
+	  NULL },
+
+	{ "mail-forward-attached",
+	  NULL,
+	  N_("_Attached"),
+	  NULL,
+	  N_("Forward the selected message to someone as an attachment"),
+	  G_CALLBACK (mail_attachment_handler_forward_attached) },
+
+	{ "mail-forward-inline",
+	  NULL,
+	  N_("_Inline"),
+	  NULL,
+	  N_("Forward the selected message in the body of a new message"),
+	  G_CALLBACK (mail_attachment_handler_forward_inline) },
+
+	{ "mail-forward-quoted",
+	  NULL,
+	  N_("_Quoted"),
+	  NULL,
+	  N_("Forward the selected message quoted like a reply"),
+	  G_CALLBACK (mail_attachment_handler_forward_quoted) },
+
+	{ "mail-redirect",
+	  NULL,
+	  N_("Re_direct"),
+	  NULL,
+	  N_("Redirect (bounce) the selected message to someone"),
+	  G_CALLBACK (mail_attachment_handler_redirect) }
 };
+
+static void
+call_attachment_load_handle_error (GObject *source_object,
+				   GAsyncResult *result,
+				   gpointer user_data)
+{
+	GtkWindow *window = user_data;
+
+	g_return_if_fail (E_IS_ATTACHMENT (source_object));
+	g_return_if_fail (!window || GTK_IS_WINDOW (window));
+
+	e_attachment_load_handle_error (E_ATTACHMENT (source_object), result, window);
+
+	g_clear_object (&window);
+}
 
 static void
 mail_attachment_handler_message_rfc822 (EAttachmentView *view,
@@ -275,7 +523,7 @@ mail_attachment_handler_message_rfc822 (EAttachmentView *view,
 	e_attachment_store_add_attachment (store, attachment);
 	e_attachment_load_async (
 		attachment, (GAsyncReadyCallback)
-		e_attachment_load_handle_error, parent);
+		call_attachment_load_handle_error, parent ? g_object_ref (parent) : NULL);
 	g_object_unref (attachment);
 
 	success = TRUE;
@@ -380,7 +628,8 @@ mail_attachment_handler_x_uid_list (EAttachmentView *view,
 		e_attachment_store_add_attachment (store, attachment);
 		e_attachment_load_async (
 			attachment, (GAsyncReadyCallback)
-			e_attachment_load_handle_error, parent);
+			call_attachment_load_handle_error, parent ? g_object_ref (parent) : NULL);
+
 		g_object_unref (attachment);
 
 		g_object_unref (message);
@@ -433,7 +682,7 @@ mail_attachment_handler_x_uid_list (EAttachmentView *view,
 	e_attachment_store_add_attachment (store, attachment);
 	e_attachment_load_async (
 		attachment, (GAsyncReadyCallback)
-		e_attachment_load_handle_error, parent);
+		call_attachment_load_handle_error, parent ? g_object_ref (parent) : NULL);
 	g_object_unref (attachment);
 
 	g_object_unref (mime_part);
@@ -468,8 +717,9 @@ mail_attachment_handler_update_actions (EAttachmentView *view,
 	EAttachment *attachment;
 	CamelMimePart *mime_part;
 	GtkActionGroup *action_group;
+	GtkAction *action;
 	GList *selected;
-	gboolean visible = FALSE;
+	gboolean visible = FALSE, has_list_post = FALSE;
 
 	selected = e_attachment_view_get_selected_attachments (view);
 
@@ -492,12 +742,18 @@ mail_attachment_handler_update_actions (EAttachmentView *view,
 		content = camel_medium_get_content (medium);
 		visible = CAMEL_IS_MIME_MESSAGE (content);
 
+		if (visible)
+			has_list_post = camel_medium_get_header (CAMEL_MEDIUM (content), "List-Post") != NULL;
+
 		g_object_unref (mime_part);
 	}
 
 exit:
 	action_group = e_attachment_view_get_action_group (view, "mail");
 	gtk_action_group_set_visible (action_group, visible);
+
+	action = gtk_action_group_get_action (action_group, "mail-reply-list");
+	gtk_action_set_visible (action, has_list_post);
 
 	g_list_foreach (selected, (GFunc) g_object_unref, NULL);
 	g_list_free (selected);

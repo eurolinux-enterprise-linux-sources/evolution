@@ -13,52 +13,55 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Adding a contact to your address book.</desc>
+    <desc>Lägga till en kontakt till din adressbok.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Adding a Contact</title>
+  <title>Lägga till en kontakt</title>
 
   <steps>
     <item>
-      <p>Click
-      <guiseq><gui>File</gui><gui>New</gui><gui>Contact</gui></guiseq>, or
-      right-click in a blank space in the list of contacts and click
-      <gui>New Contact…</gui>, or press
-      <keyseq><key>Shift</key><key>Ctrl</key><key>C</key></keyseq>.</p>
+      <p>Klicka på <guiseq><gui>Arkiv</gui><gui>Nytt</gui><gui>Kontakt</gui></guiseq>, eller högerklicka på ett tomt utrymme i listan över kontakter och klicka på <gui>Ny kontakt…</gui>, eller tryck på <keyseq><key>Skift</key><key>Ctrl</key><key>C</key></keyseq>.</p>
     </item>
     <item>
-      <p>Select the address book under <gui>Where:</gui> to which it will be
-      added.</p>
+      <p>Välj adressboken under <gui>Var:</gui> för att välja var den ska läggas till.</p>
     </item>
     <item>
-      <p>Enter the contact information. Note that there are several tabs.</p>
+      <p>Skriv in kontaktinformationen. Observera att det finns flera flikar.</p>
     </item>
     <item>
-      <p>You can add a photograph to the contact by clicking the large field
-      (showing a stylized person) next to <gui>Full Name</gui> and
-      <gui>Categories</gui>.</p>
+      <p>Du kan lägga till ett fotografi till kontakten genom att klicka på det stora fältet (som visar en stiliserad person) intill <gui>Fullständigt namn</gui> och <gui>Kategorier</gui>.</p>
     </item>
     <item>
-      <p>Click <gui style="button">OK</gui>.</p>
+      <p>Klicka på <gui style="button">OK</gui>.</p>
     </item>
   </steps>
 
 <section id="contact-quick-add">
-  <title>Contact Quick-Add from the Email Window</title>
+  <title>Snabbtilläggning av kontakt från e-postfönstret</title>
 
-  <p>You can also add a contact directly from an email.</p>
+  <p>Du kan också lägga till en kontakt direkt från ett e-postmeddelande.</p>
 
   <steps>
     <item>
-      <p>Right-click on the email address in the message header.</p>
+      <p>Högerklicka på e-postadressen i meddelanderubriken.</p>
     </item>
     <item>
-      <p>Select <gui>Add to Address Book…</gui>.</p>
+      <p>Välj <gui>Lägg till i adressboken…</gui>.</p>
     </item>
     <item>
-      <p>Either press <gui style="button">Edit Full</gui> to bring up the full
-      <gui>Contact Editor</gui>, or click <gui style="button">OK</gui> to
-      directly add the contact to the chosen address book.</p>
+      <p>Tryck antingen på <gui style="button">Redigera fullständigt namn</gui> för att visa den fullständiga <gui>Kontaktredigerare</gui> eller klicka på <gui style="button">OK</gui> för att lägga till kontakten direkt i den valda adressboken.</p>
     </item>
   </steps>
 

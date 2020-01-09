@@ -18,9 +18,15 @@
     
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -40,7 +46,7 @@
 
 <p>Puede insertar una línea horizontal en el correo (en la posición actual del cursor) para ayudarle a dividir dos secciones:</p>
 <steps>
-<item><p>Pulse <guiseq><gui>Insertar</gui><gui>Regla...</gui></guiseq> en la barra de menú.</p></item>
+<item><p>Pulse <guiseq><gui>Insertar</gui><gui>Regla…</gui></guiseq> en la barra de menú.</p></item>
 <item><p>Seleccione la anchura, tamaño y la alineación.</p></item>
 <item><p>Seleccione <gui>Enrollada</gui> si lo desea.</p></item>
 <item><p>Pulse <gui>Cerrar</gui>.</p></item>

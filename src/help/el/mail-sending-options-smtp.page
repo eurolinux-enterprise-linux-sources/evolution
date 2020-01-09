@@ -23,9 +23,27 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
@@ -37,11 +55,11 @@
 </item>
 <item><p>Αν ο εξυπηρετητής σας απαιτεί πιστοποίηση, πρέπει να δώσετε τις ακόλουθες πληροφορίες:</p>
 <list>
-  <item><p>Επιλέξτε τον τύπο πιστοποίησης στον κατάλογο πιστοποίησης, ή πατήστε στο <gui>Έλεγχος για υποστηριζόμενους τύπους</gui>. Μερικοί εξυπηρετητές δεν το υποστηρίζουν, οπότε πατώντας αυτό το πλήκτρο δεν είναι εγγυημένο ότι οι διαθέσιμοι μηχανισμοί δουλεύουν πραγματικά.</p></item>
+  <item><p>Select the authentication type in the Authentication list, or click <gui>Check for Supported Types</gui> to have <app>Evolution</app> check. Some servers do not support this, so clicking this button is not a guarantee that available mechanisms actually work.</p></item>
   <item><p>Εισάγετε το όνομα χρήστη.</p></item>
 </list>
 </item>
-<item><p>Επιλέξτε <gui>χρήση ασφαλούς σύνδεσης</gui> εάν θέλετε να συνδεθείτε με ασφάλεια.</p></item>
+<item><p>Choose <gui>Use a secure connection</gui> if you want to connect securely.</p></item>
 </list>
 
 </page>

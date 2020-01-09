@@ -26,10 +26,15 @@
  * message.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "e-mail-part.h"
 
 #include <string.h>
 
+#include "e-mail-part-attachment.h"
 #include "e-mail-part-list.h"
 
 #define E_MAIL_PART_GET_PRIVATE(obj) \
@@ -45,11 +50,13 @@ struct _EMailPartPrivate {
 	gchar *mime_type;
 
 	gboolean is_attachment;
+	gboolean converted_to_utf8;
 };
 
 enum {
 	PROP_0,
 	PROP_CID,
+	PROP_CONVERTED_TO_UTF8,
 	PROP_ID,
 	PROP_IS_ATTACHMENT,
 	PROP_MIME_PART,
@@ -109,6 +116,12 @@ mail_part_set_property (GObject *object,
 				g_value_get_string (value));
 			return;
 
+		case PROP_CONVERTED_TO_UTF8:
+			e_mail_part_set_converted_to_utf8 (
+				E_MAIL_PART (object),
+				g_value_get_boolean (value));
+			return;
+
 		case PROP_ID:
 			mail_part_set_id (
 				E_MAIL_PART (object),
@@ -154,6 +167,13 @@ mail_part_get_property (GObject *object,
 			g_value_set_string (
 				value,
 				e_mail_part_get_cid (
+				E_MAIL_PART (object)));
+			return;
+
+		case PROP_CONVERTED_TO_UTF8:
+			g_value_set_boolean (
+				value,
+				e_mail_part_get_converted_to_utf8 (
 				E_MAIL_PART (object)));
 			return;
 
@@ -259,6 +279,17 @@ e_mail_part_class_init (EMailPartClass *class)
 			"Content ID",
 			"The MIME Content-ID",
 			NULL,
+			G_PARAM_READWRITE |
+			G_PARAM_STATIC_STRINGS));
+
+	g_object_class_install_property (
+		object_class,
+		PROP_CONVERTED_TO_UTF8,
+		g_param_spec_boolean (
+			"converted-to-utf8",
+			"Converted To UTF8",
+			"Whether the part content was already converted to UTF-8",
+			FALSE,
 			G_PARAM_READWRITE |
 			G_PARAM_STATIC_STRINGS));
 
@@ -441,6 +472,73 @@ e_mail_part_set_mime_type (EMailPart *part,
 	g_object_notify (G_OBJECT (part), "mime-type");
 }
 
+gboolean
+e_mail_part_get_converted_to_utf8 (EMailPart *part)
+{
+	g_return_val_if_fail (E_IS_MAIL_PART (part), FALSE);
+
+	return part->priv->converted_to_utf8;
+}
+
+void
+e_mail_part_set_converted_to_utf8 (EMailPart *part,
+				   gboolean converted_to_utf8)
+{
+	g_return_if_fail (E_IS_MAIL_PART (part));
+
+	if (converted_to_utf8 == part->priv->converted_to_utf8)
+		return;
+
+	part->priv->converted_to_utf8 = converted_to_utf8;
+
+	g_object_notify (G_OBJECT (part), "converted-to-utf8");
+}
+
+gboolean
+e_mail_part_should_show_inline (EMailPart *part)
+{
+	CamelMimePart *mime_part;
+	const CamelContentDisposition *disposition;
+	gboolean res = FALSE;
+
+	g_return_val_if_fail (E_IS_MAIL_PART (part), FALSE);
+
+	/* Automatically expand attachments that have inline
+	 * disposition or the EMailParts have specific
+	 * force_inline flag set. */
+
+	if (part->force_collapse)
+		return FALSE;
+
+	if (part->force_inline)
+		return TRUE;
+
+	if (E_IS_MAIL_PART_ATTACHMENT (part)) {
+		EMailPartAttachment *empa = E_MAIL_PART_ATTACHMENT (part);
+
+		if (g_strcmp0 (empa->snoop_mime_type, "message/rfc822") == 0)
+			return TRUE;
+	}
+
+	mime_part = e_mail_part_ref_mime_part (part);
+	if (!mime_part)
+		return FALSE;
+
+	disposition = camel_mime_part_get_content_disposition (mime_part);
+	if (disposition && disposition->disposition &&
+	    g_ascii_strncasecmp (disposition->disposition, "inline", 6) == 0) {
+		GSettings *settings;
+
+		settings = e_util_ref_settings ("org.gnome.evolution.mail");
+		res = g_settings_get_boolean (settings, "display-content-disposition-inline");
+		g_clear_object (&settings);
+	}
+
+	g_object_unref (mime_part);
+
+	return res;
+}
+
 EMailPartList *
 e_mail_part_ref_part_list (EMailPart *part)
 {
@@ -487,17 +585,36 @@ e_mail_part_set_is_attachment (EMailPart *part,
 
 void
 e_mail_part_bind_dom_element (EMailPart *part,
-                              WebKitDOMElement *element)
+                              EWebView *web_view,
+                              guint64 page_id,
+                              const gchar *element_id)
 {
 	EMailPartClass *class;
 
 	g_return_if_fail (E_IS_MAIL_PART (part));
-	g_return_if_fail (WEBKIT_DOM_IS_ELEMENT (element));
+	g_return_if_fail (E_IS_WEB_VIEW (web_view));
+	g_return_if_fail (page_id != 0);
+	g_return_if_fail (element_id && *element_id);
 
 	class = E_MAIL_PART_GET_CLASS (part);
 
 	if (class->bind_dom_element != NULL)
-		class->bind_dom_element (part, element);
+		class->bind_dom_element (part, web_view, page_id, element_id);
+}
+
+void
+e_mail_part_web_view_loaded (EMailPart *part,
+			     EWebView *web_view)
+{
+	EMailPartClass *klass;
+
+	g_return_if_fail (E_IS_MAIL_PART (part));
+	g_return_if_fail (E_IS_WEB_VIEW (web_view));
+
+	klass = E_MAIL_PART_GET_CLASS (part);
+
+	if (klass->web_view_loaded)
+		klass->web_view_loaded (part, web_view);
 }
 
 static EMailPartValidityPair *

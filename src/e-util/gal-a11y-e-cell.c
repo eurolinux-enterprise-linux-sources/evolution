@@ -39,6 +39,8 @@
 static GObjectClass *parent_class;
 #define PARENT_TYPE (atk_object_get_type ())
 
+static void _gal_a11y_e_cell_destroy_action_info (gpointer action_info, gpointer user_data);
+
 #if 0
 static void
 unref_item (gpointer user_data,
@@ -96,6 +98,12 @@ gal_a11y_e_cell_dispose (GObject *object)
 	if (a11y->state_set) {
 		g_object_unref (a11y->state_set);
 		a11y->state_set = NULL;
+	}
+
+	if (a11y->action_list) {
+		g_list_foreach (a11y->action_list, _gal_a11y_e_cell_destroy_action_info, NULL);
+		g_list_free (a11y->action_list);
+		a11y->action_list = NULL;
 	}
 
 	if (parent_class->dispose)
@@ -184,9 +192,9 @@ gal_a11y_e_cell_get_extents (AtkComponent *component,
 			width, height);
 	}
 
-	atk_component_get_position (
+	atk_component_get_extents (
 		ATK_COMPONENT (a11y->parent),
-		x, y, coord_type);
+		x, y, NULL, NULL, coord_type);
 	if (x && *x != G_MININT)
 		*x += xval;
 	if (y && *y != G_MININT)
@@ -339,7 +347,7 @@ gal_a11y_e_cell_remove_action (GalA11yECell *cell,
 		return FALSE;
 	g_return_val_if_fail (list_node->data != NULL, FALSE);
 	_gal_a11y_e_cell_destroy_action_info (list_node->data, NULL);
-	cell->action_list = g_list_remove_link (cell->action_list, list_node);
+	cell->action_list = g_list_remove (cell->action_list, list_node->data);
 
 	return TRUE;
 }
@@ -364,7 +372,7 @@ gal_a11y_e_cell_remove_action_by_name (GalA11yECell *cell,
 	}
 
 	_gal_a11y_e_cell_destroy_action_info (list_node->data, NULL);
-	cell->action_list = g_list_remove_link (cell->action_list, list_node);
+	cell->action_list = g_list_remove (cell->action_list, list_node->data);
 
 	return TRUE;
 }

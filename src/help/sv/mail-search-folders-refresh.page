@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-search-folders-refresh" xml:lang="sv">
 
   <info>
-    <desc>Ways of updating Search folders.</desc>
+    <desc>Sätt att uppdatera <gui>Sök</gui>-mappar.</desc>
     
     <link type="guide" xref="mail-search-folders"/>
 
@@ -19,13 +19,25 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-<title>Updating/refreshing Search folders</title>
+<title>Uppdatera <gui>Sök</gui>-mappar</title>
 
-<p>It might happen that one of your Search folders has not updated since some new email arrived or since an email was deleted, for example. This will mean that the list of emails in the folder is not up-to-date.</p>
+<p>Det kan hända att en av dina <gui>Sök</gui>-mappar inte har uppdaterats sedan till exempel ny e-post ankommit eller sedan ett e-postmeddelande togs bort. Detta innebär att listan över e-postmeddelanden inte är uppdaterad.</p>
 
-<p>You can get an updated view of the search folder either by switching to another folder and then back again, or by right-clicking on the search folder and choosing <gui>Refresh</gui>.</p>
+<p>Du kan hämta en uppdaterad vy av sökmappen antingen genom att växla till en annan mapp och sedan tillbaka igen, eller genom att högerklicka på sökmappen och välja <gui>Uppdatera</gui>.</p>
 
 
 </page>

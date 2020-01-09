@@ -1,0 +1,307 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>EMailSignatureManager: Evolution Utilities Reference Manual</title>
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="index.html" title="Evolution Utilities Reference Manual">
+<link rel="up" href="ch10.html" title="Mail Signatures">
+<link rel="prev" href="EMailSignatureEditor.html" title="EMailSignatureEditor">
+<link rel="next" href="EMailSignaturePreview.html" title="EMailSignaturePreview">
+<meta name="generator" content="GTK-Doc V1.25 (XML mode)">
+<link rel="stylesheet" href="style.css" type="text/css">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table class="navigation" id="top" width="100%" summary="Navigation header" cellpadding="2" cellspacing="5"><tr valign="middle">
+<td width="100%" align="left" class="shortcuts">
+<a href="#" class="shortcut">Top</a><span id="nav_description">  <span class="dim">|</span> 
+                  <a href="#EMailSignatureManager.description" class="shortcut">Description</a></span><span id="nav_hierarchy">  <span class="dim">|</span> 
+                  <a href="#EMailSignatureManager.object-hierarchy" class="shortcut">Object Hierarchy</a></span><span id="nav_properties">  <span class="dim">|</span> 
+                  <a href="#EMailSignatureManager.properties" class="shortcut">Properties</a></span><span id="nav_signals">  <span class="dim">|</span> 
+                  <a href="#EMailSignatureManager.signals" class="shortcut">Signals</a></span>
+</td>
+<td><a accesskey="h" href="index.html"><img src="home.png" width="16" height="16" border="0" alt="Home"></a></td>
+<td><a accesskey="u" href="ch10.html"><img src="up.png" width="16" height="16" border="0" alt="Up"></a></td>
+<td><a accesskey="p" href="EMailSignatureEditor.html"><img src="left.png" width="16" height="16" border="0" alt="Prev"></a></td>
+<td><a accesskey="n" href="EMailSignaturePreview.html"><img src="right.png" width="16" height="16" border="0" alt="Next"></a></td>
+</tr></table>
+<div class="refentry">
+<a name="EMailSignatureManager"></a><div class="titlepage"></div>
+<div class="refnamediv"><table width="100%"><tr>
+<td valign="top">
+<h2><span class="refentrytitle"><a name="EMailSignatureManager.top_of_page"></a>EMailSignatureManager</span></h2>
+<p>EMailSignatureManager</p>
+</td>
+<td class="gallery_image" valign="top" align="right"></td>
+</tr></table></div>
+<div class="refsect1">
+<a name="EMailSignatureManager.functions"></a><h2>Functions</h2>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="functions_return">
+<col class="functions_name">
+</colgroup>
+<tbody>
+<tr>
+<td class="function_type">
+<a href="/usr/share/gtk-doc/html/gtk3GtkWidget.html#GtkWidget-struct"><span class="returnvalue">GtkWidget</span></a> *
+</td>
+<td class="function_name">
+<a class="link" href="EMailSignatureManager.html#e-mail-signature-manager-new" title="e_mail_signature_manager_new ()">e_mail_signature_manager_new</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="EMailSignatureManager.html#e-mail-signature-manager-add-signature" title="e_mail_signature_manager_add_signature ()">e_mail_signature_manager_add_signature</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="EMailSignatureManager.html#e-mail-signature-manager-add-signature-script" title="e_mail_signature_manager_add_signature_script ()">e_mail_signature_manager_add_signature_script</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="EMailSignatureManager.html#e-mail-signature-manager-edit-signature" title="e_mail_signature_manager_edit_signature ()">e_mail_signature_manager_edit_signature</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="EMailSignatureManager.html#e-mail-signature-manager-remove-signature" title="e_mail_signature_manager_remove_signature ()">e_mail_signature_manager_remove_signature</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+</td>
+<td class="function_name">
+<a class="link" href="EMailSignatureManager.html#e-mail-signature-manager-get-prefer-html" title="e_mail_signature_manager_get_prefer_html ()">e_mail_signature_manager_get_prefer_html</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="EMailSignatureManager.html#e-mail-signature-manager-set-prefer-html" title="e_mail_signature_manager_set_prefer_html ()">e_mail_signature_manager_set_prefer_html</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">ESourceRegistry</span> *
+</td>
+<td class="function_name">
+<a class="link" href="EMailSignatureManager.html#e-mail-signature-manager-get-registry" title="e_mail_signature_manager_get_registry ()">e_mail_signature_manager_get_registry</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect1">
+<a name="EMailSignatureManager.properties"></a><h2>Properties</h2>
+<div class="informaltable"><table class="informaltable" border="0">
+<colgroup>
+<col width="150px" class="properties_type">
+<col width="300px" class="properties_name">
+<col width="200px" class="properties_flags">
+</colgroup>
+<tbody>
+<tr>
+<td class="property_type"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="type">gboolean</span></a></td>
+<td class="property_name"><a class="link" href="EMailSignatureManager.html#EMailSignatureManager--prefer-html" title="The “prefer-html” property">prefer-html</a></td>
+<td class="property_flags">Read / Write / Construct</td>
+</tr>
+<tr>
+<td class="property_type">
+<span class="type">ESourceRegistry</span> *</td>
+<td class="property_name"><a class="link" href="EMailSignatureManager.html#EMailSignatureManager--registry" title="The “registry” property">registry</a></td>
+<td class="property_flags">Read / Write / Construct</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect1">
+<a name="EMailSignatureManager.signals"></a><h2>Signals</h2>
+<div class="informaltable"><table class="informaltable" border="0">
+<colgroup>
+<col width="150px" class="signals_return">
+<col width="300px" class="signals_name">
+<col width="200px" class="signals_flags">
+</colgroup>
+<tbody>
+<tr>
+<td class="signal_type"><span class="returnvalue">void</span></td>
+<td class="signal_name"><a class="link" href="EMailSignatureManager.html#EMailSignatureManager-add-signature" title="The “add-signature” signal">add-signature</a></td>
+<td class="signal_flags"><a href="/usr/share/gtk-doc/html/gobjectgobject-Signals.html#G-SIGNAL-ACTION:CAPS">Action</a></td>
+</tr>
+<tr>
+<td class="signal_type"><span class="returnvalue">void</span></td>
+<td class="signal_name"><a class="link" href="EMailSignatureManager.html#EMailSignatureManager-add-signature-script" title="The “add-signature-script” signal">add-signature-script</a></td>
+<td class="signal_flags"><a href="/usr/share/gtk-doc/html/gobjectgobject-Signals.html#G-SIGNAL-ACTION:CAPS">Action</a></td>
+</tr>
+<tr>
+<td class="signal_type"><span class="returnvalue">void</span></td>
+<td class="signal_name"><a class="link" href="EMailSignatureManager.html#EMailSignatureManager-edit-signature" title="The “edit-signature” signal">edit-signature</a></td>
+<td class="signal_flags"><a href="/usr/share/gtk-doc/html/gobjectgobject-Signals.html#G-SIGNAL-ACTION:CAPS">Action</a></td>
+</tr>
+<tr>
+<td class="signal_type"><span class="returnvalue">void</span></td>
+<td class="signal_name"><a class="link" href="EMailSignatureManager.html#EMailSignatureManager-editor-created" title="The “editor-created” signal">editor-created</a></td>
+<td class="signal_flags"><a href="/usr/share/gtk-doc/html/gobjectgobject-Signals.html#G-SIGNAL-RUN-LAST:CAPS">Run Last</a></td>
+</tr>
+<tr>
+<td class="signal_type"><span class="returnvalue">void</span></td>
+<td class="signal_name"><a class="link" href="EMailSignatureManager.html#EMailSignatureManager-remove-signature" title="The “remove-signature” signal">remove-signature</a></td>
+<td class="signal_flags"><a href="/usr/share/gtk-doc/html/gobjectgobject-Signals.html#G-SIGNAL-ACTION:CAPS">Action</a></td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect1">
+<a name="EMailSignatureManager.object-hierarchy"></a><h2>Object Hierarchy</h2>
+<pre class="screen">    <a href="/usr/share/gtk-doc/html/gobjectgobject-The-Base-Object-Type.html#GObject-struct">GObject</a>
+    <span class="lineart">╰──</span> <a href="/usr/share/gtk-doc/html/gobjectgobject-The-Base-Object-Type.html#GInitiallyUnowned">GInitiallyUnowned</a>
+        <span class="lineart">╰──</span> <a href="/usr/share/gtk-doc/html/gtk3GtkWidget.html#GtkWidget-struct">GtkWidget</a>
+            <span class="lineart">╰──</span> <a href="/usr/share/gtk-doc/html/gtk3GtkContainer.html#GtkContainer-struct">GtkContainer</a>
+                <span class="lineart">╰──</span> <a href="/usr/share/gtk-doc/html/gtk3GtkPaned.html#GtkPaned-struct">GtkPaned</a>
+                    <span class="lineart">╰──</span> EMailSignatureManager
+</pre>
+</div>
+<div class="refsect1">
+<a name="EMailSignatureManager.description"></a><h2>Description</h2>
+</div>
+<div class="refsect1">
+<a name="EMailSignatureManager.functions_details"></a><h2>Functions</h2>
+<div class="refsect2">
+<a name="e-mail-signature-manager-new"></a><h3>e_mail_signature_manager_new ()</h3>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/gtk3GtkWidget.html#GtkWidget-struct"><span class="returnvalue">GtkWidget</span></a> *
+e_mail_signature_manager_new (<em class="parameter"><code><span class="type">ESourceRegistry</span> *registry</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-mail-signature-manager-add-signature"></a><h3>e_mail_signature_manager_add_signature ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+e_mail_signature_manager_add_signature
+                               (<em class="parameter"><code><a class="link" href="EMailSignatureManager.html" title="EMailSignatureManager"><span class="type">EMailSignatureManager</span></a> *manager</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-mail-signature-manager-add-signature-script"></a><h3>e_mail_signature_manager_add_signature_script ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+e_mail_signature_manager_add_signature_script
+                               (<em class="parameter"><code><a class="link" href="EMailSignatureManager.html" title="EMailSignatureManager"><span class="type">EMailSignatureManager</span></a> *manager</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-mail-signature-manager-edit-signature"></a><h3>e_mail_signature_manager_edit_signature ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+e_mail_signature_manager_edit_signature
+                               (<em class="parameter"><code><a class="link" href="EMailSignatureManager.html" title="EMailSignatureManager"><span class="type">EMailSignatureManager</span></a> *manager</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-mail-signature-manager-remove-signature"></a><h3>e_mail_signature_manager_remove_signature ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+e_mail_signature_manager_remove_signature
+                               (<em class="parameter"><code><a class="link" href="EMailSignatureManager.html" title="EMailSignatureManager"><span class="type">EMailSignatureManager</span></a> *manager</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-mail-signature-manager-get-prefer-html"></a><h3>e_mail_signature_manager_get_prefer_html ()</h3>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+e_mail_signature_manager_get_prefer_html
+                               (<em class="parameter"><code><a class="link" href="EMailSignatureManager.html" title="EMailSignatureManager"><span class="type">EMailSignatureManager</span></a> *manager</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-mail-signature-manager-set-prefer-html"></a><h3>e_mail_signature_manager_set_prefer_html ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+e_mail_signature_manager_set_prefer_html
+                               (<em class="parameter"><code><a class="link" href="EMailSignatureManager.html" title="EMailSignatureManager"><span class="type">EMailSignatureManager</span></a> *manager</code></em>,
+                                <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="type">gboolean</span></a> prefer_html</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="e-mail-signature-manager-get-registry"></a><h3>e_mail_signature_manager_get_registry ()</h3>
+<pre class="programlisting"><span class="returnvalue">ESourceRegistry</span> *
+e_mail_signature_manager_get_registry (<em class="parameter"><code><a class="link" href="EMailSignatureManager.html" title="EMailSignatureManager"><span class="type">EMailSignatureManager</span></a> *manager</code></em>);</pre>
+</div>
+</div>
+<div class="refsect1">
+<a name="EMailSignatureManager.other_details"></a><h2>Types and Values</h2>
+</div>
+<div class="refsect1">
+<a name="EMailSignatureManager.property-details"></a><h2>Property Details</h2>
+<div class="refsect2">
+<a name="EMailSignatureManager--prefer-html"></a><h3>The <code class="literal">“prefer-html”</code> property</h3>
+<pre class="programlisting">  “prefer-html”              <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="type">gboolean</span></a></pre>
+<p>Flags: Read / Write / Construct</p>
+<p>Default value: TRUE</p>
+</div>
+<hr>
+<div class="refsect2">
+<a name="EMailSignatureManager--registry"></a><h3>The <code class="literal">“registry”</code> property</h3>
+<pre class="programlisting">  “registry”                 <span class="type">ESourceRegistry</span> *</pre>
+<p>Flags: Read / Write / Construct</p>
+</div>
+</div>
+<div class="refsect1">
+<a name="EMailSignatureManager.signal-details"></a><h2>Signal Details</h2>
+<div class="refsect2">
+<a name="EMailSignatureManager-add-signature"></a><h3>The <code class="literal">“add-signature”</code> signal</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+user_function (<a class="link" href="EMailSignatureManager.html" title="EMailSignatureManager"><span class="type">EMailSignatureManager</span></a> *emailsignaturemanager,
+               <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a>               user_data)</pre>
+<p>Flags: <a href="/usr/share/gtk-doc/html/gobjectgobject-Signals.html#G-SIGNAL-ACTION:CAPS">Action</a></p>
+</div>
+<hr>
+<div class="refsect2">
+<a name="EMailSignatureManager-add-signature-script"></a><h3>The <code class="literal">“add-signature-script”</code> signal</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+user_function (<a class="link" href="EMailSignatureManager.html" title="EMailSignatureManager"><span class="type">EMailSignatureManager</span></a> *emailsignaturemanager,
+               <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a>               user_data)</pre>
+<p>Flags: <a href="/usr/share/gtk-doc/html/gobjectgobject-Signals.html#G-SIGNAL-ACTION:CAPS">Action</a></p>
+</div>
+<hr>
+<div class="refsect2">
+<a name="EMailSignatureManager-edit-signature"></a><h3>The <code class="literal">“edit-signature”</code> signal</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+user_function (<a class="link" href="EMailSignatureManager.html" title="EMailSignatureManager"><span class="type">EMailSignatureManager</span></a> *emailsignaturemanager,
+               <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a>               user_data)</pre>
+<p>Flags: <a href="/usr/share/gtk-doc/html/gobjectgobject-Signals.html#G-SIGNAL-ACTION:CAPS">Action</a></p>
+</div>
+<hr>
+<div class="refsect2">
+<a name="EMailSignatureManager-editor-created"></a><h3>The <code class="literal">“editor-created”</code> signal</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+user_function (<a class="link" href="EMailSignatureManager.html" title="EMailSignatureManager"><span class="type">EMailSignatureManager</span></a> *emailsignaturemanager,
+               <a class="link" href="EMailSignatureEditor.html" title="EMailSignatureEditor"><span class="type">EMailSignatureEditor</span></a>  *arg1,
+               <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a>               user_data)</pre>
+<p>Flags: <a href="/usr/share/gtk-doc/html/gobjectgobject-Signals.html#G-SIGNAL-RUN-LAST:CAPS">Run Last</a></p>
+</div>
+<hr>
+<div class="refsect2">
+<a name="EMailSignatureManager-remove-signature"></a><h3>The <code class="literal">“remove-signature”</code> signal</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+user_function (<a class="link" href="EMailSignatureManager.html" title="EMailSignatureManager"><span class="type">EMailSignatureManager</span></a> *emailsignaturemanager,
+               <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a>               user_data)</pre>
+<p>Flags: <a href="/usr/share/gtk-doc/html/gobjectgobject-Signals.html#G-SIGNAL-ACTION:CAPS">Action</a></p>
+</div>
+</div>
+</div>
+<div class="footer">
+<hr>Generated by GTK-Doc V1.25</div>
+</body>
+</html>

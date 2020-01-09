@@ -6,7 +6,7 @@
 
     <link type="guide" xref="mail-displaying-message#advanced"/>
 
-    <revision pkgversion="3.9.1" version="0.4" date="2013-04-22" status="final"/>
+    <revision pkgversion="3.13.90" version="0.5" date="2015-03-10" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -20,9 +20,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -41,7 +47,7 @@
 <title>Cabecera de mensaje con fotografía</title>
 
 <!-- NB: This is done by "Face" and "X-Face" headers. -->
-<p>Evolution muestra automáticamente la fotografía del remitente en la parte derecha de la vista previa del correo, si el remitente ya ha empotrado una foto en el mensaje.</p>
+<p><app>Evolution</app> muestra automáticamente la fotografía del remitente en la parte derecha de la vista previa del correo, si el remitente ya ha empotrado una foto en el mensaje.</p>
 <!-- TODO: If I ever manage to find out if the "Edit > Plugins > Face" reliably works, create a topic page covering it linked under <link type="guide" xref="index#mail-composing-advanced" />, and link to it from here and vice versa. -->
 
 <p>También puede mostrar manualmente la fotografía del remitente en la parte derecha de la vista previa del correo, si el remitente está en alguna de sus libretas de direcciones y tiene una fotografía.</p>
@@ -50,8 +56,7 @@
 
 <p>Se usará siempre la primera coincidencia si existen múltiples coincidencias para un contacto.</p>
 
-<!-- Note: <guiseq><gui>Edit</gui><gui>Plugins</gui><gui>Face</gui></guiseq> 
-has no influence at all, so it is not mentioned here. 
-See https://bugzilla.gnome.org/show_bug.cgi?id=698435 -->
+<!-- From https://bugzilla.gnome.org/show_bug.cgi?id=698435 : -->
+<note style="tip"><p>También puede incrustar su propia imagen en los mensajes que envía en <guiseq><gui>Editar</gui><gui>Complementos</gui><gui>Cara</gui></guiseq>. La imagen debe tener un tamaño de 48x48 píxeles y estar en formato PNG.</p></note>
  
 </page>

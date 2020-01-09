@@ -42,6 +42,13 @@ Many email systems add an Apparently-To header to messages that only have BCC re
     <button _label="_Send" response="GTK_RESPONSE_YES"/>
   </error>
 
+  <error id="ask-many-to-cc-recips" type="warning" default="GTK_RESPONSE_YES">
+    <primary>{0}</primary>
+    <secondary>{1}</secondary>
+    <button response="GTK_RESPONSE_CANCEL" _label="_Cancel"/>
+    <button response="GTK_RESPONSE_YES" _label="_Send"></button>
+  </error>
+
   <error id="ask-send-invalid-recip-one" type="question" default="GTK_RESPONSE_YES">
     <_primary>Are you sure you want to send a message with invalid address?</_primary>
     <_secondary xml:space="preserve">The following recipient was not recognized as a valid mail address:
@@ -90,7 +97,9 @@ Many email systems add an Apparently-To header to messages that only have BCC re
 
   <error id="ask-default-drafts" type="question" default="GTK_RESPONSE_YES">
     <_primary>Use default drafts folder?</_primary>
-    <_secondary xml:space="preserve">Unable to open the drafts folder for this account. Use the system drafts folder instead?</_secondary>
+    <_secondary xml:space="preserve">Unable to open the drafts folder for this account. Use the system drafts folder instead?
+
+The reported error was &quot;{0}&quot;.</_secondary>
     <button stock="gtk-cancel" response="GTK_RESPONSE_CANCEL"/>
     <button _label="Use _Default" response="GTK_RESPONSE_YES"/>
   </error>
@@ -116,7 +125,7 @@ Many email systems add an Apparently-To header to messages that only have BCC re
     <button _label="_Open Messages" response="GTK_RESPONSE_YES"/>
   </error>
 
-  <error id="exit-unsaved" type="warning" default="GTK_RESPONSE_NO">
+  <error id="exit-unsent-question" type="warning" default="GTK_RESPONSE_NO">
     <_primary>You have unsent messages, do you wish to quit anyway?</_primary>
     <_secondary xml:space="preserve">If you quit, these messages will not be sent until Evolution is started again.</_secondary>
     <button stock="gtk-cancel" response="GTK_RESPONSE_NO"/>
@@ -203,6 +212,13 @@ Many email systems add an Apparently-To header to messages that only have BCC re
     <_secondary xml:space="preserve">If you delete the folder, all of its contents and its subfolders' contents will be deleted permanently.</_secondary>
     <button _label="Do _Not Delete" response="GTK_RESPONSE_CANCEL"/>
     <button stock="gtk-delete" response="GTK_RESPONSE_OK"/>
+  </error>
+
+  <error id="ask-unsubscribe-folder" type="question" default="GTK_RESPONSE_NO">
+    <_primary>Really unsubscribe folder "{0}"?</_primary>
+    <_secondary xml:space="preserve">If you unsubscribe the folder, it might not be visible in the Evolution, while still being available on the server. You can re-subscribe in Folder->Subscriptions... menu.</_secondary>
+    <button _label="Do _Not Unsubscribe" response="GTK_RESPONSE_NO"/>
+    <button _label="_Unsubscribe" response="GTK_RESPONSE_YES"/>
   </error>
 
   <error id="ask-delete-vfolder" type="question" default="GTK_RESPONSE_CANCEL">
@@ -371,6 +387,11 @@ An mbox account will be created to preserve the old mbox folders. You can delete
     <secondary xml:space="preserve">{0}</secondary>
   </error>
 
+  <error id="initial-setup-error" type="error">
+    <_primary>Failed to get server setup.</_primary>
+    <secondary xml:space="preserve">{0}</secondary>
+  </error>
+
   <error id="ask-quick-offline" type="question" default="GTK_RESPONSE_NO">
     <_primary>Synchronize folders locally for offline usage?</_primary>
     <_secondary xml:space="preserve">Do you want to locally synchronize the folders that are marked for offline usage?</_secondary>
@@ -402,19 +423,19 @@ An mbox account will be created to preserve the old mbox folders. You can delete
   <error id="ask-folder-drop-copy" type="question" default="GTK_RESPONSE_YES">
     <_primary>Copy folder in folder tree.</_primary>
     <_secondary xml:space="preserve">Are you sure you want to copy folder '{0}' to folder '{1}'?</_secondary>
-    <button _label="_Yes" response="GTK_RESPONSE_YES"/>
-    <button _label="_No" response="GTK_RESPONSE_NO"/>
-    <button _label="_Always" response="GTK_RESPONSE_OK"/>
-    <button _label="N_ever" response="GTK_RESPONSE_CANCEL"/>
+    <button _label="_Copy" response="GTK_RESPONSE_YES"/>
+    <button _label="Do _not copy" response="GTK_RESPONSE_NO"/>
+    <button _label="_Always copy" response="GTK_RESPONSE_OK"/>
+    <button _label="N_ever copy" response="GTK_RESPONSE_CANCEL"/>
   </error>
 
   <error id="ask-folder-drop-move" type="question" default="GTK_RESPONSE_YES">
     <_primary>Move folder in folder tree.</_primary>
     <_secondary xml:space="preserve">Are you sure you want to to move folder '{0}' to folder '{1}'?</_secondary>
-    <button _label="_Yes" response="GTK_RESPONSE_YES"/>
-    <button _label="_No" response="GTK_RESPONSE_NO"/>
-    <button _label="_Always" response="GTK_RESPONSE_OK"/>
-    <button _label="N_ever" response="GTK_RESPONSE_CANCEL"/>
+    <button _label="_Move" response="GTK_RESPONSE_YES"/>
+    <button _label="Do _not move" response="GTK_RESPONSE_NO"/>
+    <button _label="_Always move" response="GTK_RESPONSE_OK"/>
+    <button _label="N_ever move" response="GTK_RESPONSE_CANCEL"/>
   </error>
 
   <error id="send-no-account-enabled" type="warning">
@@ -456,9 +477,14 @@ An mbox account will be created to preserve the old mbox folders. You can delete
     <button stock="gtk-ok" response="GTK_RESPONSE_OK"/>
   </error>
 
+  <error id="failed-connect" type="warning">
+    <_primary>Failed to connect account &quot;{0}&quot;.</_primary>
+    <_secondary>The reported error was &quot;{1}&quot;.</_secondary>
+  </error>
+
   <error id="disconnect" type="warning">
     <_primary>Failed to disconnect account &quot;{0}&quot;.</_primary>
-    <_secondary>The reported error was &quot;{0}&quot;.</_secondary>
+    <_secondary>The reported error was &quot;{1}&quot;.</_secondary>
   </error>
 
   <error id="folder-unsubscribe" type="warning">
@@ -469,6 +495,14 @@ An mbox account will be created to preserve the old mbox folders. You can delete
   <error id="no-retrieve-message" type="warning">
     <_primary>Unable to retrieve message.</_primary>
     <_secondary xml:space="preserve">{0}</_secondary>
+  </error>
+
+  <error id="no-retrieve-message-offline" type="warning">
+    <_primary>Message is not available in offline mode.</_primary>
+    <_secondary>This can be due to the message not being downloaded yet. The folder, or the account, can be marked
+for offline synchronization. Then, once the account is online again, use File-&gt;Download
+Messages for Offline Usage, when this folder is selected, to make sure that all the messages
+in the folder will be available in offline mode.</_secondary>
   </error>
 
   <error id="folder-open" type="error">
@@ -536,5 +570,67 @@ An mbox account will be created to preserve the old mbox folders. You can delete
     <secondary>{1}</secondary>
   </error>
 
-</error-list>
+  <error id="failed-mark-ignore-thread" type="error" default="GTK_RESPONSE_YES">
+    <_primary>Failed to mark thread to be ignored in folder '{0}'</_primary>
+    <secondary>{1}</secondary>
+  </error>
 
+  <error id="failed-mark-unignore-thread" type="error" default="GTK_RESPONSE_YES">
+    <_primary>Failed to unmark thread from being ignored in folder '{0}'</_primary>
+    <secondary>{1}</secondary>
+  </error>
+
+  <error id="failed-mark-ignore-subthread" type="error" default="GTK_RESPONSE_YES">
+    <_primary>Failed to mark subthread to be ignored in folder '{0}'</_primary>
+    <secondary>{1}</secondary>
+  </error>
+
+  <error id="failed-mark-unignore-subthread" type="error" default="GTK_RESPONSE_YES">
+    <_primary>Failed to unmark subthread from being ignored in folder '{0}'</_primary>
+    <secondary>{1}</secondary>
+  </error>
+
+  <error id="remote-content-info" type="info">
+    <_primary>Remote content download had been blocked for this message.</_primary>
+    <_secondary>You can download remote content manually, or set to remember to download remote content for this sender or used sites.</_secondary>
+  </error>
+
+  <error id="follow-up-flag-info" type="info">
+    <secondary>{0}</secondary>
+  </error>
+
+  <error id="follow-up-completed-info" type="info">
+    <!-- Translators: This constructs a string like "Follow-up, Completed on Tuesday, January 13, 2009" -->
+    <_secondary>{0}, Completed on {1}</_secondary>
+  </error>
+
+  <error id="follow-up-dueby-info" type="info">
+    <!-- Translators: This constructs a string like "Follow-up by Tuesday, January 13, 2009" -->
+    <_secondary>{0} by {1}</_secondary>
+  </error>
+
+  <error id="follow-up-overdue-error" type="error">
+    <!-- Translators: This constructs a string like "Overdue: Follow-up by Tuesday, January 13, 2009" -->
+    <_primary>Overdue: {0} by {1}</_primary>
+  </error>
+
+  <error id="ask-mail-note-changed" type="question" default="GTK_RESPONSE_YES">
+    <_primary>Do you wish to save your changes?</_primary>
+    <_secondary xml:space="preserve">This message note has been changed, but has not been saved.</_secondary>
+    <button _label="_Discard changes" response="GTK_RESPONSE_NO"/>
+    <button stock="gtk-cancel" response="GTK_RESPONSE_CANCEL"/>
+    <button stock="gtk-save" response="GTK_RESPONSE_YES"/>
+  </error>
+
+  <error id="failed-delete-note" type="error">
+    <!-- Translators: {0} is the name of the folder where the delete of the message note failed. -->
+    <_primary>Failed to delete message note in folder '{0}'</_primary>
+    <secondary>{1}</secondary>
+  </error>
+
+  <error id="failed-store-note" type="error">
+    <!-- Translators: {0} is the name of the folder where the store of the message note failed. -->
+    <_primary>Failed to store message note in folder '{0}'</_primary>
+    <secondary>{1}</secondary>
+  </error>
+</error-list>

@@ -27,9 +27,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -47,7 +53,7 @@
 
   <title>Cifrado de correo y certificados</title>
 
-<p>Evolution ofrece cifrado GPG y S/MIME para firmar y cifrar mensajes de correo electrónico. En entornos corporativos S/MIME se usa más.</p>
+<p><app>Evolution</app> ofrece cifrado GPG y S/MIME para firmar y cifrar mensajes de correo electrónico. En entornos corporativos S/MIME se usa más.</p>
 
   <section id="gpg" style="2column">
     <title>GPG</title>

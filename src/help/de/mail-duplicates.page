@@ -29,19 +29,25 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
@@ -58,7 +64,7 @@
 <p>Aus folgenden Gründen könnten doppelte E-Mails heruntergeladen werden:</p>
 <list>
 <item><p>Es gibt mehrere Kopien derselben Nachricht im Postfach.</p></item>
-<item><p>Evolution hat ein Problem mit der UIDL-Erweiterung.</p></item>
+<item><p><gui>Evolution</gui> hat ein Problem mit der UIDL-Erweiterung.</p></item>
 <item><p>Die Zwischenspeicherdateien in <file>$HOME/.local/share/evolution/mail/local/</file> sind schreibgeschützt.</p></item>
 </list>
 </section>

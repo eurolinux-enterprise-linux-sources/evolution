@@ -1,0 +1,273 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>mail-ops: Evolution Mail Engine Reference Manual</title>
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="index.html" title="Evolution Mail Engine Reference Manual">
+<link rel="up" href="ch03.html" title="Miscellaneous">
+<link rel="prev" href="evolution-mail-engine-mail-mt.html" title="mail-mt">
+<link rel="next" href="evolution-mail-engine-mail-tools.html" title="mail-tools">
+<meta name="generator" content="GTK-Doc V1.25 (XML mode)">
+<link rel="stylesheet" href="style.css" type="text/css">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table class="navigation" id="top" width="100%" summary="Navigation header" cellpadding="2" cellspacing="5"><tr valign="middle">
+<td width="100%" align="left" class="shortcuts">
+<a href="#" class="shortcut">Top</a><span id="nav_description">  <span class="dim">|</span> 
+                  <a href="#evolution-mail-engine-mail-ops.description" class="shortcut">Description</a></span>
+</td>
+<td><a accesskey="h" href="index.html"><img src="home.png" width="16" height="16" border="0" alt="Home"></a></td>
+<td><a accesskey="u" href="ch03.html"><img src="up.png" width="16" height="16" border="0" alt="Up"></a></td>
+<td><a accesskey="p" href="evolution-mail-engine-mail-mt.html"><img src="left.png" width="16" height="16" border="0" alt="Prev"></a></td>
+<td><a accesskey="n" href="evolution-mail-engine-mail-tools.html"><img src="right.png" width="16" height="16" border="0" alt="Next"></a></td>
+</tr></table>
+<div class="refentry">
+<a name="evolution-mail-engine-mail-ops"></a><div class="titlepage"></div>
+<div class="refnamediv"><table width="100%"><tr>
+<td valign="top">
+<h2><span class="refentrytitle"><a name="evolution-mail-engine-mail-ops.top_of_page"></a>mail-ops</span></h2>
+<p>mail-ops</p>
+</td>
+<td class="gallery_image" valign="top" align="right"></td>
+</tr></table></div>
+<div class="refsect1">
+<a name="evolution-mail-engine-mail-ops.functions"></a><h2>Functions</h2>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="functions_return">
+<col class="functions_name">
+</colgroup>
+<tbody>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-ops.html#mail-transfer-messages" title="mail_transfer_messages ()">mail_transfer_messages</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-ops.html#mail-sync-folder" title="mail_sync_folder ()">mail_sync_folder</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-ops.html#mail-sync-store" title="mail_sync_store ()">mail_sync_store</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-ops.html#mail-empty-trash" title="mail_empty_trash ()">mail_empty_trash</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-ops.html#mail-send-queue" title="mail_send_queue ()">mail_send_queue</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<span class="c_punctuation">(</span><a class="link" href="evolution-mail-engine-mail-ops.html#MailProviderFetchLockFunc" title="MailProviderFetchLockFunc ()">*MailProviderFetchLockFunc</a><span class="c_punctuation">)</span> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<span class="c_punctuation">(</span><a class="link" href="evolution-mail-engine-mail-ops.html#MailProviderFetchUnlockFunc" title="MailProviderFetchUnlockFunc ()">*MailProviderFetchUnlockFunc</a><span class="c_punctuation">)</span> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">CamelFolder</span>
+</td>
+<td class="function_name">
+<span class="c_punctuation">(</span><a class="link" href="evolution-mail-engine-mail-ops.html#MailProviderFetchInboxFunc" title="MailProviderFetchInboxFunc ()">*MailProviderFetchInboxFunc</a><span class="c_punctuation">)</span> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-ops.html#mail-fetch-mail" title="mail_fetch_mail ()">mail_fetch_mail</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-ops.html#mail-filter-folder" title="mail_filter_folder ()">mail_filter_folder</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-ops.html#mail-process-folder-changes" title="mail_process_folder_changes ()">mail_process_folder_changes</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-ops.html#mail-execute-shell-command" title="mail_execute_shell_command ()">mail_execute_shell_command</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect1">
+<a name="evolution-mail-engine-mail-ops.description"></a><h2>Description</h2>
+</div>
+<div class="refsect1">
+<a name="evolution-mail-engine-mail-ops.functions_details"></a><h2>Functions</h2>
+<div class="refsect2">
+<a name="mail-transfer-messages"></a><h3>mail_transfer_messages ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+mail_transfer_messages (<em class="parameter"><code><a class="link" href="EMailSession.html" title="EMailSession"><span class="type">EMailSession</span></a> *session</code></em>,
+                        <em class="parameter"><code><span class="type">CamelFolder</span> *source</code></em>,
+                        <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Pointer-Arrays.html#GPtrArray"><span class="type">GPtrArray</span></a> *uids</code></em>,
+                        <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="type">gboolean</span></a> delete_from_source</code></em>,
+                        <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *dest_uri</code></em>,
+                        <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#guint32"><span class="type">guint32</span></a> dest_flags</code></em>,
+                        <em class="parameter"><code><span class="type">void</span> (*done) (gboolean ok, gpointer data)</code></em>,
+                        <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> data</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-sync-folder"></a><h3>mail_sync_folder ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+mail_sync_folder (<em class="parameter"><code><span class="type">CamelFolder</span> *folder</code></em>,
+                  <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="type">gboolean</span></a> test_for_expunge</code></em>,
+                  <em class="parameter"><code><span class="type">void</span> (*done) (CamelFolder *folder, gpointer data)</code></em>,
+                  <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> data</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-sync-store"></a><h3>mail_sync_store ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+mail_sync_store (<em class="parameter"><code><span class="type">CamelStore</span> *store</code></em>,
+                 <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="type">gint</span></a> expunge</code></em>,
+                 <em class="parameter"><code><span class="type">void</span> (*done) (CamelStore *store, gpointer data)</code></em>,
+                 <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> data</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-empty-trash"></a><h3>mail_empty_trash ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+mail_empty_trash (<em class="parameter"><code><span class="type">CamelStore</span> *store</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-send-queue"></a><h3>mail_send_queue ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+mail_send_queue (<em class="parameter"><code><a class="link" href="EMailSession.html" title="EMailSession"><span class="type">EMailSession</span></a> *session</code></em>,
+                 <em class="parameter"><code><span class="type">CamelFolder</span> *queue</code></em>,
+                 <em class="parameter"><code><span class="type">CamelTransport</span> *transport</code></em>,
+                 <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *type</code></em>,
+                 <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="type">gboolean</span></a> immediately</code></em>,
+                 <em class="parameter"><code><a href="/usr/share/gtk-doc/html/gioGCancellable.html#GCancellable-struct"><span class="type">GCancellable</span></a> *cancellable</code></em>,
+                 <em class="parameter"><code><span class="type">CamelFilterGetFolderFunc</span> get_folder</code></em>,
+                 <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> get_data</code></em>,
+                 <em class="parameter"><code><span class="type">CamelFilterStatusFunc</span> status</code></em>,
+                 <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> status_data</code></em>,
+                 <em class="parameter"><code><span class="type">void</span> (*done) (gpointer data)</code></em>,
+                 <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> data</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="MailProviderFetchLockFunc"></a><h3>MailProviderFetchLockFunc ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+<span class="c_punctuation">(</span>*MailProviderFetchLockFunc<span class="c_punctuation">)</span> (<em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *source</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="MailProviderFetchUnlockFunc"></a><h3>MailProviderFetchUnlockFunc ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+<span class="c_punctuation">(</span>*MailProviderFetchUnlockFunc<span class="c_punctuation">)</span> (<em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *source</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="MailProviderFetchInboxFunc"></a><h3>MailProviderFetchInboxFunc ()</h3>
+<pre class="programlisting"><span class="returnvalue">CamelFolder</span>
+<span class="c_punctuation">(</span>*MailProviderFetchInboxFunc<span class="c_punctuation">)</span> (<em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *source</code></em>,
+                               <em class="parameter"><code><a href="/usr/share/gtk-doc/html/gioGCancellable.html#GCancellable-struct"><span class="type">GCancellable</span></a> *cancellable</code></em>,
+                               <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Error-Reporting.html#GError"><span class="type">GError</span></a> **error</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-fetch-mail"></a><h3>mail_fetch_mail ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+mail_fetch_mail (<em class="parameter"><code><span class="type">CamelStore</span> *store</code></em>,
+                 <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *type</code></em>,
+                 <em class="parameter"><code><a class="link" href="evolution-mail-engine-mail-ops.html#MailProviderFetchLockFunc" title="MailProviderFetchLockFunc ()"><span class="type">MailProviderFetchLockFunc</span></a> lock_func</code></em>,
+                 <em class="parameter"><code><a class="link" href="evolution-mail-engine-mail-ops.html#MailProviderFetchUnlockFunc" title="MailProviderFetchUnlockFunc ()"><span class="type">MailProviderFetchUnlockFunc</span></a> unlock_func</code></em>,
+                 <em class="parameter"><code><a class="link" href="evolution-mail-engine-mail-ops.html#MailProviderFetchInboxFunc" title="MailProviderFetchInboxFunc ()"><span class="type">MailProviderFetchInboxFunc</span></a> fetch_inbox_func</code></em>,
+                 <em class="parameter"><code><a href="/usr/share/gtk-doc/html/gioGCancellable.html#GCancellable-struct"><span class="type">GCancellable</span></a> *cancellable</code></em>,
+                 <em class="parameter"><code><span class="type">CamelFilterGetFolderFunc</span> get_folder</code></em>,
+                 <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> get_data</code></em>,
+                 <em class="parameter"><code><span class="type">CamelFilterStatusFunc</span> status</code></em>,
+                 <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> status_data</code></em>,
+                 <em class="parameter"><code><span class="type">void</span> (*done) (gpointer data)</code></em>,
+                 <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> data</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-filter-folder"></a><h3>mail_filter_folder ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+mail_filter_folder (<em class="parameter"><code><a class="link" href="EMailSession.html" title="EMailSession"><span class="type">EMailSession</span></a> *session</code></em>,
+                    <em class="parameter"><code><span class="type">CamelFolder</span> *source_folder</code></em>,
+                    <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Pointer-Arrays.html#GPtrArray"><span class="type">GPtrArray</span></a> *uids</code></em>,
+                    <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *type</code></em>,
+                    <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="type">gboolean</span></a> notify</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-process-folder-changes"></a><h3>mail_process_folder_changes ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+mail_process_folder_changes (<em class="parameter"><code><span class="type">CamelFolder</span> *folder</code></em>,
+                             <em class="parameter"><code><span class="type">CamelFolderChangeInfo</span> *changes</code></em>,
+                             <em class="parameter"><code><span class="type">void</span> (*process) (CamelFolder *folder, CamelFolderChangeInfo *changes, GCancellable *cancellable, GError **error, gpointer user_data)</code></em>,
+                             <em class="parameter"><code><span class="type">void</span> (*done) (gpointer user_data)</code></em>,
+                             <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> user_data</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-execute-shell-command"></a><h3>mail_execute_shell_command ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+mail_execute_shell_command (<em class="parameter"><code><span class="type">CamelFilterDriver</span> *driver</code></em>,
+                            <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gint"><span class="type">gint</span></a> argc</code></em>,
+                            <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> **argv</code></em>,
+                            <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> data</code></em>);</pre>
+</div>
+</div>
+<div class="refsect1">
+<a name="evolution-mail-engine-mail-ops.other_details"></a><h2>Types and Values</h2>
+</div>
+</div>
+<div class="footer">
+<hr>Generated by GTK-Doc V1.25</div>
+</body>
+</html>

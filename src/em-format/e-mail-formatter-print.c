@@ -31,8 +31,6 @@
 /* internal formatter extensions */
 GType e_mail_formatter_print_headers_get_type (void);
 
-void e_mail_formatter_print_internal_extensions_load (EMailExtensionRegistry *ereg);
-
 static gpointer e_mail_formatter_print_parent_class = 0;
 
 static void
@@ -121,8 +119,7 @@ mail_formatter_print_run (EMailFormatter *formatter,
 		"<head>\n"
 		"<meta name=\"generator\" content=\"Evolution Mail\" />\n"
 		"<title>Evolution Mail Display</title>\n"
-		"<link type=\"text/css\" rel=\"stylesheet\" "
-		"      media=\"print\" href=\"" STYLESHEET_URI "/>\n"
+		"<link type=\"text/css\" rel=\"stylesheet\" media=\"print\" href=\"" STYLESHEET_URI "\"/>\n"
 		"</head>\n"
 		"<body style=\"background: #FFF; color: #000;\">";
 

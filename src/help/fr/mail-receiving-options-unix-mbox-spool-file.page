@@ -6,7 +6,7 @@
 
     <link type="guide" xref="mail-receiving-options#local-account-server-types"/>
     <link type="guide" xref="mail-account-manage-unix-mbox-spool-file#receiving-email"/>
-    <revision pkgversion="3.1.90" version="0.3" date="2011-08-25" status="final"/>
+    <revision pkgversion="3.12.9" version="0.4" date="2015-02-15" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -49,7 +49,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -72,7 +72,7 @@
 <p>Dans l'onglet <gui>Options de réception</gui> (accessible via <guiseq><gui>Édition</gui><gui>Préférences</gui><gui>Compte de messagerie</gui><gui style="button">Édition</gui><gui>Options de réception</gui></guiseq>) :</p>
 
 <list>
-<item><p>Si vous voulez qu'Evolution vérifie automatiquement les nouveaux messages, activez l'option <gui>Vérifier les nouveaux messages toutes les ... minutes</gui> et sélectionnez la fréquence en minutes.</p></item>
+<item><p>If you want <app>Evolution</app> to check automatically for new messages, click the <gui>Check for new messages every … minutes</gui> option and select the frequency in minutes.</p></item>
 <item><p>Si vous voulez que des <link xref="mail-filters">filtres</link> soient automatiquement utilisés pour les nouveaux messages dans votre Boîte de réception, activez <gui>Appliquer les filtres aux nouveaux messages dans la boîte de réception</gui>.</p></item>
 </list>
 

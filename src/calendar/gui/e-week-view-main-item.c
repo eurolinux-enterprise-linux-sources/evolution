@@ -159,7 +159,7 @@ week_view_main_item_draw_day (EWeekViewMainItem *main_item,
 				cr, &week_view->colors[E_WEEK_VIEW_COLOR_SELECTED]);
 		} else {
 			gdk_cairo_set_source_color (
-				cr, &week_view->colors[E_WEEK_VIEW_COLOR_SELECTED]);
+				cr, &week_view->colors[E_WEEK_VIEW_COLOR_SELECTED_UNFOCUSSED]);
 		}
 
 		if (multi_week_view) {
@@ -251,18 +251,14 @@ week_view_main_item_draw_day (EWeekViewMainItem *main_item,
 		g_date_strftime (
 			buffer, sizeof (buffer),
 			format_string ? format_string : "<b>%d</b>", date);
-		pango_cairo_update_context (cr, pango_context);
-		layout = pango_cairo_create_layout (cr);
-		pango_layout_set_font_description (layout, font_desc);
+		layout = gtk_widget_create_pango_layout (GTK_WIDGET (week_view), NULL);
 		pango_layout_set_text (layout, buffer, -1);
 		pango_layout_set_markup (layout, buffer, strlen (buffer));
 	} else {
 		g_date_strftime (
 			buffer, sizeof (buffer),
 			format_string ? format_string : "%d", date);
-		pango_cairo_update_context (cr, pango_context);
-		layout = pango_cairo_create_layout (cr);
-		pango_layout_set_font_description (layout, font_desc);
+		layout = gtk_widget_create_pango_layout (GTK_WIDGET (week_view), NULL);
 		pango_layout_set_text (layout, buffer, -1);
 	}
 

@@ -48,7 +48,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -56,8 +56,7 @@
 
   <p>Les agendas de ce type sont en lecture seule.</p>
 
-  <p>To add such a calendar to <app>Evolution</app>, perform the following
-  steps:</p>
+  <p>Pour ajouter de tels agendas à <app>Evolution</app>, suivez les étapes suivantes :</p>
 
   <steps>
     <item>
@@ -79,7 +78,8 @@
       <p>Saisissez l'adresse dans le champ <gui>URL</gui>.</p>
     </item>
     <item>
-      <p>Choisissez <gui>Utiliser une connexion sécurisée</gui> si vous souhaitez utiliser une connexion sécurisée.</p>
+      <p>Choose <gui>Use a secure connection</gui> if you want to connect
+      securely.</p>
     </item>
     <item>
       <p>Saisissez votre nom d'utilisateur.</p>
@@ -89,7 +89,6 @@
     </item>
   </steps>
 
-  <p>The calendar will be added to the list of calendars in
-  <app>Evolution</app>.</p>
+  <p>L'agenda est ajouté à la liste des agendas d'<app>Evolution</app>.</p>
 
 </page>

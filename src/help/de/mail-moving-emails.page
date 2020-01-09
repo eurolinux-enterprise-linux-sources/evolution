@@ -29,25 +29,31 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
 <title>Verschobene E-Mails erscheinen immer noch im ursprünglichen Ordner</title>
 
-<p>Wenn Ihr IMAP E-Mail-Server das <link href="http://tools.ietf.org/html/rfc6851">Verschieben</link> nicht beherrscht, was im Januar 2013 verabschiedet wurde, so »verschiebt« Evolution Nachrichten durch Kopieren und Löschen von E-Mails. Löschen bedeutet »Markieren von Nachrichten zum Löschen«, d.h. die ursprünglichen Nachrichten werden beibehalten, bis Sie zum Löschen markierte E-Mails löschen.</p>
+<p>Wenn Ihr IMAP E-Mail-Server das <link href="http://tools.ietf.org/html/rfc6851">Verschieben</link> nicht beherrscht, was im Januar 2013 verabschiedet wurde, so »verschiebt« <gui>Evolution</gui> Nachrichten durch Kopieren und Löschen von E-Mails. Löschen bedeutet <em>Markieren von Nachrichten zum Löschen</em>, d.h. die ursprünglichen Nachrichten werden beibehalten, bis Sie zum Löschen markierte E-Mails tatsächlich löschen.</p>
 
 <p>Bitte lesen Sie das Thema <link xref="mail-delete-and-undelete">E-Mails löschen</link> für weitere Informationen und Anweisungen zum Thema. Beachten Sie, dass dies auf anderen Kontentypen ebenfalls zutrifft.</p>
 

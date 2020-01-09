@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-composer-forward-as-attachment" xml:lang="cs">
 
   <info>
-    <desc>How to forward a message with its attachments.</desc>
+    <desc>Jak přeposlat zprávu včetně jejích příloh.</desc>
     
     <link type="guide" xref="index#common-mail-problems"/>
     <link type="seealso" xref="mail-composer-forward"/>
@@ -16,13 +16,25 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Forwarding a message with its attachments</title>
+<title>Přeposlání zprávy včetně jejích přílohy</title>
 
-<p>Click <guiseq><gui>Message</gui><gui>Forward as...</gui></guiseq> and choose <gui>Attachment</gui>, so the forwarded email and also its attachments get attached to the email you want to send.</p>
+<p>Klikněte na <guiseq><gui>Zpráva</gui> <gui>Přeposlat jako…</gui></guiseq> a zvolte <gui>Přiložené</gui>, takže přeposílaná zpráva, a také její přílohy, se přiloží do zprávy, kterou chcete poslat.</p>
 
 <note style="tip">
-<p>If you want to have this setting by default, set <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Composer Preferences</gui><gui>Forward Style</gui></guiseq> to <gui>Attachment</gui>.</p>
+<p>Pokud chcete tento postup používat jako výchozí, nastavte <guiseq><gui>Upravit</gui> <gui>Předvolby</gui> <gui>Předvolby editoru</gui> <gui>Styl přeposílání</gui></guiseq> na <gui>Příloha</gui>.</p>
 </note>
 </page>

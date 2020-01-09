@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="guide" id="mail-displaying-message" xml:lang="sv">
 
   <info>
-    <desc>Rendering an email and handling its attachments.</desc>
+    <desc>Rendering av ett e-postmeddelande och hantering av dess bilagor.</desc>
 
     <link type="guide" xref="index#mail-basic"/>
 
@@ -15,12 +15,24 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-<title>Display of a message</title>
+<title>Visa ett meddelande</title>
 
   <section id="advanced">
-    <title>Advanced</title>
+    <title>Avancerat</title>
   </section>
 
 </page>

@@ -33,6 +33,9 @@ typedef void	(*EMailUtilsSortSourcesFunc)	(GList **psources,
 
 gboolean	em_utils_folder_is_drafts	(ESourceRegistry *registry,
 						 CamelFolder *folder);
+gboolean	em_utils_folder_name_is_drafts	(ESourceRegistry *registry,
+						 CamelStore *store,
+						 const gchar *folder_name);
 gboolean	em_utils_folder_is_templates	(ESourceRegistry *registry,
 						 CamelFolder *folder);
 gboolean	em_utils_folder_is_sent		(ESourceRegistry *registry,
@@ -78,5 +81,11 @@ gboolean	em_utils_is_local_delivery_mbox_file
 						(CamelService *service);
 
 void		em_utils_expand_groups		(CamelInternetAddress *addresses);
+void		em_utils_get_real_folder_and_message_uid
+						(CamelFolder *folder,
+						 const gchar *uid,
+						 CamelFolder **out_real_folder,
+						 gchar **folder_uri,
+						 gchar **message_uid);
 
 #endif /* E_MAIL_UTILS_H */

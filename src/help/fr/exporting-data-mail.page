@@ -49,13 +49,13 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
 <title>Exportation de courriels</title>
 
-<p>To save an email to a file in <link href="https://en.wikipedia.org/wiki/Mbox">mbox</link> format, select an email and click <guiseq><gui>File</gui><gui>Save as mbox...</gui></guiseq> or right-click on the message and click <gui>Save as mbox...</gui>.</p>
+<p>Pour enregistrer un courriel dans un fichier au format <link href="https://en.wikipedia.org/wiki/Mbox">mbox</link>, sélectionnez un courriel et cliquez sur <guiseq><gui>Fichier</gui><gui>Enregistrer comme mbox…</gui></guiseq> ou faites un clic-droit sur le message et cliquez sur <gui>Enregistrer comme mbox…</gui></p>
 
 <p>Les mêmes étapes s'appliquent pour enregistrer un dossier de courriel complet mais vous devez sélectionner tous les messages le contenant d'abord.</p>
 <p>Pour sélectionner tous les messages d'un dossier, cliquez sur <guiseq><gui>Édition</gui><gui>Tout sélectionner</gui></guiseq> ou pressez <keyseq><key>Ctrl</key><key>A</key></keyseq>.</p>

@@ -11,11 +11,15 @@ liborg_gnome_templates_la_CPPFLAGS =			\
 	-I$(top_builddir)/composer			\
 	$(EVOLUTION_DATA_SERVER_CFLAGS)			\
 	$(GNOME_PLATFORM_CFLAGS)			\
-	$(GTKHTML_CFLAGS)
+	$(CODE_COVERAGE_CFLAGS)				\
+	$(NULL)
 
-liborg_gnome_templates_la_SOURCES = templates.c
+liborg_gnome_templates_la_SOURCES =			\
+	templates.c					\
+	e-templates-store.h				\
+	e-templates-store.c
 
-liborg_gnome_templates_la_LDFLAGS = -module -avoid-version $(NO_UNDEFINED)
+liborg_gnome_templates_la_LDFLAGS = -module -avoid-version $(NO_UNDEFINED) $(CODE_COVERAGE_LDFLAGS)
 
 liborg_gnome_templates_la_LIBADD =	\
 	$(top_builddir)/e-util/libevolution-util.la	\
@@ -25,7 +29,7 @@ liborg_gnome_templates_la_LIBADD =	\
 	$(top_builddir)/libemail-engine/libemail-engine.la \
 	$(EVOLUTION_DATA_SERVER_LIBS)			\
 	$(GNOME_PLATFORM_LIBS)				\
-	$(GTKHTML_LIBS)
+	$(NULL)
 
 EXTRA_DIST = 	org-gnome-templates.eplug.xml
 

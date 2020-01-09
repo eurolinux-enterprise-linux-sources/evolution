@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-spam-marking" xml:lang="sv">
 
   <info>
-    <desc>How to mark unwanted junk and spam mail.</desc>
+    <desc>Hur man markerar oönskad skräppost.</desc>
 
     <link type="guide" xref="mail-spam"/>
 
@@ -25,16 +25,28 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-<title>Marking Mail as Junk</title>
+<title>Markera e-postmeddelande som skräppost</title>
 
-<p>While SpamAssassin comes with a set of predefined rules, Bogofilter needs to be taught first before it will automatically filter junk mail. If you only train Bogofilter on bad messages, it will assume all mail is bad (because it does not know any difference) hence it will not make any decisions until the database is sufficiently large to determine what is and is not spam. In any case, when you first start using junk mail blocking, check the <gui>Junk</gui> mail folder frequently to be sure that legitimate mail doesn't get flagged as junk mail.</p>
+<p>Medan SpamAssassin kommer med en uppsättning fördefinierade regler måste Bogofilter läras först innan det automatiskt kommer att filtrera skräppost. Om du bara tränar Bogofilter med dåliga meddelanden kommer den att tro att all e-post är dålig (eftersom den inte känner till att det finns någon skillnad) därför kommer det inte att ta några beslut tills databasen är tillräckligt stor för att avgöra vad som är och vad som inte är skräppost. I vilket fall, när du börjar använda skräppostsblockering, kontrollera e-postmappen <gui>Skräppost</gui> ofta för att säkerställa att legitima e-postmeddelanden inte flaggats som skräppost.</p>
 
 <section id="marking-junk">
-<title>Manually Marking Junk Mail</title>
-<p>If Evolution misses junk mail, right-click the message, then click <gui>Mark as Junk</gui>, or mark the message and press <keyseq><key>Ctrl</key><key>J</key></keyseq> or click the <gui>Junk</gui> button in the tool bar. When you correct it, the filter can recognize similar messages in the future, and becomes more accurate as time goes on.</p>
-<p>If legitimate mail is incorrectly flagged, remove it from the <gui>Junk</gui> folder by right-clicking it and selecting <gui>Mark as Not Junk</gui> or pressing <keyseq><key>Shift</key><key>Ctrl</key><key>J</key></keyseq>, or mark the message and click the <gui>Not Junk</gui> button.</p>
+<title>Markera skräppost manuellt</title>
+<p>Om <app>Evolution</app> missar skräppost, högerklicka på meddelandet, klicka sedan på <gui>Markera som skräppost</gui> eller markera meddelandet och tryck på <keyseq><key>Ctrl</key><key>J</key></keyseq> eller klicka på <gui>Skräppost</gui> i verktygsfältet. När du rättar det kommer filtret att känna igen liknande meddelanden i framtiden och blir mer exakt med tiden.</p>
+<p>Om legitima e-postmeddelanden felaktigt flaggats, ta bort det från <gui>Skräppost</gui> genom att högerklicka på det och välja <gui>Markera som inte skräppost</gui> eller tryck på <keyseq><key>Skift</key><key>Ctrl</key><key>J</key></keyseq>, eller markera meddelandet och klicka på knappen <gui>Inte skräpport</gui>.</p>
 
 </section>
 </page>

@@ -6,7 +6,7 @@
 
     <link type="guide" xref="mail-receiving-options#local-account-server-types"/>
     <link type="guide" xref="mail-account-manage-unix-mbox-spool-file#receiving-email"/>
-    <revision pkgversion="3.1.90" version="0.3" date="2011-08-25" status="final"/>
+    <revision pkgversion="3.12.9" version="0.4" date="2015-02-15" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -15,6 +15,30 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
   <title>Szabványos Unix mbox tárolófájl fogadási beállításai</title>
@@ -36,7 +60,7 @@
 <p>A <gui>Fogadás beállításai</gui> oldalon (<guiseq><gui>Szerkesztés</gui><gui>Beállítások</gui><gui>Postafiókok</gui><gui style="button">Szerkesztés</gui><gui>Fogadás beállításai</gui></guiseq>):</p>
 
 <list>
-<item><p>Ha azt szeretné, hogy az Evolution automatikusan keresse az új üzeneteket, akkor jelölje be az <gui>Új levelek automatikus lekérdezése ... percenként</gui> négyzetet, és adja meg a gyakoriságot percben.</p></item>
+<item><p>Ha azt szeretné, hogy az <app>Evolution</app> automatikusan keresse az új üzeneteket, akkor jelölje be az <gui>Új levelek automatikus lekérdezése … percenként</gui> négyzetet, és adja meg a gyakoriságot percben.</p></item>
 <item><p>Ha szeretne <link xref="mail-filters">szűrőket</link> alkalmazni az Érkezett mappába érkező új levelekre, akkor jelölje be a <gui>Szűrők alkalmazása az új levelekre a Beérkezett üzenetek mappában</gui> jelölőnégyzetet.</p></item>
 </list>
 

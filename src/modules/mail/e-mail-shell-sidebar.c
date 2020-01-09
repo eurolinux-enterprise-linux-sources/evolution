@@ -156,7 +156,8 @@ mail_shell_sidebar_constructed (GObject *object)
 		GTK_SCROLLED_WINDOW (widget),
 		GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	gtk_scrolled_window_set_shadow_type (
-		GTK_SCROLLED_WINDOW (widget), GTK_SHADOW_IN);
+		GTK_SCROLLED_WINDOW (widget),
+		GTK_SHADOW_IN);
 	gtk_container_add (GTK_CONTAINER (container), widget);
 	gtk_widget_show (widget);
 
@@ -167,12 +168,12 @@ mail_shell_sidebar_constructed (GObject *object)
 	mail_shell_sidebar->priv->folder_tree = g_object_ref (widget);
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		shell_view, "state-key-file",
 		widget, "key-file",
 		G_BINDING_SYNC_CREATE);
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 	g_settings_bind (
 		settings, "side-bar-search",
@@ -265,6 +266,7 @@ mail_shell_sidebar_get_preferred_width (GtkWidget *widget,
 	PangoLayout *layout;
 	PangoRectangle ink_rect;
 	GtkBorder padding;
+	GtkStyleContext *style_context;
 	gint border;
 	gint sidebar_width;
 	gint screen_width;
@@ -280,7 +282,8 @@ mail_shell_sidebar_get_preferred_width (GtkWidget *widget,
 	pango_layout_get_pixel_extents (layout, &ink_rect, NULL);
 	g_object_unref (layout);
 
-	gtk_style_context_get_padding (gtk_widget_get_style_context (widget), 0, &padding);
+	style_context = gtk_widget_get_style_context (widget);
+	gtk_style_context_get_padding (style_context, gtk_style_context_get_state (style_context), &padding);
 
 	screen_width = guess_screen_width (sidebar);
 

@@ -19,14 +19,13 @@
 #include <glib/gi18n-lib.h>
 
 #include <libebackend/libebackend.h>
+#include <libedataserver/libedataserver.h>
 
 #define GWEATHER_I_KNOW_THIS_IS_UNSTABLE
-#include <libgweather/location-entry.h>
+#include <libgweather/gweather.h>
 #undef GWEATHER_I_KNOW_THIS_IS_UNSTABLE
 
 #include <e-util/e-util.h>
-
-#include "e-source-weather.h"
 
 #if HAVE_NL_LANGINFO
 #include <langinfo.h>
@@ -239,7 +238,7 @@ cal_config_weather_insert_widgets (ESourceConfigBackend *backend,
 		G_OBJECT (backend), uid, context,
 		(GDestroyNotify) cal_config_weather_context_free);
 
-	world = gweather_location_new_world (TRUE);
+	world = gweather_location_get_world ();
 
 	e_cal_source_config_add_offline_toggle (
 		E_CAL_SOURCE_CONFIG (config), scratch_source);
@@ -280,7 +279,7 @@ cal_config_weather_insert_widgets (ESourceConfigBackend *backend,
 			E_SOURCE_WEATHER (extension),
 			cal_config_weather_get_units_from_locale ());
 
-	g_object_bind_property_full (
+	e_binding_bind_property_full (
 		extension, "location",
 		context->location_entry, "location",
 		G_BINDING_BIDIRECTIONAL |
@@ -290,13 +289,11 @@ cal_config_weather_insert_widgets (ESourceConfigBackend *backend,
 		gweather_location_ref (world),
 		(GDestroyNotify) gweather_location_unref);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		extension, "units",
 		widget, "active",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
-
-	gweather_location_unref (world);
 }
 
 static gboolean
@@ -304,8 +301,13 @@ cal_config_weather_check_complete (ESourceConfigBackend *backend,
                                    ESource *scratch_source)
 {
 	ESourceWeather *extension;
+	Context *context;
+	gboolean correct;
 	const gchar *extension_name;
 	const gchar *location;
+
+	context = g_object_get_data (G_OBJECT (backend), e_source_get_uid (scratch_source));
+	g_return_val_if_fail (context != NULL, FALSE);
 
 	extension_name = E_SOURCE_EXTENSION_WEATHER_BACKEND;
 	extension = e_source_get_extension (scratch_source, extension_name);
@@ -314,7 +316,11 @@ cal_config_weather_check_complete (ESourceConfigBackend *backend,
 
 	g_debug ("Location: [%s]", location);
 
-	return (location != NULL) && (*location != '\0');
+	correct = (location != NULL) && (*location != '\0');
+
+	e_util_set_entry_issue_hint (context->location_entry, correct ? NULL : _("Location cannot be empty"));
+
+	return correct;
 }
 
 static void
@@ -345,7 +351,6 @@ e_cal_config_weather_init (ESourceConfigBackend *backend)
 G_MODULE_EXPORT void
 e_module_load (GTypeModule *type_module)
 {
-	e_source_weather_type_register (type_module);
 	e_cal_config_weather_register_type (type_module);
 }
 

@@ -62,7 +62,7 @@ alert_bar_show_alert (EAlertBar *alert_bar)
 	GtkWidget *action_area;
 	GtkWidget *widget;
 	EAlert *alert;
-	GList *actions;
+	GList *link;
 	GList *children;
 	GtkMessageType message_type;
 	const gchar *primary_text;
@@ -89,8 +89,10 @@ alert_bar_show_alert (EAlertBar *alert_bar)
 	}
 
 	/* Add alert-specific buttons. */
-	actions = e_alert_peek_actions (alert);
-	while (actions != NULL) {
+	link = e_alert_peek_actions (alert);
+	while (link != NULL) {
+		GtkAction *action = GTK_ACTION (link->data);
+
 		/* These actions are already wired to trigger an
 		 * EAlert::response signal when activated, which
 		 * will in turn call gtk_info_bar_response(), so
@@ -99,14 +101,18 @@ alert_bar_show_alert (EAlertBar *alert_bar)
 
 		widget = gtk_button_new ();
 
-		gtk_activatable_set_related_action (
-			GTK_ACTIVATABLE (widget),
-			GTK_ACTION (actions->data));
+		gtk_activatable_set_related_action (GTK_ACTIVATABLE (widget), action);
+		gtk_box_pack_end (GTK_BOX (action_area), widget, FALSE, FALSE, 0);
 
-		gtk_box_pack_end (
-			GTK_BOX (action_area), widget, FALSE, FALSE, 0);
+		link = g_list_next (link);
+	}
 
-		actions = g_list_next (actions);
+	link = e_alert_peek_widgets (alert);
+	while (link != NULL) {
+		widget = link->data;
+
+		gtk_box_pack_end (GTK_BOX (action_area), widget, FALSE, FALSE, 0);
+		link = g_list_next (link);
 	}
 
 	/* Add a dismiss button. */
@@ -168,9 +174,8 @@ alert_bar_show_alert (EAlertBar *alert_bar)
 	image = GTK_IMAGE (alert_bar->priv->image);
 	gtk_image_set_from_icon_name (image, icon_name, ICON_SIZE);
 
-	/* Avoid showing an image for one-line alerts,
-	 * which are usually questions or informational. */
-	visible = have_primary_text && have_secondary_text;
+	/* Avoid showing an image for empty alerts. */
+	visible = have_primary_text || have_secondary_text;
 	gtk_widget_set_visible (alert_bar->priv->image, visible);
 
 	gtk_widget_show (GTK_WIDGET (alert_bar));
@@ -251,6 +256,7 @@ alert_bar_constructed (GObject *object)
 	GtkWidget *content_area;
 	GtkWidget *container;
 	GtkWidget *widget;
+	GObject *revealer;
 
 	priv = E_ALERT_BAR_GET_PRIVATE (object);
 
@@ -276,6 +282,7 @@ alert_bar_constructed (GObject *object)
 	gtk_widget_show (widget);
 
 	widget = gtk_box_new (GTK_ORIENTATION_VERTICAL, 12);
+	gtk_widget_set_valign (widget, GTK_ALIGN_CENTER);
 	gtk_box_pack_start (GTK_BOX (container), widget, TRUE, TRUE, 0);
 	gtk_widget_show (widget);
 
@@ -298,6 +305,13 @@ alert_bar_constructed (GObject *object)
 	gtk_widget_show (widget);
 
 	container = action_area;
+
+	/* Disable animation of the revealer, until GtkInfoBar's bug #710888 is fixed */
+	revealer = gtk_widget_get_template_child (GTK_WIDGET (object), GTK_TYPE_INFO_BAR, "revealer");
+	if (revealer) {
+		gtk_revealer_set_transition_type (GTK_REVEALER (revealer), GTK_REVEALER_TRANSITION_TYPE_NONE);
+		gtk_revealer_set_transition_duration (GTK_REVEALER (revealer), 0);
+	}
 }
 
 static GtkSizeRequestMode

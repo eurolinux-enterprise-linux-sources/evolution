@@ -28,26 +28,32 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
   <title>Outlook</title>
 <!-- "Import data and settings from older programs" cannot recognize Outlook, as there obviously is no default storage location for Outlook *under Linux* -->
 
-<p>Diese Schritte beziehen sich auf lokal gespeicherte Daten, wie z.B. bei POP-Konten. Für entfernt abgelegte Daten (wie z.B. bei IMAP) ist dies nicht notwendig, weil sich die Daten noch auf dem Server befinden und nicht händisch übertragen werden müssen. Sie können das entsprechende Konto in Evolution einrichten, woraufhin die Daten herunter geladen werden.</p>
+<p>Diese Schritte beziehen sich auf lokal gespeicherte Daten, wie z.B. bei POP-Konten. Für entfernt abgelegte Daten (wie z.B. bei IMAP) ist dies nicht notwendig, weil sich die Daten noch auf dem Server befinden und nicht händisch übertragen werden müssen. Sie können das entsprechende Konto in <app>Evolution</app> einrichten, woraufhin die Daten herunter geladen werden.</p>
 
 <section id="prerequisites">
 <title>Voraussetzungen unter Windows</title>
@@ -68,17 +74,17 @@
 <p>(Ersetzen Sie »Benutzername« durch Ihren Benutzernamen)</p>
 </item>
 <!-- File locations taken from http://support.microsoft.com/kb/2291280 and http://answers.microsoft.com/en-us/windows/forum/windows_7-files/where-is-location-of-outlookpst-file-in-windows-7/3a4c03c3-e8ad-4912-9e37-f1c62057d1f9 -->
-<item><p>Kopieren Sie die Outlook-Dateien auf das System oder die Partition, auf der Evolution installiert ist.</p>
+<item><p>Kopieren Sie die Outlook-Dateien auf das System oder die Partition, auf der <app>Evolution</app> installiert ist.</p>
 <p>Falls Ihre Windows-Festplatte mit NTFS formatiert ist, können einige Linux-Systeme dies nicht ohne zusätzliche Software lesen. In diesem Fall kann es einfacher sein, die E-Mail-Ordner auf ein anderes Laufwerk zu kopieren, oder eine CD zu brennen.</p></item>
 </steps>
 </section>
 
 <section id="importing">
-<title>In Evolution importieren</title>
+<title>In <app>Evolution</app> importieren</title>
 <steps>
 <item><p>Legen Sie - abhängig von Ihrem letzten Schritt - entweder den Datenträger ein oder verbinden Sie das USB-Laufwerk und warten Sie, bis sich die Dateiverwaltung öffnet. Oder Sie binden Ihr Windows-Laufwerk ein.</p></item>
 <item><p>Kopieren Sie alle E-Mail-Dateien in Ihren persönlichen Ordner oder an einen anderen gewünschten Ort.</p></item>
-<item><p>Starten Sie Evolution.</p></item>
+<item><p>Starten Sie <app>Evolution</app>.</p></item>
 <item><p>Wählen Sie optional <guiseq><gui>Datei</gui><gui>Neu</gui><gui>E-Mail-Ordner</gui></guiseq>, um die gewünschten <link xref="mail-folders">Ordner</link> zu erstellen.</p></item>
 
 <item><p>Klicken Sie auf <guiseq><gui>Datei</gui><gui>Importieren</gui></guiseq>.</p></item>
@@ -86,7 +92,7 @@
 <item><p>Bitte wählen Sie die persönliche Outlook-Ordnerdatei (.pst), die Sie importieren wollen.</p><p>Der Dateityp wird automatisch bestimmt.</p>
 <note style="tip"><p>Wenn die Option zum Importieren von persönlichen Outlook-Ordnern (.pst-Dateien) nicht unter <guiseq><gui>Datei</gui><gui>Importieren</gui><gui>Einzelne Datei importieren</gui><gui>Dateityp</gui></guiseq> verfügbar ist, so hat Ihre Distribution diese Funktion eventuell nicht freigeschaltet.</p></note>
 </item>
-<item><p>Wählen Sie das Ziel dieses Imports, also den Ordner in Evolution.</p></item>
+<item><p>Wählen Sie das Ziel dieses Imports, also den Ordner in <app>Evolution</app>.</p></item>
 <item><p>Wiederholen Sie diese Schritte, bis alle Ihre Daten importiert sind.</p></item>
 </steps>
 

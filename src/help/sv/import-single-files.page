@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="import-single-files" xml:lang="sv">
 
   <info>
-    <desc>Importing single files.</desc>
+    <desc>Importera enstaka filer.</desc>
     
     <link type="guide" xref="import-data"/>
 
@@ -15,18 +15,30 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Importing single files</title>
+  <title>Importera enstaka filer</title>
 
-<p>To import single files (mail, calendar data or contacts):</p>
+<p>För att importera enstaka filer (e-post, kalenderdata eller kontakter):</p>
 <steps>
-<item><p>Click <guiseq><gui>File</gui><gui>Import</gui></guiseq>.</p></item>
-<item><p>In the <gui>Importer Type</gui> tab, click <gui>Import a single file</gui>.</p></item>
-<item><p>Choose the file.</p><p>The file type will be automatically determined.</p></item>
-<item><p>Choose the destination (e.g. the folder in Evolution) for the imported data.</p></item>
+<item><p>Klicka på <guiseq><gui>Arkiv</gui><gui>Importera</gui></guiseq>.</p></item>
+<item><p>I fliken <gui>Importörstyp</gui>, klicka på <gui>Importera en enda fil</gui>.</p></item>
+<item><p>Välj filen.</p><p>Filtypen kommer att fastställas automatiskt.</p></item>
+<item><p>Välj destinationen (t.ex. mappen i <app>Evolution</app>) för den importerade datan.</p></item>
 </steps>
 
-<note style="tip"><p>You can also import contacts that you have received as a vCard attachment of an email from its attachment menu.</p></note>
+<note style="tip"><p>Du kan också importera kontakter som du har fått som en vCard-bilaga från ett e-postmeddelande från dess bilagemeny.</p></note>
 
 </page>

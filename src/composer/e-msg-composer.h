@@ -24,7 +24,6 @@
 #define E_MSG_COMPOSER_H
 
 #include <camel/camel.h>
-#include <gtkhtml-editor.h>
 #include <libebook/libebook.h>
 
 #include <shell/e-shell.h>
@@ -57,12 +56,12 @@ typedef struct _EMsgComposerClass EMsgComposerClass;
 typedef struct _EMsgComposerPrivate EMsgComposerPrivate;
 
 struct _EMsgComposer {
-	GtkhtmlEditor parent;
+	GtkWindow parent;
 	EMsgComposerPrivate *priv;
 };
 
 struct _EMsgComposerClass {
-	GtkhtmlEditorClass parent_class;
+	GtkWindowClass parent_class;
 
 	/* Signals */
 	gboolean	(*presend)		(EMsgComposer *composer);
@@ -82,23 +81,28 @@ struct _EMsgComposerClass {
 };
 
 GType		e_msg_composer_get_type		(void);
-EMsgComposer *	e_msg_composer_new		(EShell *shell);
-EMsgComposer *	e_msg_composer_new_with_message	(EShell *shell,
+void		e_msg_composer_new		(EShell *shell,
+						 GAsyncReadyCallback callback,
+						 gpointer user_data);
+EMsgComposer *	e_msg_composer_new_finish	(GAsyncResult *result,
+						 GError **error);
+void		e_msg_composer_setup_with_message
+						(EMsgComposer *composer,
 						 CamelMimeMessage *message,
 						 gboolean keep_signature,
+						 const gchar *override_identity_uid,
 						 GCancellable *cancellable);
-EMsgComposer *	e_msg_composer_new_from_url	(EShell *shell,
+void		e_msg_composer_setup_from_url	(EMsgComposer *composer,
 						 const gchar *url);
-EMsgComposer *	e_msg_composer_new_redirect	(EShell *shell,
+void		e_msg_composer_setup_redirect	(EMsgComposer *composer,
 						 CamelMimeMessage *message,
 						 const gchar *identity_uid,
 						 GCancellable *cancellable);
+EHTMLEditor *	e_msg_composer_get_editor	(EMsgComposer *composer);
 EFocusTracker *	e_msg_composer_get_focus_tracker
 						(EMsgComposer *composer);
 CamelSession *	e_msg_composer_ref_session	(EMsgComposer *composer);
 EShell *	e_msg_composer_get_shell	(EMsgComposer *composer);
-EWebViewGtkHTML *
-		e_msg_composer_get_web_view	(EMsgComposer *composer);
 
 void		e_msg_composer_send		(EMsgComposer *composer);
 void		e_msg_composer_save_to_drafts	(EMsgComposer *composer);
@@ -118,6 +122,9 @@ void		e_msg_composer_add_header	(EMsgComposer *composer,
 void		e_msg_composer_set_header	(EMsgComposer *composer,
 						 const gchar *name,
 						 const gchar *value);
+const gchar *	e_msg_composer_get_header	(EMsgComposer *composer,
+						 const gchar *name,
+						 gint index);
 void		e_msg_composer_remove_header	(EMsgComposer *composer,
 						 const gchar *name);
 void		e_msg_composer_set_draft_headers
@@ -131,12 +138,6 @@ void		e_msg_composer_set_source_headers
 						 CamelMessageFlags flags);
 void		e_msg_composer_attach		(EMsgComposer *composer,
 						 CamelMimePart *mime_part);
-CamelMimePart *	e_msg_composer_add_inline_image_from_file
-						(EMsgComposer *composer,
-						 const gchar *filename);
-void		e_msg_composer_add_inline_image_from_mime_part
-						(EMsgComposer *composer,
-						 CamelMimePart *part);
 void		e_msg_composer_get_message	(EMsgComposer *composer,
 						 gint io_priority,
 						 GCancellable *cancellable,
@@ -175,8 +176,6 @@ CamelInternetAddress *
 CamelInternetAddress *
 		e_msg_composer_get_reply_to	(EMsgComposer *composer);
 
-void		e_msg_composer_clear_inlined_table
-						(EMsgComposer *composer);
 void		e_msg_composer_add_message_attachments
 						(EMsgComposer *composer,
 						 CamelMimeMessage *message,
@@ -186,21 +185,24 @@ void		e_msg_composer_request_close	(EMsgComposer *composer);
 gboolean	e_msg_composer_can_close	(EMsgComposer *composer,
 						 gboolean can_save_draft);
 
-void		e_msg_composer_reply_indent	(EMsgComposer *composer);
-
 EComposerHeaderTable *
 		e_msg_composer_get_header_table	(EMsgComposer *composer);
 EAttachmentView *
 		e_msg_composer_get_attachment_view
+						(EMsgComposer *composer);
+GByteArray *	e_msg_composer_get_raw_message_text_without_signature
 						(EMsgComposer *composer);
 GByteArray *	e_msg_composer_get_raw_message_text
 						(EMsgComposer *composer);
 
 gboolean	e_msg_composer_is_exiting	(EMsgComposer *composer);
 
-GList *		e_load_spell_languages		(void);
-void		e_save_spell_languages		(GList *spell_languages);
-
+void		e_save_spell_languages		(const GList *spell_languages);
+void		e_msg_composer_save_focused_widget
+						(EMsgComposer *composer);
+void		e_msg_composer_restore_focus_on_composer
+						(EMsgComposer *composer);
+gboolean	e_msg_composer_is_busy		(EMsgComposer *composer);
 G_END_DECLS
 
 #endif /* E_MSG_COMPOSER_H */

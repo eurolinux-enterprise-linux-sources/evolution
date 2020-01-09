@@ -20,6 +20,30 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
 <title>Nem működő levélszűrők</title>
@@ -34,18 +58,18 @@
 
 <section id="several-clients">
 <title>Több levelezőkliens használata</title>
-<p>Másik fontos dolog, hogy a szűrők az „új” jelzőre támaszkodnak, amely akkor kerül beállításra a kiszolgálón, amikor egy adott e-mail először letöltésre kerül a kiszolgálóról. Ha másik levelezőklienst is használ az Evolution mellett, akkor a szűrők nem biztos, hogy automatikusan működni fognak.</p>
+<p>Másik fontos dolog, hogy a szűrők az „új” jelzőre támaszkodnak, amely akkor kerül beállításra a kiszolgálón, amikor egy adott e-mail először letöltésre kerül a kiszolgálóról. Ha másik levelezőklienst is használ az <app>Evolution</app> mellett, akkor a szűrők nem biztos, hogy automatikusan működni fognak.</p>
 </section>
 
 <section id="filter-log">
 <title>Szűrő műveletek naplózása </title>
 <p>Ha még mindig nem világos, miért nem működnek a szűrők az elvárt módon, akkor bekapcsolhatja a szűrő műveletek naplózását.</p>
 <list>
-<item><p>Zárja be az Evolutiont.</p></item>
+<item><p>Zárja be az <app>Evolutiont</app>.</p></item>
 <item><p>Nyissa meg a <app>Terminál</app> alkalmazást.</p></item>
 <item><p>Futtassa a következő parancsot: <cmd>gsettings set org.gnome.evolution.mail filters-log-actions true</cmd></p></item>
 <item><p>Futtassa a következő parancsot: <cmd>gsettings set org.gnome.evolution.mail filters-log-file "/home/felhasználónév/szűrőnaplóm"</cmd>, és a <cmd>felhasználónév</cmd> helyére saját felhasználónevét írja. Ez létrehoz egy <file>szűrőnaplóm</file> nevű szövegfájlt az Ön saját könyvtárában. Ne feledje, hogy a fájlnév abszolút útvonalát kell megadni, a <sys>~</sys> vagy <sys>$HOME</sys> nem fog működni.</p></item><!-- this is explained in https://bugzilla.gnome.org/show_bug.cgi?id=669471 -->
-<item><p>Indítsa el az Evolutiont.</p></item>
+<item><p>Indítsa el az <app>Evolutiont</app>.</p></item>
 <item><p>Levelek letöltése a szűrők alkalmazásához.</p></item>
 <item><p>Nyissa meg a <file>szűrőnaplóm</file> fájlt egy szövegszerkesztővel, ekkor láthatja, mely szűrő műveletek kerültek alkalmazásra.</p></item>
 </list>

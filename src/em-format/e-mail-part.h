@@ -19,7 +19,6 @@
 #define E_MAIL_PART_H
 
 #include <camel/camel.h>
-#include <webkit/webkitdom.h>
 
 #include <e-util/e-util.h>
 
@@ -87,7 +86,11 @@ struct _EMailPartClass {
 	GObjectClass parent_class;
 
 	void		(*bind_dom_element)	(EMailPart *part,
-						 WebKitDOMElement *element);
+						 EWebView *web_view,
+						 guint64 page_id,
+						 const gchar *element_id);
+	void		(*web_view_loaded)	(EMailPart *part,
+						 EWebView *web_view);
 };
 
 GType		e_mail_part_get_type		(void) G_GNUC_CONST;
@@ -107,6 +110,12 @@ CamelMimePart *	e_mail_part_ref_mime_part	(EMailPart *part);
 const gchar *	e_mail_part_get_mime_type	(EMailPart *part);
 void		e_mail_part_set_mime_type	(EMailPart *part,
 						 const gchar *mime_type);
+gboolean	e_mail_part_get_converted_to_utf8
+						(EMailPart *part);
+void		e_mail_part_set_converted_to_utf8
+						(EMailPart *part,
+						 gboolean converted_to_utf8);
+gboolean	e_mail_part_should_show_inline	(EMailPart *part);
 struct _EMailPartList *
 		e_mail_part_ref_part_list	(EMailPart *part);
 void		e_mail_part_set_part_list	(EMailPart *part,
@@ -115,7 +124,11 @@ gboolean	e_mail_part_get_is_attachment	(EMailPart *part);
 void		e_mail_part_set_is_attachment	(EMailPart *part,
 						 gboolean is_attachment);
 void		e_mail_part_bind_dom_element	(EMailPart *part,
-						 WebKitDOMElement *element);
+						 EWebView *web_view,
+						 guint64 page_id,
+						 const gchar *element_id);
+void		e_mail_part_web_view_loaded	(EMailPart *part,
+						 EWebView *web_view);
 void		e_mail_part_update_validity	(EMailPart *part,
 						 CamelCipherValidity *validity,
 						 EMailPartValidityFlags validity_type);

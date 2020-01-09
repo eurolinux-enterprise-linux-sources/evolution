@@ -27,6 +27,11 @@
 
 #include "e-mail-config-sendmail-backend.h"
 
+struct _EMailConfigSendmailBackendPrivate
+{
+	GtkWidget *custom_binary_entry; /* not referenced */
+};
+
 G_DEFINE_DYNAMIC_TYPE (
 	EMailConfigSendmailBackend,
 	e_mail_config_sendmail_backend,
@@ -36,6 +41,7 @@ static void
 mail_config_sendmail_backend_insert_widgets (EMailConfigServiceBackend *backend,
                                              GtkBox *parent)
 {
+	EMailConfigSendmailBackend *sendmail_backend;
 	CamelSettings *settings;
 	GtkLabel *label;
 	GtkWidget *widget;
@@ -49,6 +55,7 @@ mail_config_sendmail_backend_insert_widgets (EMailConfigServiceBackend *backend,
 	PangoAttribute *attr;
 	PangoAttrList *attr_list;
 
+	sendmail_backend = E_MAIL_CONFIG_SENDMAIL_BACKEND (backend);
 	settings = e_mail_config_service_backend_get_settings (backend);
 
 	markup = g_markup_printf_escaped ("<b>%s</b>", _("Configuration"));
@@ -83,7 +90,9 @@ mail_config_sendmail_backend_insert_widgets (EMailConfigServiceBackend *backend,
 	gtk_grid_attach (GTK_GRID (container), widget, 1, 1, 1, 1);
 	custom_binary_entry = widget;
 
-	g_object_bind_property (
+	sendmail_backend->priv->custom_binary_entry = widget;
+
+	e_binding_bind_property (
 		use_custom_binary_check, "active",
 		label, "sensitive",
 		G_BINDING_SYNC_CREATE);
@@ -104,7 +113,7 @@ mail_config_sendmail_backend_insert_widgets (EMailConfigServiceBackend *backend,
 	gtk_grid_attach (GTK_GRID (container), widget, 1, 3, 1, 1);
 	custom_args_entry = widget;
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		use_custom_args_check, "active",
 		label, "sensitive",
 		G_BINDING_SYNC_CREATE);
@@ -129,12 +138,12 @@ mail_config_sendmail_backend_insert_widgets (EMailConfigServiceBackend *backend,
 	gtk_grid_attach (GTK_GRID (container), widget, 0, 5, 2, 1);
 	send_in_offline = widget;
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		use_custom_binary_check, "active",
 		custom_binary_entry, "sensitive",
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		settings, "use-custom-binary",
 		use_custom_binary_check, "active",
 		G_BINDING_BIDIRECTIONAL |
@@ -146,12 +155,12 @@ mail_config_sendmail_backend_insert_widgets (EMailConfigServiceBackend *backend,
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		use_custom_args_check, "active",
 		custom_args_entry, "sensitive",
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		settings, "use-custom-args",
 		use_custom_args_check, "active",
 		G_BINDING_BIDIRECTIONAL |
@@ -163,7 +172,7 @@ mail_config_sendmail_backend_insert_widgets (EMailConfigServiceBackend *backend,
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		settings, "send-in-offline",
 		send_in_offline, "active",
 		G_BINDING_BIDIRECTIONAL |
@@ -175,11 +184,13 @@ mail_config_sendmail_backend_insert_widgets (EMailConfigServiceBackend *backend,
 static gboolean
 mail_config_sendmail_backend_check_complete (EMailConfigServiceBackend *backend)
 {
+	EMailConfigSendmailBackend *sendmail_backend;
 	CamelSettings *settings;
 	gboolean use_custom_binary = FALSE;
 	gchar *custom_binary = NULL;
 	gboolean res = TRUE;
 
+	sendmail_backend = E_MAIL_CONFIG_SENDMAIL_BACKEND (backend);
 	settings = e_mail_config_service_backend_get_settings (backend);
 
 	g_object_get (
@@ -196,6 +207,8 @@ mail_config_sendmail_backend_check_complete (EMailConfigServiceBackend *backend)
 
 	g_free (custom_binary);
 
+	e_util_set_entry_issue_hint (sendmail_backend->priv->custom_binary_entry, res ? NULL : _("Custom binary cannot be empty"));
+
 	return res;
 }
 
@@ -203,6 +216,8 @@ static void
 e_mail_config_sendmail_backend_class_init (EMailConfigSendmailBackendClass *class)
 {
 	EMailConfigServiceBackendClass *backend_class;
+
+	g_type_class_add_private (class, sizeof (EMailConfigSendmailBackendPrivate));
 
 	backend_class = E_MAIL_CONFIG_SERVICE_BACKEND_CLASS (class);
 	backend_class->backend_name = "sendmail";
@@ -218,6 +233,7 @@ e_mail_config_sendmail_backend_class_finalize (EMailConfigSendmailBackendClass *
 static void
 e_mail_config_sendmail_backend_init (EMailConfigSendmailBackend *backend)
 {
+	backend->priv = G_TYPE_INSTANCE_GET_PRIVATE (backend, E_TYPE_MAIL_CONFIG_SENDMAIL_BACKEND, EMailConfigSendmailBackendPrivate);
 }
 
 void

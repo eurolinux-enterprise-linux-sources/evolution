@@ -21,30 +21,32 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Post your calendar content in public.</desc>
+    <desc>Posta ditt kalenderinnehåll publikt.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
   <title>Kalenderpublicering</title>
 
-  <p>In order to make one of your calendars available to the public, you can
-  define calendars to be uploaded to a web server under
-  <guiseq><gui>Edit</gui><gui>Preferences</gui>
-  <gui>Calendar and Tasks</gui>
-  <gui>Publishing Information</gui>
-  <gui>Locations</gui><gui style="button">Add</gui></guiseq>.</p>
+  <p>För att göra en av dina kalendrar tillgängliga publikt kan du definiera kalendrar som ska skickas upp till en webbserver under <guiseq><gui>Redigera</gui><gui>Inställningar</gui> <gui>Kalender och uppgifter</gui> <gui>Publiceringsinformation</gui> <gui>Platser</gui><gui style="button">Lägg till</gui></guiseq>.</p>
 
   <!-- This is the location since 3.1.5, see bug
      https://bugzilla.gnome.org/show_bug.cgi?id=655666 -->
 
-  <p>You can specify the online location, the frequency of publishing, which
-  calendar(s) to publish, and authentication information for uploading.</p>
+  <p>Du kan ange nätplatsen, hur ofta publicering ska ske, vilka kalendrar som ska publiceras och autentiseringsinformation för uppsändningen.</p>
 
-  <p>You can publish Calendar and Free/Busy information to a WebDAV server, FTP
-  server, a remote machine through SSH or to any other web server with HTTP PUT
-  support.</p>
+  <p>Du kan publicera kalender- och ledig-/upptageninformation på en WebDAV-server, FTP-server, en fjärrmaskin via SSH eller på vilken webbserver som helst med HTTP PUT-stöd.</p>
 
-  <p>To immediately publish calendar information, click
-  <guiseq><gui>Actions</gui><gui>Publish Calendar Information</gui></guiseq> in
-  the calendar.</p>
+  <p>För att omedelbart publicera kalenderinformation, klicka på <guiseq><gui>Åtgärder</gui><gui>Publicera kalenderinformation</gui></guiseq> i kalendern.</p>
 
 </page>

@@ -20,9 +20,15 @@
     
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -38,7 +44,7 @@
     </mal:credit>
   </info>
 
-  <title>Condiciones disponibles para las Carpetas de búsqueda</title>
+  <title>Condiciones disponibles para las <gui>Carpetas de búsqueda</gui></title>
 
 <list>
 
@@ -47,7 +53,7 @@ included by XInclude. See http://blogs.gnome.org/shaunm/2011/07/21/understanding
 <include xmlns="http://www.w3.org/2001/XInclude" href="xinclude-filter-vfolder-conditions.xml" xpointer="xmlns(mal=http://projectmallard.org/1.0/)xpointer(/mal:info/mal:item)"/>
 
 <item><p>Ubicación del mensaje:</p>
-<p>Comprueba si el mensaje se encuentra en una carpeta específica.</p><p>De manera predeterminada, las carpeta de <gui>Papelera</gui> y <gui>Spam</gui> son <link xref="mail-search-folders">Carpeta de búsqueda</link> y no se pueden seleccionar aquí.</p></item>
+<p>Comprueba si el mensaje se encuentra en una carpeta específica.</p><p>De manera predeterminada, las carpeta de <gui>Papelera</gui> y <gui>Spam</gui> de <app>Evolution</app> son <link xref="mail-search-folders"><gui>Carpeta de búsqueda</gui></link> y no se pueden seleccionar aquí.</p></item>
 
 <item><p>Coincidir con todo:</p>
 <p>Aplica siempre una acción a cualquier mensaje, sin condiciones. Esto puede ser útil al final de la lista de carpetas de búsqueda para cubrir aquellos correos que no coinciden con ninguna condición para las carpetas de búsqueda anteriores en la lista.</p></item>

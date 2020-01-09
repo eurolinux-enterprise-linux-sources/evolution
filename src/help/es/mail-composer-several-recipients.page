@@ -23,9 +23,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -56,7 +62,7 @@
 
 <section id="autocompletion">
 <title>Autocompletado</title>
-<p>Se recomienda usar la característica <link xref="contacts-autocompletion">Autocompletado</link> de la libreta de direcciones de Evolution para escribir direcciones. Al usar esto se evitan errores y se ahorra tiempo.</p>
+<p>Se recomienda usar la característica <link xref="contacts-autocompletion">Autocompletado</link> de la libreta de direcciones de <app>Evolution</app> para escribir direcciones. Al usar esto se evitan errores y se ahorra tiempo.</p>
 </section>
 
 <section id="to-cc-bcc-buttons">

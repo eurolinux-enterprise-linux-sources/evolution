@@ -63,6 +63,16 @@ G_DEFINE_TYPE (
 #define e_table_item_leave_edit_(x) (e_table_item_leave_edit((x)))
 #endif
 
+#define E_TABLE_ITEM_GET_PRIVATE(obj) \
+	(G_TYPE_INSTANCE_GET_PRIVATE \
+	((obj), E_TYPE_TABLE_ITEM, ETableItemPrivate))
+
+typedef struct _ETableItemPrivate ETableItemPrivate;
+
+struct _ETableItemPrivate {
+	GSource *show_cursor_delay_source;
+};
+
 static void eti_check_cursor_bounds (ETableItem *eti);
 static void eti_cancel_drag_due_to_model_change (ETableItem *eti);
 
@@ -278,8 +288,14 @@ eti_ungrab (ETableItem *eti,
             guint32 time)
 {
 	GnomeCanvasItem *item = GNOME_CANVAS_ITEM (eti);
+	gboolean was_grabbed;
+
 	d (g_print ("%s: time: %d\n", G_STRFUNC, time));
-	eti->grabbed_count--;
+
+	was_grabbed = eti->grabbed_count > 0;
+	if (was_grabbed)
+		eti->grabbed_count--;
+
 	if (eti->grabbed_count == 0) {
 		if (eti->grab_cancelled) {
 			eti->grab_cancelled = FALSE;
@@ -289,7 +305,8 @@ eti_ungrab (ETableItem *eti,
 				gtk_grab_remove (GTK_WIDGET (item->canvas));
 				eti->gtk_grabbed = FALSE;
 			}
-			gnome_canvas_item_ungrab (item, time);
+			if (was_grabbed)
+				gnome_canvas_item_ungrab (item, time);
 			eti->grabbed_col = -1;
 			eti->grabbed_row = -1;
 		}
@@ -966,7 +983,14 @@ eti_request_region_show (ETableItem *eti,
                          gint end_row,
                          gint delay)
 {
+	ETableItemPrivate *priv = E_TABLE_ITEM_GET_PRIVATE (eti);
 	gint x1, y1, x2, y2;
+
+	if (priv->show_cursor_delay_source) {
+		g_source_destroy (priv->show_cursor_delay_source);
+		g_source_unref (priv->show_cursor_delay_source);
+		priv->show_cursor_delay_source = NULL;
+	}
 
 	eti_get_region (
 		eti,
@@ -975,7 +999,7 @@ eti_request_region_show (ETableItem *eti,
 		&x1, &y1, &x2, &y2);
 
 	if (delay)
-		e_canvas_item_show_area_delayed (
+		priv->show_cursor_delay_source = e_canvas_item_show_area_delayed_ex (
 			GNOME_CANVAS_ITEM (eti), x1, y1, x2, y2, delay);
 	else
 		e_canvas_item_show_area (
@@ -1535,6 +1559,13 @@ static void
 eti_dispose (GObject *object)
 {
 	ETableItem *eti = E_TABLE_ITEM (object);
+	ETableItemPrivate *priv = E_TABLE_ITEM_GET_PRIVATE (eti);
+
+	if (priv->show_cursor_delay_source) {
+		g_source_destroy (priv->show_cursor_delay_source);
+		g_source_unref (priv->show_cursor_delay_source);
+		priv->show_cursor_delay_source = NULL;
+	}
 
 	eti_remove_header_model (eti);
 	eti_remove_table_model (eti);
@@ -1689,6 +1720,8 @@ eti_get_property (GObject *object,
 static void
 e_table_item_init (ETableItem *eti)
 {
+	/* eti->priv = E_TABLE_ITEM_GET_PRIVATE (eti); */
+
 	eti->motion_row = -1;
 	eti->motion_col = -1;
 	eti->editing_col = -1;
@@ -1736,7 +1769,6 @@ e_table_item_init (ETableItem *eti)
 
 	eti->in_drag = 0;
 	eti->maybe_in_drag = 0;
-	eti->grabbed = 0;
 
 	eti->grabbed_col = -1;
 	eti->grabbed_row = -1;
@@ -1755,11 +1787,6 @@ e_table_item_init (ETableItem *eti)
 
 	e_canvas_item_set_reflow_callback (GNOME_CANVAS_ITEM (eti), eti_reflow);
 }
-
-#define gray50_width 2
-#define gray50_height 2
-static const gchar gray50_bits[] = {
-	0x02, 0x01, };
 
 static gboolean
 eti_tree_unfreeze (GtkWidget *widget,
@@ -1855,11 +1882,11 @@ eti_draw_grid_line (ETableItem *eti,
 {
 	cairo_save (cr);
 
-	cairo_set_line_width (cr, 1.0);
+	cairo_set_line_width (cr, 0.5);
 	gdk_cairo_set_source_rgba (cr, rgba);
 
-	cairo_move_to (cr, x1 + 0.5, y1 + 0.5);
-	cairo_line_to (cr, x2 + 0.5, y2 + 0.5);
+	cairo_move_to (cr, x1 - 0.5, y1 + 0.5);
+	cairo_line_to (cr, x2 - 0.5, y2 + 0.5);
 	cairo_stroke (cr);
 
 	cairo_restore (cr);
@@ -2059,22 +2086,22 @@ eti_draw (GnomeCanvasItem *item,
 			cairo_restore (cr);
 
 			cairo_save (cr);
-			cairo_set_line_width (cr, 1.0);
+			cairo_set_line_width (cr, 0.5);
 			cairo_set_source_rgba (
 				cr, background.red,
 				background.green,
 				background.blue, 1);
-			cairo_move_to (cr, x1, y1);
-			cairo_line_to (cr, x2, y1);
+			cairo_move_to (cr, x1, y1 + 0.5);
+			cairo_line_to (cr, x2, y1 + 0.5);
 			cairo_stroke (cr);
 
-			cairo_set_line_width (cr, 1.0);
+			cairo_set_line_width (cr, 0.5);
 			cairo_set_source_rgba (
 				cr, background.red,
 				background.green,
 				background.blue, 1);
-			cairo_move_to (cr, x1, y2);
-			cairo_line_to (cr, x2, y2);
+			cairo_move_to (cr, x1, y2 + 0.5);
+			cairo_line_to (cr, x2, y2 + 0.5);
 			cairo_stroke (cr);
 			cairo_restore (cr);
 
@@ -2485,11 +2512,7 @@ eti_event (GnomeCanvasItem *item,
 			}
 
 			if (event_button == 1) {
-				GdkDevice *event_device;
-
 				return_val = TRUE;
-
-				event_device = gdk_event_get_device (event);
 
 				eti->maybe_in_drag = TRUE;
 				eti->drag_row = new_cursor_row;
@@ -2497,9 +2520,6 @@ eti_event (GnomeCanvasItem *item,
 				eti->drag_x = event_x_item;
 				eti->drag_y = event_y_item;
 				eti->drag_state = event_state;
-				eti->grabbed = TRUE;
-				d (g_print ("%s: eti_grab\n", G_STRFUNC));
-				eti_grab (eti, event_device, event_time);
 			}
 
 			break;
@@ -3099,6 +3119,8 @@ e_table_item_class_init (ETableItemClass *class)
 {
 	GnomeCanvasItemClass *item_class = GNOME_CANVAS_ITEM_CLASS (class);
 	GObjectClass *object_class = G_OBJECT_CLASS (class);
+
+	g_type_class_add_private (class, sizeof (ETableItemPrivate));
 
 	object_class->dispose = eti_dispose;
 	object_class->set_property = eti_set_property;
@@ -4073,4 +4095,20 @@ e_table_item_cursor_scrolled (ETableItem *eti)
 	g_return_if_fail (E_IS_TABLE_ITEM (eti));
 
 	eti_check_cursor_bounds (eti);
+}
+
+void
+e_table_item_cancel_scroll_to_cursor (ETableItem *eti)
+{
+	ETableItemPrivate *priv;
+
+	g_return_if_fail (E_IS_TABLE_ITEM (eti));
+
+	priv = E_TABLE_ITEM_GET_PRIVATE (eti);
+
+	if (priv->show_cursor_delay_source) {
+		g_source_destroy (priv->show_cursor_delay_source);
+		g_source_unref (priv->show_cursor_delay_source);
+		priv->show_cursor_delay_source = NULL;
+	}
 }

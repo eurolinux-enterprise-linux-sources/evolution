@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="calendar-meetings-replying-to-invitation" xml:lang="cs">
 
   <info>
-    <desc>Accepting and replying to a meeting invitation.</desc>
+    <desc>Jak přijmout a odpovědět na požadavek na schůzku.</desc>
     
     <link type="guide" xref="calendar-meetings"/>
 
@@ -18,16 +18,28 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
       
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Replying to a Meeting Request</title>
-<p>Meeting requests are sent as attachments and displayed as the body of an email. All the details about the event are shown, including time and dates.</p>
-<p>You can choose whether and how to reply to the invitation and add a personal comment to your reply. Available options are to <gui>Decline</gui>, Tentatively Accept (<gui>Tentative</gui>), or <gui>Accept</gui>. You can also decide whether the time of the meeting will still be shown as free in your calendar.</p>
+<title>Odpověď na požadavek na schůzku</title>
+<p>Žádost o schůzku je odeslána jako příloha a zobrazena jako tělo zprávy. Zobrazeny jsou všechny podrobnosti o události, včetně časů a dat.</p>
+<p>Můžete si zvolit, zda a jak odpovědět na pozvání a přidat do odpovědi osobní poznámky. Dostupné volby jsou <gui>Zamítnout</gui>, předběžně odsouhlasit (<gui>Předběžné</gui>) nebo <gui>Odsouhlasit</gui>. Můžete se také rozhodnout, jestli čas schůzky má být ve vašem kalendáři prozatím zobrazen jako volný.</p>
 
-<p>If the meeting request already includes a <link xref="calendar-alarms-and-reminders">reminder</link> you can import the reminder to your calendar by enabling <gui>Inherit reminder</gui>.</p>
+<p>Součástí žádosti o schůzku je již také <link xref="calendar-alarms-and-reminders">připomínání</link>, takže jej stačí naimportovat do svého kalendáře povolením <gui>Dědit připomínku</gui>.</p>
 
-<p>If you click <gui>Accept</gui> the event is added automatically to the calendar that you have chosen.</p>
-<p>After you have added the meeting to your calendar, you can make changes to the meeting, but if the original organizer sends out an update, your changes might be overwritten.</p>
+<p>Pokud kliknete na <gui>Odsouhlasit</gui>, bude událost automaticky přidána do kalendáře, který máte navolený.</p>
+<p>Poté, co přidáte schůzku do svého kalendáře, můžete ve schůzce provádět změny, ale pokud původní organizátor rozešle aktualizované informace, mohou být vaše změny přepsány.</p>
 
-<note style="tip"><p>Under <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Calendar and Tasks</gui><gui>Meeting Invitations</gui><gui>Conflict Search</gui></guiseq> you can define which calendars are used for warning you of meeting conflicts.</p></note> <!-- This is the location since 3.1.5, see bug https://bugzilla.gnome.org/show_bug.cgi?id=655494 -->
+<note style="tip"><p>Pod <guiseq><gui>Upravit</gui> <gui>Předvolby</gui> <gui>Kalendář a úkoly</gui> <gui>Pozvánky na schůzky</gui> <gui>Hledání konfliktů</gui></guiseq> můžete nadefinovat, které kalendáře se mají používat pro vaše varování, když nastanou konflikty mezi schůzkami.</p></note> <!-- This is the location since 3.1.5, see bug https://bugzilla.gnome.org/show_bug.cgi?id=655494 -->
 </page>

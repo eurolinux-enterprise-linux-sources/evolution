@@ -1,0 +1,569 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>mail-mt: Evolution Mail Engine Reference Manual</title>
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="index.html" title="Evolution Mail Engine Reference Manual">
+<link rel="up" href="ch03.html" title="Miscellaneous">
+<link rel="prev" href="evolution-mail-engine-mail-config.html" title="mail-config">
+<link rel="next" href="evolution-mail-engine-mail-ops.html" title="mail-ops">
+<meta name="generator" content="GTK-Doc V1.25 (XML mode)">
+<link rel="stylesheet" href="style.css" type="text/css">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table class="navigation" id="top" width="100%" summary="Navigation header" cellpadding="2" cellspacing="5"><tr valign="middle">
+<td width="100%" align="left" class="shortcuts">
+<a href="#" class="shortcut">Top</a><span id="nav_description">  <span class="dim">|</span> 
+                  <a href="#evolution-mail-engine-mail-mt.description" class="shortcut">Description</a></span>
+</td>
+<td><a accesskey="h" href="index.html"><img src="home.png" width="16" height="16" border="0" alt="Home"></a></td>
+<td><a accesskey="u" href="ch03.html"><img src="up.png" width="16" height="16" border="0" alt="Up"></a></td>
+<td><a accesskey="p" href="evolution-mail-engine-mail-config.html"><img src="left.png" width="16" height="16" border="0" alt="Prev"></a></td>
+<td><a accesskey="n" href="evolution-mail-engine-mail-ops.html"><img src="right.png" width="16" height="16" border="0" alt="Next"></a></td>
+</tr></table>
+<div class="refentry">
+<a name="evolution-mail-engine-mail-mt"></a><div class="titlepage"></div>
+<div class="refnamediv"><table width="100%"><tr>
+<td valign="top">
+<h2><span class="refentrytitle"><a name="evolution-mail-engine-mail-mt.top_of_page"></a>mail-mt</span></h2>
+<p>mail-mt</p>
+</td>
+<td class="gallery_image" valign="top" align="right"></td>
+</tr></table></div>
+<div class="refsect1">
+<a name="evolution-mail-engine-mail-mt.functions"></a><h2>Functions</h2>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="functions_return">
+<col class="functions_name">
+</colgroup>
+<tbody>
+<tr>
+<td class="function_type">
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="returnvalue">gchar</span></a> *
+</td>
+<td class="function_name">
+<span class="c_punctuation">(</span><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgDescFunc" title="MailMsgDescFunc ()">*MailMsgDescFunc</a><span class="c_punctuation">)</span> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<span class="c_punctuation">(</span><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgExecFunc" title="MailMsgExecFunc ()">*MailMsgExecFunc</a><span class="c_punctuation">)</span> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<span class="c_punctuation">(</span><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgDoneFunc" title="MailMsgDoneFunc ()">*MailMsgDoneFunc</a><span class="c_punctuation">)</span> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<span class="c_punctuation">(</span><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgFreeFunc" title="MailMsgFreeFunc ()">*MailMsgFreeFunc</a><span class="c_punctuation">)</span> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<span class="c_punctuation">(</span><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgDispatchFunc" title="MailMsgDispatchFunc ()">*MailMsgDispatchFunc</a><span class="c_punctuation">)</span> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<span class="c_punctuation">(</span><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgCreateActivityFunc" title="MailMsgCreateActivityFunc ()">*MailMsgCreateActivityFunc</a><span class="c_punctuation">)</span> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<span class="c_punctuation">(</span><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgSubmitActivityFunc" title="MailMsgSubmitActivityFunc ()">*MailMsgSubmitActivityFunc</a><span class="c_punctuation">)</span> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<span class="c_punctuation">(</span><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgFreeActivityFunc" title="MailMsgFreeActivityFunc ()">*MailMsgFreeActivityFunc</a><span class="c_punctuation">)</span> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<span class="c_punctuation">(</span><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgCompleteActivityFunc" title="MailMsgCompleteActivityFunc ()">*MailMsgCompleteActivityFunc</a><span class="c_punctuation">)</span> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<span class="c_punctuation">(</span><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgCancelActivityFunc" title="MailMsgCancelActivityFunc ()">*MailMsgCancelActivityFunc</a><span class="c_punctuation">)</span> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<span class="c_punctuation">(</span><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgAlertErrorFunc" title="MailMsgAlertErrorFunc ()">*MailMsgAlertErrorFunc</a><span class="c_punctuation">)</span> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">EAlertSink</span>
+</td>
+<td class="function_name">
+<span class="c_punctuation">(</span><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgGetAlertSinkFunc" title="MailMsgGetAlertSinkFunc ()">*MailMsgGetAlertSinkFunc</a><span class="c_punctuation">)</span> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">EAlertSink</span> *
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-mt.html#mail-msg-get-alert-sink" title="mail_msg_get_alert_sink ()">mail_msg_get_alert_sink</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-mt.html#mail-msg-init" title="mail_msg_init ()">mail_msg_init</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-mt.html#mail-msg-register-activities" title="mail_msg_register_activities ()">mail_msg_register_activities</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-mt.html#mail-in-main-thread" title="mail_in_main_thread ()">mail_in_main_thread</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="returnvalue">gpointer</span></a>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-mt.html#mail-msg-new" title="mail_msg_new ()">mail_msg_new</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="returnvalue">gpointer</span></a>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-mt.html#mail-msg-new-with-cancellable" title="mail_msg_new_with_cancellable ()">mail_msg_new_with_cancellable</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="returnvalue">gpointer</span></a>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-mt.html#mail-msg-ref" title="mail_msg_ref ()">mail_msg_ref</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-mt.html#mail-msg-unref" title="mail_msg_unref ()">mail_msg_unref</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-mt.html#mail-msg-check-error" title="mail_msg_check_error ()">mail_msg_check_error</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-mt.html#mail-msg-cancel" title="mail_msg_cancel ()">mail_msg_cancel</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-mt.html#mail-msg-active" title="mail_msg_active ()">mail_msg_active</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-mt.html#mail-msg-main-loop-push" title="mail_msg_main_loop_push ()">mail_msg_main_loop_push</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-mt.html#mail-msg-unordered-push" title="mail_msg_unordered_push ()">mail_msg_unordered_push</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-mt.html#mail-msg-fast-ordered-push" title="mail_msg_fast_ordered_push ()">mail_msg_fast_ordered_push</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-mt.html#mail-msg-slow-ordered-push" title="mail_msg_slow_ordered_push ()">mail_msg_slow_ordered_push</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="returnvalue">gpointer</span></a>
+</td>
+<td class="function_name">
+<span class="c_punctuation">(</span><a class="link" href="evolution-mail-engine-mail-mt.html#MailMainFunc" title="MailMainFunc ()">*MailMainFunc</a><span class="c_punctuation">)</span> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="returnvalue">gpointer</span></a>
+</td>
+<td class="function_name">
+<a class="link" href="evolution-mail-engine-mail-mt.html#mail-call-main" title="mail_call_main ()">mail_call_main</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect1">
+<a name="evolution-mail-engine-mail-mt.other"></a><h2>Types and Values</h2>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="name">
+<col class="description">
+</colgroup>
+<tbody>
+<tr>
+<td class="datatype_keyword">struct</td>
+<td class="function_name"><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsg" title="struct MailMsg">MailMsg</a></td>
+</tr>
+<tr>
+<td class="datatype_keyword">struct</td>
+<td class="function_name"><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgInfo" title="struct MailMsgInfo">MailMsgInfo</a></td>
+</tr>
+<tr>
+<td class="datatype_keyword">enum</td>
+<td class="function_name"><a class="link" href="evolution-mail-engine-mail-mt.html#mail-call-t" title="enum mail_call_t">mail_call_t</a></td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect1">
+<a name="evolution-mail-engine-mail-mt.description"></a><h2>Description</h2>
+</div>
+<div class="refsect1">
+<a name="evolution-mail-engine-mail-mt.functions_details"></a><h2>Functions</h2>
+<div class="refsect2">
+<a name="MailMsgDescFunc"></a><h3>MailMsgDescFunc ()</h3>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="returnvalue">gchar</span></a> *
+<span class="c_punctuation">(</span>*MailMsgDescFunc<span class="c_punctuation">)</span> (<em class="parameter"><code><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsg" title="struct MailMsg"><span class="type">MailMsg</span></a> *msg</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="MailMsgExecFunc"></a><h3>MailMsgExecFunc ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+<span class="c_punctuation">(</span>*MailMsgExecFunc<span class="c_punctuation">)</span> (<em class="parameter"><code><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsg" title="struct MailMsg"><span class="type">MailMsg</span></a> *msg</code></em>,
+                    <em class="parameter"><code><a href="/usr/share/gtk-doc/html/gioGCancellable.html#GCancellable-struct"><span class="type">GCancellable</span></a> *cancellable</code></em>,
+                    <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Error-Reporting.html#GError"><span class="type">GError</span></a> **error</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="MailMsgDoneFunc"></a><h3>MailMsgDoneFunc ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+<span class="c_punctuation">(</span>*MailMsgDoneFunc<span class="c_punctuation">)</span> (<em class="parameter"><code><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsg" title="struct MailMsg"><span class="type">MailMsg</span></a> *msg</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="MailMsgFreeFunc"></a><h3>MailMsgFreeFunc ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+<span class="c_punctuation">(</span>*MailMsgFreeFunc<span class="c_punctuation">)</span> (<em class="parameter"><code><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsg" title="struct MailMsg"><span class="type">MailMsg</span></a> *msg</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="MailMsgDispatchFunc"></a><h3>MailMsgDispatchFunc ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+<span class="c_punctuation">(</span>*MailMsgDispatchFunc<span class="c_punctuation">)</span> (<em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> msg</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="MailMsgCreateActivityFunc"></a><h3>MailMsgCreateActivityFunc ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+<span class="c_punctuation">(</span>*MailMsgCreateActivityFunc<span class="c_punctuation">)</span> (<em class="parameter"><code><a href="/usr/share/gtk-doc/html/gioGCancellable.html#GCancellable-struct"><span class="type">GCancellable</span></a> *cancellable</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="MailMsgSubmitActivityFunc"></a><h3>MailMsgSubmitActivityFunc ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+<span class="c_punctuation">(</span>*MailMsgSubmitActivityFunc<span class="c_punctuation">)</span> (<em class="parameter"><code><a href="/usr/share/gtk-doc/html/gioGCancellable.html#GCancellable-struct"><span class="type">GCancellable</span></a> *cancellable</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="MailMsgFreeActivityFunc"></a><h3>MailMsgFreeActivityFunc ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+<span class="c_punctuation">(</span>*MailMsgFreeActivityFunc<span class="c_punctuation">)</span> (<em class="parameter"><code><a href="/usr/share/gtk-doc/html/gioGCancellable.html#GCancellable-struct"><span class="type">GCancellable</span></a> *cancellable</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="MailMsgCompleteActivityFunc"></a><h3>MailMsgCompleteActivityFunc ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+<span class="c_punctuation">(</span>*MailMsgCompleteActivityFunc<span class="c_punctuation">)</span> (<em class="parameter"><code><a href="/usr/share/gtk-doc/html/gioGCancellable.html#GCancellable-struct"><span class="type">GCancellable</span></a> *cancellable</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="MailMsgCancelActivityFunc"></a><h3>MailMsgCancelActivityFunc ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+<span class="c_punctuation">(</span>*MailMsgCancelActivityFunc<span class="c_punctuation">)</span> (<em class="parameter"><code><a href="/usr/share/gtk-doc/html/gioGCancellable.html#GCancellable-struct"><span class="type">GCancellable</span></a> *cancellable</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="MailMsgAlertErrorFunc"></a><h3>MailMsgAlertErrorFunc ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+<span class="c_punctuation">(</span>*MailMsgAlertErrorFunc<span class="c_punctuation">)</span> (<em class="parameter"><code><a href="/usr/share/gtk-doc/html/gioGCancellable.html#GCancellable-struct"><span class="type">GCancellable</span></a> *cancellable</code></em>,
+                          <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *what</code></em>,
+                          <em class="parameter"><code>const <a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *message</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="MailMsgGetAlertSinkFunc"></a><h3>MailMsgGetAlertSinkFunc ()</h3>
+<pre class="programlisting"><span class="returnvalue">EAlertSink</span>
+<span class="c_punctuation">(</span>*MailMsgGetAlertSinkFunc<span class="c_punctuation">)</span> (<em class="parameter"><code><span class="type">void</span></code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-msg-get-alert-sink"></a><h3>mail_msg_get_alert_sink ()</h3>
+<pre class="programlisting"><span class="returnvalue">EAlertSink</span> *
+mail_msg_get_alert_sink (<em class="parameter"><code><span class="type">void</span></code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-msg-init"></a><h3>mail_msg_init ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+mail_msg_init (<em class="parameter"><code><span class="type">void</span></code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-msg-register-activities"></a><h3>mail_msg_register_activities ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+mail_msg_register_activities (<em class="parameter"><code><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgCreateActivityFunc" title="MailMsgCreateActivityFunc ()"><span class="type">MailMsgCreateActivityFunc</span></a> Param1</code></em>,
+                              <em class="parameter"><code><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgSubmitActivityFunc" title="MailMsgSubmitActivityFunc ()"><span class="type">MailMsgSubmitActivityFunc</span></a> Param2</code></em>,
+                              <em class="parameter"><code><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgFreeActivityFunc" title="MailMsgFreeActivityFunc ()"><span class="type">MailMsgFreeActivityFunc</span></a> Param3</code></em>,
+                              <em class="parameter"><code><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgCompleteActivityFunc" title="MailMsgCompleteActivityFunc ()"><span class="type">MailMsgCompleteActivityFunc</span></a> Param4</code></em>,
+                              <em class="parameter"><code><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgCancelActivityFunc" title="MailMsgCancelActivityFunc ()"><span class="type">MailMsgCancelActivityFunc</span></a> Param5</code></em>,
+                              <em class="parameter"><code><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgAlertErrorFunc" title="MailMsgAlertErrorFunc ()"><span class="type">MailMsgAlertErrorFunc</span></a> Param6</code></em>,
+                              <em class="parameter"><code><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgGetAlertSinkFunc" title="MailMsgGetAlertSinkFunc ()"><span class="type">MailMsgGetAlertSinkFunc</span></a> Param7</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-in-main-thread"></a><h3>mail_in_main_thread ()</h3>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+mail_in_main_thread (<em class="parameter"><code><span class="type">void</span></code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-msg-new"></a><h3>mail_msg_new ()</h3>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="returnvalue">gpointer</span></a>
+mail_msg_new (<em class="parameter"><code><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgInfo" title="struct MailMsgInfo"><span class="type">MailMsgInfo</span></a> *info</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-msg-new-with-cancellable"></a><h3>mail_msg_new_with_cancellable ()</h3>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="returnvalue">gpointer</span></a>
+mail_msg_new_with_cancellable (<em class="parameter"><code><a class="link" href="evolution-mail-engine-mail-mt.html#MailMsgInfo" title="struct MailMsgInfo"><span class="type">MailMsgInfo</span></a> *info</code></em>,
+                               <em class="parameter"><code><a href="/usr/share/gtk-doc/html/gioGCancellable.html#GCancellable-struct"><span class="type">GCancellable</span></a> *cancellable</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-msg-ref"></a><h3>mail_msg_ref ()</h3>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="returnvalue">gpointer</span></a>
+mail_msg_ref (<em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> msg</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-msg-unref"></a><h3>mail_msg_unref ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+mail_msg_unref (<em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> msg</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-msg-check-error"></a><h3>mail_msg_check_error ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+mail_msg_check_error (<em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> msg</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-msg-cancel"></a><h3>mail_msg_cancel ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+mail_msg_cancel (<em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#guint"><span class="type">guint</span></a> msgid</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-msg-active"></a><h3>mail_msg_active ()</h3>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+mail_msg_active (<em class="parameter"><code><span class="type">void</span></code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-msg-main-loop-push"></a><h3>mail_msg_main_loop_push ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+mail_msg_main_loop_push (<em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> msg</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-msg-unordered-push"></a><h3>mail_msg_unordered_push ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+mail_msg_unordered_push (<em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> msg</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-msg-fast-ordered-push"></a><h3>mail_msg_fast_ordered_push ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+mail_msg_fast_ordered_push (<em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> msg</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-msg-slow-ordered-push"></a><h3>mail_msg_slow_ordered_push ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+mail_msg_slow_ordered_push (<em class="parameter"><code><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> msg</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="MailMainFunc"></a><h3>MailMainFunc ()</h3>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="returnvalue">gpointer</span></a>
+<span class="c_punctuation">(</span>*MailMainFunc<span class="c_punctuation">)</span> ();</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-call-main"></a><h3>mail_call_main ()</h3>
+<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glibglib-Basic-Types.html#gpointer"><span class="returnvalue">gpointer</span></a>
+mail_call_main (<em class="parameter"><code><a class="link" href="evolution-mail-engine-mail-mt.html#mail-call-t" title="enum mail_call_t"><span class="type">mail_call_t</span></a> type</code></em>,
+                <em class="parameter"><code><a class="link" href="evolution-mail-engine-mail-mt.html#MailMainFunc" title="MailMainFunc ()"><span class="type">MailMainFunc</span></a> func</code></em>,
+                <em class="parameter"><code>...</code></em>);</pre>
+</div>
+</div>
+<div class="refsect1">
+<a name="evolution-mail-engine-mail-mt.other_details"></a><h2>Types and Values</h2>
+<div class="refsect2">
+<a name="MailMsg"></a><h3>struct MailMsg</h3>
+<pre class="programlisting">struct MailMsg {
+	MailMsgInfo *info;
+	volatile gint ref_count;
+	guint seq;			/* seq number for synchronisation */
+	gint priority;			/* priority (default = 0) */
+	GCancellable *cancellable;
+	GError *error;			/* up to the caller to use this */
+};
+</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="MailMsgInfo"></a><h3>struct MailMsgInfo</h3>
+<pre class="programlisting">struct MailMsgInfo {
+	gsize size;
+	MailMsgDescFunc desc;
+	MailMsgExecFunc exec;
+	MailMsgDoneFunc done;
+	MailMsgFreeFunc free;
+};
+</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="mail-call-t"></a><h3>enum mail_call_t</h3>
+<div class="refsect3">
+<a name="mail-call-t.members"></a><h4>Members</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="300px" class="enum_members_name">
+<col class="enum_members_description">
+<col width="200px" class="enum_members_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="enum_member_name"><p><a name="MAIL-CALL-p-p"></a>MAIL_CALL_p_p</p></td>
+<td> </td>
+<td> </td>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="MAIL-CALL-p-pp"></a>MAIL_CALL_p_pp</p></td>
+<td> </td>
+<td> </td>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="MAIL-CALL-p-ppp"></a>MAIL_CALL_p_ppp</p></td>
+<td> </td>
+<td> </td>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="MAIL-CALL-p-pppp"></a>MAIL_CALL_p_pppp</p></td>
+<td> </td>
+<td> </td>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="MAIL-CALL-p-ppppp"></a>MAIL_CALL_p_ppppp</p></td>
+<td> </td>
+<td> </td>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="MAIL-CALL-p-ppippp"></a>MAIL_CALL_p_ppippp</p></td>
+<td> </td>
+<td> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+</div>
+</div>
+</div>
+<div class="footer">
+<hr>Generated by GTK-Doc V1.25</div>
+</body>
+</html>

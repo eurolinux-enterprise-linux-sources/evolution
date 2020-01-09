@@ -15,11 +15,23 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Ručně posílat a přijímat zprávy</title>
-<p>To receive new messages from the mail server and to send messages you have written that are in the local Outbox, click the <gui style="button">Send / Receive</gui> button in the toolbar, or press <key>F12</key>, or choose <guiseq><gui>File</gui><gui>Send / Receive</gui></guiseq> from the main menu.</p>
-<p>To send and receive only for one of your mail accounts, or to only send or only receive, click the small down-arrow next to the <gui style="button">Send / Receive</gui> button and choose the corresponding option.</p>
-<p>If you just want to send messages which are in your Outbox, you can right-click on the Outbox and click <gui>Flush Outbox</gui>.</p>
+<title>Ruční odesílání a příjem zpráv</title>
+<p>Když chcete přijmout zprávy z poštovního serveru a odeslat zprávy, které máte napsané v místní složce K odeslání, klikněte na tlačítko <gui style="button">Odeslat/přijmout</gui> na nástrojové liště nebo zmáčkněte <key>F12</key> nebo zvolte v hlavní nabídce <guiseq><gui>Soubor</gui><gui>Odeslat/přijmout</gui></guiseq>.</p>
+<p>Aby se odeslala a přijala pošta jen pro jeden poštovní účet nebo jen odeslala nebo jen přijala, klikněte na malou šipku vedle tlačítka <gui style="button">Odeslat/přijmout</gui> a vyberte příslušnou možnost.</p>
+<p>Pokud chcete odeslat zprávy, které jsou ve vaší složce K odeslání, můžete kliknout pravým tlačítkem na tuto složku a zvolit <gui>Odeslat zprávy</gui>.</p>
 
 </page>

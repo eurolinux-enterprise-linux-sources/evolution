@@ -17,9 +17,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -37,7 +43,7 @@
 
 <title>Usar una lista de tareas o notas CalDAV</title>
 
-<p>Para añadir tal lista de tareas o notas a Evolution, realice los siguientes pasos:</p>
+<p>Para añadir tal lista de tareas o notas a <app>Evolution</app>, realice los siguientes pasos:</p>
 <steps>
 <item><p>Pulse <guiseq><gui>Archivo</gui><gui>Nuevo</gui><gui>Lista de tareas</gui></guiseq> o <guiseq><gui>Archivo</gui><gui>Nuevo</gui><gui>Lista de notas</gui></guiseq>.</p></item>
 <item><p>Seleccione el tipo <gui>En la red</gui>.</p></item>
@@ -45,11 +51,11 @@
 <item><p>Opcionalmente, elija un color.</p></item>
 <item><p>Elija si quiere poder ver el contenido incluso cuando está desconectado.</p></item>
 <item><p>Escriba la dirección en el campo <gui>URL</gui>.</p></item>
-<item><p>Elija <gui>Usar conexión segura</gui> si quiere conectar de forma segura.</p></item>
+<item><p>Elija <gui>Usar una conexión segura</gui> si se quiere conectar de forma segura.</p></item>
 <item><p>Introduzca su nombre de usuario y su dirección de correo-e.</p></item>
 <item><p>Pulse <gui style="button">Aplicar</gui>.</p></item>
 </steps>
 
-<p>La tarea se añadirá a la lista de tareas en Evolution.</p>
+<p>La tarea se añadirá a la lista de tareas en <app>Evolution</app>.</p>
 
 </page>

@@ -55,6 +55,7 @@ struct _EMailConfigAssistantPrivate {
 	EMailConfigServicePage *receiving_page;
 	EMailConfigServicePage *sending_page;
 	EMailConfigSummaryPage *summary_page;
+	EMailConfigPage *identity_page;
 	EMailConfigPage *lookup_page;
 	GHashTable *visited_pages;
 	gboolean auto_configured;
@@ -604,6 +605,11 @@ mail_config_assistant_dispose (GObject *object)
 		priv->lookup_page = NULL;
 	}
 
+	if (priv->identity_page != NULL) {
+		g_object_unref (priv->identity_page);
+		priv->identity_page = NULL;
+	}
+
 	g_ptr_array_set_size (priv->account_sources, 0);
 	g_ptr_array_set_size (priv->transport_sources, 0);
 
@@ -641,6 +647,7 @@ mail_config_assistant_constructed (GObject *object)
 	ESourceMailSubmission *mail_submission_extension;
 	EMailSession *session;
 	EMailConfigPage *page;
+	GtkWidget *autodiscover_check;
 	GList *list, *link;
 	const gchar *extension_name;
 	const gchar *title;
@@ -686,6 +693,8 @@ mail_config_assistant_constructed (GObject *object)
 	extension = e_source_get_extension (identity_source, extension_name);
 	mail_submission_extension = E_SOURCE_MAIL_SUBMISSION (extension);
 
+	e_source_mail_identity_set_name (mail_identity_extension, g_get_real_name ());
+
 	e_source_mail_composition_set_drafts_folder (
 		mail_composition_extension,
 		e_mail_session_get_local_folder_uri (
@@ -713,13 +722,23 @@ mail_config_assistant_constructed (GObject *object)
 		E_MAIL_CONFIG_IDENTITY_PAGE (page), FALSE);
 	e_mail_config_identity_page_set_show_signatures (
 		E_MAIL_CONFIG_IDENTITY_PAGE (page), FALSE);
+	e_mail_config_identity_page_set_show_autodiscover_check (
+		E_MAIL_CONFIG_IDENTITY_PAGE (page), TRUE);
+	autodiscover_check = e_mail_config_identity_page_get_autodiscover_check (
+		E_MAIL_CONFIG_IDENTITY_PAGE (page));
 	e_mail_config_assistant_add_page (assistant, page);
+	assistant->priv->identity_page = g_object_ref (page);
 
 	/*** Lookup Page ***/
 
 	page = e_mail_config_lookup_page_new ();
 	e_mail_config_assistant_add_page (assistant, page);
 	assistant->priv->lookup_page = g_object_ref (page);
+
+	e_binding_bind_property (
+		autodiscover_check, "active",
+		page, "visible",
+		G_BINDING_SYNC_CREATE);
 
 	/*** Receiving Page ***/
 
@@ -765,7 +784,7 @@ mail_config_assistant_constructed (GObject *object)
 			backend_extension, backend_name);
 
 		/* Keep display names synchronized. */
-		g_object_bind_property (
+		e_binding_bind_property (
 			identity_source, "display-name",
 			scratch_source, "display-name",
 			G_BINDING_BIDIRECTIONAL |
@@ -793,7 +812,7 @@ mail_config_assistant_constructed (GObject *object)
 
 		/* Each Receiving Options page is only visible when its
 		 * service backend is active on the Receiving Email page. */
-		g_object_bind_property_full (
+		e_binding_bind_property_full (
 			assistant->priv->receiving_page, "active-backend",
 			page, "visible",
 			G_BINDING_SYNC_CREATE,
@@ -842,7 +861,7 @@ mail_config_assistant_constructed (GObject *object)
 			backend_extension, backend_name);
 
 		/* Keep display names synchronized. */
-		g_object_bind_property (
+		e_binding_bind_property (
 			identity_source, "display-name",
 			scratch_source, "display-name",
 			G_BINDING_BIDIRECTIONAL |
@@ -865,17 +884,17 @@ mail_config_assistant_constructed (GObject *object)
 	e_mail_config_assistant_add_page (assistant, page);
 	assistant->priv->summary_page = g_object_ref (page);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		assistant, "account-backend",
 		page, "account-backend",
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		assistant, "identity-source",
 		page, "identity-source",
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		assistant, "transport-backend",
 		page, "transport-backend",
 		G_BINDING_SYNC_CREATE);
@@ -982,6 +1001,12 @@ mail_config_assistant_prepare (GtkAssistant *assistant,
 		email_address = e_source_mail_identity_get_address (extension);
 		e_source_set_display_name (source, email_address);
 	}
+
+	if (first_visit && (
+	    E_IS_MAIL_CONFIG_LOOKUP_PAGE (page) ||
+	    E_IS_MAIL_CONFIG_RECEIVING_PAGE (page)))
+		e_mail_config_identity_page_set_show_autodiscover_check (
+			E_MAIL_CONFIG_IDENTITY_PAGE (priv->identity_page), FALSE);
 }
 
 static void
@@ -1110,6 +1135,16 @@ e_mail_config_assistant_class_init (EMailConfigAssistantClass *class)
 static void
 e_mail_config_assistant_init (EMailConfigAssistant *assistant)
 {
+	GObject *action_area;
+	GtkBuilder *builder;
+
+	builder = gtk_builder_new ();
+	action_area = gtk_buildable_get_internal_child (
+		GTK_BUILDABLE (assistant), builder, "action_area");
+	if (action_area)
+		gtk_container_set_border_width (GTK_CONTAINER (action_area), 12);
+	g_object_unref (builder);
+
 	assistant->priv = E_MAIL_CONFIG_ASSISTANT_GET_PRIVATE (assistant);
 
 	assistant->priv->account_sources =

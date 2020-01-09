@@ -13,40 +13,46 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Adding another local calendar.</desc>
+    <desc>Jak přidat další místní kalendář.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Adding another local calendar</title>
+  <title>Přidání dalších místního kalendáře</title>
 
-  <p>To add another local calendar to <app>Evolution</app>, perform the
-  following steps:</p>
+  <p>Chcete-li do aplikace <app>Evolution</app> přidat jiný místní kalendář, proveďte následující kroky:</p>
 
   <steps>
     <item>
-      <p>Click
-      <guiseq><gui>File</gui><gui>New</gui><gui>Calendar</gui></guiseq>.</p>
+      <p>Klikněte na <guiseq><gui>Soubor</gui> <gui>Nový</gui> <gui>Kalendář</gui></guiseq>.</p>
     </item>
     <item>
       <p>Vyberte typ <gui>V tomto počítači</gui>.</p>
     </item>
     <item>
-      <p>Vložte název, který preferujete.</p>
+      <p>Vložte název, kterému dáváte přednost.</p>
     </item>
     <item>
-      <p>Volitelně vyberte barvu, kterou preferujete.</p>
+      <p>Volitelně vyberte barvu, které dáváte přednost.</p>
     </item>
     <item>
-      <p>If you choose to use an existing calendar file which is already
-      located on your computer, you need to provide its location and whether
-      <app>Evolution</app> should only read from the file or if
-      <app>Evolution</app> can also add and alter items in that file.</p>
+      <p>V případě, že zvolíte existující soubor s kalendářem, který je již umístěn ve vašem počítači, musíte zadat jeho umístění a jestli <app>Evolution</app> může ze souboru jen číst nebo jestli může do souboru i přidávat časová upozornění.</p>
     </item>
     <item>
       <p>Klikněte na <gui style="button">Použít</gui>.</p>
     </item>
   </steps>
 
-  <p>The calendar will be added to the list of calendars in
-  <app>Evolution</app>.</p>
+  <p>Kalendář bude přidán do seznamu kalendářů v aplikaci <app>Evolution</app>.</p>
 
 </page>

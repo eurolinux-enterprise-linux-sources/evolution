@@ -28,6 +28,8 @@
 
 #include <glib/gi18n.h>
 
+#include <camel/camel.h>
+
 #include "ca-trust-dialog.h"
 #include "cert-trust-dialog.h"
 #include "certificate-manager.h"
@@ -67,6 +69,8 @@ enum {
 
 #define ECMC_TREE_VIEW(o) ecmc->priv->o->treeview
 #define PAGE_TREE_VIEW(o) o->treeview
+
+#define STRING_IS_EMPTY(x)      (!(x) || !(*(x)))
 
 typedef struct {
 	GType type;
@@ -160,7 +164,22 @@ struct _ECertManagerConfigPrivate {
 	CertPage *yourcerts_page;
 	CertPage *contactcerts_page;
 	CertPage *authoritycerts_page;
+
+	GtkTreeModel *mail_model;
+	GtkTreeView *mail_tree_view; /* not referenced */
+
+	GCancellable *load_all_certs_cancellable;
 };
+
+typedef struct {
+	GFile 	  **file;
+	GtkWidget *entry1;
+	GtkWidget *entry2;
+	GtkWidget *match_label;
+	GtkWidget *save_button;
+	CertPage  *cp;
+	ECert     *cert;
+} BackupData;
 
 static void view_cert (GtkWidget *button, CertPage *cp);
 static void edit_cert (GtkWidget *button, CertPage *cp);
@@ -186,7 +205,7 @@ save_treeview_state (GtkTreeView *treeview)
 	g_return_if_fail (treeview && GTK_IS_TREE_VIEW (treeview));
 
 	model = gtk_tree_view_get_model (treeview);
-	g_return_if_fail (model && GTK_IS_TREE_MODEL_SORT (model));
+	g_return_if_fail (model && GTK_IS_TREE_SORTABLE (model));
 
 	keyfile = g_key_file_new ();
 	cfg_file = g_build_filename (e_get_user_config_dir (), "cert_trees.ini", NULL);
@@ -240,6 +259,8 @@ load_treeview_state (GtkTreeView *treeview)
 	GtkTreeModel *model;
 	gchar *cfg_file;
 	const gchar *tree_name;
+	gint sort_column, sort_order;
+	GError *error = NULL;
 
 	g_return_if_fail (treeview && GTK_IS_TREE_VIEW (treeview));
 
@@ -305,11 +326,20 @@ load_treeview_state (GtkTreeView *treeview)
 		g_list_free (columns);
 	}
 
+	sort_column = g_key_file_get_integer (keyfile, tree_name, "sort-column", &error);
+	if (error) {
+		sort_column = 0;
+		g_clear_error (&error);
+	}
+
+	sort_order = g_key_file_get_integer (keyfile, tree_name, "sort-order", &error);
+	if (error) {
+		sort_order = GTK_SORT_ASCENDING;
+		g_clear_error (&error);
+	}
+
 	sortable = GTK_TREE_SORTABLE (gtk_tree_view_get_model (treeview));
-	gtk_tree_sortable_set_sort_column_id (
-		sortable,
-		g_key_file_get_integer (keyfile, tree_name, "sort-column", 0),
-		g_key_file_get_integer (keyfile, tree_name, "sort-order", GTK_SORT_ASCENDING));
+	gtk_tree_sortable_set_sort_column_id (sortable, sort_column, sort_order);
 
  exit:
 	g_free (cfg_file);
@@ -348,6 +378,8 @@ treeview_header_clicked (GtkWidget *widget,
 		return FALSE;
 
 	gtk_widget_show_all (GTK_WIDGET (menu));
+	if (!gtk_menu_get_attach_widget (menu))
+		gtk_menu_attach_to_widget (menu, widget, NULL);
 	gtk_menu_popup (menu, NULL, NULL, NULL, NULL, event_button, event_time);
 
 	return TRUE;
@@ -405,6 +437,8 @@ treeview_selection_changed (GtkTreeSelection *selection,
 		gtk_widget_set_sensitive (cp->edit_button, cert_selected);
 	if (cp->view_button)
 		gtk_widget_set_sensitive (cp->view_button, cert_selected);
+	if (cp->backup_button)
+		gtk_widget_set_sensitive (cp->backup_button, cert_selected);
 }
 
 static void
@@ -520,6 +554,24 @@ select_certificate (CertPage *cp,
 }
 
 static void
+open_cert_viewer (GtkWidget *widget,
+		  ECert *cert)
+{
+	GtkWidget *dialog, *parent;
+
+	parent = gtk_widget_get_toplevel (widget);
+	if (!parent || !GTK_IS_WINDOW (parent))
+		parent = NULL;
+
+	dialog = e_cert_manager_new_certificate_viewer ((GtkWindow *) parent, cert);
+	g_signal_connect (
+		dialog, "response",
+		G_CALLBACK (gtk_widget_destroy), NULL);
+
+	gtk_widget_show (dialog);
+}
+
+static void
 view_cert (GtkWidget *button,
            CertPage *cp)
 {
@@ -534,20 +586,313 @@ view_cert (GtkWidget *button,
 			-1);
 
 		if (cert) {
-			GtkWidget *dialog, *parent;
-
-			parent = gtk_widget_get_toplevel (button);
-			if (!parent || !GTK_IS_WINDOW (parent))
-				parent = NULL;
-
-			dialog = e_cert_manager_new_certificate_viewer ((GtkWindow *) parent, cert);
-			g_signal_connect (
-				dialog, "response",
-				G_CALLBACK (gtk_widget_destroy), NULL);
-			gtk_widget_show (dialog);
+			open_cert_viewer (button, cert);
 			g_object_unref (cert);
 		}
 	}
+}
+
+static gboolean
+cert_backup_dialog_sensitize (GtkWidget *widget,
+                              GdkEvent *event,
+                              BackupData *data)
+{
+
+	const gchar *txt1, *txt2;
+	gboolean is_sensitive = TRUE;
+
+	txt1 = gtk_entry_get_text (GTK_ENTRY (data->entry1));
+	txt2 = gtk_entry_get_text (GTK_ENTRY (data->entry2));
+
+	if (*data->file == NULL)
+		is_sensitive = FALSE;
+
+	if (STRING_IS_EMPTY (txt1) && STRING_IS_EMPTY (txt2)) {
+		gtk_widget_set_visible (data->match_label, FALSE);
+		is_sensitive = FALSE;
+	} else if (g_strcmp0 (txt1, txt2) == 0) {
+		gtk_widget_set_visible (data->match_label, FALSE);
+	} else {
+		gtk_widget_set_visible (data->match_label, TRUE);
+		is_sensitive = FALSE;
+	}
+
+	gtk_widget_set_sensitive (data->save_button, is_sensitive);
+
+	return FALSE;
+}
+
+static void
+cert_backup_dialog_maybe_correct_extension (GtkFileChooser *file_chooser)
+{
+	gchar *name = gtk_file_chooser_get_current_name (file_chooser);
+
+	if (!g_str_has_suffix (name, ".p12")) {
+		gchar *new_name = g_strconcat (name, ".p12", NULL);
+		gtk_file_chooser_set_current_name (file_chooser, new_name);
+		g_free (new_name);
+	}
+
+	g_free (name);
+}
+
+static void
+cert_backup_dialog_file_chooser_save_activate_cb (GtkWidget *button,
+						  GtkFileChooser *file_chooser)
+{
+	cert_backup_dialog_maybe_correct_extension (file_chooser);
+}
+
+static gboolean
+cert_backup_dialog_file_chooser_save_event_cb (GtkWidget *button,
+					       GdkEvent *event,
+					       GtkFileChooser *file_chooser)
+{
+	cert_backup_dialog_maybe_correct_extension (file_chooser);
+
+	return FALSE;
+}
+
+static void
+run_cert_backup_dialog_file_chooser (GtkButton *file_button,
+                                     BackupData *data)
+{
+	GtkWidget *filesel, *button;
+	GtkFileFilter *filter;
+	gchar *filename;
+
+	filesel = gtk_file_chooser_dialog_new (
+		_("Select a file to backup your key and certificate..."), NULL,
+		GTK_FILE_CHOOSER_ACTION_SAVE,
+		_("_Cancel"), GTK_RESPONSE_CANCEL,
+		_("_Save"), GTK_RESPONSE_OK,
+		NULL);
+	gtk_dialog_set_default_response (GTK_DIALOG (filesel), GTK_RESPONSE_OK);
+	gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (filesel), TRUE);
+	/* To Translators:
+	 * %s-backup.p12 is the default file name suggested by the file selection dialog,
+	 * when a user wants to backup one of her/his private keys/certificates.
+	 * For example: gnomedev-backup.p12
+	 */
+	filename = g_strdup_printf (_("%s-backup.p12"), e_cert_get_nickname (data->cert));
+	gtk_file_chooser_set_current_name (GTK_FILE_CHOOSER (filesel), filename);
+	g_free (filename);
+
+	if (*data->file) {
+		gtk_file_chooser_set_file (GTK_FILE_CHOOSER (filesel), *data->file, NULL);
+	}
+
+	filter = gtk_file_filter_new ();
+	gtk_file_filter_set_name (filter, data->cp->cert_filter_name);
+	gtk_file_filter_add_mime_type (filter, "application/x-pkcs12");
+	gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (filesel), filter);
+
+	filter = gtk_file_filter_new ();
+	gtk_file_filter_set_name (filter, _("All files"));
+	gtk_file_filter_add_pattern (filter, "*");
+	gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (filesel), filter);
+
+	button = gtk_dialog_get_widget_for_response (GTK_DIALOG (filesel), GTK_RESPONSE_OK);
+	g_signal_connect (button, "activate",
+		G_CALLBACK (cert_backup_dialog_file_chooser_save_activate_cb), filesel);
+	g_signal_connect (button, "enter-notify-event",
+		G_CALLBACK (cert_backup_dialog_file_chooser_save_event_cb), filesel);
+
+	if (gtk_dialog_run (GTK_DIALOG (filesel)) == GTK_RESPONSE_OK) {
+		gchar *basename;
+
+		if (*data->file) {
+			g_object_unref (*data->file);
+			*data->file = NULL;
+		}
+
+		*data->file = gtk_file_chooser_get_file (GTK_FILE_CHOOSER (filesel));
+
+		basename = g_file_get_basename (*data->file);
+		gtk_button_set_label (file_button, basename);
+		g_free (basename);
+	}
+
+	/* destroy dialog to get rid of it in the GUI */
+	gtk_widget_destroy (filesel);
+
+	cert_backup_dialog_sensitize (GTK_WIDGET (file_button), NULL, data);
+	gtk_widget_grab_focus (GTK_WIDGET (data->entry1));
+}
+
+static gint
+run_cert_backup_dialog (CertPage *cp,
+                        ECert *cert,
+                        GFile **file,
+                        gchar **password,
+                        gboolean *save_chain)
+{
+	gint row = 0, col = 0, response;
+	const gchar *format = "<span foreground=\"red\">%s</span>";
+	gchar *markup;
+	GtkWidget *dialog, *content_area, *button, *label, *chain;
+	GtkGrid *grid;
+	GtkDialogFlags flags = GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT;
+	BackupData data;
+
+	data.cp = cp;
+	data.cert = cert;
+	data.file = file;
+
+	dialog = gtk_dialog_new_with_buttons (
+		_("Backup Certificate"), NULL, flags,
+		_("_Cancel"), GTK_RESPONSE_CANCEL,
+		_("_Save"), GTK_RESPONSE_OK,
+		NULL);
+	g_object_set (dialog, "resizable", FALSE, NULL);
+
+	content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+	g_object_set (content_area, "border-width", 6, NULL);
+
+	grid = GTK_GRID (gtk_grid_new ());
+	g_object_set (grid, "column-spacing", 12, NULL);
+	g_object_set (grid, "row-spacing", 6, NULL);
+
+	/* filename selection */
+	label = gtk_label_new_with_mnemonic (_("_File name:"));
+	g_object_set (label, "halign", GTK_ALIGN_START, NULL);
+	gtk_grid_attach (grid, label, col++, row, 1, 1);
+
+	/* FIXME when gtk_file_chooser_button allows GTK_FILE_CHOOSER_ACTION_SAVE use it */
+	button = gtk_button_new_with_label (_("Please select a file..."));
+	g_signal_connect (
+		button, "clicked",
+		G_CALLBACK (run_cert_backup_dialog_file_chooser),
+		&data);
+	g_signal_connect (
+		button, "focus-in-event",
+		G_CALLBACK (cert_backup_dialog_sensitize),
+		&data);
+	gtk_grid_attach (grid, button, col++, row++, 1, 1);
+	gtk_label_set_mnemonic_widget (GTK_LABEL (label), GTK_WIDGET (button));
+
+	/* cert chain option */
+	col = 1;
+	chain = gtk_check_button_new_with_mnemonic (_("_Include certificate chain in the backup"));
+	gtk_grid_attach (grid, chain, col, row++, 1, 1);
+
+	/* password */
+	col = 0;
+	/* To Translators: this text was copied from Firefox */
+	label = gtk_label_new (_("The certificate backup password you set here protects "
+		"the backup file that you are about to create.\nYou must set this password to proceed with the backup."));
+	gtk_grid_attach (grid, label, col, row++, 2, 1);
+
+	col = 0;
+	label = gtk_label_new_with_mnemonic (_("_Password:"));
+	g_object_set (label, "halign", GTK_ALIGN_START, NULL);
+	gtk_grid_attach (grid, label, col++, row, 1, 1);
+
+	data.entry1 = gtk_entry_new ();
+	g_signal_connect(
+		data.entry1, "key-release-event",
+		G_CALLBACK (cert_backup_dialog_sensitize),
+		&data);
+	gtk_entry_set_visibility (GTK_ENTRY (data.entry1), FALSE);
+	gtk_grid_attach (grid, data.entry1, col++, row++, 1, 1);
+	gtk_label_set_mnemonic_widget (GTK_LABEL (label), GTK_WIDGET (data.entry1));
+
+	col = 0;
+	label = gtk_label_new_with_mnemonic (_("_Repeat Password:"));
+	g_object_set (label, "halign", GTK_ALIGN_START, NULL);
+	gtk_grid_attach (grid, label, col++, row, 1, 1);
+
+	data.entry2 = gtk_entry_new ();
+	g_signal_connect(
+		data.entry2, "key-release-event",
+		G_CALLBACK (cert_backup_dialog_sensitize),
+		&data);
+	gtk_entry_set_visibility (GTK_ENTRY (data.entry2), FALSE);
+	gtk_grid_attach (grid, data.entry2, col++, row++, 1, 1);
+	gtk_label_set_mnemonic_widget (GTK_LABEL (label), GTK_WIDGET (data.entry2));
+
+	col = 0;
+	label = gtk_label_new (""); /* force grid to create a row for match_label */
+	gtk_grid_attach (grid, label, col++, row, 1, 1);
+
+	data.match_label = gtk_label_new ("");
+	g_object_set (data.match_label, "halign", GTK_ALIGN_START, NULL);
+	markup = g_markup_printf_escaped (format, _("Passwords do not match"));
+	gtk_label_set_markup (GTK_LABEL (data.match_label), markup);
+	g_free (markup);
+	gtk_grid_attach (grid, data.match_label, col, row++, 1, 1);
+	gtk_widget_set_visible (data.match_label, FALSE);
+
+	col = 0;
+	/* To Translators: this text was copied from Firefox */
+	label = gtk_label_new (_("Important:\nIf you forget your certificate backup password, "
+		"you will not be able to restore this backup later.\nPlease record it in a safe location."));
+	gtk_grid_attach (grid, label, col, row++, 2, 1);
+
+	/* add widget to dialog and show all */
+	gtk_widget_show_all (GTK_WIDGET (grid));
+	gtk_container_add (GTK_CONTAINER (content_area), GTK_WIDGET (grid));
+
+	data.save_button = gtk_dialog_get_widget_for_response (GTK_DIALOG (dialog), GTK_RESPONSE_OK);
+	gtk_widget_set_sensitive (data.save_button, FALSE);
+
+	response = gtk_dialog_run (GTK_DIALOG (dialog));
+	*password = strdup (gtk_entry_get_text (GTK_ENTRY (data.entry1)));
+	*save_chain = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (chain));
+
+	gtk_widget_destroy (dialog);
+
+	return response;
+}
+
+static void
+backup_cert (GtkWidget *button,
+             CertPage *cp)
+{
+	GtkTreeIter iter;
+
+	if (gtk_tree_selection_get_selected (gtk_tree_view_get_selection (cp->treeview), NULL, &iter)) {
+		ECert *cert;
+
+		gtk_tree_model_get (
+			GTK_TREE_MODEL (cp->streemodel),
+			&iter,
+			cp->columns_count - 1,
+			&cert,
+			-1);
+
+		if (cert) {
+			GFile *file = NULL;
+			gchar *password = NULL;
+			gboolean save_chain = FALSE;
+
+			if (run_cert_backup_dialog (cp, cert, &file, &password, &save_chain) == GTK_RESPONSE_OK) {
+				if (!file) {
+					e_notice (
+						gtk_widget_get_toplevel (GTK_WIDGET (cp->treeview)),
+						GTK_MESSAGE_ERROR, "%s", _("No file name provided"));
+				} else if (cp->cert_type == E_CERT_USER) {
+					GError *error = NULL;
+					if (!e_cert_db_export_pkcs12_file (cert, file, password, save_chain, &error)) {
+						report_and_free_error (cp, _("Failed to backup key and certificate"), error);
+					}
+				} else {
+					g_warn_if_reached ()
+					;
+				}
+			}
+
+			if (file)
+				g_object_unref (file);
+			if (password) {
+				memset (password, 0, strlen (password));
+				g_free (password);
+			}
+
+			g_object_unref (cert);
+		}
+	}
+
 }
 
 static void
@@ -769,6 +1114,581 @@ add_cert (CertPage *cp,
 	}
 }
 
+enum {
+	MAIL_CERT_COLUMN_HOSTNAME,
+	MAIL_CERT_COLUMN_SUBJECT,
+	MAIL_CERT_COLUMN_ISSUER,
+	MAIL_CERT_COLUMN_FINGERPRINT,
+	MAIL_CERT_COLUMN_TRUST,
+	MAIL_CERT_COLUMN_CAMELCERT,
+	MAIL_CERT_N_COLUMNS
+};
+
+static const gchar *
+cm_get_camel_cert_trust_text (CamelCertTrust trust)
+{
+	switch (trust) {
+		case CAMEL_CERT_TRUST_UNKNOWN:
+			return C_("CamelTrust", "Ask when used");
+		case CAMEL_CERT_TRUST_NEVER:
+			return C_("CamelTrust", "Never");
+		case CAMEL_CERT_TRUST_MARGINAL:
+			return C_("CamelTrust", "Marginally");
+		case CAMEL_CERT_TRUST_FULLY:
+			return C_("CamelTrust", "Fully");
+		case CAMEL_CERT_TRUST_ULTIMATE:
+			return C_("CamelTrust", "Ultimately");
+		case CAMEL_CERT_TRUST_TEMPORARY:
+			return C_("CamelTrust", "Temporarily");
+	}
+
+	return "???";
+}
+
+static void
+cm_add_text_column (GtkTreeView *tree_view,
+		    const gchar *title,
+		    gint column_index,
+		    gboolean expand)
+{
+	GtkCellRenderer *renderer;
+	GtkTreeViewColumn *column;
+
+	g_return_if_fail (GTK_IS_TREE_VIEW (tree_view));
+
+	renderer = gtk_cell_renderer_text_new ();
+	g_object_set (renderer, "ellipsize", PANGO_ELLIPSIZE_END, NULL);
+	column = gtk_tree_view_column_new_with_attributes (
+		title, renderer, "text", column_index, NULL);
+	gtk_tree_view_column_set_resizable (column, TRUE);
+	gtk_tree_view_column_set_reorderable (column, TRUE);
+	gtk_tree_view_column_set_sort_column_id (column, column_index);
+	gtk_tree_view_column_set_visible (column, TRUE);
+	gtk_tree_view_column_set_expand (column, expand);
+	gtk_tree_view_append_column (tree_view, column);
+}
+
+static void
+selection_changed_has_one_row_cb (GtkTreeSelection *selection,
+				  GtkWidget *widget)
+{
+	g_return_if_fail (GTK_IS_TREE_SELECTION (selection));
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+
+	gtk_widget_set_sensitive (widget, gtk_tree_selection_get_selected (selection, NULL, NULL));
+}
+
+static gboolean
+cm_unref_camel_cert (GtkTreeModel *model,
+		     GtkTreePath *path,
+		     GtkTreeIter *iter,
+		     gpointer user_data)
+{
+	CamelCert *camelcert = NULL;
+
+	gtk_tree_model_get (model, iter, MAIL_CERT_COLUMN_CAMELCERT,  &camelcert, -1);
+
+	if (camelcert)
+		camel_cert_unref (camelcert);
+
+	return FALSE;
+}
+
+static void
+load_mail_certs (ECertManagerConfig *ecmc)
+{
+	GtkListStore *list_store;
+	GSList *camel_certs, *link;
+	CamelCertDB *certdb;
+
+	g_return_if_fail (E_IS_CERT_MANAGER_CONFIG (ecmc));
+	g_return_if_fail (ecmc->priv->mail_model != NULL);
+
+	gtk_tree_model_foreach (ecmc->priv->mail_model, cm_unref_camel_cert, NULL);
+
+	list_store = GTK_LIST_STORE (ecmc->priv->mail_model);
+	gtk_list_store_clear (list_store);
+
+	certdb = camel_certdb_get_default ();
+	g_return_if_fail (certdb != NULL);
+
+	camel_certs = camel_certdb_list_certs (certdb);
+	for (link = camel_certs; link; link = g_slist_next (link)) {
+		CamelCert *cert = link->data;
+		GtkTreeIter iter;
+
+		if (!cert)
+			continue;
+
+		camel_cert_ref (cert);
+		if (!cert->rawcert)
+			camel_cert_load_cert_file (cert, NULL);
+
+		gtk_list_store_append (list_store, &iter);
+		gtk_list_store_set (list_store, &iter,
+			MAIL_CERT_COLUMN_HOSTNAME, cert->hostname,
+			MAIL_CERT_COLUMN_SUBJECT, cert->subject,
+			MAIL_CERT_COLUMN_ISSUER, cert->issuer,
+			MAIL_CERT_COLUMN_FINGERPRINT, cert->fingerprint,
+			MAIL_CERT_COLUMN_TRUST, cm_get_camel_cert_trust_text (cert->trust),
+			MAIL_CERT_COLUMN_CAMELCERT, cert,
+			-1);
+	}
+
+	g_slist_free_full (camel_certs, (GDestroyNotify) camel_cert_unref);
+}
+
+static void
+cert_manager_parser_parsed_cb (GcrParser *parser,
+                               GcrParsed **out_parsed)
+{
+	GcrParsed *parsed;
+
+	parsed = gcr_parser_get_parsed (parser);
+	g_return_if_fail (parsed != NULL);
+
+	*out_parsed = gcr_parsed_ref (parsed);
+}
+
+static GtkWidget *
+cm_prepare_certificate_widget (GcrCertificate *certificate)
+{
+	GcrParser *parser;
+	GcrParsed *parsed = NULL;
+	GckAttributes *attributes;
+	GcrCertificateWidget *certificate_widget;
+	const guchar *der_data = NULL;
+	gsize der_length;
+	GError *local_error = NULL;
+
+	g_return_val_if_fail (GCR_IS_CERTIFICATE (certificate), NULL);
+
+	der_data = gcr_certificate_get_der_data (certificate, &der_length);
+
+	parser = gcr_parser_new ();
+	g_signal_connect (
+		parser, "parsed",
+		G_CALLBACK (cert_manager_parser_parsed_cb), &parsed);
+	gcr_parser_parse_data (
+		parser, der_data, der_length, &local_error);
+	g_object_unref (parser);
+
+	/* Sanity check. */
+	g_return_val_if_fail (
+		((parsed != NULL) && (local_error == NULL)) ||
+		((parsed == NULL) && (local_error != NULL)), NULL);
+
+	if (local_error != NULL) {
+		g_warning ("%s: %s", G_STRFUNC, local_error->message);
+		g_clear_error (&local_error);
+		return NULL;
+	}
+
+	attributes = gcr_parsed_get_attributes (parsed);
+	certificate_widget = gcr_certificate_widget_new (certificate);
+	gcr_certificate_widget_set_attributes (certificate_widget, attributes);
+
+	gcr_parsed_unref (parsed);
+
+	return GTK_WIDGET (certificate_widget);
+}
+
+static void
+mail_cert_view_cb (GtkWidget *button,
+		   GtkTreeView *tree_view)
+{
+	GtkTreeSelection *selection;
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+	CamelCert *camel_cert = NULL;
+	ECert *cert;
+
+	g_return_if_fail (GTK_IS_TREE_VIEW (tree_view));
+
+	selection = gtk_tree_view_get_selection (tree_view);
+	if (!gtk_tree_selection_get_selected (selection, &model, &iter))
+		return;
+
+	gtk_tree_model_get (model, &iter, MAIL_CERT_COLUMN_CAMELCERT, &camel_cert, -1);
+
+	if (!camel_cert)
+		return;
+
+	g_return_if_fail (camel_cert->rawcert != NULL);
+
+	cert = e_cert_new_from_der ((gchar *) g_bytes_get_data (camel_cert->rawcert, NULL), g_bytes_get_size (camel_cert->rawcert));
+	if (cert) {
+		open_cert_viewer (button, cert);
+		g_object_unref (cert);
+	}
+}
+
+static gboolean
+mail_cert_edit_trust (GtkWidget *parent,
+		      CamelCert *camel_cert)
+{
+	GtkWidget *dialog, *label, *expander, *content_area, *certificate_widget;
+	GtkWidget *runknown, *rtemporary, *rnever, *rmarginal, *rfully, *rultimate;
+	GtkGrid *grid;
+	GcrCertificate *certificate;
+	gchar *text;
+	gboolean changed = FALSE;
+	gint row;
+
+	g_return_val_if_fail (camel_cert != NULL, FALSE);
+	g_return_val_if_fail (camel_cert->rawcert != NULL, FALSE);
+
+	certificate = gcr_simple_certificate_new (g_bytes_get_data (camel_cert->rawcert, NULL), g_bytes_get_size (camel_cert->rawcert));
+	certificate_widget = cm_prepare_certificate_widget (certificate);
+	g_clear_object (&certificate);
+
+	g_return_val_if_fail (certificate_widget != NULL, FALSE);
+
+	dialog = gtk_dialog_new_with_buttons (
+		_("Change certificate trust"), parent ? GTK_WINDOW (parent) : NULL,
+		GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL,
+		_("_Cancel"), GTK_RESPONSE_CLOSE,
+		_("_OK"), GTK_RESPONSE_OK,
+		NULL);
+
+	gtk_container_set_border_width (GTK_CONTAINER (dialog), 5);
+
+	content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+
+	grid = GTK_GRID (gtk_grid_new ());
+
+	text = g_strdup_printf (_("Change trust for the host '%s':"), camel_cert->hostname);
+	label = gtk_label_new (text);
+	g_object_set (G_OBJECT (label),
+		"margin-bottom", 4,
+		"halign", GTK_ALIGN_START,
+		"valign", GTK_ALIGN_START,
+		"hexpand", FALSE,
+		"vexpand", FALSE,
+		NULL);
+	gtk_grid_attach (grid, label, 0, 0, 1, 1);
+	g_free (text);
+
+	#define add_radio(_radio, _title, _trust) G_STMT_START { \
+		_radio = gtk_radio_button_new_with_mnemonic (runknown ? gtk_radio_button_get_group (GTK_RADIO_BUTTON (runknown)) : NULL, _title); \
+		gtk_widget_set_margin_left (_radio, 12); \
+		if (camel_cert->trust == (_trust)) \
+			gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (_radio), TRUE); \
+		gtk_grid_attach (grid, _radio, 0, row, 1, 1); \
+		row++; \
+		} G_STMT_END
+
+	runknown = NULL;
+	row = 1;
+
+	add_radio (runknown, C_("CamelTrust", "_Ask when used"), CAMEL_CERT_TRUST_UNKNOWN);
+	add_radio (rnever, C_("CamelTrust", "_Never trust this certificate"), CAMEL_CERT_TRUST_NEVER);
+	add_radio (rtemporary, C_("CamelTrust", "_Temporarily trusted (this session only)"), CAMEL_CERT_TRUST_TEMPORARY);
+	add_radio (rmarginal, C_("CamelTrust", "_Marginally trusted"), CAMEL_CERT_TRUST_MARGINAL);
+	add_radio (rfully, C_("CamelTrust", "_Fully trusted"), CAMEL_CERT_TRUST_FULLY);
+	add_radio (rultimate, C_("CamelTrust", "_Ultimately trusted"), CAMEL_CERT_TRUST_ULTIMATE);
+
+	#undef add_radio
+
+	label = gtk_label_new (_("Before trusting this site, you should examine its certificate and its policy and procedures (if available)."));
+	g_object_set (G_OBJECT (label),
+		"halign", GTK_ALIGN_START,
+		"valign", GTK_ALIGN_START,
+		"hexpand", FALSE,
+		"vexpand", FALSE,
+		"xalign", 0.0,
+		"yalign", 0.0,
+		"max-width-chars", 60,
+		"width-chars", 40,
+		"wrap", TRUE,
+		NULL);
+	gtk_grid_attach (grid, label, 0, row, 1, 1);
+	row++;
+
+	expander = gtk_expander_new_with_mnemonic (_("_Display certificate"));
+	g_object_set (G_OBJECT (label),
+		"halign", GTK_ALIGN_FILL,
+		"valign", GTK_ALIGN_START,
+		"hexpand", TRUE,
+		"vexpand", FALSE,
+		"margin", 6,
+		NULL);
+	gtk_container_add (GTK_CONTAINER (expander), certificate_widget);
+	gtk_grid_attach (grid, expander, 0, row, 1, 1);
+	row++;
+
+	gtk_container_add (GTK_CONTAINER (content_area), GTK_WIDGET (grid));
+	gtk_widget_show_all (content_area);
+
+	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_OK) {
+		CamelCertTrust trust = CAMEL_CERT_TRUST_UNKNOWN;
+
+		if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (rnever)))
+			trust = CAMEL_CERT_TRUST_NEVER;
+		else if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (rmarginal)))
+			trust = CAMEL_CERT_TRUST_MARGINAL;
+		else if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (rfully)))
+			trust = CAMEL_CERT_TRUST_FULLY;
+		else if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (rultimate)))
+			trust = CAMEL_CERT_TRUST_ULTIMATE;
+		else if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (rtemporary)))
+			trust = CAMEL_CERT_TRUST_TEMPORARY;
+
+		changed = trust != camel_cert->trust;
+		if (changed)
+			camel_cert->trust = trust;
+	}
+
+	gtk_widget_destroy (dialog);
+
+	return changed;
+}
+
+static void
+mail_cert_edit_trust_cb (GtkWidget *button,
+			 GtkTreeView *tree_view)
+{
+	GtkTreeSelection *selection;
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+	CamelCert *camel_cert = NULL;
+	CamelCertDB *certdb;
+	GtkWidget *parent_window;
+
+	g_return_if_fail (GTK_IS_TREE_VIEW (tree_view));
+
+	selection = gtk_tree_view_get_selection (tree_view);
+	if (!gtk_tree_selection_get_selected (selection, &model, &iter))
+		return;
+
+	gtk_tree_model_get (model, &iter, MAIL_CERT_COLUMN_CAMELCERT, &camel_cert, -1);
+
+	if (!camel_cert)
+		return;
+
+	g_return_if_fail (camel_cert != NULL);
+
+	certdb = camel_certdb_get_default ();
+	g_return_if_fail (certdb != NULL);
+
+	parent_window = gtk_widget_get_toplevel (button);
+	if (!parent_window || !GTK_IS_WINDOW (parent_window))
+		parent_window = NULL;
+
+	if (mail_cert_edit_trust (parent_window, camel_cert)) {
+		camel_certdb_touch (certdb);
+		camel_certdb_save (certdb);
+
+		gtk_list_store_set (GTK_LIST_STORE (model), &iter,
+			MAIL_CERT_COLUMN_TRUST, cm_get_camel_cert_trust_text (camel_cert->trust),
+			-1);
+	}
+}
+
+static void
+mail_cert_delete_cb (GtkButton *button,
+		     GtkTreeView *tree_view)
+{
+	GtkTreeSelection *selection;
+	GtkTreeModel *model;
+	GtkTreeIter iter, next;
+	gboolean next_valid = TRUE;
+	CamelCert *camel_cert = NULL;
+	CamelCertDB *certdb;
+
+	g_return_if_fail (GTK_IS_TREE_VIEW (tree_view));
+
+	selection = gtk_tree_view_get_selection (tree_view);
+	if (!gtk_tree_selection_get_selected (selection, &model, &iter))
+		return;
+
+	gtk_tree_model_get (model, &iter, MAIL_CERT_COLUMN_CAMELCERT, &camel_cert, -1);
+
+	if (!camel_cert)
+		return;
+
+	g_return_if_fail (camel_cert->rawcert != NULL);
+
+	certdb = camel_certdb_get_default ();
+	g_return_if_fail (certdb != NULL);
+
+	camel_certdb_remove_host (certdb, camel_cert->hostname, camel_cert->fingerprint);
+	camel_certdb_touch (certdb);
+	camel_certdb_save (certdb);
+
+	next = iter;
+	if (!gtk_tree_model_iter_next (model, &next)) {
+		next = iter;
+		next_valid = gtk_tree_model_iter_previous (model, &next);
+	}
+
+	if (gtk_list_store_remove (GTK_LIST_STORE (model), &iter))
+		camel_cert_unref (camel_cert);
+
+	if (next_valid)
+		gtk_tree_selection_select_iter (selection, &next);
+}
+
+static void
+mail_cert_update_cb (GtkButton *button,
+		     ECertManagerConfig *ecmc)
+{
+	gboolean had_selected;
+	GtkTreeSelection *selection;
+	GtkTreeModel *model = NULL;
+	GtkTreeIter iter;
+	gchar *hostname = NULL, *fingerprint = NULL;
+
+	g_return_if_fail (E_IS_CERT_MANAGER_CONFIG (ecmc));
+	g_return_if_fail (ecmc->priv->mail_tree_view);
+
+	selection = gtk_tree_view_get_selection (ecmc->priv->mail_tree_view);
+	had_selected = gtk_tree_selection_get_selected (selection, &model, &iter);
+
+	if (had_selected) {
+		gtk_tree_model_get (model, &iter,
+			MAIL_CERT_COLUMN_HOSTNAME, &hostname,
+			MAIL_CERT_COLUMN_FINGERPRINT, &fingerprint,
+			-1);
+	}
+
+	load_mail_certs (ecmc);
+
+	if (had_selected && hostname && fingerprint &&
+	    gtk_tree_model_get_iter_first (model, &iter)) {
+		do {
+			gchar *sec_hostname = NULL, *sec_fingerprint = NULL;
+
+			gtk_tree_model_get (model, &iter,
+				MAIL_CERT_COLUMN_HOSTNAME, &sec_hostname,
+				MAIL_CERT_COLUMN_FINGERPRINT, &sec_fingerprint,
+				-1);
+
+			if (g_strcmp0 (hostname, sec_hostname) == 0 &&
+			    g_strcmp0 (fingerprint, sec_fingerprint) == 0) {
+				gtk_tree_selection_select_iter (selection, &iter);
+				g_free (sec_hostname);
+				g_free (sec_fingerprint);
+				break;
+			}
+
+			g_free (sec_hostname);
+			g_free (sec_fingerprint);
+		} while (gtk_tree_model_iter_next (model, &iter));
+	}
+
+	g_free (hostname);
+	g_free (fingerprint);
+}
+
+static void
+cm_add_mail_certificate_page (ECertManagerConfig *ecmc,
+			      GtkNotebook *notebook)
+{
+	GtkGrid *grid;
+	GtkWidget *label, *tree_view, *scrolled_window, *button_box, *button;
+	GtkTreeSelection *selection;
+
+	g_return_if_fail (GTK_IS_NOTEBOOK (notebook));
+	g_return_if_fail (E_IS_CERT_MANAGER_CONFIG (ecmc));
+	g_return_if_fail (ecmc->priv->mail_model == NULL);
+
+	ecmc->priv->mail_model = GTK_TREE_MODEL (gtk_list_store_new (MAIL_CERT_N_COLUMNS,
+		G_TYPE_STRING,    /* hostname */
+		G_TYPE_STRING,    /* subject */
+		G_TYPE_STRING,    /* issuer */
+		G_TYPE_STRING,    /* fingerprint */
+		G_TYPE_STRING,    /* trust */
+		G_TYPE_POINTER)); /* CamelCert */
+
+	grid = GTK_GRID (gtk_grid_new ());
+	g_object_set (G_OBJECT (grid),
+		"hexpand", TRUE,
+		"vexpand", TRUE,
+		"halign", GTK_ALIGN_FILL,
+		"valign", GTK_ALIGN_FILL,
+		"margin", 2,
+		NULL);
+
+	label = gtk_label_new (_("You have certificates on file that identify these mail servers:"));
+	g_object_set (G_OBJECT (label),
+		"hexpand", TRUE,
+		"vexpand", FALSE,
+		"halign", GTK_ALIGN_CENTER,
+		"valign", GTK_ALIGN_START,
+		"margin", 4,
+		NULL);
+	gtk_grid_attach (grid, label, 0, 0, 2, 1);
+
+	tree_view = gtk_tree_view_new_with_model (ecmc->priv->mail_model);
+	g_object_set (G_OBJECT (tree_view),
+		"hexpand", TRUE,
+		"vexpand", TRUE,
+		"halign", GTK_ALIGN_FILL,
+		"valign", GTK_ALIGN_FILL,
+		"name", "mail-certs",
+		NULL);
+
+	scrolled_window = gtk_scrolled_window_new (NULL, NULL);
+	g_object_set (G_OBJECT (scrolled_window),
+		"hexpand", TRUE,
+		"vexpand", TRUE,
+		"halign", GTK_ALIGN_FILL,
+		"valign", GTK_ALIGN_FILL,
+		"hscrollbar-policy", GTK_POLICY_AUTOMATIC,
+		"vscrollbar-policy", GTK_POLICY_AUTOMATIC,
+		NULL);
+	gtk_container_add (GTK_CONTAINER (scrolled_window), tree_view);
+	gtk_grid_attach (grid, scrolled_window, 0, 1, 1, 1);
+
+	cm_add_text_column (GTK_TREE_VIEW (tree_view), _("Host name"), MAIL_CERT_COLUMN_HOSTNAME, TRUE);
+	cm_add_text_column (GTK_TREE_VIEW (tree_view), _("Subject"), MAIL_CERT_COLUMN_SUBJECT, FALSE);
+	cm_add_text_column (GTK_TREE_VIEW (tree_view), _("Issuer"), MAIL_CERT_COLUMN_ISSUER, FALSE);
+	cm_add_text_column (GTK_TREE_VIEW (tree_view), _("Fingerprint"), MAIL_CERT_COLUMN_FINGERPRINT, FALSE);
+	cm_add_text_column (GTK_TREE_VIEW (tree_view), _("Trust"), MAIL_CERT_COLUMN_TRUST, FALSE);
+
+	button_box = gtk_button_box_new (GTK_ORIENTATION_VERTICAL);
+	g_object_set (G_OBJECT (button_box),
+		"hexpand", FALSE,
+		"vexpand", TRUE,
+		"halign", GTK_ALIGN_START,
+		"valign", GTK_ALIGN_START,
+		"margin", 2,
+		"spacing", 6,
+		NULL);
+	gtk_grid_attach (grid, button_box, 1, 1, 1, 1);
+
+	selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (tree_view));
+	gtk_tree_selection_set_mode (selection, GTK_SELECTION_SINGLE);
+
+	button = gtk_button_new_with_mnemonic (_("_View"));
+	gtk_container_add (GTK_CONTAINER (button_box), button);
+	g_signal_connect_object (selection, "changed", G_CALLBACK (selection_changed_has_one_row_cb), button, 0);
+	g_signal_connect_object (button, "clicked", G_CALLBACK (mail_cert_view_cb), tree_view, 0);
+
+	button = gtk_button_new_with_mnemonic (_("_Edit Trust"));
+	gtk_container_add (GTK_CONTAINER (button_box), button);
+	g_signal_connect_object (selection, "changed", G_CALLBACK (selection_changed_has_one_row_cb), button, 0);
+	g_signal_connect_object (button, "clicked", G_CALLBACK (mail_cert_edit_trust_cb), tree_view, 0);
+
+	button = gtk_button_new_with_mnemonic (_("_Delete"));
+	gtk_container_add (GTK_CONTAINER (button_box), button);
+	g_signal_connect_object (selection, "changed", G_CALLBACK (selection_changed_has_one_row_cb), button, 0);
+	g_signal_connect_object (button, "clicked", G_CALLBACK (mail_cert_delete_cb), tree_view, 0);
+
+	button = gtk_button_new_with_mnemonic (_("_Update"));
+	gtk_container_add (GTK_CONTAINER (button_box), button);
+	g_signal_connect_object (button, "clicked", G_CALLBACK (mail_cert_update_cb), ecmc, 0);
+
+	gtk_widget_show_all (GTK_WIDGET (grid));
+	gtk_notebook_append_page (notebook, GTK_WIDGET (grid), gtk_label_new (_("Mail")));
+
+	ecmc->priv->mail_tree_view = GTK_TREE_VIEW (tree_view);
+
+	/* to have sensitivity updated */
+	g_signal_emit_by_name (selection, "changed", 0);
+}
+
 static void
 unload_certs (CertPage *cp)
 {
@@ -800,6 +1720,153 @@ unload_certs (CertPage *cp)
 		(GEqualFunc) g_str_equal,
 		(GDestroyNotify) g_free,
 		(GDestroyNotify) gtk_tree_iter_free);
+}
+
+typedef struct _LoadAllCertsAsyncData
+{
+	ECertManagerConfig *ecmc;
+	GCancellable *cancellable;
+	GSList *ecerts;
+	gint tries;
+} LoadAllCertsAsyncData;
+
+static void
+load_all_certs_async_data_free (gpointer ptr)
+{
+	LoadAllCertsAsyncData *data = ptr;
+
+	if (data) {
+		g_clear_object (&data->ecmc);
+		g_clear_object (&data->cancellable);
+		g_slist_free_full (data->ecerts, g_object_unref);
+		g_free (data);
+	}
+}
+
+static gboolean
+load_all_certs_done_idle_cb (gpointer user_data)
+{
+	LoadAllCertsAsyncData *data = user_data;
+
+	g_return_val_if_fail (data != NULL, FALSE);
+	g_return_val_if_fail (E_IS_CERT_MANAGER_CONFIG (data->ecmc), FALSE);
+
+	if (!g_cancellable_is_cancelled (data->cancellable)) {
+		ECertManagerConfig *ecmc = data->ecmc;
+		GSList *link;
+
+		unload_certs (data->ecmc->priv->yourcerts_page);
+		unload_certs (data->ecmc->priv->contactcerts_page);
+		unload_certs (data->ecmc->priv->authoritycerts_page);
+
+		for (link = data->ecerts; link; link = g_slist_next (link)) {
+			ECert *cert = link->data;
+			ECertType ct;
+
+			if (!cert)
+				continue;
+
+			ct = e_cert_get_cert_type (cert);
+			if (ct == data->ecmc->priv->yourcerts_page->cert_type) {
+				add_cert (data->ecmc->priv->yourcerts_page, g_object_ref (cert));
+			} else if (ct == data->ecmc->priv->authoritycerts_page->cert_type) {
+				add_cert (data->ecmc->priv->authoritycerts_page, g_object_ref (cert));
+			} else if (ct == data->ecmc->priv->contactcerts_page->cert_type || (ct != E_CERT_CA && ct != E_CERT_USER)) {
+				add_cert (data->ecmc->priv->contactcerts_page, g_object_ref (cert));
+			}
+		}
+
+		/* expand all three trees */
+		gtk_tree_view_expand_all (ECMC_TREE_VIEW (yourcerts_page));
+		gtk_tree_view_expand_all (ECMC_TREE_VIEW (contactcerts_page));
+		gtk_tree_view_expand_all (ECMC_TREE_VIEW (authoritycerts_page));
+
+		/* Now load settings of each treeview */
+		load_treeview_state (ECMC_TREE_VIEW (yourcerts_page));
+		load_treeview_state (ECMC_TREE_VIEW (contactcerts_page));
+		load_treeview_state (ECMC_TREE_VIEW (authoritycerts_page));
+	}
+
+	return FALSE;
+}
+
+static gpointer
+load_all_certs_thread (gpointer user_data)
+{
+	LoadAllCertsAsyncData *data = user_data;
+	CERTCertList *certList;
+	CERTCertListNode *node;
+
+	g_return_val_if_fail (data != NULL, NULL);
+
+	certList = PK11_ListCerts (PK11CertListUnique, NULL);
+
+	for (node = CERT_LIST_HEAD (certList);
+	     !CERT_LIST_END (node, certList) && !g_cancellable_is_cancelled (data->cancellable);
+	     node = CERT_LIST_NEXT (node)) {
+		ECert *cert = e_cert_new (CERT_DupCertificate ((CERTCertificate *) node->cert));
+
+		data->ecerts = g_slist_prepend (data->ecerts, cert);
+	}
+
+	CERT_DestroyCertList (certList);
+
+	g_idle_add_full (G_PRIORITY_HIGH_IDLE, load_all_certs_done_idle_cb, data, load_all_certs_async_data_free);
+
+	return NULL;
+}
+
+static gboolean
+load_all_threads_try_create_thread (gpointer user_data)
+{
+	LoadAllCertsAsyncData *data = user_data;
+	GThread *thread;
+	GError *error = NULL;
+
+	g_return_val_if_fail (data != NULL, FALSE);
+
+	if (data->tries > 10 || g_cancellable_is_cancelled (data->cancellable)) {
+		load_all_certs_async_data_free (data);
+		return FALSE;
+	}
+
+	thread = g_thread_try_new (NULL, load_all_certs_thread, data, &error);
+	if (g_error_matches (error, G_THREAD_ERROR, G_THREAD_ERROR_AGAIN)) {
+		data->tries++;
+
+		g_timeout_add (250, load_all_threads_try_create_thread, data);
+	} else if (!thread) {
+		g_warning ("%s: Failed to create thread: %s", G_STRFUNC, error ? error->message : "Unknown error");
+	} else {
+		g_thread_unref (thread);
+	}
+
+	g_clear_error (&error);
+
+	return FALSE;
+}
+
+static void
+load_all_certs (ECertManagerConfig *ecmc)
+{
+	LoadAllCertsAsyncData *data;
+
+	g_return_if_fail (E_IS_CERT_MANAGER_CONFIG (ecmc));
+
+	if (ecmc->priv->load_all_certs_cancellable) {
+		g_cancellable_cancel (ecmc->priv->load_all_certs_cancellable);
+		g_clear_object (&ecmc->priv->load_all_certs_cancellable);
+	}
+
+	ecmc->priv->load_all_certs_cancellable = g_cancellable_new ();
+
+	data = g_new0 (LoadAllCertsAsyncData, 1);
+	data->ecmc = g_object_ref (ecmc);
+	data->cancellable = g_object_ref (ecmc->priv->load_all_certs_cancellable);
+	data->ecerts = NULL;
+	data->tries = 0;
+
+	load_all_threads_try_create_thread (data);
 }
 
 static void
@@ -834,26 +1901,10 @@ populate_ui (ECertManagerConfig *ecmc)
 {
 	/* This is an idle callback. */
 
-	ECertManagerConfigPrivate *priv = ecmc->priv;
+	load_all_certs (ecmc);
+	load_mail_certs (ecmc);
 
-	unload_certs (priv->yourcerts_page);
-	load_certs (priv->yourcerts_page);
-
-	unload_certs (priv->contactcerts_page);
-	load_certs (priv->contactcerts_page);
-
-	unload_certs (priv->authoritycerts_page);
-	load_certs (priv->authoritycerts_page);
-
-	/* expand all three trees */
-	gtk_tree_view_expand_all (ECMC_TREE_VIEW (yourcerts_page));
-	gtk_tree_view_expand_all (ECMC_TREE_VIEW (contactcerts_page));
-	gtk_tree_view_expand_all (ECMC_TREE_VIEW (authoritycerts_page));
-
-	/* Now load settings of each treeview */
-	load_treeview_state (ECMC_TREE_VIEW (yourcerts_page));
-	load_treeview_state (ECMC_TREE_VIEW (contactcerts_page));
-	load_treeview_state (ECMC_TREE_VIEW (authoritycerts_page));
+	load_treeview_state (ecmc->priv->mail_tree_view);
 
 	return FALSE;
 }
@@ -894,6 +1945,12 @@ initialize_ui (CertPage *cp)
 		g_signal_connect (
 			cp->view_button, "clicked",
 			G_CALLBACK (view_cert), cp);
+
+	if (cp->backup_button)
+		g_signal_connect(
+			cp->backup_button, "clicked",
+			G_CALLBACK (backup_cert),
+			cp);
 }
 
 static void
@@ -905,6 +1962,7 @@ cert_manager_config_window_hide (ECertManagerConfig *ecmc,
 	save_treeview_state (ECMC_TREE_VIEW (yourcerts_page));
 	save_treeview_state (ECMC_TREE_VIEW (contactcerts_page));
 	save_treeview_state (ECMC_TREE_VIEW (authoritycerts_page));
+	save_treeview_state (ecmc->priv->mail_tree_view);
 }
 
 static void
@@ -914,13 +1972,15 @@ free_cert (GtkTreeModel *model,
            gpointer user_data)
 {
 	CertPage *cp = user_data;
-	ECert *cert;
+	ECert *cert = NULL;
 
 	gtk_tree_model_get (model, iter, cp->columns_count - 1, &cert, -1);
 
-	/* Double unref: one for gtk_tree_model_get() and one for e_cert_new() */
-	g_object_unref (cert);
-	g_object_unref (cert);
+	if (cert) {
+		/* Double unref: one for gtk_tree_model_get() and one for e_cert_new() */
+		g_object_unref (cert);
+		g_object_unref (cert);
+	}
 }
 
 static void
@@ -964,6 +2024,11 @@ cert_manager_config_dispose (GObject *object)
 		ecmc->priv->authoritycerts_page = NULL;
 	}
 
+	if (ecmc->priv->mail_model) {
+		gtk_tree_model_foreach (ecmc->priv->mail_model, cm_unref_camel_cert, NULL);
+		g_clear_object (&ecmc->priv->mail_model);
+	}
+
 	if (ecmc->priv->builder) {
 		g_object_unref (ecmc->priv->builder);
 			ecmc->priv->builder = NULL;
@@ -972,6 +2037,11 @@ cert_manager_config_dispose (GObject *object)
 	if (ecmc->priv->pref_window) {
 		g_signal_handlers_disconnect_matched (ecmc->priv->pref_window, G_SIGNAL_MATCH_DATA, 0, 0, NULL, NULL, ecmc);
 		ecmc->priv->pref_window = NULL;
+	}
+
+	if (ecmc->priv->load_all_certs_cancellable) {
+		g_cancellable_cancel (ecmc->priv->load_all_certs_cancellable);
+		g_clear_object (&ecmc->priv->load_all_certs_cancellable);
 	}
 
 	G_OBJECT_CLASS (e_cert_manager_config_parent_class)->dispose (object);
@@ -1088,6 +2158,8 @@ e_cert_manager_config_init (ECertManagerConfig *ecmc)
 	cp->cert_mime_types = authoritycerts_mime_types;
 	initialize_ui (cp);
 
+	cm_add_mail_certificate_page (ecmc, GTK_NOTEBOOK (e_builder_get_widget (priv->builder, "cert-manager-notebook")));
+
 	/* Run this in an idle callback so Evolution has a chance to
 	 * fully initialize itself and start its main loop before we
 	 * load certificates, since doing so may trigger a password
@@ -1105,8 +2177,7 @@ e_cert_manager_config_init (ECertManagerConfig *ecmc)
 	gtk_widget_show_all (widget);
 
 	/* FIXME: remove when implemented */
-	gtk_widget_set_sensitive (priv->yourcerts_page->backup_button, FALSE);
-	gtk_widget_set_sensitive (priv->yourcerts_page->backup_all_button, FALSE);
+	gtk_widget_set_visible (priv->yourcerts_page->backup_all_button, FALSE);
 }
 
 GtkWidget *
@@ -1119,61 +2190,22 @@ e_cert_manager_config_new (EPreferencesWindow *window)
 	return GTK_WIDGET (ecmc);
 }
 
-/* Helper for e_cert_manager_new_certificate_viewer() */
-static void
-cert_manager_parser_parsed_cb (GcrParser *parser,
-                               GcrParsed **out_parsed)
-{
-	GcrParsed *parsed;
-
-	parsed = gcr_parser_get_parsed (parser);
-	g_return_if_fail (parsed != NULL);
-
-	*out_parsed = gcr_parsed_ref (parsed);
-}
-
 GtkWidget *
 e_cert_manager_new_certificate_viewer (GtkWindow *parent,
                                        ECert *cert)
 {
-	GcrParser *parser;
-	GcrParsed *parsed = NULL;
 	GcrCertificate *certificate;
-	GckAttributes *attributes;
-	GcrCertificateWidget *certificate_widget;
 	GtkWidget *content_area;
 	GtkWidget *dialog;
-	GtkWidget *widget;
+	GtkWidget *widget, *certificate_widget;
 	gchar *subject_name;
-	const guchar *der_data = NULL;
-	gsize der_length;
-	GError *local_error = NULL;
 
 	g_return_val_if_fail (cert != NULL, NULL);
 
 	certificate = GCR_CERTIFICATE (cert);
-	der_data = gcr_certificate_get_der_data (certificate, &der_length);
 
-	parser = gcr_parser_new ();
-	g_signal_connect (
-		parser, "parsed",
-		G_CALLBACK (cert_manager_parser_parsed_cb), &parsed);
-	gcr_parser_parse_data (
-		parser, der_data, der_length, &local_error);
-	g_object_unref (parser);
+	certificate_widget = cm_prepare_certificate_widget (certificate);
 
-	/* Sanity check. */
-	g_return_val_if_fail (
-		((parsed != NULL) && (local_error == NULL)) ||
-		((parsed == NULL) && (local_error != NULL)), NULL);
-
-	if (local_error != NULL) {
-		g_warning ("%s: %s", G_STRFUNC, local_error->message);
-		g_clear_error (&local_error);
-		return NULL;
-	}
-
-	attributes = gcr_parsed_get_attributes (parsed);
 	subject_name = gcr_certificate_get_subject_name (certificate);
 
 	dialog = gtk_dialog_new_with_buttons (
@@ -1186,16 +2218,12 @@ e_cert_manager_new_certificate_viewer (GtkWindow *parent,
 
 	content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
 
-	certificate_widget = gcr_certificate_widget_new (certificate);
-	gcr_certificate_widget_set_attributes (certificate_widget, attributes);
-
 	widget = GTK_WIDGET (certificate_widget);
 	gtk_container_set_border_width (GTK_CONTAINER (widget), 5);
 	gtk_box_pack_start (GTK_BOX (content_area), widget, TRUE, TRUE, 0);
 	gtk_widget_show (widget);
 
 	g_free (subject_name);
-	gcr_parsed_unref (parsed);
 
 	return dialog;
 }

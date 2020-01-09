@@ -50,13 +50,13 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
 <title>Être averti lors d'un lors d'un nouveau courriel</title>
 
-<p>Evolution vous avertit toujours de l'arrivée d'un nouveau message en ajoutant une étoile jaune à l'icône de Mail du <link xref="change-switcher-appearance">sélecteur</link> de fenêtre.</p>
+<p><app>Evolution</app> always notifies you of new messages by adding a yellow star to the mailer icon in the window <link xref="change-switcher-appearance">switcher</link>.</p>
 <!-- Translators: Please make sure that the screenshot does have the small yellow star in the Mail icon -->
 <media type="image" src="./figures/new-mail-switcher.png" width="256">
   <p>Apparence du sélecteur lors de l'arrivée d'un nouveau message</p>

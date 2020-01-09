@@ -73,8 +73,10 @@ emqfe_text_plain_format (EMailFormatterExtension *extension,
 		CAMEL_MIME_FILTER_TOHTML_CONVERT_URLS |
 		CAMEL_MIME_FILTER_TOHTML_CONVERT_ADDRESSES;
 
+	/* XXX Should we define a separate EMailFormatter property
+	 *     for using CAMEL_MIME_FILTER_TOHTML_QUOTE_CITATION? */
 	if (e_mail_formatter_get_mark_citations (formatter))
-		text_flags |= CAMEL_MIME_FILTER_TOHTML_MARK_CITATION;
+		text_flags |= CAMEL_MIME_FILTER_TOHTML_QUOTE_CITATION;
 
 	/* Check for RFC 2646 flowed text. */
 	type = camel_mime_part_get_content_type (mime_part);
@@ -84,6 +86,14 @@ emqfe_text_plain_format (EMailFormatterExtension *extension,
 		text_flags |= CAMEL_MIME_FILTER_TOHTML_FORMAT_FLOWED;
 
 	filtered_stream = g_object_ref (stream);
+
+	filter = camel_mime_filter_tohtml_new (text_flags, rgb);
+	temp_stream = camel_filter_output_stream_new (filtered_stream, filter);
+	g_filter_output_stream_set_close_base_stream (
+		G_FILTER_OUTPUT_STREAM (temp_stream), FALSE);
+	g_object_unref (filtered_stream);
+	filtered_stream = temp_stream;
+	g_object_unref (filter);
 
 	if ((qf_context->qf_flags & E_MAIL_FORMATTER_QUOTE_FLAG_KEEP_SIG) == 0) {
 		filter = e_mail_stripsig_filter_new (TRUE);
@@ -95,14 +105,6 @@ emqfe_text_plain_format (EMailFormatterExtension *extension,
 		filtered_stream = temp_stream;
 		g_object_unref (filter);
 	}
-
-	filter = camel_mime_filter_tohtml_new (text_flags, rgb);
-	temp_stream = camel_filter_output_stream_new (filtered_stream, filter);
-	g_filter_output_stream_set_close_base_stream (
-		G_FILTER_OUTPUT_STREAM (temp_stream), FALSE);
-	g_object_unref (filtered_stream);
-	filtered_stream = temp_stream;
-	g_object_unref (filter);
 
 	e_mail_formatter_format_text (
 		formatter, part, filtered_stream, cancellable);

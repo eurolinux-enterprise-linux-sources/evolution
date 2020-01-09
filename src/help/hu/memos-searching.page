@@ -23,13 +23,37 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
 <title>Feljegyzések keresése</title>
 
 <section id="search-single">
 <title>Keresés egyetlen feljegyzésben</title>
-<p>A megjelenített feljegyzésben való szövegkereséshez válassza a <guiseq><gui>Szerkesztés</gui><gui>Keresés feljegyzésben</gui></guiseq> menüpontot.</p>
+<p>A megjelenített feljegyzésben való szövegkereséshez válassza a <guiseq><gui>Szerkesztés</gui><gui>Keresés feljegyzésben…</gui></guiseq> menüpontot.</p>
 </section>
 
 <section id="search-many">
@@ -43,13 +67,13 @@
 <item><p>A legördülő lista kibontásához kattintson a <media type="image" mime="image/png" its:translate="no" src="figures/search-icon.png"/> keresés ikonra.</p></item>
 <item><p>Válassza ki a keresési feltételt a listából.</p></item>
 <item><p>Adja meg a keresendő szöveget, és nyomja meg az <key>Enter</key> billentyűt.</p></item>
-<item><p>Az Evolution megjeleníti a találatokat.</p></item>
+<item><p>Az <app>Evolution</app> megjeleníti a találatokat.</p></item>
 </steps>
 <p>Keresés kategória alapján:</p>
 <steps>
 <item><p>Kattintson a <gui>Megjelenítés</gui> legördülő listára.</p></item>
 <item><p>Válassza ki a kategóriát a listából.</p></item>
-<item><p>Az Evolution megjeleníti a találatokat.</p></item>
+<item><p>Az <app>Evolution</app> megjeleníti a találatokat.</p></item>
 </steps>
 <p>Ha több keresési feltételt szeretne beállítani, akkor használja a Speciális keresést (lásd alább).</p>
 </section>

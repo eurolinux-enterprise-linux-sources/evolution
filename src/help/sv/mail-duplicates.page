@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-duplicates" xml:lang="sv">
 
   <info>
-    <desc>How to handle duplicated email messages</desc>
+    <desc>Hur hanteras e-postmeddelanden med dubbletter</desc>
     
     <link type="guide" xref="index#common-mail-problems"/>
 
@@ -19,23 +19,35 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-<title>Duplicate emails get downloaded</title>
+<title>Dubbletter av e-post hämtas ner</title>
 
 <section id="remove">
-<title>Removing duplicate emails</title>
-<p>To remove duplicate emails in a folder, select multiple messages (or select all messages in a folder by clicking <guiseq><gui>Edit</gui><gui>Select All</gui></guiseq> or pressing <keyseq><key>Ctrl</key><key>A</key></keyseq>) and click <guiseq><gui>Message</gui><gui>Remove Duplicate Messages</gui></guiseq>.</p>
+<title>Ta bort dubbletter</title>
+<p>För att a bort dubbletter av e-postmeddelanden i en mapp, välj flera meddelanden (eller välj alla meddelanden i en mapp genom att klicka på <guiseq><gui>Redigera</gui><gui>Markera alla</gui></guiseq> eller trycka <keyseq><key>Ctrl</key><key>A</key></keyseq>) och klicka <guiseq><gui>Meddelande</gui><gui>Ta bort dubblerade meddelanden</gui></guiseq>.</p>
 <!-- available by default since 2.91, as per http://mail.gnome.org/archives/evolution-list/2011-August/msg00000.html -->
 </section>
 
 <section id="reasons">
-<title>Reasons</title>
-<p>Downloading duplicate emails may be due to one of the following reasons:</p>
+<title>Skäl</title>
+<p>Hämtning av dubblerade e-postmeddelanden kan hända på grund av ett av följande skäl:</p>
 <list>
-<item><p>There are several copies of the same message in the mailbox</p></item>
-<item><p>Evolution is having a problem with the UIDL extension.</p></item>
-<item><p>The cache files located at <file>$HOME/.local/share/evolution/mail/local/</file> are not writable.</p></item>
+<item><p>Det finns flera kopior av samma meddelanden i brevlådan</p></item>
+<item><p><app>Evolution</app> har problem med UIDL-tillägget.</p></item>
+<item><p>Cachefilerna placerade i <file>$HOME/.local/share/evolution/mail/local/</file> är inte skrivbara.</p></item>
 </list>
 </section>
 

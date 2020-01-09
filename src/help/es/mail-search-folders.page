@@ -19,9 +19,15 @@
         
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -37,13 +43,13 @@
     </mal:credit>
   </info>
 
-  <title>Usar Carpetas de búsqueda</title>
+  <title>Usar <gui>Carpetas de búsqueda</gui></title>
   
 <p>Si los <link xref="mail-filters">filtros</link> no son lo suficientemente flexibles o se encuentra a si mismo realizando la misma <link xref="mail-searching">búsqueda</link> una y otra vez, considere crear una carpeta de búsqueda.</p>
 
 <p>Una carpeta de <link xref="mail-folders">búsqueda</link> es realmente un híbrido de todas las demás herramientas de organización: es parecido a una carpeta, opera como una función <link xref="mail-searching">búsqueda</link> y se configura como un filtro. En otras palabras, mientras una carpeta convencional contiene mensajes reales, una carpeta virtual es una vista de mensajes que pueden estar ubicados en carpetas diferentes. Los mensajes incluidos son identificados al vuelo mediante un conjunto de criterios elegidos de antemano.</p>
 
-<p>Evolution automáticamente actualiza el contenido de la carpeta de búsqueda cuando se reciben mensajes nuevos o al eliminar mensajes.</p>
+<p><app>Evolution</app> automáticamente actualiza el contenido de la carpeta de búsqueda cuando se reciben mensajes nuevos o al eliminar mensajes.</p>
 
 <p>La carpeta de búsqueda <gui>No coincidente</gui> es lo contrario del resto de carpetas de búsqueda: contiene todos los mensajes que no cumplen los criterios satisfechos por las demás carpetas de búsqueda.</p>
 

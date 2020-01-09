@@ -6,7 +6,7 @@
 
     <link type="guide" xref="mail-encryption#gpg"/>
 
-    <revision pkgversion="2.32.1" version="0.3" date="2011-08-24" status="final"/>
+    <revision pkgversion="3.13.90" version="0.4" date="2015-03-09" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -52,7 +52,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -63,7 +63,7 @@
      deleting this page-->
 
 
-<p>Après avoir <link xref="mail-encryption-gpg-set-up">configuré votre clé GPG</link>, vous pouvez signer ou chiffrer un message en choisissant <guiseq><gui>Options</gui><gui>Signer avec GPG</gui></guiseq> ou <gui>Chiffrer avec GPG</gui> dans le menu de l'éditeur de messages.</p>
+<p>Après avoir <link xref="mail-encryption-gpg-set-up">configuré votre clé GPG</link>, vous pouvez signer ou chiffrer un message en choisissant <guiseq><gui>Options</gui><gui>Signer avec GPG</gui></guiseq> ou <gui>Chiffrer avec GPG</gui> dans le menu de l'éditeur de messages ou en cliquant sur l'icône correspondante dans la barre d'outils.</p>
 <note style="tip"><p>La ligne de sujet du message n'est pas chiffrée et ne doit pas contenir d'information sensible.</p></note>
 
 <p>Pour que tous les messages soient signés ou chiffrés :</p>

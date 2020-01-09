@@ -92,17 +92,31 @@ book_shell_content_restore_state_cb (EShellWindow *shell_window,
 
 	/* Bind GObject properties to GSettings keys. */
 
-	settings = g_settings_new ("org.gnome.evolution.addressbook");
+	settings = e_util_ref_settings ("org.gnome.evolution.addressbook");
 
-	g_settings_bind (
-		settings, "hpane-position",
-		priv->paned, "hposition",
-		G_SETTINGS_BIND_DEFAULT);
+	if (e_shell_window_is_main_instance (shell_window)) {
+		g_settings_bind (
+			settings, "hpane-position",
+			priv->paned, "hposition",
+			G_SETTINGS_BIND_DEFAULT);
 
-	g_settings_bind (
-		settings, "vpane-position",
-		priv->paned, "vposition",
-		G_SETTINGS_BIND_DEFAULT);
+		g_settings_bind (
+			settings, "vpane-position",
+			priv->paned, "vposition",
+			G_SETTINGS_BIND_DEFAULT);
+	} else {
+		g_settings_bind (
+			settings, "hpane-position-sub",
+			priv->paned, "hposition",
+			G_SETTINGS_BIND_DEFAULT |
+			G_SETTINGS_BIND_GET_NO_CHANGES);
+
+		g_settings_bind (
+			settings, "vpane-position-sub",
+			priv->paned, "vposition",
+			G_SETTINGS_BIND_DEFAULT |
+			G_SETTINGS_BIND_GET_NO_CHANGES);
+	}
 
 	g_object_unref (settings);
 }
@@ -266,7 +280,7 @@ book_shell_content_constructed (GObject *object)
 	priv->paned = g_object_ref (widget);
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "orientation",
 		widget, "orientation",
 		G_BINDING_SYNC_CREATE);
@@ -289,7 +303,7 @@ book_shell_content_constructed (GObject *object)
 		EAB_CONTACT_DISPLAY (widget),
 		priv->preview_show_maps);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "preview-show-maps",
 		widget, "show-maps",
 		G_BINDING_SYNC_CREATE);
@@ -310,7 +324,7 @@ book_shell_content_constructed (GObject *object)
 	priv->preview_pane = g_object_ref (widget);
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		object, "preview-visible",
 		widget, "visible",
 		G_BINDING_SYNC_CREATE);

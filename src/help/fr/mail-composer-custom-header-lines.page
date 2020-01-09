@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="guide" id="mail-composer-custom-header-lines" xml:lang="fr">
 
   <info>
-    <desc>Utiliser des champs personnalisés dans l'en-tête de messages composés</desc>
+    <desc>Utiliser des champs personnalisés dans l'en-tête de messages composés.</desc>
 
     <link type="guide" xref="index#mail-composing-advanced"/>
 
@@ -52,7 +52,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 

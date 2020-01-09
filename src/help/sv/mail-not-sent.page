@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-not-sent" xml:lang="sv">
 
   <info>
-    <desc>Possible reasons why emails are not sent.</desc>
+    <desc>Möjliga skäl till varför e-postmeddelanden inte skickas.</desc>
     
     <link type="guide" xref="index#common-mail-problems"/>
 
@@ -15,16 +15,28 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
-</info>
 
-<title>Mail is not sent</title>
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  </info>
 
-<p>There can be several reasons why emails are not sent:</p>
+<title>Meddelande är inte skickat</title>
+
+<p>De kan finnas flera skäl till varför e-postmeddelanden inte skickas:</p>
 
 <list>
-<item><p>Invalid email address. Check if all the addresses listed as mail recipients are correct. If the message contains a wrong or invalid email address, the message will not be sent.</p></item>
-<item><p>Incorrect SMTP settings. Verify if the settings used for outgoing messages is correct. Using the incorrect server address or authentication method may prevent emails from being sent</p></item>
-<item><p>Offline status. Evolution may be offline. Check on the <gui style="button">Send and Receive</gui> button; if it is greyed out, then you are offline. To go online, go to <guiseq><gui>File</gui><gui>Work online</gui></guiseq>. You should now be able to use the <gui style="button">Send and Receive</gui> button.</p></item>
+<item><p>Ogiltig e-postadress. Kontrollera om alla adresserna som listas som mottagare av meddelandet är korrekta. Om meddelandet innehåller en felaktig eller ogiltig e-postadress kommer meddelandet inte att skickas.</p></item>
+<item><p>Felaktiga SMTP-inställningar. Verifiera om inställningarna som används för utgående meddelanden är korrekta. Att använda en felaktig serveradress eller autentiseringsmetod kan förhindra e-postmeddelanden från att skickas.</p></item>
+<item><p>Frånkoppladstatus. <app>Evolution</app> kan vara frånkopplat. Kontrollera knappen <gui style="button">Skicka och ta emot</gui>; om den är utgråad så är du frånkopplad. För att ansluta till nätet, gå till <guiseq><gui>Arkiv</gui><gui>Arbeta ansluten</gui></guiseq>. Du bör nu kunna använda knappen <gui style="button">Skicka och ta emot</gui>.</p></item>
 </list>
 
 </page>

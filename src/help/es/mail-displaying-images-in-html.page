@@ -24,9 +24,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -44,11 +50,11 @@
 
 <title>Imágenes en mensajes HTML</title>
 
-<p>Cuando alguien le envía un mensaje HTML que una imagen en su interior (por ejemplo el mensaje de bienvenida que encontrará en la Bandeja de entrada) Evolution mostrará la imagen dentro del mensaje.</p>
+<p>Cuando alguien le envía un mensaje HTML que una imagen en su interior (por ejemplo el mensaje de bienvenida que encontrará en la Bandeja de entrada) <app>Evolution</app> mostrará la imagen dentro del mensaje.</p>
 
 <section id="loading">
 <title>Cargar imágenes</title>
-<p>Algunas imágenes son enlaces dentro de un mensaje, más que una parte del mensaje. Evolution puede descargar esas imágenes desde internet, pero no lo hace a menos que se lo pida explícitamente. Esto es porque las imágenes servidas remotamente pueden ser muy lentas al cargarse y mostrarse, e incluso pueden ser usadas por «spammers» para llevar un seguimiento de quién lee los mensajes. No cargar automáticamente las imágenes ayuda a proteger su privacidad.</p>
+<p>Algunas imágenes son enlaces dentro de un mensaje, más que una parte del mensaje. <app>Evolution</app> puede descargar esas imágenes desde internet, pero no lo hace a menos que se lo pida explícitamente. Esto es porque las imágenes servidas remotamente pueden ser muy lentas al cargarse y mostrarse, e incluso pueden ser usadas por «spammers» para llevar un seguimiento de quién lee los mensajes. No cargar automáticamente las imágenes ayuda a proteger su privacidad.</p>
 
 <p>Para cargar las imágenes en un correo electrónico pulse <guiseq><gui>Ver</gui><gui>Cargar imágenes</gui></guiseq> o pulse <keyseq><key>Ctrl</key><key>I</key></keyseq>.</p>
 
@@ -65,7 +71,7 @@
 
 <section id="saving">
 <title>Guardar imágenes</title>
-<p>Para guardar una imagen empotrada en un correo HTML, pulse con el botón derecho del ratón sobre la imagen y seleccione <gui>Guardar imagen...</gui>.</p>
+<p>Para guardar una imagen empotrada en un correo HTML, pulse con el botón derecho del ratón sobre la imagen y seleccione <gui>Guardar imagen…</gui>.</p>
 <!-- This is available only since version 3.1.5, see https://bugzilla.gnome.org/show_bug.cgi?id=655669 -->
 </section>
 

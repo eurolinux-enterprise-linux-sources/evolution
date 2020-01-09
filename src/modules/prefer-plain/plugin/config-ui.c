@@ -24,12 +24,6 @@
 
 GtkWidget *prefer_plain_page_factory (EPlugin *ep, EConfigHookItemFactoryData *hook_data);
 
-enum {
-	EPP_NORMAL,
-	EPP_PREFER,
-	EPP_TEXT
-};
-
 static GSettings *epp_settings = NULL;
 static gint epp_mode = -1;
 static gboolean epp_show_suppressed = TRUE;
@@ -48,6 +42,11 @@ static struct {
 	  N_("Show plain text part, if present, otherwise "
 	     "let Evolution choose the best part to show.") },
 
+	{ "prefer_source",
+	  N_("Show plain text if present, or HTML source"),
+	  N_("Show plain text part, if present, otherwise "
+	     "the HTML part source.") },
+
 	{ "only_plain",
 	  N_("Only ever show plain text"),
 	  N_("Always show plain text part and make attachments "
@@ -58,7 +57,7 @@ static void
 update_info_label (GtkWidget *info_label,
                    guint mode)
 {
-	gchar *str = g_strconcat ("<i>", _(epp_options[mode > 2 ? 0 : mode].description), "</i>", NULL);
+	gchar *str = g_strconcat ("<i>", _(epp_options[mode >= G_N_ELEMENTS (epp_options) ? 0 : mode].description), "</i>", NULL);
 
 	gtk_label_set_markup (GTK_LABEL (info_label), str);
 
@@ -70,7 +69,7 @@ epp_mode_changed (GtkComboBox *dropdown,
                   GtkWidget *info_label)
 {
 	epp_mode = gtk_combo_box_get_active (dropdown);
-	if (epp_mode > 2)
+	if (epp_mode >= G_N_ELEMENTS (epp_options))
 		epp_mode = 0;
 
 	g_settings_set_string (epp_settings, "mode", epp_options[epp_mode].key);
@@ -130,6 +129,8 @@ prefer_plain_page_factory (EPlugin *epl,
 	info = gtk_label_new (NULL);
 	gtk_misc_set_alignment (GTK_MISC (info), 0.0, 0.5);
 	gtk_label_set_line_wrap (GTK_LABEL (info), TRUE);
+	gtk_label_set_width_chars (GTK_LABEL (info), 40);
+	gtk_label_set_max_width_chars (GTK_LABEL (info), 60);
 
 	gtk_widget_show (info);
 	update_info_label (info, epp_mode);
@@ -163,7 +164,7 @@ e_plugin_lib_enable (EPlugin *ep,
 
 	if (enable) {
 
-		epp_settings = g_settings_new ("org.gnome.evolution.plugin.prefer-plain");
+		epp_settings = e_util_ref_settings ("org.gnome.evolution.plugin.prefer-plain");
 		key = g_settings_get_string (epp_settings, "mode");
 		if (key) {
 			for (i = 0; i < G_N_ELEMENTS (epp_options); i++) {

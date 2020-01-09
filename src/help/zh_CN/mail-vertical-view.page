@@ -21,7 +21,7 @@
 
   <title>Vertical view</title>
 
-<p>除了经典视图之外，Evolution 还提供了一个“垂直式”的视图。在垂直视图中，邮件预览面板位于邮件列表的右侧。（而在经典视图中，邮件预览面板位于邮件列表的下方）。垂直视图能使您有效利用宽屏显示器的额外宽度。</p>
+<p><app>Evolution</app> provides a vertical view in addition to the classical view. In the vertical view, the message preview pane is located at the right side of the message list when compared to the classical view where the message preview pane is placed below the message list. Vertical view enables you to use the extra width of wide screen monitors.</p>
 
 <p>To switch to vertical view, click <guiseq><gui>View</gui><gui>Preview</gui><gui>Vertical View</gui></guiseq>.</p>
 

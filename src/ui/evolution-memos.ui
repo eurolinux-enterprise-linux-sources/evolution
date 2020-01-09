@@ -1,4 +1,4 @@
-<ui>
+<ui evolution-ui-version="1.0">
   <menubar name='main-menu'>
     <menu action='file-menu'>
       <placeholder name='file-actions'>
@@ -22,6 +22,7 @@
       </placeholder>
     </menu>
     <menu action='view-menu'>
+      <menuitem action='memo-list-manage-groups'/>
       <placeholder name='view-custom-menus'>
         <menu action='memo-preview-menu'>
           <menuitem action='memo-preview'/>
@@ -64,7 +65,10 @@
     <separator/>
     <menuitem action='memo-list-popup-delete'/>
     <menuitem action='memo-list-popup-select-one'/>
+    <menuitem action='memo-list-popup-select-all'/>
     <placeholder name='memo-list-popup-actions'/>
+    <separator/>
+    <menuitem action='memo-list-popup-manage-groups'/>
     <separator/>
     <menuitem action='memo-list-popup-properties'/>
   </popup>

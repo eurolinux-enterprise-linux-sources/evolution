@@ -1,4 +1,4 @@
-SUBDIRS = plugin
+SUBDIRS = web-extension
 
 @EVO_PLUGIN_RULE@
 
@@ -11,22 +11,20 @@ module_itip_formatter_la_CPPFLAGS =					\
 	-DG_LOG_DOMAIN=\"evolution-module-itip-formatter\"		\
 	$(EVOLUTION_DATA_SERVER_CFLAGS)					\
 	$(GNOME_PLATFORM_CFLAGS)					\
-	$(GTKHTML_CFLAGS)
+	$(CODE_COVERAGE_CFLAGS)						\
+	$(NULL)
 
 module_itip_formatter_la_SOURCES =					\
-	e-conflict-search-selector.c					\
-	e-conflict-search-selector.h					\
 	e-mail-formatter-itip.c						\
 	e-mail-formatter-itip.h						\
 	e-mail-parser-itip.c						\
 	e-mail-parser-itip.h						\
 	e-mail-part-itip.c						\
 	e-mail-part-itip.h						\
-	e-source-conflict-search.c					\
-	e-source-conflict-search.h					\
 	itip-view.c							\
 	itip-view.h							\
-	evolution-module-itip-formatter.c
+	evolution-module-itip-formatter.c				\
+	itip-view-elements-defines.h
 
 module_itip_formatter_la_LIBADD =					\
 	$(top_builddir)/e-util/libevolution-util.la			\
@@ -37,10 +35,10 @@ module_itip_formatter_la_LIBADD =					\
 	$(top_builddir)/libemail-engine/libemail-engine.la		\
 	$(EVOLUTION_DATA_SERVER_LIBS)					\
 	$(GNOME_PLATFORM_LIBS)						\
-	$(GTKHTML_LIBS)
+	$(NULL)
 
 module_itip_formatter_la_LDFLAGS =					\
-	-avoid-version -module $(NO_UNDEFINED)
+	-avoid-version -module $(NO_UNDEFINED) $(CODE_COVERAGE_LDFLAGS)
 
 error_DATA = org-gnome-itip-formatter.error
 errordir = $(privdatadir)/errors

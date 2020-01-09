@@ -28,7 +28,7 @@
 <p>Se quere cambiar unha tarefa que xa existe na súa lista de tarefas.</p>
 
 <steps>
-<item><p>Prema dúas veces sobre unha tarefa que queira editar desde a lista de tarefas, ou prema co botón dereito sobre unha tarefa e prema <key>Abrir tarefa</key>.</p></item>
+<item><p>Double-click on the task that you want to edit in the list of tasks, or right-click on the task and click <gui>Open Task</gui>.</p></item>
 <item><p>Editar a información dunha tarefa.</p></item>
 <item><p>Prema no botón <gui style="button">Gardar</gui>, ou <guiseq><gui>Ficheiro</gui><gui>Gardar</gui></guiseq>.</p></item>
 </steps>

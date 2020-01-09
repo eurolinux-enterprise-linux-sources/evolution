@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-display-message-source" xml:lang="cs">
 
   <info>
-    <desc>Displaying the raw source of a message or all header lines.</desc>
+    <desc>Jak zobrazit surový kód zprávy nebo všechny řádky hlavičky.</desc>
 
     <link type="guide" xref="mail-displaying-message#advanced"/>
 
@@ -15,12 +15,24 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>Message Source</title>
+<title>Zdrojová data zprávy</title>
 
-<p>To view the message data, click on <guiseq><gui>View</gui><gui>Message Source</gui></guiseq> or press <keyseq><key>Ctrl</key><key>U</key></keyseq>. This will display the message data in a new window.</p>
+<p>Když si chcete zobrazit data zprávy, klikněte na <guiseq><gui>Zobrazit</gui> <gui>Zdrojová data zprávy</gui></guiseq> nebo zmáčkněte <keyseq><key>Ctrl</key><key>U</key></keyseq>. Data zprávy se zobrazí v novém okně.</p>
 
-<p>To only view the complete headers for a message, click <guiseq><gui>View</gui><gui>All Message Headers</gui></guiseq>. This will display the complete header data on the viewing pane.</p> 
+<p>Chcete-li zobrazit jen všechny hlavičky zprávy, klikněte <guiseq><gui>Zobrazit</gui> <gui>Všechny hlavičky zprávy</gui></guiseq>. Tím se zobrazí všechna data hlavičky v panelu náhledu.</p> 
 
 </page>

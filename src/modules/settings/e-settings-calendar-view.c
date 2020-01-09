@@ -47,7 +47,7 @@ settings_calendar_view_constructed (GObject *object)
 	extension = E_EXTENSION (object);
 	extensible = e_extension_get_extensible (extension);
 
-	settings = g_settings_new ("org.gnome.evolution.calendar");
+	settings = e_util_ref_settings ("org.gnome.evolution.calendar");
 
 	g_settings_bind (
 		settings, "time-divisions",
@@ -91,6 +91,11 @@ settings_calendar_view_constructed (GObject *object)
 		g_settings_bind (
 			settings, "show-event-end",
 			extensible, "show-event-end-times",
+			G_SETTINGS_BIND_GET);
+
+		g_settings_bind (
+			settings, "show-icons-month-view",
+			extensible, "show-icons-month-view",
 			G_SETTINGS_BIND_GET);
 	}
 

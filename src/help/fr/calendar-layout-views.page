@@ -54,14 +54,13 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
   <title>Vues disponibles</title>
 
-  <p><app>Evolution</app> offers five different views of your calendar
-  data:</p>
+  <p><app>Evolution</app> propose cinq vues différentes pour les données de vos agendas :</p>
 
   <list>
     <item>

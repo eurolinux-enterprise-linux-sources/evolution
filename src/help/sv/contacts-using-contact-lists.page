@@ -19,68 +19,59 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Using contact lists for grouping contacts.</desc>
+    <desc>Användning av kontaktlistor för att gruppera kontakter.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Using Contact Lists</title>
+  <title>Användning av kontaktlistor</title>
 
-  <p>A contact list is a set of contacts with a single nickname that you
-  create. When you send mail to this nickname it is actually sent to every
-  member of the list. This differs from a "real" mailing list in that it exists
-  only on your computer as a convenience to you, rather than as an actual email
-  address managed by a mailing list application on a server.</p>
+  <p>En kontaktlista är en uppsättning av kontakter med ett smeknamn som du skapar. När du skickar e-post till detta smeknamn skickas det i verkligheten till varje medlem i listan. Detta skiljer sig från en ”riktig” sändlista på så sätt att den existerar bara på din dator som en bekvämlighet för dig, snarare än som en riktig e-postadress som hanteras av ett sändlistprogram på en server.</p>
 
-  <p>For example, you could create one contact for each family member, then add
-  those contacts to a contact list called "Family". Then, instead of entering
-  each person's email address individually, you can send emails to "Family" and
-  the messages would go to all of them.</p>
+  <p>Du skulle till exempel kunna skapa en kontakt för varje familjemedlem och sedan lägga till de kontakterna i en kontaktlista som heter ”Familj”. Sen, istället för att mata in varje persons e-postadress individuellt, kan du skicka e-post till ”Familj” så kommer meddelandena att skickas till dem allihop.</p>
 
 <section id="create-contact-list">
-  <title>Creating a contact list</title>
+  <title>Skapa en kontaktlista</title>
 
   <steps>
     <item>
-      <p>Click <guiseq><gui>File</gui><gui>New</gui>
-      <gui>Contact List</gui></guiseq>.</p>
+      <p>Klicka på <guiseq><gui>Arkiv</gui><gui>Nytt</gui><gui>Kontaktlista</gui></guiseq>.</p>
     </item>
     <item>
-      <p>Enter a name that you prefer.</p>
+      <p>Ange ett namn du föredrar.</p>
     </item>
     <item>
-      <p>Select the address book under <gui>Where:</gui> to which it will be
-      added.</p>
+      <p>Välj adressboken under <gui>Var:</gui> för att välja var den ska läggas till.</p>
     </item>
     <item>
-      <p>Specify the list members by either entering the names or email
-      addresses of contacts (the text field supports autocompletion), or by
-      dragging contacts from the Contacts window into the list, or by using the
-      <gui style="button">Select…</gui> button.</p>
+      <p>Ange listmedlemmarna antingen genom att skriva in namnen eller e-postadresserna för kontakterna (textfältet har stöd för automatisk komplettering), eller genom att dra kontakter från kontaktfönstret till listan, eller genom att använda knappen <gui style="button">Välj…</gui>.</p>
     </item>
     <item>
-      <p>Choose whether you want to hide the email addresses when you send a
-      message to the list.</p><p>Unless it is a very small list, it is
-      recommended that you leave the addresses hidden. This is the same thing
-      as using the “Bcc:” feature discussed in
-      <link xref="mail-composer-several-recipients">Sending a message to
-      several recipients</link>.</p>
+      <p>Välj huruvida du vill gömma e-postadresser när du skickar ett meddelande till listan.</p><p>Om det inte är en väldigt liten lista är det rekommenderat att du låter adresserna vara dolda. Detta är samma sak som att använda funktionen ”Blindkopia:” som beskrivs i <link xref="mail-composer-several-recipients">Skicka ett meddelande till flera mottagare</link>.</p>
     </item>
     <item>
-      <p>Click <gui style="button">OK</gui>.</p>
+      <p>Klicka på <gui style="button">OK</gui>.</p>
     </item>
   </steps>
 
-  <p>The contact list will be added to the chosen address book in
-  <app>Evolution</app>.</p>
+  <p>Kontaktlistan kommer att läggas till den nuvarande i <app>Evolution</app>.</p>
 
 </section>
 
 <section id="send-to-contact-list">
-  <title>Sending messages to a contact list</title>
+  <title>Skicka meddelanden till en kontaktlista</title>
 
-  <p>To send a message to the contact list, enter the name that you chose for
-  the contact list as the recipient in the mail composer. You can also
-  right-click the contact list in your address book and select
-  <gui>Send Message to List</gui>.</p>
+  <p>För att skicka ett meddelande till kontaktlistan, skriv in namnet på kontaktlistan som du valde som mottagare i meddelanderedigeraren. Du kan också högerklicka på kontaktlistan i din adressbok och välja <gui>Skicka meddelande till lista</gui>.</p>
 
 </section>
 

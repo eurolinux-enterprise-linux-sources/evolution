@@ -39,7 +39,7 @@ settings_mail_browser_constructed (GObject *object)
 
 	extensible = e_extension_get_extensible (E_EXTENSION (object));
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 	/* This preference is selected directly from the mail
 	 * browser window, so the binding must be bi-directional. */
@@ -52,6 +52,11 @@ settings_mail_browser_constructed (GObject *object)
 	g_settings_bind (
 		settings, "show-deleted",
 		extensible, "show-deleted",
+		G_SETTINGS_BIND_GET);
+
+	g_settings_bind (
+		settings, "show-junk",
+		extensible, "show-junk",
 		G_SETTINGS_BIND_GET);
 
 	g_object_unref (settings);

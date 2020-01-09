@@ -20,9 +20,15 @@
     
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -50,7 +56,7 @@ included by XInclude. See http://blogs.gnome.org/shaunm/2011/07/21/understanding
 <p>Filtros de mensajes de acuerdo con el servidor de las que las recibió. Esto es útil cuando tiene múltiples cuentas de correo POP.</p></item>
 
 <item><p>Encauzar al programa:</p>
-<p>Evolution puede usar un comando externo para procesar un mensaje y después procesarlo basándose en el valor devuelto. Los comandos que se suelen usar deben devolver un entero. Generalmente esto se suele usar para añadir un filtro de correo spam.</p></item>
+<p><app>Evolution</app> puede usar un comando externo para procesar un mensaje y después procesarlo basándose en el valor devuelto. Los comandos que se suelen usar deben devolver un entero. Generalmente esto se suele usar para añadir un filtro de correo spam.</p></item>
 
 <item><p>Detección de spam:</p>
 <p>Filtros basados en los resultados de las <link xref="mail-spam">pruebas de spam</link>.</p></item>

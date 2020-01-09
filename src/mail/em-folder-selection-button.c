@@ -269,14 +269,16 @@ folder_selection_button_clicked (GtkButton *button)
 	if (model == NULL)
 		model = g_object_ref (em_folder_tree_model_get_default ());
 
-	dialog = em_folder_selector_new (
-		parent, model,
-		EM_FOLDER_SELECTOR_CAN_CREATE,
-		priv->title, priv->caption, NULL);
+	dialog = em_folder_selector_new (parent, model);
+
+	gtk_window_set_title (GTK_WINDOW (dialog), priv->title);
 
 	g_object_unref (model);
 
 	selector = EM_FOLDER_SELECTOR (dialog);
+	em_folder_selector_set_can_create (selector, TRUE);
+	em_folder_selector_set_caption (selector, priv->caption);
+
 	folder_tree = em_folder_selector_get_folder_tree (selector);
 
 	selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (folder_tree));

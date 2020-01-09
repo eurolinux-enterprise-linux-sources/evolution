@@ -21,16 +21,19 @@
 
 <item><p>Goiburu espezifikoa:</p>
 <p>Any header including <link xref="mail-composer-custom-header-lines">custom ones</link>.</p>
-<p>If a message uses a header more than once, Evolution pays attention only to the first instance, even if the message defines the header differently the second time. For example, if a message declares the Resent-From: header as "engineering@example.com" and then restates it as "marketing@example.com", Evolution filters as though the second declaration did not occur. To filter on messages that use headers multiple times, use a regular expression.</p></item>
+<p>If a message uses a header more than once, <app>Evolution</app> pays attention only to the first instance, even if the message defines the header differently the second time. For example, if a message declares the Resent-From: header as "engineering@example.com" and then restates it as "marketing@example.com", <app>Evolution</app> filters as though the second declaration did not occur. To filter on messages that use headers multiple times, use a regular expression.</p></item>
 
 <item><p>Mezuaren gorputza:</p>
 <p>Mezuaren barruko testuan bilatzen du.</p></item>
 
 <item><p>Adierazpena:</p>
-<p>(For programmers only) Match a message according to an expression you write in the Scheme language used to define <link xref="mail-filters">filters</link> in Evolution.</p></item>
+<p>(For programmers only) Match a message according to an expression you write in the Scheme language used to define <link xref="mail-filters">filters</link> in <app>Evolution</app>.</p></item>
+
+<item><p>Free Form Expression:</p>
+<p>(For advanced users only) Combine numerous conditions by using a <link href="https://bugzilla.gnome.org/show_bug.cgi?id=550796#c10">special syntax</link>.</p></item>
 
 <item><p>Date sent:</p>
-<p>Bidali ziren egunaren arabera iragaziko dira mezuak. Aukeratu mezuak bete behar dituen baldintzak -- halako eguna baino lehenago edo beranduago bidalitakoak, eta abar. Ondoren, aukeratu ordua. Iragazkiak mezuaren ordu-zigilua sistemaren erlojuarekin edo egutegian aukeratu duzun data eta orduarekin konparatuko du. Denbora erlatiboa ere marka dezakezu, esate baterako, duela 2-4 egun bitartean bidalitakoak.</p></item>
+<p>Filters messages according to the date on which they were sent. First, choose the conditions you want a message to meet, such as before a given date or after a given date. Then choose the time. The filter compares the message's time stamp to the system clock when the filter is run, or to a specific time and date you choose from a calendar. You can also have it look for a message within a range of time relative to the filter, such as two to four days ago.</p></item>
 
 <item><p>Date received:</p>
 <p>Bidaltze-dataren antzera funtzionatzen du, baina mezua hartu zenuen eguna eta ordua konparatzen ditu zuk zehaztutako balioekin.</p></item>
@@ -60,6 +63,6 @@
 <p>Mezua etorri zen posta-zerrendan oinarrituta iragazten du. Baliteke iragazki honek zerrenda-zerbitzari batzuetako mezuak galtzea, X-BeenThere goiburuaren bila joaten delako, eta goiburu hori posta-zerrendak edo beste posta-birbanatzaile batzuk identifikatzeko erabiltzen da. Halako iragazkiek ez dute hartzen X-BeenThere ezartzen ez duten zerrenda-zerbitzarietako posta.</p></item>
 
 <item><p>Adierazpen erregularra:</p>
-<p>(For programmers only) If you know your way around a <link href="https://en.wikipedia.org/wiki/Regular_expression">regex</link>, or regular expression, this option allows you to search for complex patterns of letters, so that you can find, for example, all words that start with a and end with m, and are between six and fifteen letters long, or all messages that declare a particular header twice. For information about how to use regular expressions, check the man page for the <cmd>grep</cmd> command.</p></item>
+<p>(For programmers only) If you know your way around a <link href="https://en.wikipedia.org/wiki/Regular_expression">regex</link>, or regular expression, this option allows you to search for complex patterns of letters, so that you can find, for example, all words that start with "a" and end with "m", and are between six and fifteen letters long, or all messages that declare a particular header twice. For information about how to use regular expressions, check <link href="man:grep">the man page for the <cmd>grep</cmd></link> command.</p></item>
 
 </info>

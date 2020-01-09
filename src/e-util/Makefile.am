@@ -40,6 +40,7 @@ errordir = $(privdatadir)/errors
 @EVO_PLUGIN_RULE@
 
 ui_DATA = \
+	e-html-editor-manager.ui \
 	e-send-options.ui \
 	e-table-config.ui \
 	e-timezone-dialog.ui \
@@ -60,6 +61,8 @@ noinst_PROGRAMS = \
 	test-category-completion \
 	test-contact-store \
 	test-dateedit \
+	test-html-editor \
+	test-html-editor-units \
 	test-mail-signatures \
 	test-name-selector \
 	test-preferences-window \
@@ -68,6 +71,33 @@ noinst_PROGRAMS = \
 	test-source-config \
 	test-source-selector \
 	test-tree-view-frame \
+	$(NULL)
+
+# This is not meant to be distributed to end users, unless test-html-editor-units
+# is also distributed, but even then it can work without it
+privsolibtestgiomodulesdir = $(privsolibdir)/test-gio-modules
+privsolibtestgiomodules_LTLIBRARIES = libevolutiontestsettings.la
+
+GITIGNOREFILES = libevolutiontestsettings.so
+
+libevolutiontestsettings_la_SOURCES = \
+	test-keyfile-settings-backend.h \
+	test-keyfile-settings-backend.c \
+	$(PLATFORM_SOURCES) \
+	$(NULL)
+
+libevolutiontestsettings_la_CPPFLAGS = \
+	$(AM_CPPFLAGS) \
+	-I$(top_srcdir) \
+	-I$(top_builddir) \
+	-DG_LOG_DOMAIN=\"evolution-test-settings\" \
+	$(EVOLUTION_DATA_SERVER_CFLAGS) \
+	$(NULL)
+
+libevolutiontestsettings_la_LDFLAGS = -no-install -module -avoid-version $(NO_UNDEFINED) $(CODE_COVERAGE_LDFLAGS)
+
+libevolutiontestsettings_la_LIBADD =  \
+	$(EVOLUTION_DATA_SERVER_LIBS) \
 	$(NULL)
 
 libevolution_util_la_CPPFLAGS = \
@@ -95,12 +125,17 @@ libevolution_util_la_CPPFLAGS = \
 	-DEVOLUTION_TOOLSDIR=\""$(privlibexecdir)"\" \
 	-DEVOLUTION_UIDIR=\""$(uidir)"\" \
 	-DEVOLUTION_RULEDIR=\"$(ruledir)\" \
+	-DEVOLUTION_WEB_EXTENSIONS_DIR=\""$(webextensionsdir)"\" \
+	-DEVOLUTION_TESTGIOMODULESDIR=\"$(privsolibtestgiomodulesdir)\" \
+	-DEVOLUTION_TESTTOPSRCDIR=\"$(abs_top_srcdir)\" \
 	-DG_LOG_DOMAIN=\"evolution-util\" \
 	$(EVOLUTION_DATA_SERVER_CFLAGS) \
 	$(GNOME_PLATFORM_CFLAGS) \
 	$(GEO_CFLAGS) \
-	$(GTKHTML_CFLAGS) \
+	$(ENCHANT_CFLAGS) \
 	$(GTKSPELL_CFLAGS) \
+	$(CODE_COVERAGE_CFLAGS) \
+	$(AUTOAR_CFLAGS) \
 	$(NULL)
 
 evolution_util_include_HEADERS =  \
@@ -115,7 +150,6 @@ evolution_util_include_HEADERS =  \
 	e-alert-sink.h \
 	e-alert.h \
 	e-attachment-bar.h \
-	e-attachment-button.h \
 	e-attachment-dialog.h \
 	e-attachment-handler-image.h \
 	e-attachment-handler.h \
@@ -146,13 +180,13 @@ evolution_util_include_HEADERS =  \
 	e-cell-checkbox.h \
 	e-cell-combo.h \
 	e-cell-date-edit.h \
+	e-cell-date-int.h \
 	e-cell-date.h \
 	e-cell-hbox.h \
 	e-cell-number.h \
 	e-cell-percent.h \
 	e-cell-pixbuf.h \
 	e-cell-popup.h \
-	e-cell-renderer-color.h \
 	e-cell-size.h \
 	e-cell-text.h \
 	e-cell-toggle.h \
@@ -164,14 +198,24 @@ evolution_util_include_HEADERS =  \
 	e-client-cache.h \
 	e-client-combo-box.h \
 	e-client-selector.h \
+	e-color-chooser-widget.h \
+	e-color-combo.h \
 	e-config.h \
+	e-conflict-search-selector.h \
 	e-contact-store.h \
+	e-content-editor.h \
+	e-content-request.h \
 	e-data-capture.h \
 	e-dateedit.h \
 	e-datetime-format.h \
 	e-destination-store.h \
 	e-dialog-utils.h \
 	e-dialog-widgets.h \
+	e-emoticon-action.h \
+	e-emoticon-chooser-menu.h \
+	e-emoticon-chooser.h \
+	e-emoticon-tool-button.h \
+	e-emoticon.h \
 	e-event.h \
 	e-file-request.h \
 	e-file-utils.h \
@@ -186,9 +230,24 @@ evolution_util_include_HEADERS =  \
 	e-filter-part.h \
 	e-filter-rule.h \
 	e-focus-tracker.h \
+	e-html-editor-actions.h \
+	e-html-editor-cell-dialog.h \
+	e-html-editor-dialog.h \
+	e-html-editor-find-dialog.h \
+	e-html-editor-hrule-dialog.h \
+	e-html-editor-image-dialog.h \
+	e-html-editor-link-dialog.h \
+	e-html-editor-page-dialog.h \
+	e-html-editor-paragraph-dialog.h \
+	e-html-editor-replace-dialog.h \
+	e-html-editor-spell-check-dialog.h \
+	e-html-editor-table-dialog.h \
+	e-html-editor-text-dialog.h \
+	e-html-editor.h \
 	e-html-utils.h \
 	e-icon-factory.h \
 	e-image-chooser.h \
+	e-image-chooser-dialog.h \
 	e-import-assistant.h \
 	e-import.h \
 	e-interval-chooser.h \
@@ -242,15 +301,19 @@ evolution_util_include_HEADERS =  \
 	e-selection-model.h \
 	e-selection.h \
 	e-send-options.h \
+	e-simple-async-result.h \
 	e-sorter-array.h \
 	e-sorter.h \
 	e-source-combo-box.h \
 	e-source-config-backend.h \
 	e-source-config-dialog.h \
 	e-source-config.h \
+	e-source-conflict-search.h \
 	e-source-selector-dialog.h \
 	e-source-selector.h \
 	e-source-util.h \
+	e-spell-checker.h \
+	e-spell-dictionary.h \
 	e-spell-entry.h \
 	e-spell-text-view.h \
 	e-spinner.h \
@@ -305,7 +368,6 @@ evolution_util_include_HEADERS =  \
 	e-url-entry.h \
 	e-util-enums.h \
 	e-util-enumtypes.h \
-	e-web-view-gtkhtml.h \
 	e-web-view-preview.h \
 	e-web-view.h \
 	e-widget-undo.h \
@@ -317,6 +379,7 @@ evolution_util_include_HEADERS =  \
 	ea-widgets.h \
 	gal-a11y-e-cell-popup.h \
 	gal-a11y-e-cell-registry.h \
+	gal-a11y-e-cell-text.h \
 	gal-a11y-e-cell-toggle.h \
 	gal-a11y-e-cell-tree.h \
 	gal-a11y-e-cell-vbox.h \
@@ -361,7 +424,6 @@ libevolution_util_la_SOURCES = \
 	e-alert-sink.c \
 	e-alert.c \
 	e-attachment-bar.c \
-	e-attachment-button.c \
 	e-attachment-dialog.c \
 	e-attachment-handler-image.c \
 	e-attachment-handler.c \
@@ -392,13 +454,13 @@ libevolution_util_la_SOURCES = \
 	e-cell-checkbox.c \
 	e-cell-combo.c \
 	e-cell-date-edit.c \
+	e-cell-date-int.c \
 	e-cell-date.c \
 	e-cell-hbox.c \
 	e-cell-number.c \
 	e-cell-percent.c \
 	e-cell-pixbuf.c \
 	e-cell-popup.c \
-	e-cell-renderer-color.c \
 	e-cell-size.c \
 	e-cell-text.c \
 	e-cell-toggle.c \
@@ -410,14 +472,24 @@ libevolution_util_la_SOURCES = \
 	e-client-cache.c \
 	e-client-combo-box.c \
 	e-client-selector.c \
+	e-color-chooser-widget.c \
+	e-color-combo.c \
 	e-config.c \
+	e-conflict-search-selector.c \
 	e-contact-store.c \
+	e-content-editor.c \
+	e-content-request.c \
 	e-data-capture.c \
 	e-dateedit.c \
 	e-datetime-format.c \
 	e-destination-store.c \
 	e-dialog-utils.c \
 	e-dialog-widgets.c \
+	e-emoticon-action.c \
+	e-emoticon-chooser-menu.c \
+	e-emoticon-chooser.c \
+	e-emoticon-tool-button.c \
+	e-emoticon.c \
 	e-event.c \
 	e-file-request.c \
 	e-file-utils.c \
@@ -432,9 +504,25 @@ libevolution_util_la_SOURCES = \
 	e-filter-part.c \
 	e-filter-rule.c \
 	e-focus-tracker.c \
+	e-html-editor-actions.c \
+	e-html-editor-cell-dialog.c \
+	e-html-editor-dialog.c \
+	e-html-editor-find-dialog.c \
+	e-html-editor-hrule-dialog.c \
+	e-html-editor-image-dialog.c \
+	e-html-editor-link-dialog.c \
+	e-html-editor-page-dialog.c \
+	e-html-editor-paragraph-dialog.c \
+	e-html-editor-private.h \
+	e-html-editor-replace-dialog.c \
+	e-html-editor-spell-check-dialog.c \
+	e-html-editor-table-dialog.c \
+	e-html-editor-text-dialog.c \
+	e-html-editor.c \
 	e-html-utils.c \
 	e-icon-factory.c \
 	e-image-chooser.c \
+	e-image-chooser-dialog.c \
 	e-import-assistant.c \
 	e-import.c \
 	e-interval-chooser.c \
@@ -488,15 +576,19 @@ libevolution_util_la_SOURCES = \
 	e-selection-model.c \
 	e-selection.c \
 	e-send-options.c \
+	e-simple-async-result.c \
 	e-sorter-array.c \
 	e-sorter.c \
 	e-source-combo-box.c \
 	e-source-config-backend.c \
 	e-source-config-dialog.c \
 	e-source-config.c \
+	e-source-conflict-search.c \
 	e-source-selector-dialog.c \
 	e-source-selector.c \
 	e-source-util.c \
+	e-spell-checker.c \
+	e-spell-dictionary.c \
 	e-spell-entry.c \
 	e-spell-text-view.c \
 	e-spinner.c \
@@ -548,7 +640,6 @@ libevolution_util_la_SOURCES = \
 	e-url-entry.c \
 	e-util-enumtypes.c \
 	e-util-private.h \
-	e-web-view-gtkhtml.c \
 	e-web-view-preview.c \
 	e-web-view.c \
 	e-widget-undo.c \
@@ -559,6 +650,7 @@ libevolution_util_la_SOURCES = \
 	ea-widgets.c \
 	gal-a11y-e-cell-popup.c \
 	gal-a11y-e-cell-registry.c \
+	gal-a11y-e-cell-text.c \
 	gal-a11y-e-cell-toggle.c \
 	gal-a11y-e-cell-tree.c \
 	gal-a11y-e-cell-vbox.c \
@@ -583,7 +675,7 @@ libevolution_util_la_SOURCES = \
 	$(PLATFORM_SOURCES) \
 	$(NULL)
 
-libevolution_util_la_LDFLAGS = -avoid-version $(NO_UNDEFINED)
+libevolution_util_la_LDFLAGS = -avoid-version $(NO_UNDEFINED) $(CODE_COVERAGE_LDFLAGS)
 
 libevolution_util_la_LIBADD =  \
 	$(top_builddir)/libgnomecanvas/libgnomecanvas.la \
@@ -591,8 +683,9 @@ libevolution_util_la_LIBADD =  \
 	$(EVOLUTION_DATA_SERVER_LIBS) \
 	$(GNOME_PLATFORM_LIBS) \
 	$(GEO_LIBS) \
-	$(GTKHTML_LIBS) \
+	$(ENCHANT_LIBS) \
 	$(GTKSPELL_LIBS) \
+	$(AUTOAR_LIBS) \
 	$(INTLLIBS) \
 	$(MATH_LIB) \
 	$(NULL)
@@ -625,6 +718,20 @@ test_contact_store_LDADD = $(TEST_LDADD)
 test_dateedit_CPPFLAGS = $(TEST_CPPFLAGS)
 test_dateedit_SOURCES = test-dateedit.c
 test_dateedit_LDADD = $(TEST_LDADD)
+
+test_html_editor_CPPFLAGS = $(TEST_CPPFLAGS)
+test_html_editor_SOURCES = test-html-editor.c
+test_html_editor_LDADD = $(TEST_LDADD)
+
+test_html_editor_units_CPPFLAGS = $(TEST_CPPFLAGS) -DTEST_TOP_SRCDIR=\""$(top_srcdir)"\"
+test_html_editor_units_SOURCES = \
+	test-html-editor-units-bugs.h \
+	test-html-editor-units-bugs.c \
+	test-html-editor-units-utils.h \
+	test-html-editor-units-utils.c \
+	test-html-editor-units.c \
+	$(NULL)
+test_html_editor_units_LDADD = $(TEST_LDADD)
 
 test_mail_signatures_CPPFLAGS = $(TEST_CPPFLAGS)
 test_mail_signatures_SOURCES = test-mail-signatures.c

@@ -50,7 +50,8 @@
       <p>Choose a location by selecting continent, country and city.</p>
     </item>
     <item>
-      <p>Izberite <gui>Uporabi varno povezavo</gui>, če se želite varno povezati.</p>
+      <p>Choose <gui>Use a secure connection</gui> if you want to connect
+      securely.</p>
     </item>
     <item>
       <p>Izberite enoto za merjenje temperature.</p>

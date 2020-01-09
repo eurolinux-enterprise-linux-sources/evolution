@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-sorting-message-list" xml:lang="sv">
 
   <info>
-    <desc>Sorting the message list of a mail folder.</desc>
+    <desc>Sortera meddelandelistan för en meddelandemapp.</desc>
 
     <link type="guide" xref="mail-organizing"/>
     <link type="guide" xref="mail-layout-changing"/>
@@ -23,46 +23,58 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
     
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Sorting the message list</title>
+  <title>Sortera meddelandelistan</title>
   
-<p>Evolution lets you organize your emails by letting you sort messages in the <link xref="intro-main-window#e-mail">message list</link>.</p>
+<p><app>Evolution</app> låter dig organisera dina e-postmeddelanden genom att låta dig sortera meddelanden i <link xref="intro-main-window#e-mail">meddelandelistan</link>.</p>
 
 <section id="email-threads">
-<title>Sorting Mail in Email Threads</title>
-<p>You can use a threaded message view to sort emails. To enable this feature, click on <guiseq><gui>View</gui><gui>Group By Threads</gui></guiseq> or press <keyseq><key>Ctrl</key><key>T</key></keyseq>.</p>
-<p>This feature, when enabled, groups replies with the original email and allows you to follow the flow of the conversation from one message to the next.</p>
-<p>When a new message arrives, it will be added below the parent message. Threads are sorted and displayed based on the date of the most recent message received.</p>
-<note style="tip"><p>For Advanced Users: There is a GSettings key that allows you to toggle between the collapsed and expanded state of the email threads. The collapsed state is enabled by default. It can be changed by starting the <app>Terminal</app> application and running the command <cmd>gsettings set org.gnome.evolution.mail thread-expand true</cmd></p>
+<title>Sortera post i e-posttrådar</title>
+<p>Du kan använda en trådad meddelandevy för att sortera e-postmeddelanden. För att aktivera denna funktionalitet, klicka på <guiseq><gui>Visa</gui><gui>Gruppera efter trådar</gui></guiseq> eller tryck <keyseq><key>Ctrl</key><key>T</key></keyseq>.</p>
+<p>Denna funktion, när den är aktiverad, grupperar svar ihop med originalmeddelandet och låter dig följa konversationens flöde från ett meddelande till nästa.</p>
+<p>När ett nytt meddelande ankommer kommer det att läggas till under det överordnade meddelandet. Trådar sorteras och visas baserade på datumet och när det senaste meddelandet togs emot.</p>
+<note style="tip"><p>För avancerade användare: Det finns en GSettings-nyckel som låter dig växla mellan ihopfällt och expanderat tillstånd för e-posttrådar. Det ihopfällda tillståndet är aktiverat som standard. Det kan ändras genom att starta <app>Terminal</app>-programmet och köra kommando <cmd>gsettings set org.gnome.evolution.mail thread-expand true</cmd></p>
 <list>
-<item><p>Open the <app>Terminal</app> application.</p></item>
-<item><p>Run the command <cmd>gsettings set org.gnome.desktop.interface can-change-accels true</cmd></p></item>
+<item><p>Öppna <app>Terminal</app>-programmet.</p></item>
+<item><p>Kör kommandot <cmd>gsettings set org.gnome.desktop.interface can-change-accels true</cmd></p></item>
 </list>
 </note>
 </section>
 
 <section id="column-headers">
 <title>Sortera post med kolumnhuvuden</title>
-<p>The message list displays columns that indicate whether a message has been read, whether it has attachments, how important the message is, the sender, date, and the subject. To change the columns used in the message list, you can do one of the following:</p>
+<p>Meddelandelistan visar kolumner som indikerar huruvida ett meddelande har lästs, huruvida det har bilagor, hur viktigt meddelandet är, avsändaren, datum och ämnet. För att ändra vilka kolumner som används i meddelandelistan kan du göra endera av följande:</p>
 <list>
-<item><p>Drag and drop the column header bars</p></item>
-<item><p>Right-click on the header.</p></item>
-<item><p>Select the <gui>Remove This Column</gui> or <gui>Add a Column</gui> option.</p></item>
+<item><p>Dra och släpp kolumnrubriker</p></item>
+<item><p>Högerklicka på rubriken.</p></item>
+<item><p>Välj alternativet <gui>Ta bort denna kolumn</gui> eller <gui>Lägg till en kolumn</gui>.</p></item>
 </list>
 
-<p>Evolution allows you to sort your messages using these columns. Just click on the column label to sort the emails. The direction of the arrow next to the label indicates the direction of the sort.</p>
+<p><app>Evolution</app> låter dig sortera dina meddelanden via dessa kolumner. Bara klicka på kolumnrubrikerna för att sortera e-postmeddelandena. Riktningen på pilen intill etiketten indikerar sorteringsordningen.</p>
 </section>
 
 <section id="sort-options">
-<title>Using Other Sorting Options</title>
-<p>Evolution provides other ways for sorting email messages. You can use Sort By, Sort Ascending, Sort Descending, or Unsort.</p>
+<title>Användning av andra sorteringsalternativ</title>
+<p><app>Evolution</app> tillhandahåller andra sätt att sortera e-postmeddelanden. Du kan använda Sortera efter, Sortera stigande, Sortera fallande, eller Återställ sortering.</p>
 	<section id="sort-options-by">
-	<title>Sort By</title>
-		<p>You can also sort email messages using the <gui>Sort By</gui> list.</p>
+	<title>Sortera efter</title>
+		<p>Du kan också sortera e-postmeddelanden via listan <gui>Sortera efter</gui>.</p>
 		<steps>
-		<item><p>Right-click on the message list column headers.</p></item>
-		<item><p>Select the <gui>Sort By</gui> option.</p><p>This brings up this list of criteria for sorting email messages:</p>
+		<item><p>Högerklicka på kolumnrubriken i meddelandelistan.</p></item>
+		<item><p>Välj alternativet <gui>Sortera efter</gui>.</p><p>Detta visar listan av kriterier för att sortera e-postmeddelanden:</p>
 			<list>
 			<item><p>Ämne - Nedkortat</p></item>
 			<item><p>Etiketter</p></item>
@@ -70,7 +82,7 @@
 			<item><p>Avsändare</p></item>
 			<item><p>Plats</p></item>
 			<item><p>Ska utföras den</p></item>
-			<item><p><link xref="mail-follow-up-flag">Follow Up Flag</link></p></item>
+			<item><p><link xref="mail-follow-up-flag">Uppföljningsflagga</link></p></item>
 			<item><p>Flaggstatus</p></item>
 			<item><p>Storlek</p></item>
 			<item><p>Till</p></item>
@@ -84,35 +96,35 @@
 			<item><p>Anpassad</p></item>
 			</list>
 		</item>
-		<item><p>Select the option you wish to use in sorting email messages.</p></item>
+		<item><p>Välj det alternativ du önskar använda vid sortering av e-postmeddelanden.</p></item>
 		</steps>
 	</section>
 
 	<section id="sort-options-ascending">
-	<title>Sort Ascending</title>
+	<title>Sortera stigande</title>
 		<steps>
-		<item><p>Right-click on the message list column headers.</p></item>
-		<item><p>Select the <gui>Sort Ascending</gui> option.</p></item>
+		<item><p>Högerklicka på kolumnrubriken i meddelandelistan.</p></item>
+		<item><p>Välj alternativet <gui>Sortera stigande</gui>.</p></item>
 		</steps>
-		<p>The messages will be displayed with the most recent at the bottom.</p>
+		<p>Meddelandena kommer att visas med det senaste längst ner.</p>
 	</section>
 
 	<section id="sort-options-descending">
-	<title>Sort Descending</title>
+	<title>Sortera fallande</title>
 		<steps>
-		<item><p>Right-click on the message list column headers.</p></item>
-		<item><p>Select the <gui>Sort Descending</gui> option.</p></item>
+		<item><p>Högerklicka på kolumnrubriken i meddelandelistan.</p></item>
+		<item><p>Välj alternativet <gui>Sortera fallande</gui>.</p></item>
 		</steps>
-		<p>The messages will be displayed with the most recent at the top.</p>
+		<p>Meddelandena kommer att visas med det senaste längst upp.</p>
 	</section>
 
 	<section id="sort-options-unsort">
-	<title>Unsort</title>
+	<title>Återställ sortering</title>
 		<steps>
-		<item><p>Right-click on the message list column headers.</p></item>
-		<item><p>Select the <gui>Unsort</gui> option.</p></item>
+		<item><p>Högerklicka på kolumnrubriken i meddelandelistan.</p></item>
+		<item><p>Välj alternativet <gui>Återställ sortering</gui>.</p></item>
 		</steps>
-		<p>This removes sorting from the column, reverting to the order of messages as they were added to the folder.</p>
+		<p>Detta tar bort sortering från kolumnen och återgår till den ordning som meddelanden lades till i mappen.</p>
 	</section>
 </section>
 

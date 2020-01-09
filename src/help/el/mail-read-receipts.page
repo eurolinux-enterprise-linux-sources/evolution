@@ -14,7 +14,7 @@
     <link type="guide" xref="mail-account-manage-unix-mbox-spool-file#defaults"/>
     <link type="guide" xref="mail-account-manage-usenet-news#defaults"/>
 
-    <revision pkgversion="2.32.1" version="0.2" date="2011-01-06" status="candidate"/>
+    <revision pkgversion="3.13.90" version="0.3" date="2015-03-09" status="final"/>
     <credit type="author">
       <name its:translate="no">April Gonzales</name>
       <email its:translate="no">loonycookie@gmail.com</email>
@@ -29,9 +29,27 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
@@ -39,8 +57,8 @@
 
 <p>Αποδείξεις ανάγνωσης είναι ένας τρόπος βεβαίωσης ότι οι αποδέκτες πήραν το μήνυμα σας. Ο αποδέκτης μπορεί κανονικά να επιλέξει εάν θα βεβαιώνει την απόδειξη ή όχι, έτσι δεν είναι ένας πλήρως αξιόπιστος τρόπος ελέγχου εάν τα μηνύματα σας διαβάστηκαν από κάποιον.</p>
 
-<p>Μπορείτε να ζητήσετε αποδείξεις ανάγνωσης ενεργοποιώντας αυτήν την επιλογή στο μενού σύνταξης μηνύματος. Για να το κάνετε, μετάβαση στο <guiseq><gui>επιλογές</gui><gui>αίτημα απόδειξης ανάγνωσης</gui></guiseq>.</p>
+<p>Μπορείτε να ζητήσετε αποδείξεις ανάγνωσης διαλέγοντας <guiseq><gui>Επιλογές</gui><gui>Αίτηση απόδειξης ανάγνωσης</gui></guiseq> στο μενού του παραθύρου σύνταξης ή πατώντας το αντίστοιχο εικονίδιο στην εργαλειοθήκη.</p>
 
-<p>Για αποδείξεις ανάγνωσης που δέχεστε μπορείτε να ορίσετε τη συμπεριφορά του Evolution πηγαίνοντας στο <guiseq><gui>επεξεργασία</gui><gui>προτιμήσεις</gui><gui>λογαριασμοί αλληλογραφίας</gui><gui style="button">επεξεργασία</gui><gui>προεπιλογές</gui><gui>αποδείξεις μηνύματος</gui></guiseq>.</p>
+<p>For read receipts that you receive you can define <app>Evolution</app>'s behavior under <gui>Message Receipts</gui> under the account's <link xref="mail-default-folder-locations"><gui>Defaults</gui></link>.</p>
 
 </page>

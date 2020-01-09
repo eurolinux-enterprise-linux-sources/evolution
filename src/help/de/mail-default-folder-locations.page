@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-default-folder-locations" xml:lang="de">
 
   <info>
-    <desc>Den Ort für die Ordner »Entwürfe«, »Verschickt«, »Papierkorb« und »Unerwünscht« ändern.</desc>
+    <desc>Den Ort für die Ordner <gui>Entwürfe</gui>, <gui>Verschickt</gui>, <gui>Papierkorb</gui> und <gui>Unerwünscht</gui> ändern.</desc>
 
     <link type="guide" xref="mail-account-manage-imap-plus#defaults"/>
     <link type="guide" xref="mail-account-manage-local-delivery#defaults"/>
@@ -15,7 +15,7 @@
     <link type="guide" xref="mail-account-manage-microsoft-exchange-evo-mapi#defaults"/>
     <link type="guide" xref="mail-account-manage-microsoft-exchange-evo-ews#defaults"/>
 
-    <revision pkgversion="3.7.4" version="0.2" date="2013-01-23" status="draft"/>
+    <revision pkgversion="3.13.90" version="0.3" date="2015-03-09" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -34,25 +34,32 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
   <title>Orte der E-Mail-Ordner</title>
 
 <p>Legen Sie einen anderen Ort fest, wo Ihre Entwürfe und verschickten Elemente gespeichert werden, im Abschnitt <gui>Vorgaben</gui> der E-Mail-Konten (<guiseq><gui>Bearbeiten</gui><gui>Einstellungen</gui><gui>E-Mail-Konten</gui><gui style="button">Bearbeiten</gui><gui>Vorgaben</gui></guiseq>).</p>
-<p>Für entfernte Kontentypen (wie beispielsweise IMAP) können Sie auch Ordner für den Papierkorb und unerwünschte Nachrichten auf dem Mailserver einrichten, indem Sie die entsprechende Option <gui>Realen Ordner für …</gui> wählen. In diesem Fall werden die lokalen <link xref="mail-search-folders">virtuellen Ordner</link> von Evolution nicht verwendet.</p>
+<p>Legen Sie einen <gui>Archivordner</gui> fest, um zum Beispiel alte E-Mails dorthin zu verschieben. Wählen Sie <guiseq><gui>Nachricht</gui><gui>Archivieren</gui></guiseq> im Hauptfenster und die gewählte Nachricht wird in den festgelegten Ordner verschoben.</p>
+<p>Für entfernte Kontentypen (wie beispielsweise IMAP) können Sie auch Ordner für den Papierkorb und unerwünschte Nachrichten auf dem Mailserver einrichten, indem Sie die entsprechende Option <gui>Realen Ordner für …</gui> wählen. In diesem Fall werden die lokalen <link xref="mail-search-folders">virtuellen Ordner</link> von <gui>Evolution</gui> nicht verwendet.</p>
 
 </page>

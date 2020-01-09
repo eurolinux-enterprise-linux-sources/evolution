@@ -52,7 +52,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -60,9 +60,9 @@
 
 <p>Lorsque vous recevez un courriel, vous pouvez le faire suivre à d'autres personnes ou groupes qui pourraient être intéressés.</p>
 <p>Vous pouvez faire suivre un message comme une pièce jointe à un nouveau message (c'est le comportement par défaut, consultez <link xref="#default-settings">Paramètres par défaut</link>, dans le corps (dans votre message sans le caractère &gt; devant chaque ligne) ou en citation (avec le caractère &gt; devant chaque ligne).</p>
-<p>Faire suivre en pièce jointe est mieux si vous voulez envoyer le message complet et non modifié à quelqu'un d'autre. Dans le corps ou cité est mieux si vous voulez envoyez une partie du message ou si vous avez beaucoup de commentaires à faire sur différentes parties du message que vous faites suivre.</p>
+<p>Faire suivre en pièce jointe est mieux si vous voulez envoyer le message complet et non modifié à quelqu'un d'autre. Faire suivre dans le corps ou faire suivre en citation est mieux si vous voulez envoyez une partie du message ou si vous avez beaucoup de commentaires à faire sur différentes parties du message que vous faites suivre.</p>
 
-<p>Pour faire suivre un message que vous êtes en train de lire :</p>
+<p>Pour faire suivre le message que vous êtes en train de lire :</p>
 <steps>
 <item><p>Cliquez sur <guiseq><gui>Message</gui><gui>Faire suivre</gui></guiseq>, sur le bouton <gui>Faire suivre</gui> dans la barre d'outils ou pressez <keyseq><key>Ctrl</key><key>F</key></keyseq> pour utiliser la méthode par défaut. Au cas où vous souhaitiez utiliser une autre méthode pour faire suivre, cliquez sur <guiseq><gui>Message</gui><gui>Faire suivre comme</gui></guiseq> ou sur la petite flèche du menu déroulant à côté du bouton <gui>Faire suivre</gui> dans la barre d'outils pour sélectionner la méthode.</p></item>
 <item><p>Sélectionnez un destinataire pour le message. Le sujet est déjà saisi, mais vous pouvez le modifier si nécessaire.</p></item>

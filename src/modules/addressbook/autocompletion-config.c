@@ -77,7 +77,6 @@ get_main_notebook (EConfig *config,
 		return old;
 
 	notebook = gtk_notebook_new ();
-	gtk_notebook_set_show_border (GTK_NOTEBOOK (notebook), FALSE);
 	gtk_widget_show (notebook);
 
 	return notebook;
@@ -105,7 +104,7 @@ get_general_page (EConfig *config,
 	shell = E_SHELL (user_data);
 	registry = e_shell_get_registry (shell);
 
-	settings = g_settings_new ("org.gnome.evolution.addressbook");
+	settings = e_util_ref_settings ("org.gnome.evolution.addressbook");
 
 	vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 12);
 	gtk_container_set_border_width (GTK_CONTAINER (vbox), 12);
@@ -211,7 +210,7 @@ autocompletion_config_new (EPreferencesWindow *window)
 	e_config_add_items (
 		E_CONFIG (config), items, config_items_free, shell);
 
-	settings = g_settings_new ("org.gnome.evolution.addressbook");
+	settings = e_util_ref_settings ("org.gnome.evolution.addressbook");
 
 	target = eab_config_target_new_prefs (config, settings);
 	e_config_set_target (E_CONFIG (config), (EConfigTarget *) target);

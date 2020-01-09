@@ -23,27 +23,29 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Autocompletion of names and email addresses entered in the mail composer.</desc>
+    <desc>Automatisk komplettering av namn och e-postadresser som matas in i meddelanderedigeraren.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Autocompletion of mail recipients</title>
+  <title>Automatisk komplettering av e-postmottagare</title>
 
-  <p>You can enter the first three letters of names and email addresses in the
-  recipients text field and <app>Evolution</app> will present you with a list
-  of matches from your address books.</p>
+  <p>Du kan skriva in de första tre bokstäverna i namn och e-postadresser i textfältet för mottagare så kommer <app>Evolution</app> att visa dig en lista över matchningar från dina adressböcker.</p>
 
-  <p>To enable autocompletion, go to
-  <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Contacts</gui>
-  <gui>Autocompletion</gui></guiseq> and choose the address books from the list
-  that <app>Evolution</app> should look in for matches.</p>
+  <p>För att aktivera automatisk komplettering, gå till <guiseq><gui>Redigera</gui><gui>Inställningar</gui><gui>Kontakter</gui> <gui>Automatisk komplettering</gui></guiseq> och välj adressböckerna från listan som <app>Evolution</app> bör leta i efter matchningar.</p>
 
-  <p>Select <gui>Always show address of the autocompleted contact</gui> to also
-  show the email address along with the name. This can be helpful to
-  distinguish if a contact has several email addresses.</p>
+  <p>Välj <gui>Visa alltid adressen för automatiskt kompletterad kontakt</gui> för att också visa e-postadressen tillsammans med namn. Detta kan vara till hjälp för att avgöra om en kontakt har flera e-postadresser.</p>
 
-  <p>Alternately, you can click the <gui>To:</gui>, <gui>Cc:</gui>, or
-  <gui>Bcc:</gui> buttons to get a list of the email addresses in your
-  contacts. Select addresses and click the arrow buttons to move them into the
-  appropriate address columns.</p>
+  <p>Alternativt kan du klicka på knapparna <gui>Till:</gui>, <gui>Kopia:</gui> eller <gui>Blindkopia:</gui> för att få en lista över e-postadresser bland dina kontakter. Välj adresser och klicka på pilknapparna för att flytta dem till lämpliga adresskolumner.</p>
 
 </page>

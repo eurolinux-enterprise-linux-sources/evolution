@@ -35,6 +35,12 @@ struct _EMailConfigIdentityPagePrivate {
 	gboolean show_email_address;
 	gboolean show_instructions;
 	gboolean show_signatures;
+	gboolean show_autodiscover_check;
+	GtkWidget *autodiscover_check;	/* not referenced */
+	GtkWidget *display_name_entry;	/* not referenced */
+	GtkWidget *name_entry;		/* not referenced */
+	GtkWidget *address_entry;	/* not referenced */
+	GtkWidget *reply_to_entry;	/* not referenced */
 };
 
 enum {
@@ -44,7 +50,8 @@ enum {
 	PROP_SHOW_ACCOUNT_INFO,
 	PROP_SHOW_EMAIL_ADDRESS,
 	PROP_SHOW_INSTRUCTIONS,
-	PROP_SHOW_SIGNATURES
+	PROP_SHOW_SIGNATURES,
+	PROP_SHOW_AUTODISCOVER_CHECK
 };
 
 /* Forward Declarations */
@@ -73,17 +80,35 @@ mail_config_identity_page_is_email (const gchar *email_address)
 }
 
 static void
+mail_config_identity_page_signature_editor_created_cb (GObject *source_object,
+						       GAsyncResult *result,
+						       gpointer user_data)
+{
+	GtkWidget *editor;
+	GError *error = NULL;
+
+	g_return_if_fail (result != NULL);
+
+	editor = e_mail_signature_editor_new_finish (result, &error);
+	if (error) {
+		g_warning ("%s: Failed to create signature editor: %s", G_STRFUNC, error->message);
+		g_clear_error (&error);
+	} else {
+		gtk_window_set_position (GTK_WINDOW (editor), GTK_WIN_POS_CENTER);
+		gtk_widget_show (editor);
+	}
+}
+
+static void
 mail_config_identity_page_add_signature_cb (GtkButton *button,
                                             EMailConfigIdentityPage *page)
 {
 	ESourceRegistry *registry;
-	GtkWidget *editor;
 
 	registry = e_mail_config_identity_page_get_registry (page);
 
-	editor = e_mail_signature_editor_new (registry, NULL);
-	gtk_window_set_position (GTK_WINDOW (editor), GTK_WIN_POS_CENTER);
-	gtk_widget_show (editor);
+	e_mail_signature_editor_new (registry, NULL,
+		mail_config_identity_page_signature_editor_created_cb, NULL);
 }
 
 static void
@@ -148,6 +173,12 @@ mail_config_identity_page_set_property (GObject *object,
 				E_MAIL_CONFIG_IDENTITY_PAGE (object),
 				g_value_get_boolean (value));
 			return;
+
+		case PROP_SHOW_AUTODISCOVER_CHECK:
+			e_mail_config_identity_page_set_show_autodiscover_check (
+				E_MAIL_CONFIG_IDENTITY_PAGE (object),
+				g_value_get_boolean (value));
+			return;
 	}
 
 	G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -199,6 +230,13 @@ mail_config_identity_page_get_property (GObject *object,
 			g_value_set_boolean (
 				value,
 				e_mail_config_identity_page_get_show_signatures (
+				E_MAIL_CONFIG_IDENTITY_PAGE (object)));
+			return;
+
+		case PROP_SHOW_AUTODISCOVER_CHECK:
+			g_value_set_boolean (
+				value,
+				e_mail_config_identity_page_get_show_autodiscover_check (
 				E_MAIL_CONFIG_IDENTITY_PAGE (object)));
 			return;
 	}
@@ -257,6 +295,8 @@ mail_config_identity_page_constructed (GObject *object)
 		GTK_ORIENTABLE (page), GTK_ORIENTATION_VERTICAL);
 
 	gtk_box_set_spacing (GTK_BOX (page), 12);
+	gtk_widget_set_valign (GTK_WIDGET (page), GTK_ALIGN_FILL);
+	gtk_widget_set_vexpand (GTK_WIDGET (page), TRUE);
 
 	/* This keeps all mnemonic labels the same width. */
 	size_group = gtk_size_group_new (GTK_SIZE_GROUP_HORIZONTAL);
@@ -270,7 +310,7 @@ mail_config_identity_page_constructed (GObject *object)
 	gtk_misc_set_alignment (GTK_MISC (widget), 0.0, 0.5);
 	gtk_box_pack_start (GTK_BOX (page), widget, FALSE, FALSE, 0);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		page, "show-instructions",
 		widget, "visible",
 		G_BINDING_SYNC_CREATE);
@@ -282,7 +322,7 @@ mail_config_identity_page_constructed (GObject *object)
 	gtk_grid_set_column_spacing (GTK_GRID (widget), 6);
 	gtk_box_pack_start (GTK_BOX (page), widget, FALSE, FALSE, 0);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		page, "show-account-info",
 		widget, "visible",
 		G_BINDING_SYNC_CREATE);
@@ -298,20 +338,12 @@ mail_config_identity_page_constructed (GObject *object)
 	gtk_widget_show (widget);
 	g_free (markup);
 
-	text = _("Type the name by which you would like to refer to "
-		 "this account.\nFor example, \"Work\" or \"Personal\".");
-	widget = gtk_label_new (text);
-	gtk_widget_set_margin_left (widget, 12);
-	gtk_misc_set_alignment (GTK_MISC (widget), 0.0, 0.5);
-	gtk_grid_attach (GTK_GRID (container), widget, 0, 1, 2, 1);
-	gtk_widget_show (widget);
-
 	text = _("_Name:");
 	widget = gtk_label_new_with_mnemonic (text);
 	gtk_widget_set_margin_left (widget, 12);
 	gtk_size_group_add_widget (size_group, widget);
 	gtk_misc_set_alignment (GTK_MISC (widget), 1.0, 0.5);
-	gtk_grid_attach (GTK_GRID (container), widget, 0, 2, 1, 1);
+	gtk_grid_attach (GTK_GRID (container), widget, 0, 1, 1, 1);
 	gtk_widget_show (widget);
 
 	label = GTK_LABEL (widget);
@@ -319,8 +351,10 @@ mail_config_identity_page_constructed (GObject *object)
 	widget = gtk_entry_new ();
 	gtk_widget_set_hexpand (widget, TRUE);
 	gtk_label_set_mnemonic_widget (label, widget);
-	gtk_grid_attach (GTK_GRID (container), widget, 1, 2, 1, 1);
+	gtk_grid_attach (GTK_GRID (container), widget, 1, 1, 1, 1);
 	gtk_widget_show (widget);
+
+	page->priv->display_name_entry = widget;
 
 	e_binding_bind_object_text_property (
 		source, "display-name",
@@ -332,6 +366,13 @@ mail_config_identity_page_constructed (GObject *object)
 	g_signal_connect_swapped (
 		widget, "changed",
 		G_CALLBACK (e_mail_config_page_changed), page);
+
+	text = _("The above name will be used to identify this account.\n"
+		 "Use for example, \"Work\" or \"Personal\".");
+	widget = gtk_label_new (text);
+	gtk_misc_set_alignment (GTK_MISC (widget), 0.0, 0.5);
+	gtk_grid_attach (GTK_GRID (container), widget, 1, 2, 1, 1);
+	gtk_widget_show (widget);
 
 	/*** Required Information ***/
 
@@ -368,6 +409,8 @@ mail_config_identity_page_constructed (GObject *object)
 	gtk_grid_attach (GTK_GRID (container), widget, 1, 1, 1, 1);
 	gtk_widget_show (widget);
 
+	page->priv->name_entry = widget;
+
 	e_binding_bind_object_text_property (
 		extension, "name",
 		widget, "text",
@@ -387,7 +430,7 @@ mail_config_identity_page_constructed (GObject *object)
 	gtk_grid_attach (GTK_GRID (container), widget, 0, 2, 1, 1);
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		page, "show-email-address",
 		widget, "visible",
 		G_BINDING_SYNC_CREATE);
@@ -400,13 +443,15 @@ mail_config_identity_page_constructed (GObject *object)
 	gtk_grid_attach (GTK_GRID (container), widget, 1, 2, 1, 1);
 	gtk_widget_show (widget);
 
+	page->priv->address_entry = widget;
+
 	e_binding_bind_object_text_property (
 		extension, "address",
 		widget, "text",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		page, "show-email-address",
 		widget, "visible",
 		G_BINDING_SYNC_CREATE);
@@ -451,6 +496,8 @@ mail_config_identity_page_constructed (GObject *object)
 	gtk_grid_attach (GTK_GRID (container), widget, 1, 1, 2, 1);
 	gtk_widget_show (widget);
 
+	page->priv->reply_to_entry = widget;
+
 	e_binding_bind_object_text_property (
 		extension, "reply-to",
 		widget, "text",
@@ -492,7 +539,7 @@ mail_config_identity_page_constructed (GObject *object)
 	gtk_grid_attach (GTK_GRID (container), widget, 0, 3, 1, 1);
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		page, "show-signatures",
 		widget, "visible",
 		G_BINDING_SYNC_CREATE);
@@ -506,13 +553,13 @@ mail_config_identity_page_constructed (GObject *object)
 	gtk_grid_attach (GTK_GRID (container), widget, 1, 3, 1, 1);
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		extension, "signature-uid",
 		widget, "active-id",
 		G_BINDING_BIDIRECTIONAL |
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		page, "show-signatures",
 		widget, "visible",
 		G_BINDING_SYNC_CREATE);
@@ -522,7 +569,7 @@ mail_config_identity_page_constructed (GObject *object)
 	gtk_grid_attach (GTK_GRID (container), widget, 2, 3, 1, 1);
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		page, "show-signatures",
 		widget, "visible",
 		G_BINDING_SYNC_CREATE);
@@ -534,6 +581,22 @@ mail_config_identity_page_constructed (GObject *object)
 	g_object_unref (size_group);
 
 	e_extensible_load_extensions (E_EXTENSIBLE (page));
+
+	widget = gtk_check_button_new_with_mnemonic (_("_Look up mail server details based on the entered e-mail address"));
+	g_object_set (G_OBJECT (widget),
+		"valign", GTK_ALIGN_END,
+		"vexpand", TRUE,
+		"active", TRUE,
+		NULL);
+
+	e_binding_bind_property (
+		page, "show-autodiscover-check",
+		widget, "visible",
+		G_BINDING_SYNC_CREATE);
+
+	page->priv->autodiscover_check = widget;
+
+	gtk_container_add (GTK_CONTAINER (page), widget);
 }
 
 static gboolean
@@ -547,6 +610,7 @@ mail_config_identity_page_check_complete (EMailConfigPage *page)
 	const gchar *address;
 	const gchar *reply_to;
 	const gchar *display_name;
+	gboolean correct, complete = TRUE;
 
 	id_page = E_MAIL_CONFIG_IDENTITY_PAGE (page);
 	extension_name = E_SOURCE_EXTENSION_MAIL_IDENTITY;
@@ -559,28 +623,55 @@ mail_config_identity_page_check_complete (EMailConfigPage *page)
 
 	display_name = e_source_get_display_name (source);
 
-	if (name == NULL)
-		return FALSE;
+	correct = name != NULL;
+	/* This is only a warning, not a blocker */
+	/* complete = complete && correct; */
+
+	e_util_set_entry_issue_hint (id_page->priv->name_entry, correct ? NULL : _("Full Name should not be empty"));
+
+	correct = TRUE;
 
 	/* Only enforce when the email address is visible. */
 	if (e_mail_config_identity_page_get_show_email_address (id_page)) {
-		if (address == NULL)
-			return FALSE;
+		if (address == NULL) {
+			e_util_set_entry_issue_hint (id_page->priv->address_entry, _("Email Address cannot be empty"));
+			correct = FALSE;
+		}
 
-		if (!mail_config_identity_page_is_email (address))
-			return FALSE;
+		if (correct && !mail_config_identity_page_is_email (address)) {
+			e_util_set_entry_issue_hint (id_page->priv->address_entry, _("Email Address is not a valid email"));
+			correct = FALSE;
+		}
 	}
 
+	complete = complete && correct;
+
+	if (correct)
+		e_util_set_entry_issue_hint (id_page->priv->address_entry, NULL);
+
 	/* A NULL reply_to string is allowed. */
-	if (reply_to != NULL && !mail_config_identity_page_is_email (reply_to))
-		return FALSE;
+	if (reply_to != NULL && !mail_config_identity_page_is_email (reply_to)) {
+		e_util_set_entry_issue_hint (id_page->priv->reply_to_entry, _("Reply To is not a valid email"));
+		complete = FALSE;
+	} else {
+		e_util_set_entry_issue_hint (id_page->priv->reply_to_entry, NULL);
+	}
+
+	correct = TRUE;
 
 	/* Only enforce when account information is visible. */
-	if (e_mail_config_identity_page_get_show_account_info (id_page))
-		if (display_name == NULL || *display_name == '\0')
-			return FALSE;
+	if (e_mail_config_identity_page_get_show_account_info (id_page)) {
+		if (display_name == NULL || *display_name == '\0') {
+			e_util_set_entry_issue_hint (id_page->priv->display_name_entry, _("Account Name cannot be empty"));
+			correct = FALSE;
+		}
+	}
 
-	return TRUE;
+	complete = complete && correct;
+	if (correct)
+		e_util_set_entry_issue_hint (id_page->priv->display_name_entry, NULL);
+
+	return complete;
 }
 
 static void
@@ -665,6 +756,18 @@ e_mail_config_identity_page_class_init (EMailConfigIdentityPageClass *class)
 			"Show Signatures",
 			"Show mail signature options",
 			TRUE,
+			G_PARAM_READWRITE |
+			G_PARAM_CONSTRUCT |
+			G_PARAM_STATIC_STRINGS));
+
+	g_object_class_install_property (
+		object_class,
+		PROP_SHOW_AUTODISCOVER_CHECK,
+		g_param_spec_boolean (
+			"show-autodiscover-check",
+			"Show Autodiscover Check",
+			"Show check button to allow autodiscover based on Email Address",
+			FALSE,
 			G_PARAM_READWRITE |
 			G_PARAM_CONSTRUCT |
 			G_PARAM_STATIC_STRINGS));
@@ -802,3 +905,32 @@ e_mail_config_identity_page_set_show_signatures (EMailConfigIdentityPage *page,
 	g_object_notify (G_OBJECT (page), "show-signatures");
 }
 
+void
+e_mail_config_identity_page_set_show_autodiscover_check (EMailConfigIdentityPage *page,
+							 gboolean show_autodiscover)
+{
+	g_return_if_fail (E_IS_MAIL_CONFIG_IDENTITY_PAGE (page));
+
+	if ((page->priv->show_autodiscover_check ? 1 : 0) == (show_autodiscover ? 1 : 0))
+		return;
+
+	page->priv->show_autodiscover_check = show_autodiscover;
+
+	g_object_notify (G_OBJECT (page), "show-autodiscover-check");
+}
+
+gboolean
+e_mail_config_identity_page_get_show_autodiscover_check (EMailConfigIdentityPage *page)
+{
+	g_return_val_if_fail (E_IS_MAIL_CONFIG_IDENTITY_PAGE (page), FALSE);
+
+	return page->priv->show_autodiscover_check;
+}
+
+GtkWidget *
+e_mail_config_identity_page_get_autodiscover_check (EMailConfigIdentityPage *page)
+{
+	g_return_val_if_fail (E_IS_MAIL_CONFIG_IDENTITY_PAGE (page), NULL);
+
+	return page->priv->autodiscover_check;
+}

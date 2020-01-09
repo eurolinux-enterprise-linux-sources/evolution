@@ -6,7 +6,7 @@
 
     <link type="guide" xref="mail-encryption#s-mime"/>
 
-    <revision pkgversion="2.32.1" version="0.2" date="2011-08-24" status="draft"/>
+    <revision pkgversion="3.13.90" version="0.3" date="2015-03-09" status="draft"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -20,15 +20,35 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
   <title>Υπογραφή ή κρυπτογράφηση μηνυμάτων</title>
 
-<p>Αφού <link xref="mail-encryption-s-mime-manage">προσθέσετε το πιστοποιητικό σας</link>, μπορείτε να υπογράφετε ή να κρυπτογραφείτε ένα μήνυμα επιλέγοντας <guiseq><gui>επιλογές</gui><gui>υπογραφή S/MIME</gui></guiseq> ή <gui>κρυπτογράφηση S/MIME</gui> στο μενού σύνταξης μηνυμάτων.</p>
+<p>Αφού <link xref="mail-encryption-s-mime-manage">προσθέσετε το πιστοποιητικό σας</link>, μπορείτε να υπογράφετε ή να κρυπτογραφείτε ένα μήνυμα επιλέγοντας <guiseq><gui>Επιλογές</gui><gui>Υπογραφή S/MIME</gui></guiseq> ή <gui>Κρυπτογράφηση S/MIME</gui> από το μενού σύνταξης μηνυμάτων ή πατώντας το αντίστοιχο εικονίδιο στην εργαλειοθήκη.</p>
+<note style="tip"><p>Το Θέμα του μηνύματος δε θα κρυπτογραφηθεί και δε θα πρέπει να χρησιμοποιείται για ευαίσθητες πληροφορίες.</p></note>
+
 <p>Για υπογραφή ή κρυπτογράφηση όλων των μηνυμάτων:</p>
 <steps>
 <item><p>Επιλέξτε <guiseq><gui>επεξεργασία</gui><gui>προτιμήσεις</gui><gui>λογαριασμοί αλληλογραφίας</gui></guiseq>.</p></item>
@@ -39,5 +59,4 @@
 <item><p>Διαλέξτε τις κατάλληλες επιλογές.</p></item>
 <item><p>Κλικ στο <gui style="button">Εντάξει</gui>.</p></item>
 </steps>
-<note style="tip"><p>Το Θέμα του μηνύματος δε θα κρυπτογραφηθεί και δε θα πρέπει να χρησιμοποιείται για ευαίσθητες πληροφορίες.</p></note>
 </page>

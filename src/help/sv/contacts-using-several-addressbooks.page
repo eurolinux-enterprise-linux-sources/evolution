@@ -13,18 +13,25 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Adding different types of address books and using more than one
-    address book.</desc>
+    <desc>Lägga till olika typer av adressböcker och använda mer än en adressbok.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Adding and creating address books</title>
+  <title>Lägga till och skapa adressböcker</title>
 
-  <p>You can have multiple address books. For example, you might have one
-  address book for work related contacts and one for private contacts. The side
-  bar lists those address books, and you can select which address book is
-  shown.</p>
+  <p>Du kan ha flera adressböcker. Du kan till exempel ha en adressbok för arbetsrelaterade kontakter och en för privata kontakter. Sidopanelen listar de adressböckerna och du kan välja vilken adressbok som ska visas.</p>
 
-  <p>You can also use address books that are not on your computer, such as on
-  the internet (e.g. Google) or in a local network (e.g. LDAP).</p>
+  <p>Du kan också använda adressböcker som inte finns på din dator, utan till exempel på internet (t.ex. Google) eller på ett lokalt nätverk (t.ex. LDAP).</p>
 
 </page>

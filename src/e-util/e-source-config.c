@@ -481,6 +481,12 @@ source_config_init_for_editing_source (ESourceConfig *config)
 	backend_name = e_source_backend_get_backend_name (extension);
 	g_return_if_fail (backend_name != NULL);
 
+	/* Special-case Google calendars to use 'google' editor, instead
+	   of the 'caldav' editor, even they use 'caldav' calendar backend. */
+	if (g_ascii_strcasecmp (backend_name, "caldav") == 0 &&
+	    g_strcmp0 (e_source_get_parent (original_source), "google-stub") == 0)
+		backend_name = "google";
+
 	backend = g_hash_table_lookup (config->priv->backends, backend_name);
 	g_return_if_fail (backend != NULL);
 
@@ -792,6 +798,7 @@ source_config_check_complete (ESourceConfig *config,
 	GtkEntry *name_entry;
 	GtkComboBox *type_combo;
 	const gchar *text;
+	gboolean correct;
 
 	/* Make sure the Type: combo box has a valid item. */
 	type_combo = GTK_COMBO_BOX (config->priv->type_combo);
@@ -801,10 +808,11 @@ source_config_check_complete (ESourceConfig *config,
 	/* Make sure the Name: entry field is not empty. */
 	name_entry = GTK_ENTRY (config->priv->name_entry);
 	text = gtk_entry_get_text (name_entry);
-	if (text == NULL || *text == '\0')
-		return FALSE;
+	correct = text != NULL && *text != '\0';
 
-	return TRUE;
+	e_util_set_entry_issue_hint (config->priv->name_entry, correct ? NULL : _("Name cannot be empty"));
+
+	return correct;
 }
 
 static void
@@ -1073,7 +1081,7 @@ e_source_config_insert_widget (ESourceConfig *config,
 	hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 12);
 	gtk_box_pack_start (GTK_BOX (vbox), hbox, FALSE, TRUE, 0);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		widget, "visible",
 		hbox, "visible",
 		G_BINDING_SYNC_CREATE);
@@ -1310,7 +1318,7 @@ e_source_config_add_refresh_interval (ESourceConfig *config,
 	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		extension, "interval-minutes",
 		widget, "interval-minutes",
 		G_BINDING_BIDIRECTIONAL |
@@ -1337,7 +1345,7 @@ e_source_config_add_secure_connection (ESourceConfig *config,
 	e_source_config_insert_widget (config, scratch_source, NULL, widget);
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		extension, "secure",
 		widget, "active",
 		G_BINDING_BIDIRECTIONAL |
@@ -1407,7 +1415,7 @@ e_source_config_add_secure_connection_for_webdav (ESourceConfig *config,
 	e_source_config_insert_widget (config, scratch_source, NULL, widget);
 	gtk_widget_show (widget);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		extension, "secure",
 		widget, "active",
 		G_BINDING_BIDIRECTIONAL |
@@ -1417,7 +1425,7 @@ e_source_config_add_secure_connection_for_webdav (ESourceConfig *config,
 	authentication_extension =
 		e_source_get_extension (scratch_source, extension_name);
 
-	g_object_bind_property_full (
+	e_binding_bind_property_full (
 		extension, "secure",
 		authentication_extension, "port",
 		G_BINDING_DEFAULT,
@@ -1428,12 +1436,12 @@ e_source_config_add_secure_connection_for_webdav (ESourceConfig *config,
 	extension = e_source_get_extension (scratch_source, extension_name);
 
 	widget = gtk_button_new_with_mnemonic (
-		_("Unset _trust for SSL certificate"));
+		_("Unset _trust for SSL/TLS certificate"));
 	gtk_widget_set_margin_left (widget, 24);
 	e_source_config_insert_widget (config, scratch_source, NULL, widget);
 	gtk_widget_show (widget);
 
-	g_object_bind_property_full (
+	e_binding_bind_property_full (
 		extension, "ssl-trust",
 		widget, "sensitive",
 		G_BINDING_SYNC_CREATE,
@@ -1445,7 +1453,7 @@ e_source_config_add_secure_connection_for_webdav (ESourceConfig *config,
 		G_CALLBACK (webdav_unset_ssl_trust_clicked_cb), extension);
 }
 
-void
+GtkWidget *
 e_source_config_add_user_entry (ESourceConfig *config,
                                 ESource *scratch_source)
 {
@@ -1454,8 +1462,8 @@ e_source_config_add_user_entry (ESourceConfig *config,
 	ESourceExtension *extension;
 	const gchar *extension_name;
 
-	g_return_if_fail (E_IS_SOURCE_CONFIG (config));
-	g_return_if_fail (E_IS_SOURCE (scratch_source));
+	g_return_val_if_fail (E_IS_SOURCE_CONFIG (config), NULL);
+	g_return_val_if_fail (E_IS_SOURCE (scratch_source), NULL);
 
 	extension_name = E_SOURCE_EXTENSION_AUTHENTICATION;
 	extension = e_source_get_extension (scratch_source, extension_name);
@@ -1477,5 +1485,7 @@ e_source_config_add_user_entry (ESourceConfig *config,
 	 * GtkEntry to the user name of the current user. */
 	if (original_source == NULL)
 		gtk_entry_set_text (GTK_ENTRY (widget), g_get_user_name ());
+
+	return widget;
 }
 

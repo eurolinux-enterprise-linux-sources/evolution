@@ -57,7 +57,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -65,7 +65,7 @@
 
 <section id="search-single">
 <title>Recherche dans une seule tâche</title>
-<p>Pour trouver un texte dans la tâche affichée, sélectionnez <guiseq><gui>Édition</gui><gui>Rechercher dans la tâche</gui></guiseq> dans le menu principal.</p>
+<p>Pour trouver un texte dans la tâche affichée, sélectionnez <guiseq><gui>Édition</gui><gui>Rechercher dans la tâche…</gui></guiseq> dans le menu principal.</p>
 </section>
 
 <section id="search-many">
@@ -76,16 +76,16 @@
 <p>Dans la vue de Tâches, vous pouvez faire une recherche rapide de tâches, par résumé ou par catégorie.</p>
 <p>Recherche par résumé :</p>
 <steps>
-<item><p>Click the search icon <media type="image" mime="image/png" its:translate="no" src="figures/search-icon.png"/> to expand the drop-down list.</p></item>
+<item><p>Cliquez sur l'icône de recherche <media type="image" mime="image/png" its:translate="no" src="figures/search-icon.png"/> pour ouvrir la liste déroulante.</p></item>
 <item><p>Sélectionnez le critère de recherche dans la liste.</p></item>
 <item><p>Saisissez le texte à rechercher et appuyez sur <key>Entrée</key>.</p></item>
-<item><p>Evolution affiche les résultats de la recherche.</p></item>
+<item><p><app>Evolution</app> affiche les résultats de la recherche.</p></item>
 </steps>
 <p>Recherche par catégorie :</p>
 <steps>
 <item><p>Cliquez sur la liste déroulante <gui>Afficher</gui>.</p></item>
 <item><p>Sélectionnez la catégorie dans la liste.</p></item>
-<item><p>Evolution affiche les résultats de la recherche.</p></item>
+<item><p><app>Evolution</app> affiche les résultats de la recherche.</p></item>
 </steps>
 <p>Si vous voulez définir plusieurs critères de recherche, vous devriez faire une Recherche avancée, telle que décrite ci-dessous.</p>
 </section>

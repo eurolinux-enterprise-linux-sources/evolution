@@ -21,16 +21,19 @@
 
 <item><p>指定的邮件头：</p>
 <p>Any header including <link xref="mail-composer-custom-header-lines">custom ones</link>.</p>
-<p>If a message uses a header more than once, Evolution pays attention only to the first instance, even if the message defines the header differently the second time. For example, if a message declares the Resent-From: header as "engineering@example.com" and then restates it as "marketing@example.com", Evolution filters as though the second declaration did not occur. To filter on messages that use headers multiple times, use a regular expression.</p></item>
+<p>If a message uses a header more than once, <app>Evolution</app> pays attention only to the first instance, even if the message defines the header differently the second time. For example, if a message declares the Resent-From: header as "engineering@example.com" and then restates it as "marketing@example.com", <app>Evolution</app> filters as though the second declaration did not occur. To filter on messages that use headers multiple times, use a regular expression.</p></item>
 
 <item><p>消息体：</p>
 <p>在邮件的正文中搜索。</p></item>
 
 <item><p>表达式：</p>
-<p>(For programmers only) Match a message according to an expression you write in the Scheme language used to define <link xref="mail-filters">filters</link> in Evolution.</p></item>
+<p>(For programmers only) Match a message according to an expression you write in the Scheme language used to define <link xref="mail-filters">filters</link> in <app>Evolution</app>.</p></item>
+
+<item><p>Free Form Expression:</p>
+<p>(For advanced users only) Combine numerous conditions by using a <link href="https://bugzilla.gnome.org/show_bug.cgi?id=550796#c10">special syntax</link>.</p></item>
 
 <item><p>Date sent:</p>
-<p>根据邮件发送的日期过滤邮件。首先，选择您想要邮件匹配日期的条件，例如在指定日期之前或之后。然后，选择日期。过滤器会比较邮件的时间标签、当前运行时的系统时间或一个特定的时刻、以及您从日历中选取的日期。您还可以选择比较相对于当前时间的一个时间段，例如2~4天之前。</p></item>
+<p>Filters messages according to the date on which they were sent. First, choose the conditions you want a message to meet, such as before a given date or after a given date. Then choose the time. The filter compares the message's time stamp to the system clock when the filter is run, or to a specific time and date you choose from a calendar. You can also have it look for a message within a range of time relative to the filter, such as two to four days ago.</p></item>
 
 <item><p>Date received:</p>
 <p>与“发信日期”选项的工作方式相同，但它比较您收到邮件的时间和您指定的日期。</p></item>
@@ -60,6 +63,6 @@
 <p>根据邮件来自的邮件列表过滤。这个过滤操作可能会遗漏一些来自某些列表服务器的邮件，因为它检查X-BeenThere信头，这是用于确定邮件列表或其它邮件分发者的。而来自列表服务器的没有正确设置X-BeenThere的邮件就不能被过滤器捕获了。</p></item>
 
 <item><p>正则表达式匹配：</p>
-<p>(For programmers only) If you know your way around a <link href="https://en.wikipedia.org/wiki/Regular_expression">regex</link>, or regular expression, this option allows you to search for complex patterns of letters, so that you can find, for example, all words that start with a and end with m, and are between six and fifteen letters long, or all messages that declare a particular header twice. For information about how to use regular expressions, check the man page for the <cmd>grep</cmd> command.</p></item>
+<p>(For programmers only) If you know your way around a <link href="https://en.wikipedia.org/wiki/Regular_expression">regex</link>, or regular expression, this option allows you to search for complex patterns of letters, so that you can find, for example, all words that start with "a" and end with "m", and are between six and fifteen letters long, or all messages that declare a particular header twice. For information about how to use regular expressions, check <link href="man:grep">the man page for the <cmd>grep</cmd></link> command.</p></item>
 
 </info>

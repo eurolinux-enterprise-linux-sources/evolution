@@ -1,4 +1,4 @@
-<ui>
+<ui evolution-ui-version="1.0">
   <menubar name='main-menu'>
     <menu action='file-menu'>
       <placeholder name='file-actions'>
@@ -24,6 +24,7 @@
     <menu action='view-menu'>
       <menuitem action='calendar-go-today'/>
       <menuitem action='calendar-jump-to'/>
+      <menuitem action='calendar-manage-groups'/>
     </menu>
     <placeholder name='custom-menus'>
       <menu action='calendar-actions-menu'>
@@ -67,7 +68,10 @@
     <separator/>
     <menuitem action='calendar-popup-delete'/>
     <menuitem action='calendar-popup-select-one'/>
+    <menuitem action='calendar-popup-select-all'/>
     <placeholder name='calendar-popup-actions'/>
+    <separator/>
+    <menuitem action='calendar-popup-manage-groups'/>
     <separator/>
     <menuitem action='calendar-popup-properties'/>
   </popup>

@@ -1,0 +1,122 @@
+diff -up evolution-3.22.6/libemail-engine/mail-folder-cache.c.folder-changed-blocked evolution-3.22.6/libemail-engine/mail-folder-cache.c
+--- evolution-3.22.6/libemail-engine/mail-folder-cache.c.folder-changed-blocked	2016-09-19 10:22:58.000000000 +0200
++++ evolution-3.22.6/libemail-engine/mail-folder-cache.c	2017-05-29 23:35:00.143560314 +0200
+@@ -93,6 +93,12 @@ enum {
+ 
+ static guint signals[LAST_SIGNAL];
+ 
++typedef enum {
++	E_FIRST_UPDATE_RUNNING,
++	E_FIRST_UPDATE_FAILED,
++	E_FIRST_UPDATE_DONE
++} EFirstUpdateState;
++
+ struct _StoreInfo {
+ 	volatile gint ref_count;
+ 
+@@ -107,7 +113,7 @@ struct _StoreInfo {
+ 	gulong folder_unsubscribed_handler_id;
+ 
+ 	GHashTable *folder_info_ht;	/* by full_name */
+-	gboolean first_update;		/* TRUE, then FALSE forever */
++	EFirstUpdateState first_update;
+ 	GSList *pending_folder_notes;	/* Gather note_folder calls during first_update period */
+ 
+ 	/* Hold a reference to keep them alive. */
+@@ -261,7 +267,7 @@ store_info_new (CamelStore *store)
+ 	store_info = g_slice_new0 (StoreInfo);
+ 	store_info->ref_count = 1;
+ 	store_info->store = g_object_ref (store);
+-	store_info->first_update = TRUE;
++	store_info->first_update = E_FIRST_UPDATE_RUNNING;
+ 
+ 	store_info->folder_info_ht = g_hash_table_new_full (
+ 		(GHashFunc) g_str_hash,
+@@ -1964,7 +1970,7 @@ mail_folder_cache_first_update (MailFold
+ 	g_object_unref (session);
+ 
+ 	g_mutex_lock (&store_info->lock);
+-	store_info->first_update = FALSE;
++	store_info->first_update = E_FIRST_UPDATE_DONE;
+ 	folders = store_info->pending_folder_notes;
+ 	store_info->pending_folder_notes = NULL;
+ 	g_mutex_unlock (&store_info->lock);
+@@ -1988,6 +1994,7 @@ mail_folder_cache_note_store_thread (GSi
+ 	StoreInfo *store_info;
+ 	GQueue result_queue = G_QUEUE_INIT;
+ 	AsyncContext *async_context;
++	gboolean success = FALSE;
+ 	GError *local_error = NULL;
+ 
+ 	cache = MAIL_FOLDER_CACHE (source_object);
+@@ -2060,17 +2067,22 @@ mail_folder_cache_note_store_thread (GSi
+ 
+ 	/* Do some extra work for the first update. */
+ 	g_mutex_lock (&store_info->lock);
+-	if (store_info->first_update) {
++	if (store_info->first_update != E_FIRST_UPDATE_DONE) {
+ 		g_mutex_unlock (&store_info->lock);
+ 		mail_folder_cache_first_update (cache, store_info);
+ 	} else {
+ 		g_mutex_unlock (&store_info->lock);
+ 	}
+ 
++	success = TRUE;
+ exit:
+ 	/* We don't want finish() functions being invoked while holding a
+ 	 * locked mutex, so flush the StoreInfo's queue to a local queue. */
+ 	g_mutex_lock (&store_info->lock);
++
++	if (store_info->first_update != E_FIRST_UPDATE_DONE)
++		store_info->first_update = success ? E_FIRST_UPDATE_DONE : E_FIRST_UPDATE_FAILED;
++
+ 	e_queue_transfer (&store_info->folderinfo_updates, &result_queue);
+ 	g_mutex_unlock (&store_info->lock);
+ 
+@@ -2130,6 +2142,9 @@ mail_folder_cache_note_store (MailFolder
+ 
+ 	g_mutex_lock (&store_info->lock);
+ 
++	if (store_info->first_update != E_FIRST_UPDATE_DONE)
++		store_info->first_update = E_FIRST_UPDATE_RUNNING;
++
+ 	g_queue_push_tail (
+ 		&store_info->folderinfo_updates,
+ 		g_object_ref (simple));
+@@ -2211,18 +2226,23 @@ mail_folder_cache_note_folder (MailFolde
+ 	 *     warnings on startup which might be worth tracking down. */
+ 	if (folder_info == NULL) {
+ 		StoreInfo *store_info;
+-		gboolean retry = FALSE;
++		gboolean retry = FALSE, renote_store = FALSE;
+ 
+ 		store_info = mail_folder_cache_ref_store_info (cache, parent_store);
+ 		if (!store_info)
+ 			return;
+ 
+ 		g_mutex_lock (&store_info->lock);
+-		if (store_info->first_update) {
++		if (store_info->first_update != E_FIRST_UPDATE_DONE) {
+ 			/* The first update did not finish yet, thus add this as a pending
+ 			   folder to be noted once the first update finishes */
+ 			store_info->pending_folder_notes = g_slist_prepend (
+ 				store_info->pending_folder_notes, g_object_ref (folder));
++
++			if (store_info->first_update == E_FIRST_UPDATE_FAILED) {
++				store_info->first_update = E_FIRST_UPDATE_RUNNING;
++				renote_store = TRUE;
++			}
+ 		} else {
+ 			/* It can be that certain threading interleaving made
+ 			   the first store update finished before we reached
+@@ -2233,7 +2253,9 @@ mail_folder_cache_note_folder (MailFolde
+ 
+ 		store_info_unref (store_info);
+ 
+-		if (retry)
++		if (renote_store)
++			mail_folder_cache_note_store (cache, parent_store, NULL, NULL, NULL);
++		else if (retry)
+ 			folder_info = mail_folder_cache_ref_folder_info (
+ 				cache, parent_store, full_name);
+ 

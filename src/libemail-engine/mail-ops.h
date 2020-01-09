@@ -56,10 +56,11 @@ void		mail_send_queue			(EMailSession *session,
 						 CamelFolder *queue,
 						 CamelTransport *transport,
 						 const gchar *type,
+						 gboolean immediately,
 						 GCancellable *cancellable,
 						 CamelFilterGetFolderFunc get_folder,
 						 gpointer get_data,
-						 CamelFilterStatusFunc *status,
+						 CamelFilterStatusFunc status,
 						 gpointer status_data,
 						 void (*done)(gpointer data),
 						 gpointer data);
@@ -79,7 +80,7 @@ void		mail_fetch_mail			(CamelStore *store,
 						 GCancellable *cancellable,
 						 CamelFilterGetFolderFunc get_folder,
 						 gpointer get_data,
-						 CamelFilterStatusFunc *status,
+						 CamelFilterStatusFunc status,
 						 gpointer status_data,
 						 void (*done)(gpointer data),
 						 gpointer data);
@@ -89,6 +90,16 @@ void		mail_filter_folder		(EMailSession *session,
 						 GPtrArray *uids,
 						 const gchar *type,
 						 gboolean notify);
+
+void		mail_process_folder_changes	(CamelFolder *folder,
+						 CamelFolderChangeInfo *changes,
+						 void (*process) (CamelFolder *folder,
+								  CamelFolderChangeInfo *changes,
+								  GCancellable *cancellable,
+								  GError **error,
+								  gpointer user_data),
+						 void (* done) (gpointer user_data),
+						 gpointer user_data);
 
 /* filter driver execute shell command async callback */
 void mail_execute_shell_command (CamelFilterDriver *driver, gint argc, gchar **argv, gpointer data);

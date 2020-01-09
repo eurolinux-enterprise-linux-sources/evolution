@@ -52,7 +52,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -62,13 +62,13 @@
 <steps>
 <item><p>Sélectionnez un ou plusieurs messages.</p></item>
 <item><p>Faites un clic-droit sur l'un des messages.</p></item>
-<item><p>Choisissez <gui>Marquer pour donner suite...</gui>.</p></item>
+<item><p>Choisissez <gui>Marquer pour donner suite…</gui>.</p></item>
 </steps>
-<p>Vous pouvez également faire cela en sélectionnant les messages et en cliquant sur <guiseq><gui>Message</gui><gui>Marquer comme</gui><gui>Donner suite</gui></guiseq> ou en pressant <keyseq><key>Maj</key><key>Ctrl</key><key>G</key></keyseq>.</p>
+<p>Vous pouvez également faire cela en sélectionnant les messages et en cliquant sur <guiseq><gui>Message</gui><gui>Marquer comme </gui><gui>Donner suite…</gui></guiseq> ou en pressant <keyseq><key>Maj</key><key>Ctrl</key><key>G</key></keyseq>.</p>
 
 <p>Une fenêtre s'ouvre, vous permettant de saisir le type de marqueur, ainsi que la date d'échéance.</p>
 
-<p>Le marqueur lui-même est l'action dont vous souhaitez vous rappeler, tel que Appel, Faire suivre ou Répondre.</p>
+<p>Le marqueur lui-même est l'action dont vous souhaitez vous souvenir, tel que Appel, Faire suivre ou Répondre.</p>
 
 <p>Après avoir ajouté un marqueur, vous pouvez le signaler terminé ou l'enlever entièrement en faisant un clic-droit sur le message et en choisissant <gui>Marqué comme achevé</gui> ou <gui>Effacer le marqueur</gui>.</p>
 
@@ -76,6 +76,6 @@
 
 <p>Les marqueurs vous aident à organiser votre travail de plusieurs manières. Par exemple, vous pouvez ajouter une <link xref="mail-change-columns-in-message-list">colonne État des marqueurs</link> à votre liste de messages et trier d'après celle-ci. Il est également envisageable de créer un <link xref="mail-search-folders">dossier de recherche</link> affichant tous les messages marqués. En effaçant les marqueurs lorsque les tâches correspondantes sont achevées, votre dossier de recherche ne contiendra plus que les messages qui possèdent encore une échéance.</p>
 
-<note style="tip"><p>Si vous préférez utiliser une méthode plus simple de vous rappeler de certains messages, vous pouvez les marquer comme importants en faisant un clic-droit sur le message, puis en choisissant <gui>Marquer comme important</gui> ou en choisissant le menu <guiseq><gui>Message</gui><gui>Marquer comme</gui><gui>Important</gui></guiseq> dans la barre de menus.</p></note>
+<note style="tip"><p>Si vous préférez utiliser une méthode plus simple de vous souvenir de certains messages, vous pouvez les marquer comme importants en faisant un clic-droit sur le message, puis en choisissant <gui>Marquer comme important</gui> ou en choisissant le menu <guiseq><gui>Message</gui><gui>Marquer comme</gui><gui>Important</gui></guiseq> dans la barre de menus.</p></note>
 
 </page>

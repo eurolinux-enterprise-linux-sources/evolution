@@ -25,9 +25,15 @@
     
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -45,7 +51,7 @@
 
   <title>Ordenar la lista de mensajes</title>
   
-<p>Evolution le permite organizar sus correos permitiéndole ordenar sus mensajes en la <link xref="intro-main-window#e-mail">lista de mensajes</link>.</p>
+<p><app>Evolution</app> le permite organizar sus correos permitiéndole ordenar sus mensajes en la <link xref="intro-main-window#e-mail">lista de mensajes</link>.</p>
 
 <section id="email-threads">
 <title>Ordenar los correos por conversaciones</title>
@@ -69,12 +75,12 @@
 <item><p>Seleccione la opción <gui>Quitar esta columna</gui> o <gui>Añadir una columna</gui>.</p></item>
 </list>
 
-<p>Evolution le permite ordenar sus mensajes usando estas columnas. Simplemente pulse en la etiqueta de la columna para ordenar los mensajes. La dirección de la flecha junto a la etiqueta indica la dirección de la ordenación.</p>
+<p><app>Evolution</app> le permite ordenar sus mensajes usando estas columnas. Simplemente pulse en la etiqueta de la columna para ordenar los mensajes. La dirección de la flecha junto a la etiqueta indica la dirección de la ordenación.</p>
 </section>
 
 <section id="sort-options">
 <title>Usar otras opciones de ordenación</title>
-<p>Evolution proporciona otras formas de ordenar mensajes de correo electrónico. Puede usar Ordenar por, Ordenar ascendentemente, Ordenar descendentemente o Desordenar.</p>
+<p><app>Evolution</app> proporciona otras formas de ordenar mensajes de correo electrónico. Puede usar Ordenar por, Ordenar ascendentemente, Ordenar descendentemente o Restablecer ordenación.</p>
 	<section id="sort-options-by">
 	<title>Ordenar por</title>
 		<p>También puede ordenar correos electrónicos usando la lista <gui>Ordenar por</gui>.</p>
@@ -125,10 +131,10 @@
 	</section>
 
 	<section id="sort-options-unsort">
-	<title>Desordenar</title>
+	<title>Restablecer ordenación</title>
 		<steps>
 		<item><p>Pulse con el botón derecho del ratón sobre las cabeceras de las columnas de la lista de correos.</p></item>
-		<item><p>Seleccione la opción <gui>Desordenar</gui>.</p></item>
+		<item><p>Seleccione la opción <gui>Restablecer ordenación</gui>.</p></item>
 		</steps>
 		<p>Esto elimina la ordenación para esta columna, revirtiendo el orden de los mensajes según se añadieron a la carpeta.</p>
 	</section>

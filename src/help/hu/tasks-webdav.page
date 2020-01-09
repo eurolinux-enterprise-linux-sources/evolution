@@ -15,13 +15,37 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
 <title>WebDav feladat- vagy feljegyzéslista használata</title>
 
 <p>Az ilyen listák csak olvashatók.</p>
 
-<p>Tegye a következőket egy ilyen feladat- vagy feljegyzéslista felvételéhez az Evolutionbe:</p>
+<p>Tegye a következőket egy ilyen feladat- vagy feljegyzéslista felvételéhez az <app>Evolutionbe</app>:</p>
 <steps>
 <item><p>Válassza a <guiseq><gui>Fájl</gui><gui>Új</gui><gui>Feladatlista</gui></guiseq> vagy a <guiseq><gui>Fájl</gui><gui>Új</gui><gui>Feljegyzéslista</gui></guiseq> menüpontot.</p></item>
 <item><p>Válassza az <gui>A weben</gui> típust.</p></item>
@@ -34,6 +58,6 @@
 <item><p>Kattintson az <gui style="button">Alkalmaz</gui> gombra.</p></item>
 </steps>
 
-<p>A lista hozzáadásra kerül az Evolutionben.</p>
+<p>A lista hozzáadásra kerül az <app>Evolutionben</app>.</p>
 
 </page>

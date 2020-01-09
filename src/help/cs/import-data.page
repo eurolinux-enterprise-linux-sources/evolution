@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="guide" id="import-data" xml:lang="cs">
 
   <info>
-    <desc>Importing data from another application.</desc>
+    <desc>Jak importovat data z jiných aplikací.</desc>
 
     <link type="guide" xref="index#data-migration-and-sync"/>
 
@@ -15,12 +15,24 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Importing data from another application</title>
+  <title>Import dat z jiných aplikací</title>
 
   <section id="import-from-apps" style="2column">
-    <title>Applications</title>
+    <title>Aplikace</title>
   </section>
 
 </page>

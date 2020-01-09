@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-composer-write-new-message" xml:lang="sv">
 
   <info>
-    <desc>Writing a new email to send to a recipient.</desc>
+    <desc>Skriva ett nytt e-postmeddelande för att skickas till en mottagare.</desc>
     
     <link type="guide" xref="index#mail-composing"/>
 
@@ -18,13 +18,25 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-<title>Composing a new message</title>
+<title>Skriv ett nytt meddelande</title>
 
-<p>You can start writing a new email message by clicking <guiseq><gui>File</gui><gui>New</gui><gui>Mail Message</gui></guiseq>, by pressing <keyseq><key>Shift</key><key>Ctrl</key><key>M</key></keyseq>, or by clicking <gui>New</gui> in the toolbar.</p>
+<p>Du kan börja skriva ett nytt e-postmeddelande genom att klicka på <guiseq><gui>Arkiv</gui><gui>Nytt</gui><gui>E-postmeddelande</gui></guiseq>, genom att trycka <keyseq><key>Skift</key><key>Ctrl</key><key>M</key></keyseq>, eller genom att klicka på <gui>Nytt</gui> i verktygsfältet.</p>
 
-<p>Enter an email address in the <gui>To:</gui> field. If you want to enter multiple addresses, separate them by commas. See <link xref="mail-composer-several-recipients"/> for more information on sending messages to more than one person.</p>
+<p>Skriv in en e-postadress i fältet <gui>Till:</gui>. Om du vill skriva in flera adresser, separera dem med kommatecken. Se <link xref="mail-composer-several-recipients"/> för vidare information om att skicka meddelanden till mer än en person.</p>
 
-<p>After you have written your message, click <gui>Send</gui> or press <keyseq><key>Ctrl</key><key>Return</key></keyseq>.</p>
+<p>Efter att du har skrivit ditt meddelande, klicka på <gui>Skicka</gui> eller tryck på <keyseq><key>Ctrl</key><key>Retur</key></keyseq>.</p>
 </page>

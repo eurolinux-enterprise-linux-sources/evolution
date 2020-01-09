@@ -54,46 +54,48 @@ typedef struct _EMFolderSelectorPrivate EMFolderSelectorPrivate;
 struct _EMFolderSelector {
 	GtkDialog parent;
 	EMFolderSelectorPrivate *priv;
-
-	guint32 flags;
-
-	GtkEntry *name_entry;
-	gchar *selected_uri;
-
-	gchar *created_uri;
-	guint created_id;
 };
 
 struct _EMFolderSelectorClass {
 	GtkDialogClass parent_class;
-};
 
-enum {
-	EM_FOLDER_SELECTOR_CAN_CREATE = 1
-};
-
-enum {
-	EM_FOLDER_SELECTOR_RESPONSE_NEW = 1
+	/* Signals */
+	void		(*folder_selected)	(EMFolderSelector *selector,
+						 CamelStore *store,
+						 const gchar *folder_name);
 };
 
 GType		em_folder_selector_get_type	(void);
 GtkWidget *	em_folder_selector_new		(GtkWindow *parent,
-						 EMFolderTreeModel *model,
-						 guint32 flags,
-						 const gchar *title,
-						 const gchar *text,
-						 const gchar *oklabel);
-GtkWidget *	em_folder_selector_create_new	(GtkWindow *parent,
-						 EMFolderTreeModel *model,
-						 guint32 flags,
-						 const gchar *title,
-						 const gchar *text);
+						 EMFolderTreeModel *model);
+gboolean	em_folder_selector_get_can_create
+						(EMFolderSelector *selector);
+void		em_folder_selector_set_can_create
+						(EMFolderSelector *selector,
+						 gboolean can_create);
+const gchar *	em_folder_selector_get_caption	(EMFolderSelector *selector);
+void		em_folder_selector_set_caption	(EMFolderSelector *selector,
+						 const gchar *caption);
+const gchar *	em_folder_selector_get_default_button_label
+						(EMFolderSelector *selector);
+void		em_folder_selector_set_default_button_label
+						(EMFolderSelector *selector,
+						 const gchar *button_label);
 EMFolderTreeModel *
-		em_folder_selector_get_model	(EMFolderSelector *emfs);
+		em_folder_selector_get_model	(EMFolderSelector *selector);
+GtkWidget *	em_folder_selector_get_content_area
+						(EMFolderSelector *selector);
 EMFolderTree *	em_folder_selector_get_folder_tree
-						(EMFolderSelector *emfs);
+						(EMFolderSelector *selector);
+gboolean	em_folder_selector_get_selected	(EMFolderSelector *selector,
+						 CamelStore **out_store,
+						 gchar **out_folder_name);
+void		em_folder_selector_set_selected	(EMFolderSelector *selector,
+						 CamelStore *store,
+						 const gchar *folder_name);
 const gchar *	em_folder_selector_get_selected_uri
-						(EMFolderSelector *emfs);
+						(EMFolderSelector *selector);
+EActivity *	em_folder_selector_new_activity	(EMFolderSelector *selector);
 
 G_END_DECLS
 

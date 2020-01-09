@@ -28,19 +28,25 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
@@ -81,13 +87,13 @@
 <p>Lässt den Rechner einen Warnton ausgeben.</p></item>
 
 <item><p>Klang abspielen:</p>
-<p>Wählen Sie eine Klangdatei, die von Evolution gespielt werden soll.</p></item>
+<p>Wählen Sie eine Klangdatei, die von <gui>Evolution</gui> gespielt werden soll.</p></item>
 
 <item><p>Programm ausführen:</p>
-<p>Lässt Evolution eine Anwendung ausführen.</p></item>
+<p>Lässt <gui>Evolution</gui> eine Anwendung ausführen.</p></item>
 
 <item><p>An Programm weiterleiten:</p>
-<p>Sendet die Nachricht an ein Programm Ihrer Wahl. Es wird kein Rückgabewert erwartet. Diese Funktion kann genutzt werden, um automatische Web-Postings aus E-Mail-Nachrichten zu erstellen oder um eine zusätzliche Weiterverarbeitung der E-Mail durchzuführen, die von Evolution selbst in dieser Form nicht unterstützt wird.</p></item>
+<p>Sendet die Nachricht an ein Programm Ihrer Wahl. Es wird kein Rückgabewert erwartet. Diese Funktion kann genutzt werden, um automatische Web-Postings aus E-Mail-Nachrichten zu erstellen oder um eine zusätzliche Weiterverarbeitung der E-Mail durchzuführen, die von <gui>Evolution</gui> selbst in dieser Form nicht unterstützt wird.</p></item>
 
 <item><p>Weiterleiten an:</p>
 <p>Leitet die Nachricht an eine andere E-Mail-Adresse weiter.</p></item>

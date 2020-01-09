@@ -19,22 +19,27 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Classifying appointments and tasks on groupware servers.</desc>
+    <desc>Klasifikování událostí a úkolů na serverech pro týmovou spolupráci.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Using Classifications</title>
+  <title>Používání klasifikací</title>
 
-  <p>If you are using a calendar on a Novell GroupWise or Microsoft Exchange
-  server, you can select a classification to determine who can view it.</p>
+  <p>V případě, že používáte kalendář na serveru Novell GroupWise nebo Microsoft Exchange, můžete vybrat klasifikaci určující, kdo jej může zobrazit.</p>
 
-  <p>To set a classification for an appointment or a task, click
-  <guiseq><gui>Options</gui><gui>Classifications</gui></guiseq> and select a
-  classification in the editor. <gui>Public</gui> is the default category, and
-  a public appointment can be viewed by anyone on the calendar-sharing network.
-  <gui>Private</gui> denotes one level of security, and <gui>Confidential</gui>
-  an even higher level.</p>
+  <p>Když chcete nastavit klasifikaci pro událost nebo úkol, klikněte na <guiseq><gui>Volby</gui> <gui>Klasifikace</gui></guiseq> a v editoru vyberte klasifikaci. <gui>Veřejné</gui> je výchozí kategorie a veřejná událost může bý prohlížena kýmkoliv na síti, kde se kalendář sdílí. <gui>Soukromé</gui> znamená jednu úroveň zabezpečení a <gui>Důvěrné</gui> o něco vyšší úroveň.</p>
 
-  <p>The different levels vary depending on your server settings; check with
-  your system administrator or adjust your delegation settings.</p>
+  <p>Různé úrovně se mění v závislosti na nastavení vašeho serveru. Proberte to se sým správcem systému nebo upravte své nastavení delegování.</p>
 
 </page>

@@ -22,6 +22,7 @@
 #include "e-alert-bar.h"
 #include "e-alert-dialog.h"
 #include "e-alert-sink.h"
+#include "e-misc-utils.h"
 
 #define E_PREVIEW_PANE_GET_PRIVATE(obj) \
 	(G_TYPE_INSTANCE_GET_PRIVATE \
@@ -55,7 +56,7 @@ static void	e_preview_pane_alert_sink_init
 G_DEFINE_TYPE_WITH_CODE (
 	EPreviewPane,
 	e_preview_pane,
-	GTK_TYPE_VBOX,
+	GTK_TYPE_BOX,
 	G_IMPLEMENT_INTERFACE (
 		E_TYPE_ALERT_SINK,
 		e_preview_pane_alert_sink_init))
@@ -66,6 +67,28 @@ preview_pane_web_view_new_activity_cb (EWebView *web_view,
                                        EPreviewPane *preview_pane)
 {
 	e_activity_set_alert_sink (activity, E_ALERT_SINK (preview_pane));
+}
+
+static void
+preview_pane_alert_bar_visible_notify_cb (GtkWidget *alert_bar,
+					  GParamSpec *param,
+					  EPreviewPane *preview_pane)
+{
+	GtkWidget *toplevel, *focused;
+
+	g_return_if_fail (E_IS_ALERT_BAR (alert_bar));
+	g_return_if_fail (E_IS_PREVIEW_PANE (preview_pane));
+
+	if (gtk_widget_get_visible (alert_bar))
+		return;
+
+	toplevel = gtk_widget_get_toplevel (GTK_WIDGET (preview_pane));
+	focused = GTK_IS_WINDOW (toplevel) ? gtk_window_get_focus (GTK_WINDOW (toplevel)) : NULL;
+
+	if (!focused && preview_pane->priv->web_view &&
+	    gtk_widget_get_visible (preview_pane->priv->web_view)) {
+		gtk_widget_grab_focus (preview_pane->priv->web_view);
+	}
 }
 
 static void
@@ -163,7 +186,8 @@ preview_pane_constructed (GObject *object)
 
 	widget = gtk_scrolled_window_new (NULL, NULL);
 	gtk_scrolled_window_set_shadow_type (
-		GTK_SCROLLED_WINDOW (widget), GTK_SHADOW_IN);
+		GTK_SCROLLED_WINDOW (widget),
+		GTK_SHADOW_IN);
 	gtk_box_pack_start (GTK_BOX (object), widget, TRUE, TRUE, 0);
 	gtk_container_add (GTK_CONTAINER (widget), priv->web_view);
 	gtk_widget_show (widget);
@@ -173,6 +197,9 @@ preview_pane_constructed (GObject *object)
 	gtk_box_pack_start (GTK_BOX (object), widget, FALSE, FALSE, 0);
 	priv->search_bar = g_object_ref (widget);
 	gtk_widget_hide (widget);
+
+	e_signal_connect_notify (priv->alert_bar, "notify::visible",
+		G_CALLBACK (preview_pane_alert_bar_visible_notify_cb), object);
 
 	/* Chain up to parent's constructed() method. */
 	G_OBJECT_CLASS (e_preview_pane_parent_class)->constructed (object);
@@ -284,6 +311,7 @@ e_preview_pane_init (EPreviewPane *preview_pane)
 	preview_pane->priv = E_PREVIEW_PANE_GET_PRIVATE (preview_pane);
 
 	gtk_box_set_spacing (GTK_BOX (preview_pane), 1);
+	gtk_orientable_set_orientation (GTK_ORIENTABLE (preview_pane), GTK_ORIENTATION_VERTICAL);
 }
 
 GtkWidget *

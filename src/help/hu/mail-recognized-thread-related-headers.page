@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-recognized-thread-related-headers" xml:lang="hu">
 
   <info>
-    <desc>Az Evolution milyen szálakkal kapcsolatos fejléceket ismer.</desc>
+    <desc>Az <app>Evolution</app> milyen szálakkal kapcsolatos fejléceket ismer.</desc>
     
     <link type="guide" xref="index#common-mail-problems"/>
 
@@ -15,11 +15,35 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
-<title>Az Evolution által felismert, szálakkal kapcsolatos fejlécek</title>
+<title>Az <app>Evolution</app> által felismert, szálakkal kapcsolatos fejlécek</title>
 
-<p>Az Evolution a következő fejléceket támogatja:</p>
+<p>Az <app>Evolution</app> a következő fejléceket támogatja:</p>
 <list>
 <item><p>References</p></item>
 <item><p>In-Reply-To</p></item>

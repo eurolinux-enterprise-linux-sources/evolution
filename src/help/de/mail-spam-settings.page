@@ -7,7 +7,7 @@
     <link type="guide" xref="mail-spam"/>
     <link type="seealso" xref="mail-spam-marking"/>
 
-    <revision pkgversion="3.8.1" version="0.9" date="2013-06-22" status="final"/>
+    <revision pkgversion="3.12.9" version="0.11" date="2015-03-15" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -39,19 +39,25 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Mario Blättermann</mal:name>
       <mal:email>mario.blaettermann@gmail.com</mal:email>
-      <mal:years>2009-2013</mal:years>
+      <mal:years>2009-2013, 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Christian Kirbach</mal:name>
       <mal:email>Christian.Kirbach@gmail.com</mal:email>
-      <mal:years>2009, 2010, 2011, 2012, 2013</mal:years>
+      <mal:years>2009, 2010, 2011, 2012, 2013, 2015,2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Gabor Karsay</mal:name>
       <mal:email>gabor.karsay@gmx.at</mal:email>
-      <mal:years>2011, 2012.</mal:years>
+      <mal:years>2011, 2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bernd Homuth</mal:name>
+      <mal:email>dev@hmt.im</mal:email>
+      <mal:years>2015.</mal:years>
     </mal:credit>
   </info>
 
@@ -81,19 +87,17 @@
 
 <section id="preferences">
 <title>Unerwünscht-Einstellungen</title>
-<note style="tip"><p>Die folgenden Einstellungen für unerwünschte Nachrichten sind nur für POP-Konten und lokale Zustellung gültig. Für den Umgang mit unerwünschten Nachrichten in IMAP-Konten sind die Einstellungen in Evolution unter <guiseq><gui>Bearbeiten</gui><gui>Einstellungen</gui><gui>E-Mail-Konten</gui><gui style="button">Bearbeiten</gui><gui>Empfangsoptionen</gui></guiseq> zuständig.</p></note>
-<p>Legen Sie den Umgang von Evolution mit unerwünschten Nachrichten in den Unerwünscht-Einstellungen fest:</p>
+<note style="tip"><p>Die folgenden Einstellungen für unerwünschte Nachrichten sind nur für POP-Konten und lokale Zustellung gültig. Für den Umgang mit unerwünschten Nachrichten in IMAP-Konten sind die Einstellungen in <app>Evolution</app> unter <guiseq><gui>Bearbeiten</gui><gui>Einstellungen</gui><gui>E-Mail-Konten</gui><gui style="button">Bearbeiten</gui><gui>Empfangsoptionen</gui></guiseq> zuständig.</p></note>
+<p>Legen Sie den Umgang von <app>Evolution</app> mit unerwünschten Nachrichten in den Unerwünscht-Einstellungen fest:</p>
 <steps>
 <item><p>Klicken Sie auf <guiseq><gui>Bearbeiten</gui><gui>Einstellungen</gui></guiseq> oder drücken Sie <keyseq><key>Umschalttaste</key><key>Strg</key><key>S</key></keyseq>.</p></item>
 <item><p>Wählen Sie <gui>E-Mail-Einstellungen</gui>.</p></item>
 <item><p>Im Reiter <gui>Unerwünscht</gui> haben Sie die Wahl zwischen folgenden Einstellungen:</p>
 <list>
-<item><p>Eingehende E-Mail auf Unerwünschtheit prüfen.</p></item>
+<item><p>Eingehende Nachrichten auf Unerwünschtheit prüfen.</p></item>
 <item><p>Unerwünscht-Ordner beim Beenden leeren, und wie oft unerwünschte Nachrichten gelöscht werden sollen.</p></item>
-<item><p>Benutzerdefinierte Kopfzeilen auf Unerwünschtheit prüfen.</p></item>
 <item><p>Nachrichten nicht als Unerwünscht markieren, wenn der Absender im Adressbuch ist.</p></item>
-<item><p>Der vorgegebene Unerwünscht-Filter.</p></item>
-<item><p>Optionen für Bogofilter und SpamAssassin.</p></item>
+<item><p>Benutzerdefinierte (durch E-Mail-Server hinzugefügte) Kopfzeilen auf Unerwünschtheit prüfen.</p></item>
 </list>
 </item>
 </steps>

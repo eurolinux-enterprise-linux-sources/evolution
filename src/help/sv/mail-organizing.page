@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="guide" id="mail-organizing" xml:lang="sv">
 
   <info>
-    <desc>On folders, sorting, searching, filters, search folders, and labels.</desc>
+    <desc>Om mappar, sortering, sökning, filter, sökmappar och etiketter.</desc>
 
     <link type="guide" xref="index#mail-basic"/>
     <link type="guide" xref="organizing"/>
@@ -16,13 +16,25 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-<title>Sorting and organizing mail</title>
+<title>Sortera och organisera post</title>
 
-<p>Evolution provides several options to organize your mail according to your needs.</p>
+<p><app>Evolution</app> tillhandahåller flera alternativ för att organisera din e-post enligt dina behov.</p>
 
   <section id="advanced" style="2column">
-    <title>Advanced Options</title>
+    <title>Avancerade alternativ</title>
   </section>
 </page>

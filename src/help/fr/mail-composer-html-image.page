@@ -50,7 +50,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -58,11 +58,11 @@
 
 <p>Vous pouvez insérer une image dans le courriel (à la position actuelle du curseur) :</p>
 <steps>
-<item><p>Cliquez sur <guiseq><gui>Insertion</gui><gui>Image...</gui></guiseq> dans la barre de menu.</p></item>
+<item><p>Cliquez sur <guiseq><gui>Insertion</gui><gui>Image…</gui></guiseq> dans la barre de menu.</p></item>
 <item><p>Recherchez et sélectionnez une image.</p></item>
 <item><p>Cliquez sur <gui>Ouvrir</gui>.</p></item>
 </steps>
 
-<p>Alternately, you can also use the <media type="image" its:translate="no" src="./figures/html-composer-insert-image.png"/> icon in the second bar below the <gui>Subject</gui> line, or drag an image into the text area of the message composer.</p>
+<p>Autrement, vous pouvez aussi utiliser l'icône <media type="image" its:translate="no" src="./figures/html-composer-insert-image.png"/> dans la seconde barre d'outils sous la ligne <gui>Sujet</gui>, ou glisser une image dans la zone de texte de l'éditeur de messages.</p>
 
 </page>

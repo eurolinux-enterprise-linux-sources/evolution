@@ -34,9 +34,9 @@
 #include <mail/e-mail-browser.h>
 #include <mail/e-mail-config-assistant.h>
 #include <mail/e-mail-config-window.h>
+#include <mail/e-mail-folder-create-dialog.h>
 #include <mail/e-mail-reader.h>
 #include <mail/em-composer-utils.h>
-#include <mail/em-folder-utils.h>
 #include <mail/em-utils.h>
 #include <mail/mail-send-recv.h>
 #include <mail/mail-vfolder-ui.h>
@@ -81,11 +81,15 @@ mbox_create_preview_cb (GObject *preview,
                         GtkWidget **preview_widget)
 {
 	EMailDisplay *display;
+	EMailBackend *mail_backend;
 
 	g_return_if_fail (preview != NULL);
 	g_return_if_fail (preview_widget != NULL);
 
-	display = g_object_new (E_TYPE_MAIL_DISPLAY, NULL);
+	mail_backend = E_MAIL_BACKEND (e_shell_get_backend_by_name (e_shell_get_default (), BACKEND_NAME));
+	g_return_if_fail (mail_backend != NULL);
+
+	display = E_MAIL_DISPLAY (e_mail_display_new (e_mail_backend_get_remote_content (mail_backend)));
 	g_object_set_data_full (
 		preview, "mbox-imp-display",
 		g_object_ref (display), g_object_unref);
@@ -103,30 +107,31 @@ message_parsed_cb (GObject *source_object,
 	GObject *preview = user_data;
 	EMailDisplay *display;
 	CamelFolder *folder;
-	SoupSession *soup_session;
-	GHashTable *mails;
 	const gchar *message_uid;
-	gchar *mail_uri;
 
 	display = g_object_get_data (preview, "mbox-imp-display");
 
 	parts_list = e_mail_parser_parse_finish (parser, res, NULL);
-
-	soup_session = webkit_get_default_session ();
-	mails = g_object_get_data (G_OBJECT (soup_session), "mails");
-	if (!mails) {
-		mails = g_hash_table_new_full (
-			g_str_hash, g_str_equal,
-			(GDestroyNotify) g_free, NULL);
-		g_object_set_data (
-			G_OBJECT (soup_session), "mails", mails);
-	}
+	if (!parts_list)
+		return;
 
 	folder = e_mail_part_list_get_folder (parts_list);
 	message_uid = e_mail_part_list_get_message_uid (parts_list);
-	mail_uri = e_mail_part_build_uri (folder, message_uid, NULL, NULL);
+	if (message_uid) {
+		CamelObjectBag *parts_registry;
+		EMailPartList *reserved_parts_list;
+		gchar *mail_uri;
 
-	g_hash_table_insert (mails, mail_uri, parts_list);
+		mail_uri = e_mail_part_build_uri (folder, message_uid, NULL, NULL);
+		parts_registry = e_mail_part_list_get_registry ();
+
+		reserved_parts_list = camel_object_bag_reserve (parts_registry, mail_uri);
+		g_clear_object (&reserved_parts_list);
+
+		camel_object_bag_add (parts_registry, mail_uri, parts_list);
+
+		g_free (mail_uri);
+	}
 
 	e_mail_display_set_part_list (display, parts_list);
 	e_mail_display_load (display, NULL);
@@ -194,6 +199,28 @@ mail_shell_backend_mail_icon_cb (EShellWindow *shell_window,
 }
 
 static void
+mail_shell_backend_folder_created_cb (EMailFolderCreateDialog *dialog,
+                                      CamelStore *store,
+                                      const gchar *folder_name,
+                                      GWeakRef *folder_tree_weak_ref)
+{
+	EMFolderTree *folder_tree;
+
+	folder_tree = g_weak_ref_get (folder_tree_weak_ref);
+
+	if (folder_tree != NULL) {
+		gchar *folder_uri;
+
+		/* Select the newly created folder. */
+		folder_uri = e_mail_folder_uri_build (store, folder_name);
+		em_folder_tree_set_selected (folder_tree, folder_uri, FALSE);
+		g_free (folder_uri);
+
+		g_object_unref (folder_tree);
+	}
+}
+
+static void
 action_mail_folder_new_cb (GtkAction *action,
                            EShellWindow *shell_window)
 {
@@ -202,6 +229,7 @@ action_mail_folder_new_cb (GtkAction *action,
 	EMailSession *session;
 	EShellSidebar *shell_sidebar;
 	EShellView *shell_view;
+	GtkWidget *dialog;
 	const gchar *view_name;
 
 	/* Take care not to unnecessarily load the mail shell view. */
@@ -231,8 +259,19 @@ action_mail_folder_new_cb (GtkAction *action,
 	session = em_folder_tree_get_session (folder_tree);
 
 exit:
-	em_folder_utils_create_folder (
-		GTK_WINDOW (shell_window), session, folder_tree, NULL);
+	dialog = e_mail_folder_create_dialog_new (
+		GTK_WINDOW (shell_window),
+		E_MAIL_UI_SESSION (session));
+
+	if (folder_tree != NULL) {
+		g_signal_connect_data (
+			dialog, "folder-created",
+			G_CALLBACK (mail_shell_backend_folder_created_cb),
+			e_weak_ref_new (folder_tree),
+			(GClosureNotify) e_weak_ref_free, 0);
+	}
+
+	gtk_widget_show (GTK_WIDGET (dialog));
 }
 
 static void
@@ -251,6 +290,29 @@ action_mail_account_new_cb (GtkAction *action,
 	e_mail_shell_backend_new_account (
 		E_MAIL_SHELL_BACKEND (shell_backend),
 		GTK_WINDOW (shell_window));
+}
+
+static void
+action_mail_message_new_composer_created_cb (GObject *source_object,
+					     GAsyncResult *result,
+					     gpointer user_data)
+{
+	CamelFolder *folder = user_data;
+	EMsgComposer *composer;
+	GError *error = NULL;
+
+	if (folder)
+		g_return_if_fail (CAMEL_IS_FOLDER (folder));
+
+	composer = e_msg_composer_new_finish (result, &error);
+	if (error) {
+		g_warning ("%s: Failed to create msg composer: %s", G_STRFUNC, error->message);
+		g_clear_error (&error);
+	} else {
+		em_utils_compose_new_message (composer, folder);
+	}
+
+	g_clear_object (&folder);
 }
 
 static void
@@ -303,8 +365,9 @@ action_mail_message_new_cb (GtkAction *action,
 		g_free (folder_name);
 	}
 
-exit:
-	em_utils_compose_new_message (shell, folder);
+ exit:
+	e_msg_composer_new (shell, action_mail_message_new_composer_created_cb,
+		folder ? g_object_ref (folder) : NULL);
 }
 
 static GtkActionEntry item_entries[] = {
@@ -441,30 +504,35 @@ mail_shell_backend_window_added_cb (GtkApplication *application,
 	EShell *shell = E_SHELL (application);
 	EMailBackend *backend;
 	EMailSession *session;
+	EHTMLEditor *editor = NULL;
 	const gchar *backend_name;
 
 	backend = E_MAIL_BACKEND (shell_backend);
 	session = e_mail_backend_get_session (backend);
 
+	if (E_IS_MSG_COMPOSER (window))
+		editor = e_msg_composer_get_editor (E_MSG_COMPOSER (window));
+
+	if (E_IS_MAIL_SIGNATURE_EDITOR (window))
+		editor = e_mail_signature_editor_get_editor (
+			E_MAIL_SIGNATURE_EDITOR (window));
+
 	/* This applies to both the composer and signature editor. */
-	if (GTKHTML_IS_EDITOR (window)) {
+	if (editor != NULL) {
+		EContentEditor *cnt_editor;
 		GSettings *settings;
-		GList *spell_languages;
 		gboolean active = TRUE;
 
-		spell_languages = e_load_spell_languages ();
-		gtkhtml_editor_set_spell_languages (
-			GTKHTML_EDITOR (window), spell_languages);
-		g_list_free (spell_languages);
+		cnt_editor = e_html_editor_get_content_editor (editor);
 
-		settings = g_settings_new ("org.gnome.evolution.mail");
+		settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 		active = g_settings_get_boolean (
 			settings, "composer-send-html");
 
 		g_object_unref (settings);
 
-		gtkhtml_editor_set_html_mode (GTKHTML_EDITOR (window), active);
+		e_content_editor_set_html_mode (cnt_editor, active);
 	}
 
 	if (E_IS_MSG_COMPOSER (window)) {
@@ -588,16 +656,139 @@ mail_shell_backend_changes_committed_cb (EMailConfigWindow *window,
 	g_object_unref (service);
 }
 
+static gboolean
+network_monitor_gio_name_to_active_id (GBinding *binding,
+				       const GValue *from_value,
+				       GValue *to_value,
+				       gpointer user_data)
+{
+	const gchar *gio_name_value;
+
+	gio_name_value = g_value_get_string (from_value);
+
+	if (g_strcmp0 (gio_name_value, E_NETWORK_MONITOR_ALWAYS_ONLINE_NAME) == 0) {
+		g_value_set_string (to_value, gio_name_value);
+	} else {
+		ENetworkMonitor *network_monitor;
+		GSList *gio_names, *link;
+
+		network_monitor = E_NETWORK_MONITOR (e_network_monitor_get_default ());
+		gio_names = e_network_monitor_list_gio_names (network_monitor);
+		for (link = gio_names; link; link = g_slist_next (link)) {
+			const gchar *gio_name = link->data;
+
+			g_warn_if_fail (gio_name != NULL);
+
+			if (g_strcmp0 (gio_name_value, gio_name) == 0)
+				break;
+		}
+		g_slist_free_full (gio_names, g_free);
+
+		/* Stopped before checked all the gio_names, thus found a match */
+		if (link)
+			g_value_set_string (to_value, gio_name_value);
+		else
+			g_value_set_string (to_value, "default");
+	}
+
+	return TRUE;
+}
+
 static GtkWidget *
-mail_shell_backend_create_proxy_page (EPreferencesWindow *window)
+mail_shell_backend_create_network_page (EPreferencesWindow *window)
 {
 	EShell *shell;
 	ESourceRegistry *registry;
+	GtkBox *vbox, *hbox;
+	GtkWidget *widget, *label;
+	PangoAttrList *bold;
+	ENetworkMonitor *network_monitor;
+	GSList *gio_names, *link;
+
+	const gchar *known_gio_names[] = {
+		/* Translators: One of the known implementation names of the GNetworkMonitor. Either translate
+		    it to some user-frienly form, or keep it as is. */
+		NC_("NetworkMonitor", "base"),
+		/* Translators: One of the known implementation names of the GNetworkMonitor. Either translate
+		    it to some user-frienly form, or keep it as is. */
+		NC_("NetworkMonitor", "netlink"),
+		/* Translators: One of the known implementation names of the GNetworkMonitor. Either translate
+		    it to some user-frienly form, or keep it as is. */
+		NC_("NetworkMonitor", "networkmanager")
+	};
+
+	/* To quiet a gcc warning about unused variable */
+	known_gio_names[0] = known_gio_names[1];
 
 	shell = e_preferences_window_get_shell (window);
 	registry = e_shell_get_registry (shell);
 
-	return e_proxy_preferences_new (registry);
+	bold = pango_attr_list_new ();
+	pango_attr_list_insert (bold, pango_attr_weight_new (PANGO_WEIGHT_BOLD));
+
+	vbox = GTK_BOX (gtk_box_new (GTK_ORIENTATION_VERTICAL, 4));
+
+	widget = gtk_label_new (_("General"));
+	g_object_set (G_OBJECT (widget),
+		"hexpand", FALSE,
+		"halign", GTK_ALIGN_START,
+		"vexpand", FALSE,
+		"valign", GTK_ALIGN_START,
+		"attributes", bold,
+		NULL);
+	gtk_widget_show (widget);
+	gtk_box_pack_start (vbox, widget, FALSE, FALSE, 0);
+
+	pango_attr_list_unref (bold);
+
+	hbox = GTK_BOX (gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 4));
+	#if GTK_CHECK_VERSION(3,12,0)
+	gtk_widget_set_margin_start (GTK_WIDGET (hbox), 12);
+	#else
+	gtk_widget_set_margin_left (GTK_WIDGET (hbox), 12);
+	#endif
+
+	label = gtk_label_new_with_mnemonic (C_("NetworkMonitor", "Method to detect _online state:"));
+	gtk_box_pack_start (hbox, label, FALSE, FALSE, 0);
+
+	widget = gtk_combo_box_text_new ();
+	gtk_box_pack_start (hbox, widget, FALSE, FALSE, 0);
+
+	gtk_label_set_mnemonic_widget (GTK_LABEL (label), widget);
+
+	/* Always as the first */
+	gtk_combo_box_text_append (GTK_COMBO_BOX_TEXT (widget), "default", C_("NetworkMonitor", "Default"));
+
+	network_monitor = E_NETWORK_MONITOR (e_network_monitor_get_default ());
+	gio_names = e_network_monitor_list_gio_names (network_monitor);
+	for (link = gio_names; link; link = g_slist_next (link)) {
+		const gchar *gio_name = link->data;
+
+		g_warn_if_fail (gio_name != NULL);
+
+		gtk_combo_box_text_append (GTK_COMBO_BOX_TEXT (widget), gio_name, g_dpgettext2 (NULL, "NetworkMonitor", gio_name));
+	}
+	g_slist_free_full (gio_names, g_free);
+
+	/* Always as the last */
+	gtk_combo_box_text_append (GTK_COMBO_BOX_TEXT (widget), E_NETWORK_MONITOR_ALWAYS_ONLINE_NAME, C_("NetworkMonitor", "Always Online"));
+
+	e_binding_bind_property_full (
+		network_monitor, "gio-name",
+		widget, "active-id",
+		G_BINDING_BIDIRECTIONAL | G_BINDING_SYNC_CREATE,
+		network_monitor_gio_name_to_active_id,
+		NULL,
+		NULL, NULL);
+
+	gtk_widget_show_all (GTK_WIDGET (hbox));
+	gtk_box_pack_start (vbox, GTK_WIDGET (hbox), FALSE, FALSE, 0);
+
+	widget = e_proxy_preferences_new (registry);
+	gtk_widget_show (widget);
+	gtk_box_pack_start (vbox, widget, TRUE, TRUE, 0);
+
+	return GTK_WIDGET (vbox);
 }
 
 static void
@@ -663,14 +854,13 @@ mail_shell_backend_constructed (GObject *object)
 		em_composer_prefs_new,
 		400);
 
-	/* This page is encapsulated by EProxyPreferences. */
 	e_preferences_window_add_page (
 		E_PREFERENCES_WINDOW (preferences_window),
 		"system-network-proxy",
 		"preferences-system-network-proxy",
 		_("Network Preferences"),
 		NULL,
-		mail_shell_backend_create_proxy_page,
+		mail_shell_backend_create_network_page,
 		500);
 
 	mail_session = e_mail_backend_get_session (E_MAIL_BACKEND (object));
@@ -678,7 +868,7 @@ mail_shell_backend_constructed (GObject *object)
 		CAMEL_SESSION (mail_session), E_MAIL_SESSION_VFOLDER_UID);
 	g_return_if_fail (vstore != NULL);
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 	g_settings_bind (
 		settings, "enable-unmatched",
@@ -731,7 +921,7 @@ mail_shell_backend_delete_junk_policy_decision (EMailBackend *backend)
 	gint empty_days = 0;
 	gint now;
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 	now = time (NULL) / 60 / 60 / 24;
 
@@ -765,7 +955,7 @@ mail_shell_backend_empty_trash_policy_decision (EMailBackend *backend)
 	gint empty_days = 0;
 	gint now;
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 	now = time (NULL) / 60 / 60 / 24;
 

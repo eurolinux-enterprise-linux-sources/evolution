@@ -24,7 +24,19 @@
 
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
-    <desc>Searching appointments and meetings.</desc>
+    <desc>Jak vyhledat události a schůzky.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
   <title>Vyhledávání položek v kalendáři</title>
@@ -32,25 +44,22 @@
 <section id="quick-search">
   <title>Rychlé hledání</title>
 
-  <p>In the Calendar view, you can quickly search for appointments and meetings
-  either by summary or by category.</p>
+  <p>V zobrazení kalendáře můžete rychle vyhledávat události a schůzky, a to buď podle souhrnu nebo kategorie.</p>
 
   <p>Hledání podle shrnutí:</p>
 
   <steps>
     <item>
-      <p>Click the search icon
-      <media type="image" mime="image/png" its:translate="no" src="figures/search-icon.png"/>
-      to expand the drop-down list.</p>
+      <p>Klikněte na ikonu hledání <media type="image" mime="image/png" its:translate="no" src="figures/search-icon.png"/>, aby se rozbalil seznam.</p>
     </item>
     <item>
-      <p>Vyberte ze seznamu kritérium hledání.</p>
+      <p>V seznamu vyberte podmínky hledání.</p>
     </item>
     <item>
-      <p>Zadejte text, který chcete vyhledat, a stiskněte <key>Enter</key>.</p>
+      <p>Zadejte text, který chcete vyhledat, a zmáčkněte <key>Enter</key>.</p>
     </item>
     <item>
-      <p><app>Evolution</app> displays the search results.</p>
+      <p><app>Evolution</app> zobrazí výsledky hledání.</p>
     </item>
   </steps>
 
@@ -64,14 +73,11 @@
       <p>Vyberte ze seznamu kategorii.</p>
     </item>
     <item>
-      <p><app>Evolution</app> displays the search results.</p>
+      <p><app>Evolution</app> zobrazí výsledky hledání.</p>
     </item>
   </steps>
 
-  <p>To go through the results you can use the two arrow buttons next to the
-  search field. This searches in currently enabled calendars. It searches from
-  the currently selected day in the given direction, in a range of 10 years by
-  default.</p>
+  <p>Pro přecházení mezi výsledky můžete použít dvě tlačítka se šipkami vedle vyhledávacího pole. Tím se hledá v právě zapnutém kalendáři a hledá se od právě vybraného dne v daném směru v rozsahu 10 dnů (výchozí hodnota).</p>
 
   <p>Chcete-li nastavit několik podmínek vyhledávání, měli byste použít pokročilé hledání, které je popsáno níže.</p>
 

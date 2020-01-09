@@ -23,17 +23,35 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
 <title>Διαγραφή μηνυμάτων ή συνημμένων μόνιμα</title>
 
 <section id="emails">
-<title>Μηνύματα</title>
-<p>Το Evolution διαγράφει μηνύματα σε εξυπηρετητές IMAP <em>σημειώνοντας</em> τα μηνύματα για διαγραφή· ο χώρος δεν ελευθερώνεται μέχρι να <em>εξαλείψετε</em> τα σημειωμένα μηνύματα.</p>
+<title>Αλληλογραφία</title>
+<p><app>Evolution</app> deletes emails on IMAP servers by <em>marking</em> the messages for deletion; space is not freed until you <em>expunge</em> the marked emails. </p>
 
 <p>Για εξάλειψη έναν συγκεκριμένο φάκελο, μετάβαση στο <guiseq><gui>φάκελος</gui><gui>εξάλειψη</gui></guiseq> ή πατήστε <keyseq><key>Ctrl</key><key>Ε</key></keyseq>. Για εξάλειψη όλων των φακέλων, μετάβαση στο <guiseq><gui>αρχείο</gui><gui>άδειασμα απορριμμάτων</gui></guiseq>. Αυτό εφαρμόζεται και σε άλλους τύπους λογαριασμών.</p>
 </section>

@@ -6,7 +6,7 @@
 
     <link type="guide" xref="mail-encryption#gpg"/>
 
-    <revision pkgversion="2.32.1" version="0.3" date="2012-02-18" status="final"/>
+    <revision pkgversion="3.13.90" version="0.4" date="2015-03-09" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -20,9 +20,15 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Yolanda Álvarez Pérez</mal:name>
+      <mal:email>yolandaa.alvarez.perez@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Daniel Mustieles</mal:name>
       <mal:email>daniel.mustieles@gmail.com</mal:email>
-      <mal:years>2012, 2014</mal:years>
+      <mal:years>2012 - 2016</mal:years>
     </mal:credit>
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
@@ -39,7 +45,7 @@
   </info>
 
   <title>Configurar el cifrado GPG para su cuenta de correo</title>
-<!-- TODO:POST-3-8: Update and rewrite using Seahorse. Needs a complete rewrite once https://bugzilla.gnome.org/show_bug.cgi?id=508744 is fixed. -->
+<!-- TODO:POST-3-8: Update and rewrite using Seahorse. Needs a rewrite once https://bugzilla.gnome.org/show_bug.cgi?id=745872 and https://bugzilla.gnome.org/show_bug.cgi?id=508744 is fixed. -->
 
 <note style="tip"><p>Necesita una clave GPG para esto. Si aún no tiene una, consulte <link xref="mail-encryption-gpg-create-key">Crear una clave GPG</link>.</p></note>
 
@@ -47,12 +53,12 @@
 <item><p>Seleccione <guiseq><gui>Editar</gui><gui>Preferencias</gui><gui>Cuentas de correo</gui></guiseq>.</p></item>
 <item><p>Seleccione la cuenta que quiere usar de forma segura, después pulse <gui style="button">Editar</gui>.</p></item>
 <item><p>Pulse en la pestaña <gui>Seguridad</gui>.</p></item>
-<item><p>Especifique el ID de su clave en el campo <gui>ID de la clave GPG/PGP</gui>.</p>
+<item><p>Especifique el ID de su clave en el campo <gui>ID de la clave OpenPGP</gui>.</p>
 <note style="tip"><p>Debajo del campo puede seleccionar si quiere firmar siempre los correos salientes al usar esta cuenta y otras opciones.</p></note>
 </item>
 <item><p>Pulse <gui style="button">Aceptar</gui>.</p></item>
 <item><p>Pulse <gui style="button">Cerrar</gui>.</p></item>
 </steps>
-<p>Evolution necesita que usted sepa su identificador (ID) de clave. Si no lo recuerda puede encontrarlo con el comando <cmd>gpg --list-keys</cmd> en la <app>Terminal</app>. El identificador de su clave es una cadena de 8 caracteres con números y letras aleatorios.</p>
+<p><app>Evolution</app> necesita que conozca el ID de su clave. Si no lo recuerda, inicie <app>Contraseñas y claves</app>, vaya a <gui>Claves GnuPG</gui>, elija su clave GPG preferida, pulse sobre ella con el botón derecho, seleccione <gui>Propiedades</gui> y copie el <gui>ID de la clave</gui>. El ID de su clave es una cadea de ocho caracteres con números y letras aleatorias.</p>
 
 </page>

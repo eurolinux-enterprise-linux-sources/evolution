@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-cannot-see" xml:lang="cs">
 
   <info>
-    <desc>If you received or sent an email, but you cannot find it anywhere.</desc>
+    <desc>Když pošlete nebo obdržíte zprávu, ale nemůžete ji nikde najít.</desc>
     
     <link type="guide" xref="index#common-mail-problems"/>
 
@@ -15,30 +15,41 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
         
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Jiří Eischmann</mal:name>
+      <mal:email>jiri@eischmann.cz</mal:email>
+      <mal:years>2008, 2009, 2010</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Marek Černocký</mal:name>
+      <mal:email>marek@manet.cz</mal:email>
+      <mal:years>2014, 2015</mal:years>
+    </mal:credit>
   </info>
 
-<title>I cannot see some emails, where are they?</title>
+<title>Nemohu najít některé zprávy, kde jsou?</title>
 
 <list>
  <item>
-  <p>Check whether you are using filters on incoming (or outgoing) messages. These could be automatically moving your messages to another destination.</p>
+  <p>Zkontrolujte, jestli nepoužíváte filtry příchozích (nebo odchozích) zpráv. Tím se mohou vaše zprávy automaticky přesouvat na jiná místa.</p>
  </item>
  <item>
-  <p>Check your search view in the search bar right above the message list. Perhaps the <gui>Show</gui> dropdown list is set to a filter like <gui>Read Messages</gui>, or the text input filed contains some value. Click the broom icon to clear the search field.</p>
+  <p>Zkontrolujte zobrazení hledání ve vyhledávacím poli vpravo nad seznamem zpráv. Třeba jestli rozbalovací seznam <gui>Zobrazit</gui> není nastaven na filtrování typu <gui>Přečtené zprávy</gui> nebo jestli v textovém poli není zadaná nějaká hodnota. Vyhledávací pole můžete vyčistit kliknutím na ikonu koštěte.</p>
  </item>
  <item>
-  <p>If you cannot see any emails at all in a folder, check that you have not maximized the message preview (so the message list pane is hidden). To do this, click <guiseq><gui>View</gui><gui>Preview</gui><gui>Show Message Preview</gui></guiseq>.</p>
+  <p>Pokud nevidíte žádnou poštu ze složky, podívejte se, jestli nemáte maximalizovaný náhled zpráv (v takovém případě je panel se seznamem zpráv skrytý). Uděláte to kliknutím na <guiseq><gui>Zobrazit</gui> <gui>Náhled</gui> <gui>Náhled zprávy</gui></guiseq>.</p>
  </item>
  <item>
-  <p>Look in the <gui>Junk</gui> folder. Messages that are marked as Junk disappear from the original folder and are moved to the Junk folder.
-  </p>
+  <p>Podívejte se do složky <gui>Nevyžádané</gui>. Zprávy, které se označí jako nevyžádané, zmizí z původní složky a přesunou se do složky <gui>Nevyžádané</gui>.</p>
  </item>
  <!-- Does the following option still exist? -->
  <item>
-  <p>Click <guiseq><gui>Edit</gui><gui>Show Deleted Messages</gui></guiseq> to make sure all messages are visible.</p>
+  <p>Klikněte na <guiseq><gui>Zobrazit</gui> <gui>Zobrazit smazané zprávy</gui></guiseq>, abyste měli jistotu, že jsou vidět všechny zprávy.</p>
  </item>
  <item>
-  <p>Check your default folder under <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Email Accounts</gui><gui>Edit</gui><gui>Defaults</gui></guiseq>. Perhaps it is set to some other folder than the folder you thought of.</p>
+  <p>Zkontrolujte nastavení výchozích složek v <guiseq><gui>Upravit</gui> <gui>Předvolby</gui> <gui>Poštovní účty</gui> <gui>Upravit</gui> <gui>Výchozí</gui></guiseq>. Možná jsou nastavené na jiné složky, než si myslíte.</p>
  </item>
 </list>
 

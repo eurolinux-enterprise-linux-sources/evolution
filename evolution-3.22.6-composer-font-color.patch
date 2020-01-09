@@ -1,0 +1,85 @@
+diff -up evolution-3.22.6/modules/webkit-editor/web-extension/e-editor-dom-functions.c.composer-font-color evolution-3.22.6/modules/webkit-editor/web-extension/e-editor-dom-functions.c
+--- evolution-3.22.6/modules/webkit-editor/web-extension/e-editor-dom-functions.c.composer-font-color	2017-03-24 13:43:34.992659166 +0100
++++ evolution-3.22.6/modules/webkit-editor/web-extension/e-editor-dom-functions.c	2017-03-24 13:43:34.997659165 +0100
+@@ -2834,6 +2834,8 @@ body_keypress_event_cb (WebKitDOMElement
+ 
+ 	g_return_if_fail (E_IS_EDITOR_PAGE (editor_page));
+ 
++	e_editor_page_set_is_processing_keypress_event (editor_page, TRUE);
++
+ 	document = webkit_dom_node_get_owner_document (WEBKIT_DOM_NODE (element));
+ 	dom_window = webkit_dom_document_get_default_view (document);
+ 	dom_selection = webkit_dom_dom_window_get_selection (dom_window);
+@@ -3583,7 +3585,13 @@ body_input_event_cb (WebKitDOMElement *e
+ {
+ 	g_return_if_fail (E_IS_EDITOR_PAGE (editor_page));
+ 
+-	e_editor_dom_body_input_event_process (editor_page, event);
++	/* Only process the input event if it was triggered by the key press
++	 * and not i.e. by exexCommand. This behavior changed when the support
++	 * for beforeinput event was introduced in WebKit. */
++	if (e_editor_page_is_processing_keypress_event (editor_page))
++		e_editor_dom_body_input_event_process (editor_page, event);
++
++	e_editor_page_set_is_processing_keypress_event (editor_page, FALSE);
+ }
+ 
+ void
+diff -up evolution-3.22.6/modules/webkit-editor/web-extension/e-editor-page.c.composer-font-color evolution-3.22.6/modules/webkit-editor/web-extension/e-editor-page.c
+--- evolution-3.22.6/modules/webkit-editor/web-extension/e-editor-page.c.composer-font-color	2017-02-07 17:48:51.000000000 +0100
++++ evolution-3.22.6/modules/webkit-editor/web-extension/e-editor-page.c	2017-03-24 13:43:34.997659165 +0100
+@@ -64,6 +64,7 @@ struct _EEditorPagePrivate {
+ 	gboolean pasting_content_from_itself;
+ 	gboolean renew_history_after_coordinates;
+ 	gboolean allow_top_signature;
++	gboolean processing_keypress_event;
+ 
+ 	GHashTable *inline_images;
+ 
+@@ -246,6 +247,7 @@ e_editor_page_init (EEditorPage *editor_
+ 	editor_page->priv->block_format = E_CONTENT_EDITOR_BLOCK_FORMAT_PARAGRAPH;
+ 	editor_page->priv->force_image_load = FALSE;
+ 	editor_page->priv->html_mode = TRUE;
++	editor_page->priv->processing_keypress_event = FALSE;
+ 	editor_page->priv->return_key_pressed = FALSE;
+ 	editor_page->priv->space_key_pressed = FALSE;
+ 	editor_page->priv->smiley_written = FALSE;
+@@ -559,6 +561,23 @@ e_editor_page_set_alignment (EEditorPage
+ }
+ 
+ gboolean
++e_editor_page_is_processing_keypress_event (EEditorPage *editor_page)
++{
++	g_return_val_if_fail (E_IS_EDITOR_PAGE (editor_page), FALSE);
++
++	return editor_page->priv->processing_keypress_event;
++}
++
++void
++e_editor_page_set_is_processing_keypress_event (EEditorPage *editor_page,
++                                                gboolean processing_keypress_event)
++{
++	g_return_if_fail (E_IS_EDITOR_PAGE (editor_page));
++
++	editor_page->priv->processing_keypress_event = processing_keypress_event;
++}
++
++gboolean
+ e_editor_page_get_return_key_pressed (EEditorPage *editor_page)
+ {
+ 	g_return_val_if_fail (E_IS_EDITOR_PAGE (editor_page), FALSE);
+diff -up evolution-3.22.6/modules/webkit-editor/web-extension/e-editor-page.h.composer-font-color evolution-3.22.6/modules/webkit-editor/web-extension/e-editor-page.h
+--- evolution-3.22.6/modules/webkit-editor/web-extension/e-editor-page.h.composer-font-color	2017-02-07 17:48:51.000000000 +0100
++++ evolution-3.22.6/modules/webkit-editor/web-extension/e-editor-page.h	2017-03-24 13:43:34.997659165 +0100
+@@ -112,6 +112,11 @@ void		e_editor_page_set_alignment	(EEdit
+ 						 EContentEditorAlignment value);
+ gint		e_editor_page_get_word_wrap_length
+ 						(EEditorPage *editor_page);
++gboolean	e_editor_page_is_processing_keypress_event
++						(EEditorPage *editor_page);
++void		e_editor_page_set_is_processing_keypress_event
++						(EEditorPage *editor_page,
++						 gboolean processing_keypress_event);
+ gboolean	e_editor_page_get_return_key_pressed
+ 						(EEditorPage *editor_page);
+ void		e_editor_page_set_return_key_pressed

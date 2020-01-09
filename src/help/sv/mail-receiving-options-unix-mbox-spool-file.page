@@ -2,11 +2,11 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="mail-receiving-options-unix-mbox-spool-file" xml:lang="sv">
 
   <info>
-    <desc>Receiving options for standard Unix mbox spool file accounts.</desc>
+    <desc>Mottagningsalternativ för standard Unix mbox-köfil-konton.</desc>
 
     <link type="guide" xref="mail-receiving-options#local-account-server-types"/>
     <link type="guide" xref="mail-account-manage-unix-mbox-spool-file#receiving-email"/>
-    <revision pkgversion="3.1.90" version="0.3" date="2011-08-25" status="final"/>
+    <revision pkgversion="3.12.9" version="0.4" date="2015-02-15" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -15,17 +15,29 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
     
 
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Daniel Nylander</mal:name>
+      <mal:email>po@danielnylander.se</mal:email>
+      <mal:years>2007, 2008, 2009</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Sebastian Rasmussen</mal:name>
+      <mal:email>sebras@gmail.com</mal:email>
+      <mal:years>2016</mal:years>
+    </mal:credit>
   </info>
 
-  <title>Standard Unix mbox spool file receiving options</title>
+  <title>Mottagningsalternativ för Standard Unix mbox-köfil</title>
 
 <section id="receiving-email-unix-mbox-spool-file">
 <title>Mottagande av e-post</title>
 
-<p>On the <gui>Receiving Email</gui> page (accessible via <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Mail Accounts</gui><gui style="button">Edit</gui><gui>Receiving Email</gui></guiseq>):</p>
+<p>På sidan <gui>Ta emot e-post</gui> (tillgänglig via <guiseq><gui>Redigera</gui><gui>Inställningar</gui><gui>E-postkonton</gui><gui style="button">Redigera</gui><gui>Ta emot e-post</gui></guiseq>):</p>
 
 <list>
-<item><p>Choose the file by clicking on the button next to <gui>File</gui> in the <gui>Configuration</gui> section. This will open a file chooser window.</p></item>
+<item><p>Välj filen genom att klicka på knappen intill <gui>Fil</gui> i avsnittet <gui>Konfiguration</gui>. Detta kommer att öppna ett fönster med en filväljare.</p></item>
 </list>
 
 </section>
@@ -33,11 +45,11 @@
 <section id="receiving-options-unix-mbox-spool-file">
 <title>Alternativ för mottagning</title>
 
-<p>On the <gui>Receiving Options</gui> page (accessible via <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Mail Accounts</gui><gui style="button">Edit</gui><gui>Receiving Options</gui></guiseq>):</p>
+<p>På sidan <gui>Alternativ för mottagning</gui> (tillgänglig via <guiseq><gui>Redigera</gui><gui>Inställningar</gui><gui>E-postkonton</gui><gui style="button">Redigera</gui><gui>Alternativ för mottagning</gui></guiseq>):</p>
 
 <list>
-<item><p>If you want Evolution to check automatically for new messages, click the <gui>Check for new messages every ... minutes</gui> option and select the frequency in minutes.</p></item>
-<item><p>If you want <link xref="mail-filters">Filters</link> to be automatically used for new messages in your inbox, enable <gui>Apply filters to new messages in INBOX</gui>.</p></item>
+<item><p>Om du vill att <app>Evolution</app> automatiskt ska leta efter nya meddelanden, klicka på alternativet <gui>Leta efter nya meddelanden var … minut</gui> och välj frekvensen i minuter.</p></item>
+<item><p>Om du vill att <link xref="mail-filters">filter</link> automatiskt ska användas för nya meddelanden i din inkorg, aktivera <gui>Tillämpa filtren för nya meddelanden i inkorgen</gui>.</p></item>
 </list>
 
 </section>

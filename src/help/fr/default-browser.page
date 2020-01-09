@@ -49,7 +49,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -62,40 +62,40 @@
 
 <if:choose>
   <if:when test="!platform:gnome-shell !platform:gnome-classic !platform:unity">
-<p>In case you use Evolution under a different environment from GNOME,</p>
+<p>In case you use <app>Evolution</app> under a different environment from GNOME,</p>
  <steps>
    <item>
-     <p>Open a terminal application.</p>
+     <p>Ouvrez une application dans un terminal.</p>
    </item>
    <item>
-<p>Find out the name of the <cmd>.desktop</cmd> file for your preferred browser. Depending on your browser and distribution, the file might be called for example <cmd>epiphany.desktop</cmd>, <cmd>firefox.desktop</cmd>, <cmd>google-chrome.desktop</cmd>, <cmd>konqbrowser.desktop</cmd>, or <cmd>opera-browser.desktop</cmd>. If you are unsure you can look up most <cmd>.desktop</cmd> files in the folder <cmd>/usr/share/applications/</cmd>.</p>
+<p>Recherchez le nome du fichier <cmd>.desktop</cmd> de votre navigateur préféré. Selon votre navigateur et votre distribution, le fichier peut s'appeler par exemple <cmd>epiphany.desktop</cmd>, <cmd>firefox.desktop</cmd>, <cmd>google-chrome.desktop</cmd>, <cmd>konqbrowser.desktop</cmd>, ou <cmd>opera-browser.desktop</cmd>. Si vous n'êtes pas sûr, vous pouvez consulter davantage de fichiers <cmd>.desktop</cmd> dans le dossier <cmd>/usr/share/applications/</cmd>.</p>
    </item>
    <item>
-     <p>Type this command, replace <cmd>browser.desktop</cmd> by the actual filename, and press <key>Enter</key>:</p>
+     <p>Saisissez cette commande, remplacez <cmd>browser.desktop</cmd> par le nom de fichier actuel et appuyez sur <key>Entrée</key> :</p>
      <p><cmd its:translate="no">
        xdg-settings set default-url-scheme-handler https browser.desktop
      </cmd></p>
    </item>
    <item>
-     <p>Type this command, replace <cmd>browser.desktop</cmd> by the actual filename, and press <key>Enter</key>:</p>
+     <p>Saisissez cette commande, remplacez <cmd>browser.desktop</cmd> par le nom de fichier actuel et appuyez sur <key>Entrée</key> :</p>
      <p><cmd its:translate="no">
        xdg-settings set default-url-scheme-handler http browser.desktop
      </cmd></p>
    </item>
    <item>
-     <p>Evolution may need to be restarted for the settings to take effect.</p>
+     <p><app>Evolution</app> may need to be restarted for the settings to take effect.</p>
    </item>
  </steps>
 <note style="tip">
-  <p>If the error message "xdg-settings: command not found" is shown, you need to install the package <sys>xdg-utils</sys>.</p>
+  <p>Si le message d'erreur « xdg-settings : commande non trouvée » s'affiche, vous devez installer le paquet <sys>xdg-utils</sys>.</p>
     <if:choose xmlns:if="http://projectmallard.org/if/1.0/">
       <if:when test="action:install">
-      <p><link action="install:xdg-utils" style="button">Install xdg-utils</link></p>
+      <p><link action="install:xdg-utils" style="button">Installer xdg-utils</link></p>
     </if:when>
   </if:choose>
 </note>
   </if:when>
-<p>Please see <link xref="help:gnome-help/net-default-browser" href="https://help.gnome.org/users/gnome-help/stable/net-default-browser">the GNOME Desktop Help</link>.</p>
+<p>Reportez-vous au <link xref="help:gnome-help/net-default-browser" href="https://help.gnome.org/users/gnome-help/stable/net-default-browser">Manuel du bureau GNOME</link>.</p>
 
 <p>Si le navigateur préféré est défini comme application par défaut mais que cela ne fonctionne pas correctement, contactez votre distribution via son forum ou son système de suivi de bogues.</p>
 
@@ -114,7 +114,7 @@
 <section id="email-application-to-use">
 <title>Changer d'application courriel pour rédiger les courriels</title>
 
-<p>Please see <link xref="help:gnome-help/net-default-email" href="https://help.gnome.org/users/gnome-help/stable/net-default-email">the GNOME Desktop Help</link>.</p>
+<p>Reportez-vous au <link href="help:gnome-help/net-default-email">manuel du bureau GNOME</link>.</p>
 
 </section>
 

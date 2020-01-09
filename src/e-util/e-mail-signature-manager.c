@@ -24,6 +24,7 @@
 #include <libedataserver/libedataserver.h>
 
 #include "e-dialog-widgets.h"
+#include "e-misc-utils.h"
 #include "e-mail-signature-preview.h"
 #include "e-mail-signature-tree-view.h"
 #include "e-mail-signature-script-dialog.h"
@@ -43,6 +44,7 @@ struct _EMailSignatureManagerPrivate {
 	GtkWidget *edit_button;		/* not referenced */
 	GtkWidget *remove_button;	/* not referenced */
 	GtkWidget *preview;		/* not referenced */
+	GtkWidget *preview_frame;	/* not referenced */
 
 	gboolean prefer_html;
 };
@@ -338,7 +340,7 @@ mail_signature_manager_constructed (GObject *object)
 	manager->priv->add_script_button = widget;  /* not referenced */
 	gtk_widget_show (widget);
 
-	settings = g_settings_new ("org.gnome.desktop.lockdown");
+	settings = e_util_ref_settings ("org.gnome.desktop.lockdown");
 
 	g_settings_bind (
 		settings, "disable-command-line",
@@ -375,13 +377,10 @@ mail_signature_manager_constructed (GObject *object)
 
 	container = GTK_WIDGET (manager);
 
-	widget = gtk_scrolled_window_new (NULL, NULL);
-	gtk_scrolled_window_set_policy (
-		GTK_SCROLLED_WINDOW (widget),
-		GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-	gtk_scrolled_window_set_shadow_type (
-		GTK_SCROLLED_WINDOW (widget), GTK_SHADOW_IN);
+	widget = gtk_frame_new (NULL);
+	gtk_frame_set_shadow_type (GTK_FRAME (widget), GTK_SHADOW_IN);
 	gtk_paned_pack2 (GTK_PANED (container), widget, FALSE, FALSE);
+	manager->priv->preview_frame = widget;  /* not referenced */
 	gtk_widget_show (widget);
 
 	container = widget;
@@ -395,19 +394,46 @@ mail_signature_manager_constructed (GObject *object)
 }
 
 static void
+mail_signature_manager_editor_created_add_signature_cb (GObject *source_object,
+							GAsyncResult *result,
+							gpointer user_data)
+{
+	EMailSignatureManager *manager = user_data;
+	EHTMLEditor *editor;
+	EContentEditor *cnt_editor;
+	GtkWidget *widget;
+	GError *error = NULL;
+
+	g_return_if_fail (E_IS_MAIL_SIGNATURE_MANAGER (manager));
+
+	widget = e_mail_signature_editor_new_finish (result, &error);
+	if (error) {
+		g_warning ("%s: Failed to create signature editor: %s", G_STRFUNC, error->message);
+		g_clear_error (&error);
+		g_clear_object (&manager);
+		return;
+	}
+
+	editor = e_mail_signature_editor_get_editor (E_MAIL_SIGNATURE_EDITOR (widget));
+	cnt_editor = e_html_editor_get_content_editor (editor);
+	e_content_editor_set_html_mode (cnt_editor, manager->priv->prefer_html);
+
+	mail_signature_manager_emit_editor_created (manager, widget);
+
+	gtk_widget_grab_focus (manager->priv->tree_view);
+
+	g_clear_object (&manager);
+}
+
+static void
 mail_signature_manager_add_signature (EMailSignatureManager *manager)
 {
 	ESourceRegistry *registry;
-	GtkWidget *editor;
 
 	registry = e_mail_signature_manager_get_registry (manager);
 
-	editor = e_mail_signature_editor_new (registry, NULL);
-	gtkhtml_editor_set_html_mode (
-		GTKHTML_EDITOR (editor), manager->priv->prefer_html);
-	mail_signature_manager_emit_editor_created (manager, editor);
-
-	gtk_widget_grab_focus (manager->priv->tree_view);
+	e_mail_signature_editor_new (registry, NULL,
+		mail_signature_manager_editor_created_add_signature_cb, g_object_ref (manager));
 }
 
 static void
@@ -434,7 +460,32 @@ mail_signature_manager_editor_created (EMailSignatureManager *manager,
 
 	gtk_window_set_transient_for (GTK_WINDOW (editor), parent);
 	gtk_window_set_position (GTK_WINDOW (editor), position);
+	gtk_widget_set_size_request (GTK_WIDGET (editor), 450, 300);
 	gtk_widget_show (GTK_WIDGET (editor));
+}
+
+static void
+mail_signature_manager_editor_created_edit_signature_cb (GObject *source_object,
+							 GAsyncResult *result,
+							 gpointer user_data)
+{
+	EMailSignatureManager *manager = user_data;
+	GtkWidget *widget;
+	GError *error = NULL;
+
+	g_return_if_fail (E_IS_MAIL_SIGNATURE_MANAGER (manager));
+
+	widget = e_mail_signature_editor_new_finish (result, &error);
+	if (error) {
+		g_warning ("%s: Failed to create signature editor: %s", G_STRFUNC, error->message);
+		g_clear_error (&error);
+		g_clear_object (&manager);
+		return;
+	}
+
+	mail_signature_manager_emit_editor_created (manager, widget);
+
+	g_clear_object (&manager);
 }
 
 static void
@@ -443,7 +494,6 @@ mail_signature_manager_edit_signature (EMailSignatureManager *manager)
 	EMailSignatureTreeView *tree_view;
 	ESourceMailSignature *extension;
 	ESourceRegistry *registry;
-	GtkWidget *editor;
 	ESource *source;
 	GFileInfo *file_info;
 	GFile *file;
@@ -479,8 +529,8 @@ mail_signature_manager_edit_signature (EMailSignatureManager *manager)
 	if (g_file_info_get_attribute_boolean (file_info, attribute))
 		goto script;
 
-	editor = e_mail_signature_editor_new (registry, source);
-	mail_signature_manager_emit_editor_created (manager, editor);
+	e_mail_signature_editor_new (registry, source,
+		mail_signature_manager_editor_created_edit_signature_cb, g_object_ref (manager));
 
 	goto exit;
 

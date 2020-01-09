@@ -34,10 +34,6 @@
 #include <glib/gi18n.h>
 #include <glib/gstdio.h>
 
-#include <gtkhtml/gtkhtml.h>
-#include <editor/gtkhtml-spell-language.h>
-#include <libedataserver/libedataserver.h>
-
 #include <composer/e-msg-composer.h>
 
 #include <shell/e-shell-utils.h>
@@ -54,54 +50,7 @@
 G_DEFINE_TYPE (
 	EMComposerPrefs,
 	em_composer_prefs,
-	GTK_TYPE_VBOX)
-
-static gboolean
-composer_prefs_map_string_to_color (GValue *value,
-                                    GVariant *variant,
-                                    gpointer user_data)
-{
-	GdkColor color;
-	const gchar *string;
-	gboolean success = FALSE;
-
-	string = g_variant_get_string (variant, NULL);
-	if (gdk_color_parse (string, &color)) {
-		g_value_set_boxed (value, &color);
-		success = TRUE;
-	}
-
-	return success;
-}
-
-static GVariant *
-composer_prefs_map_color_to_string (const GValue *value,
-                                    const GVariantType *expected_type,
-                                    gpointer user_data)
-{
-	GVariant *variant;
-	const GdkColor *color;
-
-	color = g_value_get_boxed (value);
-	if (color == NULL) {
-		variant = g_variant_new_string ("");
-	} else {
-		gchar *string;
-
-		/* Encode the color manually because CSS styles expect
-		 * color codes as #rrggbb, whereas gdk_color_to_string()
-		 * returns color codes as #rrrrggggbbbb. */
-		string = g_strdup_printf (
-			"#%02x%02x%02x",
-			(gint) color->red * 256 / 65536,
-			(gint) color->green * 256 / 65536,
-			(gint) color->blue * 256 / 65536);
-		variant = g_variant_new_string (string);
-		g_free (string);
-	}
-
-	return variant;
-}
+	GTK_TYPE_BOX)
 
 static void
 composer_prefs_dispose (GObject *object)
@@ -129,6 +78,7 @@ em_composer_prefs_class_init (EMComposerPrefsClass *class)
 static void
 em_composer_prefs_init (EMComposerPrefs *prefs)
 {
+	gtk_orientable_set_orientation (GTK_ORIENTABLE (prefs), GTK_ORIENTATION_VERTICAL);
 }
 
 static void
@@ -168,7 +118,7 @@ spell_language_save (EMComposerPrefs *prefs)
 	/* Build a list of active spell languages. */
 	valid = gtk_tree_model_get_iter_first (model, &iter);
 	while (valid) {
-		const GtkhtmlSpellLanguage *language;
+		ESpellDictionary *language;
 		gboolean active;
 
 		gtk_tree_model_get (
@@ -191,36 +141,35 @@ spell_language_save (EMComposerPrefs *prefs)
 static void
 spell_setup (EMComposerPrefs *prefs)
 {
-	const GList *available_languages;
-	GList *active_languages;
+	GList *list = NULL, *link;
 	GtkListStore *store;
 
 	store = GTK_LIST_STORE (prefs->language_model);
-	available_languages = gtkhtml_spell_language_get_available ();
-
-	active_languages = e_load_spell_languages ();
+	list = e_spell_checker_list_available_dicts (prefs->spell_checker);
 
 	/* Populate the GtkListStore. */
-	while (available_languages != NULL) {
-		const GtkhtmlSpellLanguage *language;
+	for (link = list; link != NULL; link = g_list_next (link)) {
+		ESpellDictionary *dictionary;
 		GtkTreeIter tree_iter;
 		const gchar *name;
+		const gchar *code;
 		gboolean active;
 
-		language = available_languages->data;
-		name = gtkhtml_spell_language_get_name (language);
-		active = (g_list_find (active_languages, language) != NULL);
+		dictionary = E_SPELL_DICTIONARY (link->data);
+		name = e_spell_dictionary_get_name (dictionary);
+		code = e_spell_dictionary_get_code (dictionary);
+
+		active = e_spell_checker_get_language_active (
+			prefs->spell_checker, code);
 
 		gtk_list_store_append (store, &tree_iter);
 
 		gtk_list_store_set (
 			store, &tree_iter,
-			0, active, 1, name, 2, language, -1);
-
-		available_languages = available_languages->next;
+			0, active, 1, name, 2, dictionary, -1);
 	}
 
-	g_list_free (active_languages);
+	g_list_free (list);
 }
 
 #define MAIL_SEND_ACCOUNT_OVERRIDE_KEY "sao-mail-send-account-override"
@@ -302,7 +251,7 @@ static void
 sao_account_treeview_selection_changed_cb (GtkTreeSelection *selection,
                                            GtkBuilder *builder)
 {
-	GtkTreeModel *model = NULL;
+	GtkTreeModel *model;
 	GtkWidget *widget;
 	gboolean enable = FALSE;
 
@@ -355,6 +304,25 @@ sao_account_treeview_selection_changed_cb (GtkTreeSelection *selection,
 	widget = e_builder_get_widget (builder, "sao-recipients-frame");
 	g_return_if_fail (GTK_IS_WIDGET (widget));
 	gtk_widget_set_sensitive (widget, enable);
+}
+
+static void
+sao_account_row_changed_cb (GtkTreeModel *model,
+			    GtkTreePath *path,
+			    GtkTreeIter *iter,
+			    GtkBuilder *builder)
+{
+	GtkTreeSelection *selection;
+	GtkWidget *widget;
+
+	if (gtk_tree_model_iter_n_children (model, NULL) != 1)
+		return;
+
+	widget = e_builder_get_widget (builder, "sao-account-treeview");
+	selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (widget));
+
+	if (!gtk_tree_selection_get_selected (selection, NULL, NULL))
+		gtk_tree_selection_select_iter (selection, iter);
 }
 
 static void
@@ -439,10 +407,14 @@ sao_folders_add_button_clicked_cb (GtkButton *button,
 	window = GTK_WINDOW (gtk_widget_get_toplevel (widget));
 
 	dialog = em_folder_selector_new (
-		window, em_folder_tree_model_get_default (),
-		0, _("Select Folder to Add"), NULL, _("_Add"));
+		window, em_folder_tree_model_get_default ());
+
+	gtk_window_set_title (
+		GTK_WINDOW (dialog), _("Select Folder to Add"));
 
 	selector = EM_FOLDER_SELECTOR (dialog);
+	em_folder_selector_set_default_button_label (selector, _("_Add"));
+
 	folder_tree = em_folder_selector_get_folder_tree (selector);
 
 	selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (folder_tree));
@@ -650,10 +622,18 @@ sao_recipient_edited_cb (GtkCellRendererText *renderer,
 			e_mail_send_account_override_set_for_recipient (account_override, text, account_uid);
 		} else {
 			GtkTreeSelection *selection;
+			GtkTreePath *path1, *path2;
 
 			selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (widget));
 
-			gtk_list_store_remove (GTK_LIST_STORE (model), &new_iter);
+			path1 = gtk_tree_model_get_path (model, &iter);
+			path2 = gtk_tree_model_get_path (model, &new_iter);
+
+			if (!path1 || !path2 || gtk_tree_path_compare (path1, path2) != 0)
+				gtk_list_store_remove (GTK_LIST_STORE (model), &new_iter);
+
+			gtk_tree_path_free (path1);
+			gtk_tree_path_free (path2);
 
 			gtk_tree_selection_unselect_all (selection);
 			gtk_tree_selection_select_iter (selection, &iter);
@@ -889,6 +869,8 @@ send_account_override_setup (GtkBuilder *builder,
 		selection, "changed",
 		G_CALLBACK (sao_account_treeview_selection_changed_cb), builder);
 
+	g_signal_connect (model, "row-changed", G_CALLBACK (sao_account_row_changed_cb), builder);
+
 	widget = e_builder_get_widget (builder, "sao-folders-treeview");
 	g_return_if_fail (GTK_IS_TREE_VIEW (widget));
 
@@ -1015,11 +997,45 @@ static EMConfigItem emcp_items[] = {
 	  (gchar *) "vboxSpellChecking",
 	  emcp_widget_glade },
 
-	{ E_CONFIG_PAGE,
-	  (gchar *) "90.accountoverride",
-	  (gchar *) "send-account-override-grid",
-	  emcp_widget_glade }
+	{ E_CONFIG_SECTION,
+	  (gchar *) "20.spellcheck/00.options",
+	  (gchar *) "spell-options-vbox",
+	  emcp_widget_glade },
 };
+
+static gboolean
+em_composer_prefs_outbox_delay_setting_to_id (GValue *value,
+					      GVariant *variant,
+					      gpointer user_data)
+{
+	gint to_set = g_variant_get_int32 (variant);
+	gchar *str;
+
+	if (to_set < 0)
+		to_set = -1;
+	else if (to_set != 0 && to_set != 5)
+		to_set = 5;
+
+	str = g_strdup_printf ("%d", to_set);
+	g_value_set_string (value, str);
+	g_free (str);
+
+	return TRUE;
+}
+
+static GVariant *
+em_composer_prefs_outbox_delay_id_to_setting (const GValue *value,
+					      const GVariantType *expected_type,
+					      gpointer user_data)
+{
+	gint to_set;
+
+	to_set = g_value_get_string (value) ? atoi (g_value_get_string (value)) : -1;
+	if (to_set == 0 && g_strcmp0 (g_value_get_string (value), "0") != 0)
+		to_set = -1;
+
+	return g_variant_new_int32 (to_set);
+}
 
 static void
 emcp_free (EConfig *ec,
@@ -1042,6 +1058,7 @@ em_composer_prefs_construct (EMComposerPrefs *prefs,
 	GtkListStore *store;
 	GtkTreeSelection *selection;
 	GtkCellRenderer *renderer;
+	GtkComboBoxText *combo_text;
 	EMConfig *ec;
 	EMConfigTargetPrefs *target;
 	EMailBackend *mail_backend;
@@ -1051,7 +1068,7 @@ em_composer_prefs_construct (EMComposerPrefs *prefs,
 
 	registry = e_shell_get_registry (shell);
 
-	settings = g_settings_new ("org.gnome.evolution.mail");
+	settings = e_util_ref_settings ("org.gnome.evolution.mail");
 
 	/* Make sure our custom widget classes are registered with
 	 * GType before we load the GtkBuilder definition file. */
@@ -1059,6 +1076,8 @@ em_composer_prefs_construct (EMComposerPrefs *prefs,
 
 	prefs->builder = gtk_builder_new ();
 	e_load_ui_builder_definition (prefs->builder, "mail-config.ui");
+
+	prefs->spell_checker = e_spell_checker_new ();
 
 	/** @HookPoint-EMConfig: Mail Composer Preferences
 	 * @Id: org.gnome.evolution.mail.composerPrefs
@@ -1080,6 +1099,18 @@ em_composer_prefs_construct (EMComposerPrefs *prefs,
 	widget = e_builder_get_widget (prefs->builder, "chkSendHTML");
 	g_settings_bind (
 		settings, "composer-send-html",
+		widget, "active",
+		G_SETTINGS_BIND_DEFAULT);
+
+	widget = e_builder_get_widget (prefs->builder, "chkInheritThemeColors");
+	g_settings_bind (
+		settings, "composer-inherit-theme-colors",
+		widget, "active",
+		G_SETTINGS_BIND_DEFAULT);
+
+	widget = e_builder_get_widget (prefs->builder, "chkPromptAccelSend");
+	g_settings_bind (
+		settings, "prompt-on-accel-send",
 		widget, "active",
 		G_SETTINGS_BIND_DEFAULT);
 
@@ -1113,6 +1144,12 @@ em_composer_prefs_construct (EMComposerPrefs *prefs,
 		widget, "active",
 		G_SETTINGS_BIND_DEFAULT);
 
+	widget = e_builder_get_widget (prefs->builder, "chkPromptManyToCCRecips");
+	g_settings_bind (
+		settings, "prompt-on-many-to-cc-recips",
+		widget, "active",
+		G_SETTINGS_BIND_DEFAULT);
+
 	widget = e_builder_get_widget (prefs->builder, "chkPromptSendInvalidRecip");
 	g_settings_bind (
 		settings, "prompt-on-invalid-recip",
@@ -1122,6 +1159,12 @@ em_composer_prefs_construct (EMComposerPrefs *prefs,
 	widget = e_builder_get_widget (prefs->builder, "chkAutoSmileys");
 	g_settings_bind (
 		settings, "composer-magic-smileys",
+		widget, "active",
+		G_SETTINGS_BIND_DEFAULT);
+
+	widget = e_builder_get_widget (prefs->builder, "chkUnicodeSmileys");
+	g_settings_bind (
+		settings, "composer-unicode-smileys",
 		widget, "active",
 		G_SETTINGS_BIND_DEFAULT);
 
@@ -1137,11 +1180,43 @@ em_composer_prefs_construct (EMComposerPrefs *prefs,
 		widget, "active",
 		G_SETTINGS_BIND_DEFAULT);
 
+	widget = e_builder_get_widget (prefs->builder, "spinWordWrapLength");
+	g_settings_bind (
+		settings, "composer-word-wrap-length",
+		widget, "value",
+		G_SETTINGS_BIND_DEFAULT);
+
 	widget = e_builder_get_widget (prefs->builder, "chkOutlookFilenames");
 	g_settings_bind (
 		settings, "composer-outlook-filenames",
 		widget, "active",
 		G_SETTINGS_BIND_DEFAULT);
+
+	widget = e_builder_get_widget (prefs->builder, "chkUseOutbox");
+	g_settings_bind (
+		settings, "composer-use-outbox",
+		widget, "active",
+		G_SETTINGS_BIND_DEFAULT);
+
+	widget = e_builder_get_widget (prefs->builder, "comboboxFlushOutbox");
+
+	combo_text = GTK_COMBO_BOX_TEXT (widget);
+	gtk_combo_box_text_append (combo_text, "-1", _("Keep in Outbox"));
+	gtk_combo_box_text_append (combo_text,  "0", _("Send immediately"));
+	gtk_combo_box_text_append (combo_text,  "5", _("Send after 5 minutes"));
+
+	g_settings_bind_with_mapping (
+		settings, "composer-delay-outbox-flush",
+		widget, "active-id",
+		G_SETTINGS_BIND_DEFAULT,
+		em_composer_prefs_outbox_delay_setting_to_id,
+		em_composer_prefs_outbox_delay_id_to_setting,
+		NULL, NULL);
+
+	e_binding_bind_property (
+		e_builder_get_widget (prefs->builder, "chkUseOutbox"), "active",
+		widget, "sensitive",
+		G_BINDING_SYNC_CREATE);
 
 	widget = e_builder_get_widget (prefs->builder, "chkIgnoreListReplyTo");
 	g_settings_bind (
@@ -1158,6 +1233,12 @@ em_composer_prefs_construct (EMComposerPrefs *prefs,
 	widget = e_builder_get_widget (prefs->builder, "chkSignReplyIfSigned");
 	g_settings_bind (
 		settings, "composer-sign-reply-if-signed",
+		widget, "active",
+		G_SETTINGS_BIND_DEFAULT);
+
+	widget = e_builder_get_widget (prefs->builder, "chkWrapQuotedTextInReplies");
+	g_settings_bind (
+		settings, "composer-wrap-quoted-text-in-replies",
 		widget, "active",
 		G_SETTINGS_BIND_DEFAULT);
 
@@ -1190,9 +1271,6 @@ em_composer_prefs_construct (EMComposerPrefs *prefs,
 	view = GTK_TREE_VIEW (widget);
 	store = gtk_list_store_new (
 		3, G_TYPE_BOOLEAN, G_TYPE_STRING, G_TYPE_POINTER);
-	g_signal_connect_swapped (
-		store, "row-changed",
-		G_CALLBACK (spell_language_save), prefs);
 	prefs->language_model = GTK_TREE_MODEL (store);
 	gtk_tree_view_set_model (view, prefs->language_model);
 	renderer = gtk_cell_renderer_toggle_new ();
@@ -1214,16 +1292,11 @@ em_composer_prefs_construct (EMComposerPrefs *prefs,
 		GTK_IMAGE (info_pixmap),
 		"dialog-information", GTK_ICON_SIZE_BUTTON);
 
-	widget = e_builder_get_widget (prefs->builder, "colorButtonSpellCheckColor");
-	g_settings_bind_with_mapping (
-		settings, "composer-spell-color",
-		widget, "color",
-		G_SETTINGS_BIND_DEFAULT,
-		composer_prefs_map_string_to_color,
-		composer_prefs_map_color_to_string,
-		NULL, (GDestroyNotify) NULL);
-
 	spell_setup (prefs);
+
+	g_signal_connect_swapped (
+		store, "row-changed",
+		G_CALLBACK (spell_language_save), prefs);
 
 	/* Forwards and Replies */
 	widget = e_builder_get_widget (prefs->builder, "comboboxForwardStyle");
@@ -1268,7 +1341,7 @@ em_composer_prefs_construct (EMComposerPrefs *prefs,
 	send_account_override_setup (prefs->builder, mail_backend, registry);
 
 	widget = e_builder_get_widget (prefs->builder, "sao-prefer-folder-check");
-	g_object_bind_property (
+	e_binding_bind_property (
 		send_override, "prefer-folder",
 		widget, "active",
 		G_BINDING_BIDIRECTIONAL | G_BINDING_SYNC_CREATE);

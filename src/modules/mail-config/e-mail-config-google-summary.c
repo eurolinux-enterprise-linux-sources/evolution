@@ -20,6 +20,7 @@
 #include <config.h>
 #include <glib/gi18n-lib.h>
 
+#include <libedataserver/libedataserver.h>
 #include <mail/e-mail-config-summary-page.h>
 
 #define E_MAIL_CONFIG_GOOGLE_SUMMARY_GET_PRIVATE(obj) \
@@ -130,12 +131,33 @@ mail_config_google_summary_commit_changes_cb (EMailConfigSummaryPage *page,
 	toggle_button = GTK_TOGGLE_BUTTON (extension->priv->calendar_toggle);
 	calendar_active = gtk_toggle_button_get_active (toggle_button);
 
-	toggle_button = GTK_TOGGLE_BUTTON (extension->priv->contacts_toggle);
-	contacts_active = gtk_toggle_button_get_active (toggle_button);
+	if (e_source_credentials_google_is_supported ()) {
+		toggle_button = GTK_TOGGLE_BUTTON (extension->priv->contacts_toggle);
+		contacts_active = gtk_toggle_button_get_active (toggle_button);
+	} else {
+		contacts_active = FALSE;
+	}
 
-	/* If the user declined both Calendar and Contacts, do nothing. */
-	if (!calendar_active && !contacts_active)
+	/* If the user declined both Calendar and Contacts, do nothing,
+	   but set the Google/OAuth2 authentication for the sources. */
+	if (!calendar_active && !contacts_active) {
+		if (e_source_credentials_google_is_supported ()) {
+			source = e_mail_config_summary_page_get_account_source (page);
+			auth_extension = e_source_get_extension (source, E_SOURCE_EXTENSION_AUTHENTICATION);
+			e_source_authentication_set_method (auth_extension, "Google");
+
+			head = g_queue_peek_head_link (source_queue);
+			for (link = head; link != NULL; link = g_list_next (link)) {
+				source = link->data;
+
+				if (e_source_has_extension (source, E_SOURCE_EXTENSION_AUTHENTICATION)) {
+					auth_extension = e_source_get_extension (source, E_SOURCE_EXTENSION_AUTHENTICATION);
+					e_source_authentication_set_method (auth_extension, "Google");
+				}
+			}
+		}
 		return;
+	}
 
 	source = e_mail_config_summary_page_get_account_source (page);
 	display_name = e_source_get_display_name (source);
@@ -151,6 +173,16 @@ mail_config_google_summary_commit_changes_cb (EMailConfigSummaryPage *page,
 	extension_name = E_SOURCE_EXTENSION_COLLECTION;
 	collection_extension = e_source_get_extension (source, extension_name);
 	e_source_collection_set_identity (collection_extension, user);
+
+	/* Always create the Authentication extension, thus the collection source
+	   can be used for the credentials prompt. */
+	auth_extension = e_source_get_extension (source, E_SOURCE_EXTENSION_AUTHENTICATION);
+	e_source_authentication_set_host (auth_extension, "");
+
+	if (e_source_credentials_google_is_supported ()) {
+		e_source_authentication_set_user (auth_extension, user);
+		e_source_authentication_set_method (auth_extension, "Google");
+	}
 
 	/* All queued sources become children of the collection source. */
 	parent_uid = e_source_get_uid (source);
@@ -240,7 +272,7 @@ mail_config_google_summary_constructed (GObject *object)
 	gtk_grid_set_column_spacing (GTK_GRID (widget), 6);
 	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		extension, "applicable",
 		widget, "visible",
 		G_BINDING_SYNC_CREATE);
@@ -264,18 +296,23 @@ mail_config_google_summary_constructed (GObject *object)
 	extension->priv->calendar_toggle = widget;  /* not referenced */
 	gtk_widget_show (widget);
 
-	text = _("Add Google Con_tacts to this account");
-	widget = gtk_check_button_new_with_mnemonic (text);
-	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (widget), TRUE);
-	gtk_widget_set_margin_left (widget, 12);
-	gtk_grid_attach (GTK_GRID (container), widget, 0, 2, 1, 1);
-	extension->priv->contacts_toggle = widget;  /* not referenced */
-	gtk_widget_show (widget);
+	if (e_source_credentials_google_is_supported ()) {
+		text = _("Add Google Con_tacts to this account");
+		widget = gtk_check_button_new_with_mnemonic (text);
+		gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (widget), TRUE);
+		gtk_widget_set_margin_left (widget, 12);
+		gtk_grid_attach (GTK_GRID (container), widget, 0, 2, 1, 1);
+		extension->priv->contacts_toggle = widget;  /* not referenced */
+		gtk_widget_show (widget);
+	}
 
 	text = _("You may need to enable IMAP access");
 	widget = gtk_link_button_new_with_label (GOOGLE_HELP_URI, text);
 	gtk_widget_set_margin_left (widget, 12);
-	gtk_grid_attach (GTK_GRID (container), widget, 0, 3, 1, 1);
+	if (e_source_credentials_google_is_supported ())
+		gtk_grid_attach (GTK_GRID (container), widget, 0, 3, 1, 1);
+	else
+		gtk_grid_attach (GTK_GRID (container), widget, 0, 2, 1, 1);
 	gtk_widget_show (widget);
 
 	source = extension->priv->collection_source;
@@ -286,15 +323,18 @@ mail_config_google_summary_constructed (GObject *object)
 	 * the Summary Page has no sources yet.  Set the display
 	 * name while committing instead. */
 
-	g_object_bind_property (
+	e_binding_bind_property (
 		extension->priv->calendar_toggle, "active",
 		collection_extension, "calendar-enabled",
 		G_BINDING_SYNC_CREATE);
 
-	g_object_bind_property (
-		extension->priv->contacts_toggle, "active",
-		collection_extension, "contacts-enabled",
-		G_BINDING_SYNC_CREATE);
+	if (e_source_credentials_google_is_supported ())
+		e_binding_bind_property (
+			extension->priv->contacts_toggle, "active",
+			collection_extension, "contacts-enabled",
+			G_BINDING_SYNC_CREATE);
+	else
+		g_object_set (G_OBJECT (collection_extension), "contacts-enabled", FALSE, NULL);
 }
 
 static void

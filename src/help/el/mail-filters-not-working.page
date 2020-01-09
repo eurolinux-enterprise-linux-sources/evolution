@@ -22,9 +22,27 @@
 
   
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Ελληνική μεταφραστική ομάδα GNOME</mal:name>
+      <mal:email>team@gnome.gr</mal:email>
+      <mal:years>2009-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Δημήτρης Σπίγγος</mal:name>
       <mal:email>dmtrs32@gmail.com</mal:email>
-      <mal:years>2012, 2013, 2014</mal:years>
+      <mal:years>2012-2015</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Φώτης Τσάμης</mal:name>
+      <mal:email>ftsamis@gmail.com</mal:email>
+      <mal:years>2010-2012</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Μάριος Ζηντίλης</mal:name>
+      <mal:email>m.zindilis@dmajor.org</mal:email>
+      <mal:years>2009-2010</mal:years>
     </mal:credit>
   </info>
 
@@ -40,18 +58,18 @@
 
 <section id="several-clients">
 <title>Χρήση αρκετών πελατών αλληλογραφίας</title>
-<p>Ένα άλλο πράγμα που πρέπει να κρατάτε κατά νου είναι ότι τα φίλτρα εξαρτώνται από "νέα" σημαία που ορίζεται στον εξυπηρετητή, όταν ένα συγκεκριμένο μήνυμα αλληλογραφίας προσκομίζεται αρχικά από τον εξυπηρετητή. Εάν χρησιμοποιείτε έναν άλλον πελάτη αλληλογραφίας πέρα από το Evolution, μπορεί τα φίλτρα σας να μην δουλεύουν αυτόματα.</p>
+<p>Another thing you have to keep in mind is that filters depend on the "new" flag that is set on the server when a particular email message is initially fetched from the server. If you use another email client aside from <app>Evolution</app>, your filters may not work automatically.</p>
 </section>
 
 <section id="filter-log">
 <title>Καταγραφή ενεργειών φίλτρων</title>
 <p>Εάν είναι ακόμα ασαφές γιατί τα φίλτρα δεν δουλεύουν όπως αναμένεται, μπορείτε να ενεργοποιήσετε την καταγραφή ενεργειών φίλτρων.</p>
 <list>
-<item><p>Κλείσιμο του Evolution.</p></item>
+<item><p>Close <app>Evolution</app>.</p></item>
 <item><p>Άνοιγμα της εφαρμογής του <app>τερματικού</app>.</p></item>
 <item><p>Εκτελέστε την εντολή <cmd>gsettings set org.gnome.evolution.mail filters-log-actions true</cmd></p></item>
 <item><p>Εκτελέστε την εντολή <cmd>gsettings set org.gnome.evolution.mail filters-log-file "/home/myusername/my-filter-log"</cmd> και αντικαταστήστε το <cmd>myusername</cmd> από το όνομα χρήστη. Αυτό θα δημιουργήσει ένα αρχείο κειμένου με όνομα <file>my-filter-log</file> στον προσωπικό σας κατάλογο. Σημειώστε ότι η απόλυτη διαδρομή στο όνομα του αρχείου πρέπει να εισαχθεί· μια σύνταξη όπως <sys>~</sys> ή <sys>$HOME</sys> δεν θα δουλέψει.</p></item><!-- this is explained in https://bugzilla.gnome.org/show_bug.cgi?id=669471 -->
-<item><p>Εκκινήστε το Evolution.</p></item>
+<item><p>Start <app>Evolution</app>.</p></item>
 <item><p>Προσκόμιση αλληλογραφίας για εφαρμογή φίλτρων.</p></item>
 <item><p>Άνοιγμα του αρχείου <file>my-filter-log</file> με έναν επεξεργαστή κειμένου για να δείτε ποιες ενέργειες φίλτρου έχουν εφαρμοστεί.</p></item>
 </list>

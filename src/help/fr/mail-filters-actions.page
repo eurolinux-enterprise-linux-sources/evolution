@@ -52,7 +52,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -93,13 +93,13 @@
 <p>Émettre un bip système.</p></item>
 
 <item><p>Jouer le son :</p>
-<p>Sélectionne un fichier son joué par Evolution.</p></item>
+<p>Select a sound file for <app>Evolution</app> to play.</p></item>
 
 <item><p>Lancer le programme :</p>
-<p>Evolution lance une application.</p></item>
+<p><app>Evolution</app> runs an application.</p></item>
 
 <item><p>Transfert vers le programme :</p>
-<p>Envoie le message à une application de votre choix. Aucune valeur de retour n'est attendue. Cette fonctionnalité peut être utilisée pour créer des soumissions automatiques de pages Web à partir de courriels ou pour effectuer des traitements supplémentaires de message non pris en charge par Evolution.</p></item>
+<p>Sends the message to an application of your choice. No return value is expected. This feature can be used to create automatic Web postings from email messages or to perform additional message post processing not supported by <app>Evolution</app>.</p></item>
 
 <item><p>Faire suivre à :</p>
 <p>Fait suivre le message vers une adresse électronique différente.</p></item>

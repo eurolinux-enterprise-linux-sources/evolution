@@ -59,13 +59,13 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
   <title>Certificats et chiffrement de courriel</title>
 
-<p>Evolution propose le chiffrement GPG et le chiffrement S/MIME pour signer et chiffrer les messages de courriel. S/MIME est plus souvent utilisé dans les environnements de société.</p>
+<p><app>Evolution</app> offers GPG Encryption and S/MIME Encryption for signing and encrypting email messages. S/MIME is used most often in corporate environments.</p>
 
   <section id="gpg" style="2column">
     <title>GPG</title>

@@ -50,14 +50,14 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
   <title>Rapport de bogues</title>
 
-<p>Si vous n'avez pas besoin d'aide concernant la configuration et que vous êtes sûr d'avoir trouvé une erreur ou un  comportement défectueux dans le logiciel Evolution ou si vous voulez demander une nouvelle fonctionnalité, vous pouvez remplir un rapport dans le <link href="http://bugzilla.gnome.org">système de suivi de bogues GNOME</link>. Notez qu'il est nécessaire de s'enregistrer d'abord. Essayez de ne pas faire de doublons et consultez d'abord les <link href="https://bugzilla.gnome.org/page.cgi?id=bug-writing.html">conseils d'écriture de bogues</link>.</p><p>Notez également que les distributions de GNOME introduisent parfois leurs propres modifications dans Evolution qui ne sont pas incluses dans Evolution de GNOME. C'est difficile à détecter pour les utilisateurs mais si vous êtes au courant de cela, remplissez plutôt un rapport de bogue dans <link href="https://live.gnome.org/Bugsquad/TriageGuide/NonGnome#Bug_trackers_for_distributions">le système de suivi de bogues de votre distribution GNOME</link>.</p>
+<p>If you do not need help for configuration but you are sure that you have found a mistake or wrong behavior in the <app>Evolution</app> software, or if you want to request a feature, you can file a report in the <link href="http://bugzilla.gnome.org">GNOME bug tracking system</link>. Note that this requires registration first. Please try to avoid filing duplicates and check the <link href="https://bugzilla.gnome.org/page.cgi?id=bug-writing.html">bug writing guidelines</link> first.</p><p>Also note that GNOME distributions sometimes introduce their own changes in <app>Evolution</app> that are not included in GNOME <app>Evolution</app>. This is hard to recognize for users but if you are aware of it please file a bug report in <link href="https://wiki.gnome.org/Bugsquad/TriageGuide/NonGnome#Bug_trackers_for_distributions">the bug tracker of your GNOME distribution</link> instead.</p>
 
-<p>Lors de vos rapports de bogues, des informations précises sont les bienvenues car cela facilite la reproduction de votre bogue et la résolution du problème. Si possible, veuillez inclure des informations comme la version d'Evolution (dans le menu <guiseq><gui>Aide</gui><gui>À propos</gui></guiseq>), le nom de votre distribution et les étapes à suivre pour reproduire le problème, clic après clic. Consultez les <link href="https://bugzilla.gnome.org/page.cgi?id=bug-writing.html">conseils d'écriture de bogues</link> pour plus d'informations.</p>
+<p>When reporting bugs exact information is welcome as it makes it easier for others to reproduce and fix the issue. If possible please include information such as the <app>Evolution</app> version (under <guiseq><gui>Help</gui><gui>About</gui></guiseq>), your distribution, and exact steps to reproduce the problem, click by click. See the <link href="https://bugzilla.gnome.org/page.cgi?id=bug-writing.html">Bug Writing Guidelines</link> for more information.</p>
 
 </page>

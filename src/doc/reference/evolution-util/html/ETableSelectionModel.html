@@ -2,13 +2,13 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Evolution Utilities Reference Manual: ETableSelectionModel</title>
-<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<title>ETableSelectionModel: Evolution Utilities Reference Manual</title>
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
 <link rel="home" href="index.html" title="Evolution Utilities Reference Manual">
-<link rel="up" href="ch11.html" title="Tables and Trees">
+<link rel="up" href="ch12.html" title="Tables and Trees">
 <link rel="prev" href="ETableSearch.html" title="ETableSearch">
 <link rel="next" href="ETableSortInfo.html" title="ETableSortInfo">
-<meta name="generator" content="GTK-Doc V1.21 (XML mode)">
+<meta name="generator" content="GTK-Doc V1.25 (XML mode)">
 <link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
@@ -20,7 +20,7 @@
                   <a href="#ETableSelectionModel.properties" class="shortcut">Properties</a></span>
 </td>
 <td><a accesskey="h" href="index.html"><img src="home.png" width="16" height="16" border="0" alt="Home"></a></td>
-<td><a accesskey="u" href="ch11.html"><img src="up.png" width="16" height="16" border="0" alt="Up"></a></td>
+<td><a accesskey="u" href="ch12.html"><img src="up.png" width="16" height="16" border="0" alt="Up"></a></td>
 <td><a accesskey="p" href="ETableSearch.html"><img src="left.png" width="16" height="16" border="0" alt="Prev"></a></td>
 <td><a accesskey="n" href="ETableSortInfo.html"><img src="right.png" width="16" height="16" border="0" alt="Next"></a></td>
 </tr></table>
@@ -35,7 +35,7 @@
 </tr></table></div>
 <div class="refsect1">
 <a name="ETableSelectionModel.functions"></a><h2>Functions</h2>
-<div class="informaltable"><table width="100%" border="0">
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
 <col width="150px" class="functions_return">
 <col class="functions_name">
@@ -52,7 +52,7 @@
 </div>
 <div class="refsect1">
 <a name="ETableSelectionModel.properties"></a><h2>Properties</h2>
-<div class="informaltable"><table border="0">
+<div class="informaltable"><table class="informaltable" border="0">
 <colgroup>
 <col width="150px" class="properties_type">
 <col width="300px" class="properties_name">
@@ -75,21 +75,8 @@
 </table></div>
 </div>
 <div class="refsect1">
-<a name="ETableSelectionModel.other"></a><h2>Types and Values</h2>
-<div class="informaltable"><table width="100%" border="0">
-<colgroup>
-<col width="150px" class="name">
-<col class="description">
-</colgroup>
-<tbody><tr>
-<td class="datatype_keyword">struct</td>
-<td class="function_name"><a class="link" href="ETableSelectionModel.html#ETableSelectionModel-struct" title="struct ETableSelectionModel">ETableSelectionModel</a></td>
-</tr></tbody>
-</table></div>
-</div>
-<div class="refsect1">
 <a name="ETableSelectionModel.object-hierarchy"></a><h2>Object Hierarchy</h2>
-<pre class="screen">    <a href="https://developer.gnome.org/gobject/unstable/gobject-The-Base-Object-Type.html#GObject">GObject</a>
+<pre class="screen">    <a href="/usr/share/gtk-doc/html/gobjectgobject-The-Base-Object-Type.html#GObject-struct">GObject</a>
     <span class="lineart">╰──</span> <a class="link" href="ESelectionModel.html" title="ESelectionModel">ESelectionModel</a>
         <span class="lineart">╰──</span> <a class="link" href="ESelectionModelArray.html" title="ESelectionModelArray">ESelectionModelArray</a>
             <span class="lineart">╰──</span> ETableSelectionModel
@@ -106,38 +93,30 @@
 e_table_selection_model_new (<em class="parameter"><code><span class="type">void</span></code></em>);</pre>
 <p>This routine creates a new <a class="link" href="ETableSelectionModel.html" title="ETableSelectionModel"><span class="type">ETableSelectionModel</span></a>.</p>
 <div class="refsect3">
-<a name="id-1.12.21.8.2.5"></a><h4>Returns</h4>
+<a name="e-table-selection-model-new.returns"></a><h4>Returns</h4>
 <p> The new <a class="link" href="ETableSelectionModel.html" title="ETableSelectionModel"><span class="type">ETableSelectionModel</span></a>.</p>
-<p></p>
 </div>
 </div>
 </div>
 <div class="refsect1">
 <a name="ETableSelectionModel.other_details"></a><h2>Types and Values</h2>
-<div class="refsect2">
-<a name="ETableSelectionModel-struct"></a><h3>struct ETableSelectionModel</h3>
-<pre class="programlisting">struct ETableSelectionModel;</pre>
-</div>
 </div>
 <div class="refsect1">
 <a name="ETableSelectionModel.property-details"></a><h2>Property Details</h2>
 <div class="refsect2">
 <a name="ETableSelectionModel--header"></a><h3>The <code class="literal">“header”</code> property</h3>
 <pre class="programlisting">  “header”                   <a class="link" href="ETableHeader.html" title="ETableHeader"><span class="type">ETableHeader</span></a> *</pre>
-<p></p>
 <p>Flags: Read / Write</p>
 </div>
 <hr>
 <div class="refsect2">
 <a name="ETableSelectionModel--model"></a><h3>The <code class="literal">“model”</code> property</h3>
 <pre class="programlisting">  “model”                    <a class="link" href="ETableModel.html" title="ETableModel"><span class="type">ETableModel</span></a> *</pre>
-<p></p>
 <p>Flags: Read / Write</p>
 </div>
 </div>
 </div>
 <div class="footer">
-<hr>
-          Generated by GTK-Doc V1.21</div>
+<hr>Generated by GTK-Doc V1.25</div>
 </body>
 </html>

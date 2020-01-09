@@ -5,7 +5,7 @@
     <link type="guide" xref="index#data-migration-and-sync"/>
     <link type="seealso" xref="data-storage"/>
 
-    <revision pkgversion="3.1.5" version="0.3" date="2011-09-29" status="final"/>
+    <revision pkgversion="3.1.5" version="0.4" date="2014-03-23" status="final"/>
 
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
@@ -15,6 +15,30 @@
     <include xmlns="http://www.w3.org/2001/XInclude" href="legal.xml"/>
 
     <desc>Az <app>Evolution</app> adatainak és beállításainak mentése és visszaállítása.</desc>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Bence Lukács</mal:name>
+      <mal:email>lukacs.bence1 at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Gabor Kelemen</mal:name>
+      <mal:email>kelemeng at gnome dot hu</mal:email>
+      <mal:years>2011, 2012, 2013, 2015.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Nagy Zoltán</mal:name>
+      <mal:email>dzodzie at gmail dot com</mal:email>
+      <mal:years>2011.</mal:years>
+    </mal:credit>
+  
+    <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
+      <mal:name>Úr Balázs</mal:name>
+      <mal:email>urbalazs at gmail dot com</mal:email>
+      <mal:years>2014.</mal:years>
+    </mal:credit>
   </info>
 
   <title>Biztonsági mentés és visszaállítás</title>
@@ -37,7 +61,7 @@
   </list>
 
   <note style="warning">
-    <p>Ne feledje, hogy a <link xref="mail-spam">levélszemét-szűrési</link> beállításait nem tartalmazza a biztonsági mentés fájlja, mivel ezeket a beállításokat nem az <app>Evolution</app> felügyeli, és mert a levélszemétszűrő eszközök fejlesztői megváltoztathatnak implementációs részleteket. Ha a Bogofiltert használja, akkor a <file>~/.bogofilter/</file> könyvtárról kell másolatot készítenie, ha pedig a SpamAssassint, akkor a <file>~/.spamassassin/</file> könyvtárról.</p>
+    <p>Ne feledje, hogy a <link xref="mail-spam">levélszemét-szűrési</link> beállításait nem tartalmazza a biztonsági mentés fájlja, mivel ezeket a beállításokat nem az <app>Evolution</app> felügyeli, és mert a levélszemétszűrő eszközök fejlesztői megváltoztathatnak implementációs részleteket. Ha a Bogofiltert használja, akkor a <file>~/.bogofilter/</file> rejtett könyvtárról kell másolatot készítenie, ha pedig a SpamAssassint, akkor a <file>~/.spamassassin/</file> rejtett könyvtárról.</p>
   </note>
 
 </section>

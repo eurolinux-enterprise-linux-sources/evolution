@@ -52,11 +52,11 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
-  <title>Conditions disponibles pour les dossiers de recherche</title>
+  <title>Available <gui>Search</gui> folder conditions</title>
 
 <list>
 
@@ -65,9 +65,9 @@ included by XInclude. See http://blogs.gnome.org/shaunm/2011/07/21/understanding
 <include xmlns="http://www.w3.org/2001/XInclude" href="xinclude-filter-vfolder-conditions.xml" xpointer="xmlns(mal=http://projectmallard.org/1.0/)xpointer(/mal:info/mal:item)"/>
 
 <item><p>Emplacement du message :</p>
-<p>Checks whether the message is located in a specific folder.</p><p>Note that by default, Evolution's <gui>Trash</gui> and <gui>Junk</gui> folders are <link xref="mail-search-folders">Search folders</link> so they cannot be selected here.</p></item>
+<p>Vérifie si le message se trouve dans un dossier spécifique.</p><p>Note that by default, <app>Evolution</app>'s <gui>Trash</gui> and <gui>Junk</gui> folders are <link xref="mail-search-folders"><gui>Search</gui> folders</link> so they cannot be selected here.</p></item>
 
 <item><p>Vérifie tout :</p>
-<p>Applies an action always to any message, without further conditions. This could be useful at the end of the list of search folders to cover those emails that did not match any conditions for the preceding search folders in the list.</p></item>
+<p>Applique toujours une action à n'importe quel message, sans autre condition. Cela est utile à la fin de la liste des dossiers de recherche pour concerner aussi ces courriels qui ne correspondent à aucun des critères de recherche dans la liste des dossiers de recherche précédents.</p></item>
 </list>
 </page>

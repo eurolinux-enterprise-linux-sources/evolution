@@ -2,7 +2,7 @@
 <page xmlns="http://projectmallard.org/1.0/" xmlns:its="http://www.w3.org/2005/11/its" type="topic" id="data-storage" xml:lang="fr">
 
   <info>
-    <desc>Où Evolution enregistre-t-il mes données sur le disque dur ?</desc>
+    <desc>Where does <app>Evolution</app> store my data on the harddisk?</desc>
     
     <link type="guide" xref="index#common-other-problems"/>
 
@@ -49,7 +49,7 @@
     <mal:credit xmlns:mal="http://projectmallard.org/1.0/" type="translator copyright">
       <mal:name>Alain Lojewski</mal:name>
       <mal:email>allomervan@gmail.com</mal:email>
-      <mal:years>2013</mal:years>
+      <mal:years>2013-2016</mal:years>
     </mal:credit>
   </info>
 
@@ -59,7 +59,7 @@
 <p>Cette section n'intéresse que les utilisateurs avancés qui veulent résoudre des problèmes.</p>
 </note>
 
-<p>Evolution 3.6 ou plus tard enregistre ses données selon les <link href="http://www.freedesktop.org/wiki/Specifications/basedir-spec">spécifications de répertoire de base XDG</link>. Par défaut, cela signifie :</p>
+<p><app>Evolution</app> 3.6 and later stores its data according to the <link href="http://www.freedesktop.org/wiki/Specifications/basedir-spec">XDG Base Directory Specification</link>. By default this means:</p>
 
 <terms>
 <item>

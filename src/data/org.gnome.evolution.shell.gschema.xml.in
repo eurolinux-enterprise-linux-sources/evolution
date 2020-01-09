@@ -15,6 +15,16 @@
       <_summary>Initial file chooser folder</_summary>
       <_description>Initial folder for GtkFileChooser dialogs.</_description>
     </key>
+    <key name="autoar-format" type="s">
+      <default>''</default>
+      <_summary>Compression format used by autoar</_summary>
+      <_description>Compression format used when compressing attached directories with autoar.</_description>
+    </key>
+    <key name="autoar-filter" type="s">
+      <default>''</default>
+      <_summary>Compression filter used by autoar</_summary>
+      <_description>Compression filter used when compressing attached directories with autoar.</_description>
+    </key>
     <key name="start-offline" type="b">
       <default>false</default>
       <_summary>Start in offline mode</_summary>
@@ -30,7 +40,17 @@
       <_summary>Enable express mode</_summary>
       <_description>Flag that enables a much simplified user interface.</_description>
     </key>
+    <key name="buttons-hide" type="as">
+      <default>[]</default>
+      <_summary>List of button names to hide in the window switcher</_summary>
+      <_description>Valid values are 'mail', 'addressbook', 'calendar', 'tasks' and 'memos'. Change of this requires restart of the application.</_description>
+    </key>
     <key name="buttons-visible" type="b">
+      <default>true</default>
+      <_summary>Window buttons are visible</_summary>
+      <_description>Whether the window buttons should be visible.</_description>
+    </key>
+    <key name="buttons-visible-sub" type="b">
       <default>true</default>
       <_summary>Window buttons are visible</_summary>
       <_description>Whether the window buttons should be visible.</_description>
@@ -45,12 +65,27 @@
       <_summary>Toolbar is visible</_summary>
       <_description>Whether the toolbar should be visible.</_description>
     </key>
+    <key name="toolbar-visible-sub" type="b">
+      <default>true</default>
+      <_summary>Toolbar is visible</_summary>
+      <_description>Whether the toolbar should be visible.</_description>
+    </key>
     <key name="sidebar-visible" type="b">
       <default>true</default>
       <_summary>Sidebar is visible</_summary>
       <_description>Whether the sidebar should be visible.</_description>
     </key>
+    <key name="sidebar-visible-sub" type="b">
+      <default>true</default>
+      <_summary>Sidebar is visible</_summary>
+      <_description>Whether the sidebar should be visible.</_description>
+    </key>
     <key name="statusbar-visible" type="b">
+      <default>true</default>
+      <_summary>Statusbar is visible</_summary>
+      <_description>Whether the status bar should be visible.</_description>
+    </key>
+    <key name="statusbar-visible-sub" type="b">
       <default>true</default>
       <_summary>Statusbar is visible</_summary>
       <_description>Whether the status bar should be visible.</_description>
@@ -64,6 +99,16 @@
       <default>200</default>
       <_summary>Default sidebar width</_summary>
       <_description>The default width for the sidebar, in pixels.</_description>
+    </key>
+    <key name="folder-bar-width-sub" type="i">
+      <default>200</default>
+      <_summary>Default sidebar width</_summary>
+      <_description>The default width for the sidebar, in pixels.</_description>
+    </key>
+    <key name="webkit-developer-mode" type="b">
+      <default>false</default>
+      <_summary>Enable special WebKit developer features</_summary>
+      <_description>Any change of this option requires restart of Evolution.</_description>
     </key>
     <child name="window" schema="org.gnome.evolution.window"/>
   </schema>
