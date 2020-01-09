@@ -30,7 +30,7 @@
 
 Name: evolution
 Version: 2.32.3
-Release: 30%{?dist}
+Release: 34%{?dist}
 Group: Applications/Productivity
 Summary: Mail and calendar client for GNOME
 License: GPLv2+ and GFDL
@@ -194,6 +194,24 @@ Patch49: evolution-2.32.3-cal-system-timezone-change.patch
 
 # RH bug #1014677
 Patch50: evolution-2.32.3-mail-folder-search-filters.patch
+
+# RH bug #1070846
+Patch51: evolution-2.32.3-smime-smartcard-pin-prompt.patch
+
+# RH bug #1054865
+Patch52: evolution-2.32.3-attachment-load-finish.patch
+
+# RH bug #1054772
+Patch53: evolution-2.32.3-local-books-relative-uri.patch
+
+# RH bug #1080467
+Patch54: evolution-2.32.3-mark-all-read-async-folderinfo.patch
+
+# RH bug #1052955
+Patch55: evolution-2.32.3-dateedit-24hr-time-format.patch
+
+# RH bug #1139166
+Patch56: evolution-2.32.3-limit-notify-retries.patch
 
 ## Dependencies ###
 
@@ -396,6 +414,12 @@ This package contains the plugin to import Microsoft Personal Storage Table
 %patch48 -p1 -b .mail-migrate
 %patch49 -p1 -b .cal-system-timezone-change
 %patch50 -p1 -b .mail-folder-search-filters
+%patch51 -p1 -b .smime-smartcard-pin-prompt
+%patch52 -p1 -b .attachment-load-finish
+%patch53 -p1 -b .local-books-relative-uri
+%patch54 -p1 -b .mark-all-read-async-folderinfo
+%patch55 -p1 -b .dateedit-24hr-time-format
+%patch56 -p1 -b .limit-notify-retries
 
 mkdir -p krb5-fakeprefix/include
 mkdir -p krb5-fakeprefix/lib
@@ -793,6 +817,20 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %changelog
+* Mon Sep 08 2014 Milan Crha <mcrha@redhat.com> - 2.32.3-34.el6
+- Add patch for RH bug #1139166 (Do not retry new mail notification show)
+
+* Thu Jun 05 2014 Milan Crha <mcrha@redhat.com> - 2.32.3-33.el6
+- Add patch for RH bug #1080467 (mark-all-read plugin can cause UI freeze)
+- Add patch for RH bug #1052955 (Time format in combo controls is always 24 hrs)
+
+* Tue Apr 08 2014 Milan Crha <mcrha@redhat.com> - 2.32.3-32.el6
+- Add patch for RH bug #1054865 (Incorrect unref under e_attachment_load_finish())
+- Add patch for RH bug #1054772 (Local addressbooks created without relative_uri set)
+
+* Thu Mar 20 2014 Milan Crha <mcrha@redhat.com> - 2.32.3-31.el6
+- Add patch for RH bug #1070846 (Show user name in smartcard pin prompt)
+
 * Wed Oct 09 2013 Milan Crha <mcrha@redhat.com> - 2.32.3-30.el6
 - Update patch for RH bug #975409 (Custom message in alarm notification)
 - Add patch for RH bug #1014743 (Use system timezone has no effect)

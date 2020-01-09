@@ -1,0 +1,28 @@
+diff -up evolution-2.32.3/widgets/misc/e-attachment.c.attachment-load-finish evolution-2.32.3/widgets/misc/e-attachment.c
+--- evolution-2.32.3/widgets/misc/e-attachment.c.attachment-load-finish	2014-04-08 12:59:15.213225517 +0200
++++ evolution-2.32.3/widgets/misc/e-attachment.c	2014-04-08 12:59:32.576224793 +0200
+@@ -268,6 +268,9 @@ attachment_update_icon_column (EAttachme
+ 
+ 	if (file_info != NULL) {
+ 		icon = g_file_info_get_icon (file_info);
++		/* add the reference here, thus the create_system_thumbnail() can unref the *icon. */
++		if (icon)
++			g_object_ref (icon);
+ 		thumbnail_path = g_file_info_get_attribute_byte_string (
+ 			file_info, G_FILE_ATTRIBUTE_THUMBNAIL_PATH);
+ 	}
+@@ -285,11 +288,11 @@ attachment_update_icon_column (EAttachme
+ 		/* Nothing to do, just use the icon. */
+ 
+ 	/* Else use the standard icon for the content type. */
+-	} else if (icon != NULL)
+-		g_object_ref (icon);
++	} else if (icon != NULL) {
++		/* Nothing to do, just use the already reffed icon. */
+ 
+ 	/* Last ditch fallback.  (GFileInfo not yet loaded?) */
+-	else
++	} else
+ 		icon = g_themed_icon_new (DEFAULT_ICON_NAME);
+ 
+ 	/* Pick an emblem, limit one.  Choices listed by priority. */

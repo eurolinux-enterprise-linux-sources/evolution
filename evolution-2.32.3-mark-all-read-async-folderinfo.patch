@@ -1,0 +1,155 @@
+diff -up evolution-2.32.3/mail/mail-ops.c.mark-all-read-async-folderinfo evolution-2.32.3/mail/mail-ops.c
+--- evolution-2.32.3/mail/mail-ops.c.mark-all-read-async-folderinfo	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/mail/mail-ops.c	2014-03-25 19:05:35.220890577 +0100
+@@ -1116,6 +1116,8 @@ mail_transfer_messages (CamelFolder *sou
+ struct _get_folderinfo_msg {
+ 	MailMsg base;
+ 
++	gchar *folder_name;
++	guint32 flags;
+ 	CamelStore *store;
+ 	CamelFolderInfo *info;
+ 	gboolean (*done)(CamelStore *store, CamelFolderInfo *info, gpointer data);
+@@ -1137,9 +1139,7 @@ get_folderinfo_desc (struct _get_folderi
+ static void
+ get_folderinfo_exec (struct _get_folderinfo_msg *m)
+ {
+-	guint32 flags = CAMEL_STORE_FOLDER_INFO_RECURSIVE|CAMEL_STORE_FOLDER_INFO_FAST | CAMEL_STORE_FOLDER_INFO_SUBSCRIBED;
+-
+-	m->info = camel_store_get_folder_info (m->store, NULL, flags, &m->base.error);
++	m->info = camel_store_get_folder_info (m->store, m->folder_name, m->flags, &m->base.error);
+ }
+ 
+ static void
+@@ -1166,6 +1166,7 @@ get_folderinfo_free (struct _get_folderi
+ 	if (m->info && m->can_clear)
+ 		camel_store_free_folder_info(m->store, m->info);
+ 	g_object_unref (m->store);
++	g_free (m->folder_name);
+ }
+ 
+ static MailMsgInfo get_folderinfo_info = {
+@@ -1179,6 +1180,19 @@ static MailMsgInfo get_folderinfo_info =
+ gint
+ mail_get_folderinfo (CamelStore *store, CamelOperation *op, gboolean (*done)(CamelStore *store, CamelFolderInfo *info, gpointer data), gpointer data)
+ {
++	guint32 flags = CAMEL_STORE_FOLDER_INFO_RECURSIVE|CAMEL_STORE_FOLDER_INFO_FAST | CAMEL_STORE_FOLDER_INFO_SUBSCRIBED;
++
++	return mail_get_folderinfo_for_folder (store, NULL, flags, op, done, data);
++}
++
++gint
++mail_get_folderinfo_for_folder (CamelStore *store,
++				const gchar *folder_name,
++				guint32 flags, 
++				CamelOperation *op,
++				gboolean (*done)(CamelStore *store, CamelFolderInfo *info, gpointer data),
++				gpointer data)
++{
+ 	struct _get_folderinfo_msg *m;
+ 	gint id;
+ 
+@@ -1188,6 +1202,8 @@ mail_get_folderinfo (CamelStore *store, 
+ 		m->base.cancel = op;
+ 		camel_operation_ref(op);
+ 	}
++	m->folder_name = g_strdup (folder_name);
++	m->flags = flags;
+ 	m->store = store;
+ 	g_object_ref (store);
+ 	m->done = done;
+diff -up evolution-2.32.3/mail/mail-ops.h.mark-all-read-async-folderinfo evolution-2.32.3/mail/mail-ops.h
+--- evolution-2.32.3/mail/mail-ops.h.mark-all-read-async-folderinfo	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/mail/mail-ops.h	2014-03-25 19:05:35.220890577 +0100
+@@ -102,6 +102,9 @@ void mail_empty_trash (EAccount *account
+ gint mail_get_folderinfo (CamelStore *store, CamelOperation *op,
+ 			 gboolean (*done)(CamelStore *store, CamelFolderInfo *info, gpointer data),
+ 			 gpointer data);
++gint mail_get_folderinfo_for_folder (CamelStore *store, const gchar *folder_name, guint32 flags, CamelOperation *op,
++			 gboolean (*done)(CamelStore *store, CamelFolderInfo *info, gpointer data),
++			 gpointer data);
+ 
+ /* remove an existing folder */
+ void mail_remove_folder (CamelFolder *folder,
+diff -up evolution-2.32.3/plugins/mark-all-read/mark-all-read.c.mark-all-read-async-folderinfo evolution-2.32.3/plugins/mark-all-read/mark-all-read.c
+--- evolution-2.32.3/plugins/mark-all-read/mark-all-read.c.mark-all-read-async-folderinfo	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/plugins/mark-all-read/mark-all-read.c	2014-03-25 19:05:35.219890577 +0100
+@@ -372,15 +372,45 @@ mar_all_sub_folders (CamelStore *store,
+ 	return TRUE;
+ }
+ 
++static gboolean
++mar_got_folder_info (CamelStore *store,
++		     CamelFolderInfo *folder_info,
++		     gpointer data)
++{
++	CamelFolder *folder = data;
++	gint response;
++
++	if (folder_info == NULL)
++		goto exit;
++
++	response = prompt_user (folder_info->child != NULL);
++
++	if (response == MARK_ALL_READ_CANCEL)
++		goto exit;
++
++	if (response == MARK_ALL_READ_CURRENT_FOLDER) {
++		mark_all_as_read (folder);
++	} else if (response == MARK_ALL_READ_WITH_SUBFOLDERS) {
++		CamelStore *parent_store;
++
++		parent_store = camel_folder_get_parent_store (folder);
++		mar_all_sub_folders (parent_store, folder_info, NULL);
++	}
++
++ exit:
++	g_object_unref (folder);
++
++	/* TRUE to let the caller free the folder-info */
++	return TRUE;
++}
++
+ static void
+ mar_got_folder (gchar *folder_uri,
+                 CamelFolder *folder,
+                 gpointer data)
+ {
+-	CamelFolderInfo *folder_info;
+ 	CamelStore *parent_store;
+ 	const gchar *full_name;
+-	gint response;
+ 
+ 	/* FIXME we have to disable the menu item */
+ 	if (!folder)
+@@ -389,26 +419,11 @@ mar_got_folder (gchar *folder_uri,
+ 	full_name = camel_folder_get_full_name (folder);
+ 	parent_store = camel_folder_get_parent_store (folder);
+ 
+-	folder_info = camel_store_get_folder_info (
+-		parent_store, full_name,
++	mail_get_folderinfo_for_folder (parent_store, full_name,
+ 		CAMEL_STORE_FOLDER_INFO_RECURSIVE |
+-		CAMEL_STORE_FOLDER_INFO_FAST, NULL);
+-
+-	if (folder_info == NULL)
+-		goto exit;
+-
+-	response = prompt_user (folder_info->child != NULL);
+-
+-	if (response == MARK_ALL_READ_CANCEL)
+-		return;
+-
+-	if (response == MARK_ALL_READ_CURRENT_FOLDER)
+-		mark_all_as_read (folder);
+-	else if (response == MARK_ALL_READ_WITH_SUBFOLDERS)
+-		mar_all_sub_folders (parent_store, folder_info, NULL);
+-
+-exit:
+-	camel_store_free_folder_info (parent_store, folder_info);
++		CAMEL_STORE_FOLDER_INFO_FAST,
++		NULL,
++		mar_got_folder_info, g_object_ref (folder));
+ }
+ 
+ static void

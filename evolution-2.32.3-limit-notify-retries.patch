@@ -1,0 +1,19 @@
+diff -up evolution-2.32.3/plugins/mail-notification/mail-notification.c.limit-notify-retries evolution-2.32.3/plugins/mail-notification/mail-notification.c
+--- evolution-2.32.3/plugins/mail-notification/mail-notification.c.limit-notify-retries	2014-09-08 14:42:41.843439917 +0200
++++ evolution-2.32.3/plugins/mail-notification/mail-notification.c	2014-09-08 14:45:54.793431741 +0200
+@@ -330,7 +330,14 @@ status_icon_activate_cb (void)
+ static gboolean
+ notification_callback (gpointer notify)
+ {
+-	return (!notify_notification_show (notify, NULL));
++	GError *error = NULL;
++
++	if (!notify_notification_show (notify, &error)) {
++		g_debug ("%s: Failed to show notification: %s", G_STRFUNC, error ? error->message : "Unknown error");
++		g_clear_error (&error);
++	}
++
++	return FALSE;
+ }
+ #endif
+ 

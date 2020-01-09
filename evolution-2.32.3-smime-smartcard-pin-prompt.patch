@@ -1,0 +1,25 @@
+diff -up evolution-2.32.3/smime/gui/component.c.smime-smartcard-pin-prompt evolution-2.32.3/smime/gui/component.c
+--- evolution-2.32.3/smime/gui/component.c.smime-smartcard-pin-prompt	2014-03-20 11:37:07.270681415 +0100
++++ evolution-2.32.3/smime/gui/component.c	2014-03-20 11:38:55.347676910 +0100
+@@ -40,11 +40,20 @@ smime_pk11_passwd (ECertDB *db, PK11Slot
+ {
+ 	gchar *prompt;
+ 	gchar *slot_name = g_strdup (PK11_GetSlotName (slot));
++	gchar *token_name = g_strdup (PK11_GetTokenName (slot));
+ 
+ 	g_strchomp (slot_name);
+ 
+-	prompt = g_strdup_printf (_("Enter the password for '%s'"), slot_name);
++	if (token_name)
++		g_strchomp (token_name);
++
++	if (token_name && *token_name && g_ascii_strcasecmp (slot_name, token_name) != 0)
++		prompt = g_strdup_printf (_("Enter the password for '%s', token '%s'"), slot_name, token_name);
++	else
++		prompt = g_strdup_printf (_("Enter the password for '%s'"), slot_name);
++
+ 	g_free (slot_name);
++	g_free (token_name);
+ 
+ 	*passwd = e_passwords_ask_password (_("Enter password"), "SMIME-PKCS11", "",
+ 					    prompt,
