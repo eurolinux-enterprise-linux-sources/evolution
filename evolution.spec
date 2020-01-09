@@ -16,6 +16,7 @@
 %define last_anjal_version 0.3.2-3
 %define last_libgal2_version 2:2.5.3-2
 %define last_evo_nm_version 3.5.0
+%define last_evo_perl_version 3.21.90
 
 %define ldap_support 1
 %define libnotify_support 1
@@ -30,7 +31,7 @@
 
 Name: evolution
 Version: 3.22.6
-Release: 10%{?dist}
+Release: 14%{?dist}
 Group: Applications/Productivity
 Summary: Mail and calendar client for GNOME
 License: GPLv2+ and GFDL
@@ -41,6 +42,7 @@ Source: http://download.gnome.org/sources/%{name}/3.22/%{name}-%{version}.tar.xz
 Obsoletes: anjal <= %{last_anjal_version}
 Obsoletes: libgal2 <= %{last_libgal2_version}
 Obsoletes: evolution-NetworkManager < %{last_evo_nm_version}
+Obsoletes: evolution-perl < %{last_evo_perl_version}
 
 ### Patches ###
 
@@ -76,6 +78,15 @@ Patch11: evolution-3.22.6-comp-editor-changed.patch
 
 # RH bug #1444073
 Patch12: evolution-3.22.6-folder-changed-blocked.patch
+
+# RH bug #1449283
+Patch13: evolution-3.22.6-indefinite-message-download.patch
+
+# RH bug #1512859
+Patch14: evolution-3.22.6-gtype-init-workaround.patch
+
+# RH bug #1513962
+Patch15: evolution-3.22.6-wayland-hidden-menu-interact.patch
 
 ## Dependencies ###
 
@@ -246,6 +257,9 @@ This package contains the plugin to import Microsoft Personal Storage Table
 %patch10 -p1 -b .calendar-print-action
 %patch11 -p1 -b .comp-editor-changed
 %patch12 -p1 -b .folder-changed-blocked
+%patch13 -p1 -b .indefinite-message-download
+%patch14 -p1 -b .gtype-init-workaround
+%patch15 -p1 -b .wayland-hidden-menu-interact
 
 # Remove the welcome email from Novell
 for inbox in mail/default/*/Inbox; do
@@ -575,6 +589,18 @@ rm -rf $RPM_BUILD_ROOT
 #%{_datadir}/installed-tests
 
 %changelog
+* Mon Jan 22 2018 Milan Crha <mcrha@redhat.com> - 3.22.6-14
+- Obsolete evolution-perl subpackage (RH bug #1516655)
+
+* Thu Nov 16 2017 Milan Crha <mcrha@redhat.com> - 3.22.6-13
+- Add patch for RH bug #1513962 ([Wayland] Alt-shown hidden menubar cannot be interacted with)
+
+* Thu Nov 16 2017 Milan Crha <mcrha@redhat.com> - 3.22.6-12
+- Add patch for RH bug #1512859 (Add workaround for glib type init deadlock)
+
+* Thu Oct 19 2017 Milan Crha <mcrha@redhat.com> - 3.22.6-11
+- Add patch for RH bug #1449283 (Repeated IMAP message download during folder update)
+
 * Mon May 29 2017 Milan Crha <mcrha@redhat.com> - 3.22.6-10
 - Add patch for RH bug #1444073 (Folders do not show correct unread message count)
 

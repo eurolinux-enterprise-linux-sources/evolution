@@ -1,0 +1,83 @@
+diff -up evolution-3.22.6/shell/e-shell-window-private.c.wayland-hidden-menu-interact evolution-3.22.6/shell/e-shell-window-private.c
+--- evolution-3.22.6/shell/e-shell-window-private.c.wayland-hidden-menu-interact	2017-11-16 13:59:52.598583231 +0100
++++ evolution-3.22.6/shell/e-shell-window-private.c	2017-11-16 13:59:52.630583230 +0100
+@@ -261,7 +261,29 @@ delayed_menubar_show_cb (gpointer user_d
+ 		main_menu = e_shell_window_get_managed_widget (shell_window, "/main-menu");
+ 
+ 		gtk_widget_show (main_menu);
+-		gtk_widget_grab_focus (main_menu);
++	}
++
++	return FALSE;
++}
++
++static gboolean
++delayed_menubar_hide_cb (gpointer user_data)
++{
++	EShellWindow *shell_window = user_data;
++
++	g_return_val_if_fail (E_IS_SHELL_WINDOW (shell_window), FALSE);
++
++	shell_window->priv->delayed_menubar_hide_id = 0;
++
++	if (!e_shell_window_get_menubar_visible (shell_window) &&
++	    !shell_window->priv->delayed_menubar_show_id) {
++		GtkWidget *main_menu;
++
++		main_menu = e_shell_window_get_managed_widget (shell_window, "/main-menu");
++
++		if (gtk_widget_get_visible (main_menu) &&
++		    !gtk_menu_shell_get_selected_item (GTK_MENU_SHELL (main_menu)))
++			gtk_widget_hide (main_menu);
+ 	}
+ 
+ 	return FALSE;
+@@ -295,6 +317,11 @@ e_shell_window_event_after_cb (EShellWin
+ 
+ 		if ((key_event->keyval == GDK_KEY_Alt_L || key_event->keyval == GDK_KEY_Alt_R) &&
+ 		    !(key_event->state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK | GDK_SUPER_MASK | GDK_HYPER_MASK | GDK_META_MASK))) {
++			if (shell_window->priv->delayed_menubar_hide_id) {
++				g_source_remove (shell_window->priv->delayed_menubar_hide_id);
++				shell_window->priv->delayed_menubar_hide_id = 0;
++			}
++
+ 			if (shell_window->priv->delayed_menubar_show_id) {
+ 				g_source_remove (shell_window->priv->delayed_menubar_show_id);
+ 				shell_window->priv->delayed_menubar_show_id = 0;
+@@ -312,8 +339,11 @@ e_shell_window_event_after_cb (EShellWin
+ 			shell_window->priv->delayed_menubar_show_id = 0;
+ 		}
+ 
+-		if (gtk_widget_get_visible (main_menu))
+-			gtk_widget_hide (main_menu);
++		if (gtk_widget_get_visible (main_menu) &&
++		    !shell_window->priv->delayed_menubar_hide_id) {
++			shell_window->priv->delayed_menubar_hide_id =
++				e_named_timeout_add (500, delayed_menubar_hide_cb, shell_window);
++		}
+ 	}
+ }
+ 
+@@ -618,6 +648,11 @@ e_shell_window_private_dispose (EShellWi
+ 		priv->delayed_menubar_show_id = 0;
+ 	}
+ 
++	if (priv->delayed_menubar_hide_id) {
++		g_source_remove (priv->delayed_menubar_hide_id);
++		priv->delayed_menubar_hide_id = 0;
++	}
++
+ 	/* Need to disconnect handlers before we unref the shell. */
+ 	if (priv->signal_handler_ids != NULL) {
+ 		GArray *array = priv->signal_handler_ids;
+diff -up evolution-3.22.6/shell/e-shell-window-private.h.wayland-hidden-menu-interact evolution-3.22.6/shell/e-shell-window-private.h
+--- evolution-3.22.6/shell/e-shell-window-private.h.wayland-hidden-menu-interact	2017-11-16 13:59:52.630583230 +0100
++++ evolution-3.22.6/shell/e-shell-window-private.h	2017-11-16 14:01:12.261582129 +0100
+@@ -98,6 +98,7 @@ struct _EShellWindowPrivate {
+ 	guint is_main_instance : 1;
+ 
+ 	gulong delayed_menubar_show_id;
++	gulong delayed_menubar_hide_id;
+ };
+ 
+ void		e_shell_window_private_init	(EShellWindow *shell_window);

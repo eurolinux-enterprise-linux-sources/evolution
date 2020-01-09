@@ -1,0 +1,25 @@
+diff -up evolution-3.22.6/e-util/e-table-selection-model.c.indefinite-message-download evolution-3.22.6/e-util/e-table-selection-model.c
+--- evolution-3.22.6/e-util/e-table-selection-model.c.indefinite-message-download	2014-03-24 10:25:23.000000000 +0100
++++ evolution-3.22.6/e-util/e-table-selection-model.c	2017-10-19 17:51:10.488332515 +0200
+@@ -127,8 +127,8 @@ model_changed_idle (ETableSelectionModel
+ 			g_free (save_id);
+ 		}
+ 		free_hash (etsm);
+-		e_selection_model_cursor_changed (E_SELECTION_MODEL (etsm), cursor_row, cursor_col);
+ 		e_selection_model_selection_changed (E_SELECTION_MODEL (etsm));
++		e_selection_model_cursor_changed (E_SELECTION_MODEL (etsm), cursor_row, cursor_col);
+ 	}
+ 	etsm->model_changed_idle_id = 0;
+ 	return FALSE;
+diff -up evolution-3.22.6/mail/message-list.c.indefinite-message-download evolution-3.22.6/mail/message-list.c
+--- evolution-3.22.6/mail/message-list.c.indefinite-message-download	2017-01-13 16:06:56.000000000 +0100
++++ evolution-3.22.6/mail/message-list.c	2017-10-19 17:51:14.995332453 +0200
+@@ -5056,7 +5056,7 @@ on_selection_changed_cmd (ETree *tree,
+ 	 * is also used for other updating.  If it is empty, it might just be a setup event
+ 	 * from etree which we do need to ignore */
+ 	if ((newuid == NULL && message_list->cursor_uid == NULL && selected_count == 0) ||
+-	    (message_list->last_sel_single && selected_count == 1 && newuid != NULL && message_list->cursor_uid != NULL && !strcmp (message_list->cursor_uid, newuid))) {
++	    (message_list->last_sel_single && selected_count == 1 && message_list->cursor_uid != NULL && (newuid == NULL || !strcmp (message_list->cursor_uid, newuid)))) {
+ 		/* noop */
+ 	} else {
+ 		g_free (message_list->cursor_uid);
