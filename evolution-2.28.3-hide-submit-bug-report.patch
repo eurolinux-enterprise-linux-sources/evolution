@@ -1,0 +1,30 @@
+commit e4f61ba19a562b44b2091965d4d92106b8b636c6
+Author: Matthew Barnes <mbarnes@redhat.com>
+Date:   Sun Jan 9 23:04:27 2011 -0500
+
+    evolution-2-28.3-hide-submit-bug-report.patch
+
+diff --git a/shell/e-shell-window-commands.c b/shell/e-shell-window-commands.c
+index b822cbc..7b58ee9 100644
+--- a/shell/e-shell-window-commands.c
++++ b/shell/e-shell-window-commands.c
+@@ -1430,6 +1430,7 @@ e_shell_window_commands_setup (EShellWindow *shell_window)
+ {
+ 	BonoboUIComponent *uic;
+ 	EShell *shell;
++	gchar *path;
+ 
+ 	g_return_if_fail (shell_window != NULL);
+ 	g_return_if_fail (E_IS_SHELL_WINDOW (shell_window));
+@@ -1473,4 +1474,11 @@ e_shell_window_commands_setup (EShellWindow *shell_window)
+ 	g_signal_connect_object (shell, "line_status_changed",
+ 				 G_CALLBACK (shell_line_status_changed_cb), shell_window, 0);
+ 	update_offline_menu_item (shell_window, e_shell_get_line_status (shell));
++
++	/* Submitting bug reports requires bug-buddy. */
++	path = g_find_program_in_path ("bug-buddy");
++	bonobo_ui_component_set_prop (
++		uic, "/commands/HelpSubmitBug",
++		"hidden", (path != NULL) ? "0" : "1", NULL);
++	g_free (path);
+ }

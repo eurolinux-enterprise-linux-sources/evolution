@@ -1,0 +1,24 @@
+#!/usr/bin/perl -w
+
+sub do_system
+{
+    my ($command) = @_;
+    system ($command);
+    if ($? != 0) {
+	die "Command failed: $command";
+    }
+}
+
+$filename = `/home/test/opt/libexec/evolution/2.28/evolution-addressbook-export`;
+if ($? != 0) {
+    $! = $?;
+    die $!;
+}
+
+$HOME = $ENV{"HOME"};
+
+system ("/home/test/opt/libexec/evolution/2.28/killev");
+do_system ("/bin/mv ${HOME}/.evolution/addressbook/local/system/addressbook.db ${HOME}/.evolution/addressbook/local/system/addressbook-backup.db");
+do_system ("/home/test/opt/libexec/evolution/2.28/evolution-addressbook-import --input-file $filename");
+do_system ("/bin/rm $filename");
+

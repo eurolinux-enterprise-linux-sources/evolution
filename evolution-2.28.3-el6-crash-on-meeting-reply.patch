@@ -1,0 +1,21 @@
+commit 49b36c6ac79774067a64522731ab81c5d54af93a
+Author: Matthew Barnes <mbarnes@redhat.com>
+Date:   Tue Jan 25 09:54:26 2011 -0500
+
+    evolution-2.28.3-el6-crash-on-meeting-reply.patch
+
+diff --git a/calendar/gui/itip-utils.c b/calendar/gui/itip-utils.c
+index 10751a3..39e025a 100644
+--- a/calendar/gui/itip-utils.c
++++ b/calendar/gui/itip-utils.c
+@@ -609,9 +609,8 @@ comp_to_list (ECalComponentItipMethod method, ECalComponent *comp, GList *users,
+ 	if (array == NULL)
+ 		return NULL;
+ 
+-	convert.pdata = array->pdata;
+ 	g_ptr_array_add (array, NULL);
+-	g_ptr_array_free (array, FALSE);
++	convert.pdata = g_ptr_array_free (array, FALSE);
+ 
+ 	return convert.destinations;
+ }
