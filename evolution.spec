@@ -1,5 +1,8 @@
 %global _changelog_trimtime %(date +%s -d "1 year ago")
 
+# correct Obsoletes for evolution-tests when this is changed
+%global enable_installed_tests 0
+
 %define glib2_version 2.46.0
 %define gtk3_version 3.10.0
 %define gnome_autoar_version 0.1.1
@@ -28,7 +31,7 @@
 
 Name: evolution
 Version: 3.28.5
-Release: 2%{?dist}
+Release: 5%{?dist}
 Group: Applications/Productivity
 Summary: Mail and calendar client for GNOME
 License: GPLv2+ and GFDL
@@ -40,6 +43,10 @@ Obsoletes: libgal2 <= %{last_libgal2_version}
 Obsoletes: evolution-NetworkManager < %{last_evo_nm_version}
 Obsoletes: evolution-perl < %{last_evo_perl_version}
 
+%if !%{enable_installed_tests}
+Obsoletes: evolution-tests <= 3.28.5
+%endif
+
 %global eds_version %{version}
 
 ### Patches ###
@@ -48,6 +55,18 @@ Patch01: evolution-3.28.2-cmake-version.patch
 
 # RH-bug #1613813
 Patch02: evolution-3.28.5-config-lookup-crash.patch
+
+# RH bug #1624834
+Patch03: evolution-3.28.5-composer-mangled-quotation.patch
+
+# RH bug #1624866
+Patch04: evolution-3.28.5-composer-extra-nl-url.patch
+
+# RH bug #1634660
+Patch05: evolution-3.28.5-task-memo-list-deselect.patch
+
+# RH bug #1686614
+Patch06: evolution-3.28.5-intltool-cache.patch
 
 ## Dependencies ###
 
@@ -201,6 +220,7 @@ This package contains the plugin to import Microsoft Personal Storage Table
 (PST) files used by Microsoft Outlook and Microsoft Exchange.
 %endif
 
+%if %{enable_installed_tests}
 %package tests
 Summary: Tests for the %{name} package
 Group: Development/Libraries
@@ -209,12 +229,17 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 %description tests
 The %{name}-tests package contains tests that can be used to verify
 the functionality of the installed %{name} package.
+%endif
 
 %prep
 %setup -q -n evolution-%{version}
 
 %patch01 -p1 -b .cmake-version
 %patch02 -p1 -b .config-lookup-crash
+%patch03 -p1 -b .composer-mangled-quotation
+%patch04 -p1 -b .composer-extra-nl-url
+%patch05 -p1 -b .task-memo-list-deselect
+%patch06 -p1 -b .intltool-cache
 
 # Remove the welcome email from Novell
 for inbox in src/mail/default/*/Inbox; do
@@ -246,16 +271,21 @@ fi
 %define gtkdoc_flags -DENABLE_GTK_DOC=OFF -DWITH_HELP=OFF
 %endif
 
+%if %{enable_installed_tests}
+%define tests_flags -DENABLE_INSTALLED_TESTS=ON
+%else
+%define tests_flags -DENABLE_INSTALLED_TESTS=OFF
+%endif
+
 CFLAGS="$RPM_OPT_FLAGS -fPIC -DLDAP_DEPRECATED -Wno-sign-compare -Wno-deprecated-declarations"; export CFLAGS
 
 %cmake -G "Unix Makefiles" \
 	-DENABLE_MAINTAINER_MODE=OFF \
 	-DVERSION_SUBSTRING=" (%{version}-%{release})" \
-	%ldap_flags %ssl_flags %gtkdoc_flags \
+	%ldap_flags %ssl_flags %gtkdoc_flags %tests_flags \
 	-DENABLE_PLUGINS=all \
 	-DENABLE_AUTOAR=OFF \
 	-DENABLE_YTNEF=OFF \
-	-DENABLE_INSTALLED_TESTS=ON \
 	..
 
 make %{?_smp_mflags}
@@ -517,11 +547,24 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &>/dev/null || :
 %{evo_plugin_dir}/liborg-gnome-pst-import.so
 %endif
 
+%if %{enable_installed_tests}
 %files tests
 %{_libexecdir}/%{name}/installed-tests
 %{_datadir}/installed-tests
+%endif
 
 %changelog
+* Fri Mar 08 2019 Milan Crha <mcrha@redhat.com> - 3.28.5-5
+- Add patch for RH bug #1686614 (Make sure intltool-merge cache is created only once)
+
+* Thu Mar 07 2019 Milan Crha <mcrha@redhat.com> - 3.28.5-4
+- Add patch for RH bug #1634660 (Deselects task/memo list when started in Calendar view)
+- Disable and obsolete tests subpackage (RH bug #1638479)
+
+* Fri Nov 09 2018 Milan Crha <mcrha@redhat.com> - 3.28.5-3
+- Add patch for RH bug #1624834 (Quoting of plain text mail into HTML mode mangles deeper levels)
+- Add patch for RH bug #1624866 (Extra new line added in front of long URLs)
+
 * Thu Aug 23 2018 Milan Crha <mcrha@redhat.com> - 3.28.5-2
 - Add patch for RH bug #1613813 (Crash under config_lookup_thread() at e-config-lookup.c:179)
 

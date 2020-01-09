@@ -1,0 +1,46 @@
+diff -up evolution-3.28.5/src/modules/calendar/e-cal-base-shell-sidebar.c.task-memo-list-deselect evolution-3.28.5/src/modules/calendar/e-cal-base-shell-sidebar.c
+--- evolution-3.28.5/src/modules/calendar/e-cal-base-shell-sidebar.c.task-memo-list-deselect	2018-07-30 15:37:05.000000000 +0200
++++ evolution-3.28.5/src/modules/calendar/e-cal-base-shell-sidebar.c	2019-03-07 17:47:19.948348049 +0100
+@@ -296,6 +296,7 @@ typedef struct _OpenClientData {
+ 	ECalBaseShellSidebar *sidebar;
+ 	ESource *source;
+ 	EClient *client;
++	gboolean was_cancelled;
+ } OpenClientData;
+ 
+ static void
+@@ -304,9 +305,14 @@ open_client_data_free (gpointer pdata)
+ 	OpenClientData *data = pdata;
+ 
+ 	if (data) {
++		/* To free the cancellable in the 'value' pair, which is useless now */
++		g_hash_table_insert (data->sidebar->priv->selected_uids,
++			g_strdup (e_source_get_uid (data->source)),
++			NULL);
++
+ 		if (data->client) {
+ 			g_signal_emit (data->sidebar, signals[CLIENT_OPENED], 0, data->client);
+-		} else {
++		} else if (!data->was_cancelled) {
+ 			ESourceSelector *selector = e_cal_base_shell_sidebar_get_selector (data->sidebar);
+ 			e_source_selector_unselect_source (selector, data->source);
+ 		}
+@@ -333,6 +339,7 @@ e_cal_base_shell_sidebar_open_client_thr
+ 	selector = E_CLIENT_SELECTOR (e_cal_base_shell_sidebar_get_selector (data->sidebar));
+ 	data->client = e_client_selector_get_client_sync (
+ 		selector, data->source, TRUE, (guint32) -1, cancellable, &local_error);
++	data->was_cancelled = g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_CANCELLED);
+ 
+ 	e_util_propagate_open_source_job_error (job_data, data->extension_name, local_error, error);
+ }
+@@ -350,6 +357,10 @@ e_cal_base_shell_sidebar_ensure_source_o
+ 	g_return_if_fail (E_IS_CAL_BASE_SHELL_SIDEBAR (sidebar));
+ 	g_return_if_fail (E_IS_SOURCE (source));
+ 
++	/* Skip it when it's already opening or opened */
++	if (g_hash_table_contains (sidebar->priv->selected_uids, e_source_get_uid (source)))
++		return;
++
+ 	shell_view = e_shell_sidebar_get_shell_view (E_SHELL_SIDEBAR (sidebar));
+ 
+ 	switch (e_cal_base_shell_view_get_source_type (shell_view)) {

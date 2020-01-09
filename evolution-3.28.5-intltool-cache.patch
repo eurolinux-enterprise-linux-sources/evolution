@@ -1,0 +1,42 @@
+From f315ca6a601e77220323bff4ac7782b54c862a0c Mon Sep 17 00:00:00 2001
+From: Milan Crha <mcrha@redhat.com>
+Date: Tue, 30 Oct 2018 15:50:58 +0100
+Subject: [PATCH] Make sure intltool-merge cache is created only once
+
+Similar to https://gitlab.gnome.org/GNOME/evolution/issues/196
+when intltool-merge is called in parallel, it could either rewrite
+the ongoing attempt to build it or use an incomplete data, which
+results in broken output files (.desktop, .metainfo and so on).
+This change ensures the intltool-merge cache is created only once
+and any other requests which would use it will wait until it's created.
+---
+ cmake/modules/FindIntltool.cmake | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/cmake/modules/FindIntltool.cmake b/cmake/modules/FindIntltool.cmake
+index 2cda2549eb..8e223e9d7f 100644
+--- a/cmake/modules/FindIntltool.cmake
++++ b/cmake/modules/FindIntltool.cmake
+@@ -176,9 +176,18 @@ macro(intltool_merge _in_filename _out_filename)
+ 			DEPENDS ${_in}
+ 		)
+ 	else(_has_no_translations)
++		if(NOT TARGET intltool-merge-cache)
++			add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/po/.intltool-merge-cache
++				COMMAND ${INTLTOOL_MERGE} ${_args} --quiet --cache="${CMAKE_BINARY_DIR}/po/.intltool-merge-cache" "${GETTEXT_PO_DIR}" "${_in}" "${_out}"
++				DEPENDS ${_in}
++			)
++			add_custom_target(intltool-merge-cache ALL
++				DEPENDS ${CMAKE_BINARY_DIR}/po/.intltool-merge-cache)
++		endif(NOT TARGET intltool-merge-cache)
++
+ 		add_custom_command(OUTPUT ${_out}
+ 			COMMAND ${INTLTOOL_MERGE} ${_args} --quiet --cache="${CMAKE_BINARY_DIR}/po/.intltool-merge-cache" "${GETTEXT_PO_DIR}" "${_in}" "${_out}"
+-			DEPENDS ${_in}
++			DEPENDS ${_in} intltool-merge-cache
+ 		)
+ 	endif(_has_no_translations)
+ endmacro(intltool_merge)
+-- 
+2.18.1
+
