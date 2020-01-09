@@ -1,0 +1,60 @@
+diff -up evolution-3.28.2/CMakeLists.txt.cmake-version evolution-3.28.2/CMakeLists.txt
+--- evolution-3.28.2/CMakeLists.txt.cmake-version	2018-05-07 04:10:55.000000000 -0400
++++ evolution-3.28.2/CMakeLists.txt	2018-06-01 04:24:26.509659160 -0400
+@@ -1,11 +1,15 @@
+ # Evolution build script
+ 
+-cmake_minimum_required(VERSION 3.1)
+-cmake_policy(VERSION 3.1)
++cmake_minimum_required(VERSION 2.8)
++cmake_policy(VERSION 2.8)
++
++project(evolution C)
++set(PROJECT_VERSION_MAJOR 3)
++set(PROJECT_VERSION_MINOR 28)
++set(PROJECT_VERSION_PATCH 5)
++set(PROJECT_VERSION_TWEAK 0)
++set(PROJECT_VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH})
+ 
+-project(evolution
+-	VERSION 3.28.5
+-	LANGUAGES C)
+ set(PROJECT_BUGREPORT "https://gitlab.gnome.org/GNOME/evolution/issues/")
+ set(PROJECT_URL "http://wiki.gnome.org/Apps/Evolution/")
+ 
+diff -up evolution-3.28.2/cmake/modules/FindIntltool.cmake.cmake-version evolution-3.28.2/cmake/modules/FindIntltool.cmake
+--- evolution-3.28.2/cmake/modules/FindIntltool.cmake.cmake-version	2018-05-07 04:10:55.000000000 -0400
++++ evolution-3.28.2/cmake/modules/FindIntltool.cmake	2018-06-01 04:24:26.510659154 -0400
+@@ -92,7 +92,7 @@ macro(intltool_add_pot_file_target)
+ 	endif(NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL GETTEXT_PO_DIR)
+ 
+ 	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${GETTEXT_PACKAGE}.pot
+-		COMMAND ${CMAKE_COMMAND} -E env INTLTOOL_EXTRACT="${INTLTOOL_EXTRACT}" XGETTEXT="${XGETTEXT}" srcdir=${CMAKE_CURRENT_SOURCE_DIR} ${INTLTOOL_UPDATE} --gettext-package ${GETTEXT_PACKAGE} --pot
++		COMMAND env INTLTOOL_EXTRACT="${INTLTOOL_EXTRACT}" XGETTEXT="${XGETTEXT}" srcdir=${CMAKE_CURRENT_SOURCE_DIR} ${INTLTOOL_UPDATE} --gettext-package ${GETTEXT_PACKAGE} --pot
+ 	)
+ 
+ 	add_custom_target(pot-file
+diff -up evolution-3.28.2/cmake/modules/GtkDoc.cmake.cmake-version evolution-3.28.2/cmake/modules/GtkDoc.cmake
+--- evolution-3.28.2/cmake/modules/GtkDoc.cmake.cmake-version	2018-05-07 04:10:55.000000000 -0400
++++ evolution-3.28.2/cmake/modules/GtkDoc.cmake	2018-06-01 04:24:26.510659154 -0400
+@@ -60,7 +60,7 @@ macro(add_gtkdoc _module _namespace _dep
+ 
+ 	set(_mkhtml_prefix "")
+ 	if(APPLE)
+-		set(_mkhtml_prefix "${CMAKE_COMMAND} -E env XML_CATALOG_FILES=\"/usr/local/etc/xml/catalog\"")
++		set(_mkhtml_prefix "env XML_CATALOG_FILES=\"/usr/local/etc/xml/catalog\"")
+ 	endif(APPLE)
+ 
+ 	add_custom_command(OUTPUT html/index.html
+diff -up evolution-3.28.2/help/CMakeLists.txt.cmake-version evolution-3.28.2/help/CMakeLists.txt
+--- evolution-3.28.2/help/CMakeLists.txt.cmake-version	2018-06-01 04:26:12.959982887 -0400
++++ evolution-3.28.2/help/CMakeLists.txt	2018-06-01 04:26:31.499863232 -0400
+@@ -264,7 +264,7 @@ macro(create_help_files_for_lang _lang _
+ 	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${_lang}/index.page
+ 		COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/${_lang}"
+ 		COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} -o "${mofile}" "${pofile}"
+-		COMMAND ${CMAKE_COMMAND} -E env d="${CMAKE_CURRENT_SOURCE_DIR}/C"
++		COMMAND env d="${CMAKE_CURRENT_SOURCE_DIR}/C"
+ 			itstool -m "${mofile}" ${${_helpfilesvar}} --output ${CMAKE_CURRENT_BINARY_DIR}/${_lang}/
+ 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/C
+ 		COMMENT "Generating '${_lang}' help files"

@@ -7,7 +7,7 @@
     <link type="guide" xref="mail-organizing"/>
     <link type="guide" xref="mail-layout-changing"/>
 
-    <revision pkgversion="3.3.91" version="0.7" date="2012-03-07" status="final"/>
+    <revision pkgversion="3.26.0" version="0.9" date="2017-09-11" status="final"/>
     <credit type="author">
       <name its:translate="no">Andre Klapper</name>
       <email its:translate="no">ak-47@gmx.net</email>
@@ -33,6 +33,7 @@
 <title>Sorting Mail in Email Threads</title>
 <p>You can use a threaded message view to sort emails. To enable this feature, click on <guiseq><gui>View</gui><gui>Group By Threads</gui></guiseq> or press <keyseq><key>Ctrl</key><key>T</key></keyseq>.</p>
 <p>This feature, when enabled, groups replies with the original email and allows you to follow the flow of the conversation from one message to the next.</p>
+<note style="tip"><p><app>Evolution</app> recognizes <code its:translate="no" its:locNote="Translators: Do NOT translate 'References'">References</code> and <code its:translate="no" its:locNote="Translators: Do NOT translate 'In-Reply-To'">In-Reply-To</code> mail headers. In addition, you can enable <guiseq><gui>Edit</gui><gui>Preferences</gui><gui>Mail Preferences</gui><gui>General</gui><gui>Message Display</gui><gui>Fall back to threading messages by subject</gui></guiseq>.</p></note>
 <p>When a new message arrives, it will be added below the parent message. Threads are sorted and displayed based on the date of the most recent message received.</p>
 <note style="tip"><p>For Advanced Users: There is a GSettings key that allows you to toggle between the collapsed and expanded state of the email threads. The collapsed state is enabled by default. It can be changed by starting the <app>Terminal</app> application and running the command <cmd>gsettings set org.gnome.evolution.mail thread-expand true</cmd></p>
 <list>
@@ -51,7 +52,7 @@
 <item><p>Select the <gui>Remove This Column</gui> or <gui>Add a Column</gui> option.</p></item>
 </list>
 
-<p><app>Evolution</app> allows you to sort your messages using these columns. Just click on the column label to sort the emails. The direction of the arrow next to the label indicates the direction of the sort.</p>
+<p><app>Evolution</app> allows you to sort your messages using these columns. Just click on the column label to sort the emails. The direction of the arrow next to the label indicates the direction of the sort.</p><p>You can apply a secondary sort criterion by clicking a column label while pressing <key>Ctrl</key>.</p>
 </section>
 
 <section id="sort-options">

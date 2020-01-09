@@ -32,7 +32,7 @@
     <key name="ba-reminder-units" enum="org.gnome.evolution.calendar.Duration">
       <default>'minutes'</default>
       <_summary>Birthday and anniversary reminder units</_summary>
-      <_description>Units for a birthday or anniversary reminder, "minutes", "hours" or "days"</_description>
+      <_description>Units for a birthday or anniversary reminder, “minutes”, “hours” or “days”</_description>
     </key>
     <key name="compress-weekend" type="b">
       <default>true</default>
@@ -152,7 +152,7 @@
     <key name="day-second-zone" type="s">
       <default>''</default>
       <_summary>The second timezone for a Day View</_summary>
-      <_description>Shows the second time zone in a Day View, if set. Value is similar to one used in a 'timezone' key</_description>
+      <_description>Shows the second time zone in a Day View, if set. Value is similar to one used in a “timezone” key</_description>
     </key>
     <key name="day-second-zones" type="as">
       <default>[]</default>
@@ -162,7 +162,7 @@
     <key name="day-second-zones-max" type="i">
       <default>5</default>
       <_summary>Maximum number of recently used timezones to remember</_summary>
-      <_description>Maximum number of recently used timezones to remember in a 'day-second-zones' list</_description>
+      <_description>Maximum number of recently used timezones to remember in a “day-second-zones” list</_description>
     </key>
     <key name="default-reminder-interval" type="i">
       <default>15</default>
@@ -172,7 +172,7 @@
     <key name="default-reminder-units" enum="org.gnome.evolution.calendar.Duration">
       <default>'minutes'</default>
       <_summary>Default reminder units</_summary>
-      <_description>Units for a default reminder, "minutes", "hours" or "days"</_description>
+      <_description>Units for a default reminder, “minutes”, “hours” or “days”</_description>
     </key>
     <key name="default-snooze-minutes" type="i">
       <default>5</default>
@@ -217,7 +217,7 @@
     <key name="hide-completed-tasks-units" enum="org.gnome.evolution.calendar.Duration">
       <default>'days'</default>
       <_summary>Hide task units</_summary>
-      <_description>Units for determining when to hide tasks, "minutes", "hours" or "days"</_description>
+      <_description>Units for determining when to hide tasks, “minutes”, “hours” or “days”</_description>
     </key>
     <key name="hide-completed-tasks-value" type="i">
       <default>1</default>
@@ -234,14 +234,19 @@
       <_summary>Last reminder time</_summary>
       <_description>Time the last reminder ran, in time_t</_description>
     </key>
+    <key name="allow-past-reminders" type="b">
+      <default>false</default>
+      <_summary>Allow past reminders</_summary>
+      <_description>Whether can show reminders for events/tasks/memos which already happened</_description>
+    </key>
     <key name="marcus-bains-color-dayview" type="s">
       <default>'#ff0000'</default>
-      <_summary>Marcus Bains Line Color - Day View</_summary>
+      <_summary>Marcus Bains Line Color — Day View</_summary>
       <_description>Color to draw the Marcus Bains line in the Day View</_description>
     </key>
     <key name="marcus-bains-color-timebar" type="s">
       <default>'#ff0000'</default>
-      <_summary>Marcus Bains Line Color - Time bar</_summary>
+      <_summary>Marcus Bains Line Color — Time bar</_summary>
       <_description>Color to draw the Marcus Bains Line in the Time bar (empty for default)</_description>
     </key>
     <key name="marcus-bains-line" type="b">
@@ -257,7 +262,7 @@
     <key name="memo-layout" type="i">
       <default>0</default>
       <_summary>Memo layout style</_summary>
-      <_description>The layout style determines where to place the preview pane in relation to the memo list.  "0" (Classic View) places the preview pane below the memo list.  "1" (Vertical View) places the preview pane next to the memo list</_description>
+      <_description>The layout style determines where to place the preview pane in relation to the memo list.  “0” (Classic View) places the preview pane below the memo list.  “1” (Vertical View) places the preview pane next to the memo list</_description>
     </key>
     <key name="memo-vpane-position" type="i">
       <default>400</default>
@@ -284,6 +289,11 @@
       <_summary>Show display reminders in notification tray</_summary>
       <_description>Whether or not to use the notification tray for display reminders</_description>
     </key>
+    <key name="notify-window-on-top" type="b">
+      <default>true</default>
+      <_summary>Show reminder notification dialog always on top</_summary>
+      <_description>Whether or not to show reminder notification dialog always on top. Note this works only as a hint for the window manager, which may or may not obey it.</_description>
+    </key>
     <key name="prefer-new-item" type="s">
       <default>''</default>
       <_summary>Preferred New button item</_summary>
@@ -292,17 +302,17 @@
     <key name="primary-calendar" type="s">
       <default>''</default>
       <_summary>Primary calendar</_summary>
-      <_description>The UID of the selected (or "primary") calendar in the sidebar of the "Calendar" view</_description>
+      <_description>The UID of the selected (or “primary”) calendar in the sidebar of the “Calendar” view</_description>
     </key>
     <key name="primary-memos" type="s">
       <default>''</default>
       <_summary>Primary memo list</_summary>
-      <_description>The UID of the selected (or "primary") memo list in the sidebar of the "Memos" view</_description>
+      <_description>The UID of the selected (or “primary”) memo list in the sidebar of the “Memos” view</_description>
     </key>
     <key name="primary-tasks" type="s">
       <default>''</default>
       <_summary>Primary task list</_summary>
-      <_description>The UID of the selected (or "primary") task list in the sidebar of the "Tasks" view</_description>
+      <_description>The UID of the selected (or “primary”) task list in the sidebar of the “Tasks” view</_description>
     </key>
     <key name="publish-template" type="s">
       <default>''</default>
@@ -332,12 +342,12 @@
     <key name="show-memo-preview" type="b">
       <default>true</default>
       <_summary>Show the memo preview pane</_summary>
-      <_description>If "true", show the memo preview pane in the main window</_description>
+      <_description>If “true”, show the memo preview pane in the main window</_description>
     </key>
     <key name="show-task-preview" type="b">
       <default>true</default>
       <_summary>Show the task preview pane</_summary>
-      <_description>If "true", show the task preview pane in the main window</_description>
+      <_description>If “true”, show the task preview pane in the main window</_description>
     </key>
     <key name="show-week-numbers" type="b">
       <default>false</default>
@@ -357,7 +367,7 @@
     <key name="task-due-today-color" type="s">
       <default>'#1e90ff'</default>
       <_summary>Tasks due today color</_summary>
-      <_description>Background color of tasks that are due today, in "#rrggbb" format. Used together with task-due-today-highlight</_description>
+      <_description>Background color of tasks that are due today, in “#rrggbb” format. Used together with task-due-today-highlight</_description>
     </key>
     <key name="task-hpane-position" type="i">
       <default>200</default>
@@ -367,7 +377,7 @@
     <key name="task-layout" type="i">
       <default>0</default>
       <_summary>Task layout style</_summary>
-      <_description>The layout style determines where to place the preview pane in relation to the task list.  "0" (Classic View) places the preview pane below the task list.  "1" (Vertical View) places the preview pane next to the task list</_description>
+      <_description>The layout style determines where to place the preview pane in relation to the task list.  “0” (Classic View) places the preview pane below the task list.  “1” (Vertical View) places the preview pane next to the task list</_description>
     </key>
     <key name="task-vpane-position" type="i">
       <default>400</default>
@@ -387,7 +397,7 @@
     <key name="task-overdue-color" type="s">
       <default>'#ff0000'</default>
       <_summary>Overdue tasks color</_summary>
-      <_description>Background color of tasks that are overdue, in "#rrggbb" format. Used together with task-overdue-highlight.</_description>
+      <_description>Background color of tasks that are overdue, in “#rrggbb” format. Used together with task-overdue-highlight.</_description>
     </key>
     <key name="time-divisions" type="i">
       <default>30</default>
@@ -397,7 +407,7 @@
     <key name="timezone" type="s">
       <default>'UTC'</default>
       <_summary>Timezone</_summary>
-      <_description>The default timezone to use for dates and times in the calendar, as an untranslated Olson timezone database location like "America/New York"</_description>
+      <_description>The default timezone to use for dates and times in the calendar, as an untranslated Olson timezone database location like “America/New York”</_description>
     </key>
     <key name="use-24hour-format" type="b">
       <default>false</default>
@@ -455,18 +465,26 @@
       <default>false</default>
       <_summary>Create events, memos and tasks as Private by default</_summary>
     </key>
+    <key name="draw-flat-events" type="b">
+      <default>true</default>
+      <_summary>Draw events as flat, not shaded.</_summary>
+    </key>
+    <key name="week-view-days-left-to-right" type="b">
+      <default>false</default>
+      <_summary>Whether to order days in the Week View from left to right, rather than from top to bottom.</_summary>
+    </key>
 
     <!-- The following keys are deprecated. -->
 
     <key name="week-start-day" type="i">
       <default>1</default>
       <_summary>(Deprecated) First day of the week, from Sunday (0) to Saturday (6)</_summary>
-      <_description>This key was deprecated in version 3.10 and should no longer be used.  Use "week-start-day-name" instead.</_description>
+      <_description>This key was deprecated in version 3.10 and should no longer be used.  Use “week-start-day-name” instead.</_description>
     </key>
     <key name="working-days" type="i">
       <default>62</default>
       <_summary>(Deprecated) Work days</_summary>
-      <_description>Days on which the start and end of work hours should be indicated.  (This key was deprecated in version 3.10 and should no longer be used.  Use the "work-day-monday", "work-day-tuesday", etc. keys instead.)</_description>
+      <_description>Days on which the start and end of work hours should be indicated.  (This key was deprecated in version 3.10 and should no longer be used.  Use the “work-day-monday”, “work-day-tuesday”, etc. keys instead.)</_description>
     </key>
 
   </schema>

@@ -1,17 +1,14 @@
 %global _changelog_trimtime %(date +%s -d "1 year ago")
 
-%define glib2_version 2.50.3
-%define gtk3_version 3.22.9
+%define glib2_version 2.46.0
+%define gtk3_version 3.10.0
 %define gnome_autoar_version 0.1.1
 %define gnome_desktop_version 2.91.3
-%define gnome_doc_utils_version 0.8.0
-%define intltool_version 0.50.2-7
-%define libgdata_version 0.17.7
-%define libgweather_version 3.20.4
+%define intltool_version 0.35.5
+%define libgdata_version 0.10.0
+%define libgweather_version 3.5.0
 %define libsoup_version 2.42
-%define webkit2gtk_version 2.14.5
-
-%define evo_base_version 3.22
+%define webkit2gtk_version 2.13.90
 
 %define last_anjal_version 0.3.2-3
 %define last_libgal2_version 2:2.5.3-2
@@ -30,98 +27,59 @@
 ### Abstract ###
 
 Name: evolution
-Version: 3.22.6
-Release: 14%{?dist}
+Version: 3.28.5
+Release: 2%{?dist}
 Group: Applications/Productivity
 Summary: Mail and calendar client for GNOME
 License: GPLv2+ and GFDL
 URL: https://wiki.gnome.org/Apps/Evolution
-BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
-Source: http://download.gnome.org/sources/%{name}/3.22/%{name}-%{version}.tar.xz
+Source: http://download.gnome.org/sources/%{name}/3.28/%{name}-%{version}.tar.xz
 
 Obsoletes: anjal <= %{last_anjal_version}
 Obsoletes: libgal2 <= %{last_libgal2_version}
 Obsoletes: evolution-NetworkManager < %{last_evo_nm_version}
 Obsoletes: evolution-perl < %{last_evo_perl_version}
 
+%global eds_version %{version}
+
 ### Patches ###
 
-Patch01: evolution-3.22.6-hide-menu-option.patch
-Patch02: evolution-3.22.6-coverity-scan-issues.patch
+Patch01: evolution-3.28.2-cmake-version.patch
 
-# RH bug #1435137
-Patch03: evolution-3.22.6-composer-image-insert-undo.patch
-
-# RH bug #1435586
-Patch04: evolution-3.22.6-magic-spacebar-with-caret-mode.patch
-
-# RH bug #1435589
-Patch05: evolution-3.22.6-composer-font-color.patch
-
-# RH bug #1435598
-Patch06: evolution-3.22.6-remote-content-cache.patch
-
-# RH bug #1441145
-Patch07: evolution-3.22.6-meeting-time-selector-crash.patch
-
-# RH bug #1441283
-Patch08: evolution-3.22.6-composer-dnd.patch
-
-# RH bug #1440835
-Patch09: evolution-3.22.6-name-selector-entry-fake-changed-signal.patch
-
-# RH bug #1443023
-Patch10: evolution-3.22.6-calendar-print-action.patch
-
-# RH bug #1445467
-Patch11: evolution-3.22.6-comp-editor-changed.patch
-
-# RH bug #1444073
-Patch12: evolution-3.22.6-folder-changed-blocked.patch
-
-# RH bug #1449283
-Patch13: evolution-3.22.6-indefinite-message-download.patch
-
-# RH bug #1512859
-Patch14: evolution-3.22.6-gtype-init-workaround.patch
-
-# RH bug #1513962
-Patch15: evolution-3.22.6-wayland-hidden-menu-interact.patch
+# RH-bug #1613813
+Patch02: evolution-3.28.5-config-lookup-crash.patch
 
 ## Dependencies ###
 
+Requires: evolution-data-server >= %{eds_version}
 Requires: gvfs
 Requires: gtkspell3
 Requires: highlight
+Requires: %{name}-langpacks = %{version}-%{release}
 
 ### Build Dependencies ###
 
-BuildRequires: autoconf >= 2.59
-BuildRequires: automake >= 1.9
-BuildRequires: desktop-file-utils
+BuildRequires: cmake
+BuildRequires: gcc
 BuildRequires: gettext
-BuildRequires: gnome-common
-BuildRequires: gnome-doc-utils >= %{gnome_doc_utils_version}
 BuildRequires: gtk-doc
 BuildRequires: highlight
 BuildRequires: intltool >= %{intltool_version}
 BuildRequires: itstool
-BuildRequires: libtool >= 1.5
 BuildRequires: pkgconfig
 BuildRequires: yelp-tools
 
 BuildRequires: pkgconfig(atk)
 BuildRequires: pkgconfig(cairo-gobject)
-BuildRequires: pkgconfig(camel-1.2) >= %{version}
-BuildRequires: pkgconfig(cryptui-0.0)
+BuildRequires: pkgconfig(camel-1.2) >= %{eds_version}
 BuildRequires: pkgconfig(enchant)
 BuildRequires: pkgconfig(gail-3.0) >= %{gtk3_version}
 BuildRequires: pkgconfig(gcr-3)
 BuildRequires: pkgconfig(gdk-pixbuf-2.0)
 BuildRequires: pkgconfig(gio-2.0) >= %{glib2_version}
 BuildRequires: pkgconfig(gmodule-2.0) >= %{glib2_version}
-#BuildRequires: pkgconfig(gnome-autoar-0) >= %{gnome_autoar_version}
-#BuildRequires: pkgconfig(gnome-autoar-gtk-0) >= %{gnome_autoar_version}
+#BuildRequires: pkgconfig(gnome-autoar-0) >= %%{gnome_autoar_version}
+#BuildRequires: pkgconfig(gnome-autoar-gtk-0) >= %%{gnome_autoar_version}
 BuildRequires: pkgconfig(gnome-desktop-3.0) >= %{gnome_desktop_version}
 BuildRequires: pkgconfig(gsettings-desktop-schemas)
 BuildRequires: pkgconfig(gtk+-3.0) >= %{gtk3_version}
@@ -129,10 +87,11 @@ BuildRequires: pkgconfig(gtkspell3-3.0)
 BuildRequires: pkgconfig(gweather-3.0) >= %{libgweather_version}
 BuildRequires: pkgconfig(iso-codes)
 BuildRequires: pkgconfig(libcanberra-gtk3)
-BuildRequires: pkgconfig(libebackend-1.2) >= %{version}
-BuildRequires: pkgconfig(libebook-1.2) >= %{version}
-BuildRequires: pkgconfig(libecal-1.2) >= %{version}
-BuildRequires: pkgconfig(libedataserver-1.2) >= %{version}
+BuildRequires: pkgconfig(libebackend-1.2) >= %{eds_version}
+BuildRequires: pkgconfig(libebook-1.2) >= %{eds_version}
+BuildRequires: pkgconfig(libecal-1.2) >= %{eds_version}
+BuildRequires: pkgconfig(libedataserver-1.2) >= %{eds_version}
+BuildRequires: pkgconfig(libedataserverui-1.2) >= %{eds_version}
 BuildRequires: pkgconfig(libgdata) >= %{libgdata_version}
 BuildRequires: pkgconfig(libsoup-2.4) >= %{libsoup_version}
 BuildRequires: pkgconfig(libxml-2.0)
@@ -140,6 +99,7 @@ BuildRequires: pkgconfig(nspr)
 BuildRequires: pkgconfig(nss)
 BuildRequires: pkgconfig(shared-mime-info)
 BuildRequires: pkgconfig(webkit2gtk-4.0) >= %{webkit2gtk_version}
+BuildRequires: pkgconfig(webkit2gtk-web-extension-4.0) >= %{webkit2gtk_version}
 
 %if %{ldap_support}
 BuildRequires: openldap-devel >= 2.0.11
@@ -163,16 +123,15 @@ personal information-management tool.
 Group: Development/Libraries
 Summary: Development files for building against %{name}
 Requires: %{name} = %{version}-%{release}
-Requires: pkgconfig(camel-1.2) >= %{version}
-Requires: pkgconfig(cryptui-0.0)
+Requires: pkgconfig(camel-1.2) >= %{eds_version}
 Requires: pkgconfig(enchant)
 Requires: pkgconfig(gtk+-3.0) >= %{gtk3_version}
 Requires: pkgconfig(gtkspell3-3.0)
 Requires: pkgconfig(gweather-3.0) >= %{libgweather_version}
-Requires: pkgconfig(libebackend-1.2) >= %{version}
-Requires: pkgconfig(libebook-1.2) >= %{version}
-Requires: pkgconfig(libecal-1.2) >= %{version}
-Requires: pkgconfig(libedataserver-1.2) >= %{version}
+Requires: pkgconfig(libebackend-1.2) >= %{eds_version}
+Requires: pkgconfig(libebook-1.2) >= %{eds_version}
+Requires: pkgconfig(libecal-1.2) >= %{eds_version}
+Requires: pkgconfig(libedataserver-1.2) >= %{eds_version}
 Requires: pkgconfig(libgdata) >= %{libgdata_version}
 Requires: pkgconfig(libsoup-2.4) >= %{libsoup_version}
 Requires: pkgconfig(libxml-2.0)
@@ -190,6 +149,14 @@ BuildArch: noarch
 
 %description devel-docs
 This package contains developer documentation for Evolution.
+
+%package langpacks
+Summary: Translations for %{name}
+BuildArch: noarch
+Requires: %{name} = %{version}-%{release}
+
+%description langpacks
+This package contains translations for %{name}.
 
 %if %{with_docs}
 %package help
@@ -234,47 +201,39 @@ This package contains the plugin to import Microsoft Personal Storage Table
 (PST) files used by Microsoft Outlook and Microsoft Exchange.
 %endif
 
-#%package tests
-#Summary: Tests for the %{name} package
-#Group: Development/Libraries
-#Requires: %{name}%{?_isa} = %{version}-%{release}
-#
-#%description tests
-#The %{name}-tests package contains tests that can be used to verify
-#the functionality of the installed %{name} package.
+%package tests
+Summary: Tests for the %{name} package
+Group: Development/Libraries
+Requires: %{name}%{?_isa} = %{version}-%{release}
+
+%description tests
+The %{name}-tests package contains tests that can be used to verify
+the functionality of the installed %{name} package.
 
 %prep
 %setup -q -n evolution-%{version}
-%patch01 -p1 -b .hide-menu-option
-%patch02 -p1 -b .coverity-scan-issues
-%patch03 -p1 -b .composer-image-insert-undo
-%patch04 -p1 -b .magic-spacebar-with-caret-mode
-%patch05 -p1 -b .composer-font-color
-%patch06 -p1 -b .remote-content-cache
-%patch07 -p1 -b .meeting-time-selector-crash
-%patch08 -p1 -b .composer-dnd
-%patch09 -p1 -b .name-selector-entry-fake-changed-signal
-%patch10 -p1 -b .calendar-print-action
-%patch11 -p1 -b .comp-editor-changed
-%patch12 -p1 -b .folder-changed-blocked
-%patch13 -p1 -b .indefinite-message-download
-%patch14 -p1 -b .gtype-init-workaround
-%patch15 -p1 -b .wayland-hidden-menu-interact
+
+%patch01 -p1 -b .cmake-version
+%patch02 -p1 -b .config-lookup-crash
 
 # Remove the welcome email from Novell
-for inbox in mail/default/*/Inbox; do
+for inbox in src/mail/default/*/Inbox; do
   echo -n "" > $inbox
 done
 
 %build
+
+mkdir -p _build
+cd _build
+
 # define all of our flags, this is kind of ugly :(
 %if %{ldap_support}
-%define ldap_flags --with-openldap=yes
+%define ldap_flags -DWITH_OPENLDAP=ON
 %else
-%define ldap_flags --without-openldap
+%define ldap_flags -DWITH_OPENLDAP=OFF
 %endif
 
-%define ssl_flags --enable-nss=yes --enable-smime=yes
+%define ssl_flags -DENABLE_SMIME=ON
 
 if ! pkg-config --exists nss; then
   echo "Unable to find suitable version of mozilla nss to use!"
@@ -282,48 +241,28 @@ if ! pkg-config --exists nss; then
 fi
 
 %if %{with_docs}
-%define gtkdoc_flags --enable-gtk-doc --with-help
+%define gtkdoc_flags -DENABLE_GTK_DOC=ON -DWITH_HELP=ON
 %else
-%define gtkdoc_flags --disable-gtk-doc --without-help
+%define gtkdoc_flags -DENABLE_GTK_DOC=OFF -DWITH_HELP=OFF
 %endif
 
 CFLAGS="$RPM_OPT_FLAGS -fPIC -DLDAP_DEPRECATED -Wno-sign-compare -Wno-deprecated-declarations"; export CFLAGS
 
-# Regenerate configure to pick up configure.ac changes
-aclocal -I m4
-autoheader
-automake --add-missing
-libtoolize
-intltoolize --force
-autoconf
-
-%configure \
-	--disable-maintainer-mode \
-	--with-sub-version=" (%{version}-%{release})" \
+%cmake -G "Unix Makefiles" \
+	-DENABLE_MAINTAINER_MODE=OFF \
+	-DVERSION_SUBSTRING=" (%{version}-%{release})" \
 	%ldap_flags %ssl_flags %gtkdoc_flags \
-	--disable-autoar \
-	--enable-plugins=all \
-	--disable-installed-tests
-export tagname=CC
-make %{?_smp_mflags} LIBTOOL=/usr/bin/libtool CFLAGS="$CFLAGS -fno-strict-aliasing"
+	-DENABLE_PLUGINS=all \
+	-DENABLE_AUTOAR=OFF \
+	-DENABLE_YTNEF=OFF \
+	-DENABLE_INSTALLED_TESTS=ON \
+	..
+
+make %{?_smp_mflags}
 
 %if %{with_docs}
 
-# Strip unneeded translations from .mo files.
-# This reduces the RPM size by several megabytes.
-#
-# Disabled in RHEL, because it's causing multilib issue in .mo files,
-# due to different time in POT-Creation-Date key of those .mo files.
-#
-#cd po
-#grep -v ".*[.]desktop[.]in[.]in$" POTFILES.in > POTFILES.keep
-#mv POTFILES.keep POTFILES.in
-#intltool-update --gettext-package=%{name}-%{evo_base_version} --pot
-#for p in *.po; do
-#	msgmerge $p %{name}-%{evo_base_version}.pot > $p.out
-#	msgfmt -o `basename $p .po`.gmo $p.out
-#done
-#cd -
+cd ..
 
 # Replace identical images in the help by links.
 # This reduces the RPM size by several megabytes.
@@ -347,25 +286,14 @@ done
 
 %install
 rm -rf $RPM_BUILD_ROOT
-export GCONF_DISABLE_MAKEFILE_SCHEMA_INSTALL=1
-export tagname=CC
-make LIBTOOL=/usr/bin/libtool DESTDIR=$RPM_BUILD_ROOT install
-unset GCONF_DISABLE_MAKEFILE_SCHEMA_INSTALL
+cd _build
+make DESTDIR=$RPM_BUILD_ROOT install
 
-# remove libtool archives for importers and the like
-find $RPM_BUILD_ROOT/%{_libdir}/evolution -name '*.la' -exec rm {} \;
+%find_lang evolution --all-name --with-gnome
 
-# remove statically built libraries:
-find $RPM_BUILD_ROOT/%{_libdir}/evolution -name '*.a' -exec rm {} \;
-
-# remove test GIO modules directory
-rm -r $RPM_BUILD_ROOT/%{_libdir}/evolution/test-gio-modules
-
-%find_lang evolution-%{evo_base_version} --all-name --with-gnome
-
-grep "/usr/share/locale" evolution-%{evo_base_version}.lang > translations.lang
+grep "/usr/share/locale" evolution.lang > translations.lang
 %if %{with_docs}
-grep -v "/usr/share/locale" evolution-%{evo_base_version}.lang > help.lang
+grep -v "/usr/share/locale" evolution.lang > help.lang
 %endif
 
 %post
@@ -386,11 +314,9 @@ fi
 gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 glib-compile-schemas %{_datadir}/glib-2.0/schemas &>/dev/null || :
 
-%clean
-rm -rf $RPM_BUILD_ROOT
-
-%files -f translations.lang
-%doc AUTHORS COPYING NEWS README
+%files
+%license COPYING
+%doc AUTHORS NEWS README
 
 # GSettings schemas:
 %{_datadir}/GConf/gsettings/evolution.convert
@@ -403,6 +329,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/glib-2.0/schemas/org.gnome.evolution.importer.gschema.xml
 %{_datadir}/glib-2.0/schemas/org.gnome.evolution.bogofilter.gschema.xml
 %{_datadir}/glib-2.0/schemas/org.gnome.evolution.spamassassin.gschema.xml
+%{_datadir}/glib-2.0/schemas/org.gnome.evolution.text-highlight.gschema.xml
 %{_datadir}/glib-2.0/schemas/org.gnome.evolution.plugin.attachment-reminder.gschema.xml
 %{_datadir}/glib-2.0/schemas/org.gnome.evolution.plugin.autocontacts.gschema.xml
 %{_datadir}/glib-2.0/schemas/org.gnome.evolution.plugin.email-custom-header.gschema.xml
@@ -417,11 +344,11 @@ rm -rf $RPM_BUILD_ROOT
 # The main executable
 %{_bindir}/evolution
 
-%{_datadir}/appdata/evolution.appdata.xml
+%{_datadir}/metainfo/org.gnome.Evolution.appdata.xml
 
 # Desktop files:
-%{_datadir}/applications/evolution.desktop
-%{_sysconfdir}/xdg/autostart/evolution-alarm-notify.desktop
+%{_datadir}/applications/org.gnome.Evolution.desktop
+%{_sysconfdir}/xdg/autostart/org.gnome.Evolution-alarm-notify.desktop
 
 # Icons:
 %{_datadir}/icons/hicolor/16x16/apps/*
@@ -440,6 +367,7 @@ rm -rf $RPM_BUILD_ROOT
 # Modules:
 %dir %{_libdir}/evolution
 %dir %{_libdir}/evolution/modules
+%{_libdir}/evolution/modules/module-accounts-window.so
 %{_libdir}/evolution/modules/module-addressbook.so
 %{_libdir}/evolution/modules/module-backup-restore.so
 %{_libdir}/evolution/modules/module-book-config-google.so
@@ -454,6 +382,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/evolution/modules/module-cal-config-webcal.so
 %{_libdir}/evolution/modules/module-calendar.so
 %{_libdir}/evolution/modules/module-composer-autosave.so
+%{_libdir}/evolution/modules/module-composer-to-meeting.so
+%{_libdir}/evolution/modules/module-config-lookup.so
 %{_libdir}/evolution/modules/module-contact-photos.so
 %{_libdir}/evolution/modules/module-gravatar.so
 %{_libdir}/evolution/modules/module-itip-formatter.so
@@ -475,8 +405,11 @@ rm -rf $RPM_BUILD_ROOT
 # Shared libraries:
 %{_libdir}/evolution/libevolution-mail-composer.so
 %{_libdir}/evolution/libeabutil.so
+%{_libdir}/evolution/libeabwidgets.so
 %{_libdir}/evolution/libecontacteditor.so
 %{_libdir}/evolution/libecontactlisteditor.so
+%{_libdir}/evolution/libecontactprint.so
+%{_libdir}/evolution/libedomutils.so
 %{_libdir}/evolution/libemail-engine.so
 %{_libdir}/evolution/libevolution-mail-formatter.so
 %{_libdir}/evolution/libevolution-shell.so
@@ -491,10 +424,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/evolution/libgnomecanvas.so
 
 # WebKit2 Extensions
-%{_libdir}/evolution/web-extensions/libedomutils.so
 %{_libdir}/evolution/web-extensions/libewebextension.so
-%{_libdir}/evolution/web-extensions/libmoduleitipformatterwebextension.so
-%{_libdir}/evolution/web-extensions/webkit-editor/libewebkiteditorwebextension.so
+%{_libdir}/evolution/web-extensions/module-itip-formatter-webextension.so
+%{_libdir}/evolution/web-extensions/webkit-editor/module-webkit-editor-webextension.so
 
 # Various libexec programs:
 %dir %{_libexecdir}/evolution
@@ -564,31 +496,52 @@ rm -rf $RPM_BUILD_ROOT
 %doc %{_datadir}/gtk-doc/html/evolution-shell
 %doc %{_datadir}/gtk-doc/html/evolution-util
 
+%files langpacks -f _build/translations.lang
+
 %if %{with_docs}
-%files help -f help.lang
-%dir %{_datadir}/help/*/evolution
+%files help -f _build/help.lang
 %endif
 
 %files bogofilter
 %{_libdir}/evolution/modules/module-bogofilter.so
-%{_datadir}/appdata/evolution-bogofilter.metainfo.xml
+%{_datadir}/metainfo/org.gnome.Evolution-bogofilter.metainfo.xml
 
 %files spamassassin
 %{_libdir}/evolution/modules/module-spamassassin.so
-%{_datadir}/appdata/evolution-spamassassin.metainfo.xml
+%{_datadir}/metainfo/org.gnome.Evolution-spamassassin.metainfo.xml
 
 %if %{libpst_support}
 %files pst
-%{_datadir}/appdata/evolution-pst.metainfo.xml
+%{_datadir}/metainfo/org.gnome.Evolution-pst.metainfo.xml
 %{evo_plugin_dir}/org-gnome-pst-import.eplug
 %{evo_plugin_dir}/liborg-gnome-pst-import.so
 %endif
 
-#%files tests
-#%{_libexecdir}/%{name}/installed-tests
-#%{_datadir}/installed-tests
+%files tests
+%{_libexecdir}/%{name}/installed-tests
+%{_datadir}/installed-tests
 
 %changelog
+* Thu Aug 23 2018 Milan Crha <mcrha@redhat.com> - 3.28.5-2
+- Add patch for RH bug #1613813 (Crash under config_lookup_thread() at e-config-lookup.c:179)
+
+* Mon Jul 30 2018 Milan Crha <mcrha@redhat.com> - 3.28.5-1
+- Update to 3.28.5
+
+* Mon Jul 16 2018 Milan Crha <mcrha@redhat.com> - 3.28.4-1
+- Update to 3.28.4
+- Remove patch for GNOME bug #796174 (fixed upstream)
+
+* Tue Jun 19 2018 Milan Crha <mcrha@redhat.com> - 3.28.3-2
+- Add patch for GNOME bug #796174 (strcat() considered unsafe for buffer overflow)
+
+* Mon Jun 18 2018 Milan Crha <mcrha@redhat.com> - 3.28.3-1
+- Update to 3.28.3
+
+* Wed May 30 2018 Milan Crha <mcrha@redhat.com> - 3.28.2-1
+- Update to 3.28.2
+- Resolves: #1504129
+
 * Mon Jan 22 2018 Milan Crha <mcrha@redhat.com> - 3.22.6-14
 - Obsolete evolution-perl subpackage (RH bug #1516655)
 

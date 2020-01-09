@@ -1,5 +1,6 @@
-data/evolution-alarm-notify.desktop.in
-data/evolution.desktop.in
-designs/OOA/ooa.ui
-designs/read_receipts/read.ui
-e-util/test-html-editor.c
+build/
+.build/
+_build/
+data/org.gnome.Evolution-alarm-notify.desktop.in
+data/org.gnome.Evolution.desktop.in
+src/e-util/test-html-editor.c
