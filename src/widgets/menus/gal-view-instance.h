@@ -25,8 +25,7 @@
 #define _GAL_VIEW_INSTANCE_H_
 
 #include <glib-object.h>
-#include <widgets/menus/gal-view-collection.h>
-#include <misc/e-popup-menu.h>
+#include <menus/gal-view-collection.h>
 
 G_BEGIN_DECLS
 
@@ -67,6 +66,7 @@ typedef struct {
 	void (*display_view) (GalViewInstance *instance,
 			      GalView    *view);
 	void (*changed)      (GalViewInstance *instance);
+	void (*loaded)       (GalViewInstance *instance);
 } GalViewInstanceClass;
 
 /* Standard functions */
@@ -105,10 +105,6 @@ void             gal_view_instance_load                 (GalViewInstance   *inst
 const gchar      *gal_view_instance_get_default_view     (GalViewInstance   *instance);
 void             gal_view_instance_set_default_view     (GalViewInstance   *instance,
 							 const gchar        *id);
-
-EPopupMenu      *gal_view_instance_get_popup_menu       (GalViewInstance   *instance);
-void             gal_view_instance_free_popup_menu      (GalViewInstance   *instance,
-							 EPopupMenu        *menu);
 
 G_END_DECLS
 

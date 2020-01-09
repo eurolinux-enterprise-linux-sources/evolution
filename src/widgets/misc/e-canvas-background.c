@@ -41,7 +41,10 @@
 
 /* workaround for avoiding API broken */
 #define ecb_get_type e_canvas_background_get_type
-G_DEFINE_TYPE (ECanvasBackground, ecb, GNOME_TYPE_CANVAS_ITEM)
+G_DEFINE_TYPE (
+	ECanvasBackground,
+	ecb,
+	GNOME_TYPE_CANVAS_ITEM)
 
 #define d(x)
 
@@ -50,10 +53,10 @@ struct _ECanvasBackgroundPrivate {
 	GdkColor color;		/* Fill color */
 	GdkBitmap *stipple;	/* Stipple for fill */
 	GdkGC *gc;			/* GC for filling */
-	double x1;
-	double x2;
-	double y1;
-	double y2;
+	gdouble x1;
+	gdouble x2;
+	gdouble y1;
+	gdouble y2;
 
 	guint needs_redraw : 1;
 };
@@ -63,7 +66,7 @@ enum {
 	LAST_SIGNAL
 };
 
-static guint ecb_signals [LAST_SIGNAL] = { 0, };
+static guint ecb_signals[LAST_SIGNAL] = { 0, };
 
 enum {
 	PROP_0,
@@ -78,7 +81,7 @@ enum {
 };
 
 static void
-get_color(ECanvasBackground *ecb)
+get_color (ECanvasBackground *ecb)
 {
 	GnomeCanvasItem *item = GNOME_CANVAS_ITEM (ecb);
 	ecb->priv->color.pixel = gnome_canvas_get_color_pixel (item->canvas,
@@ -88,9 +91,9 @@ get_color(ECanvasBackground *ecb)
 }
 
 static void
-ecb_bounds (GnomeCanvasItem *item, double *x1, double *y1, double *x2, double *y2)
+ecb_bounds (GnomeCanvasItem *item, gdouble *x1, gdouble *y1, gdouble *x2, gdouble *y2)
 {
-	double   i2c [6];
+	gdouble   i2c[6];
 	ArtPoint c1, c2, i1, i2;
 	ECanvasBackground *ecb = E_CANVAS_BACKGROUND (item);
 
@@ -106,16 +109,16 @@ ecb_bounds (GnomeCanvasItem *item, double *x1, double *y1, double *x2, double *y
 	art_affine_point (&c2, &i2, i2c);
 
 	if (ecb->priv->x1 < 0)
-		c1.x = -(double)UINT_MAX;
+		c1.x = -(gdouble)UINT_MAX;
 
 	if (ecb->priv->y1 < 0)
-		c1.y = -(double)UINT_MAX;
+		c1.y = -(gdouble)UINT_MAX;
 
 	if (ecb->priv->x2 < 0)
-		c2.x = (double)UINT_MAX;
+		c2.x = (gdouble)UINT_MAX;
 
 	if (ecb->priv->y2 < 0)
-		c2.y = (double)UINT_MAX;
+		c2.y = (gdouble)UINT_MAX;
 
 	*x1 = c1.x;
 	*y1 = c1.y;
@@ -127,7 +130,7 @@ ecb_bounds (GnomeCanvasItem *item, double *x1, double *y1, double *x2, double *y
  * GnomeCanvasItem::update method
  */
 static void
-ecb_update (GnomeCanvasItem *item, double *affine, ArtSVP *clip_path, gint flags)
+ecb_update (GnomeCanvasItem *item, gdouble *affine, ArtSVP *clip_path, gint flags)
 {
 	ArtPoint o1, o2;
 	ECanvasBackground *ecb = E_CANVAS_BACKGROUND (item);
@@ -266,7 +269,7 @@ ecb_set_property (GObject *object,
 	if (color_changed) {
 		ecb->priv->color = color;
 
-		if (GNOME_CANVAS_ITEM_REALIZED & GTK_OBJECT_FLAGS(item)) {
+		if (item->flags & GNOME_CANVAS_ITEM_REALIZED) {
 			get_color (ecb);
 			if (!item->canvas->aa) {
 				gdk_gc_set_foreground (ecb->priv->gc, &ecb->priv->color);
@@ -275,7 +278,7 @@ ecb_set_property (GObject *object,
 	}
 
 	ecb->priv->needs_redraw = 1;
-	gnome_canvas_item_request_update (GNOME_CANVAS_ITEM(ecb));
+	gnome_canvas_item_request_update (GNOME_CANVAS_ITEM (ecb));
 }
 
 static void
@@ -337,11 +340,14 @@ static void
 ecb_realize (GnomeCanvasItem *item)
 {
 	ECanvasBackground *ecb = E_CANVAS_BACKGROUND (item);
+	GdkWindow *bin_window;
 
 	if (GNOME_CANVAS_ITEM_CLASS (ecb_parent_class)->realize)
                 GNOME_CANVAS_ITEM_CLASS (ecb_parent_class)->realize (item);
 
-	ecb->priv->gc = gdk_gc_new (item->canvas->layout.bin_window);
+	bin_window = gtk_layout_get_bin_window (GTK_LAYOUT (item->canvas));
+
+	ecb->priv->gc = gdk_gc_new (bin_window);
 	get_color (ecb);
 	if (!item->canvas->aa)
 		gdk_gc_set_foreground (ecb->priv->gc, &ecb->priv->color);
@@ -365,11 +371,16 @@ ecb_unrealize (GnomeCanvasItem *item)
 }
 
 static void
-ecb_draw (GnomeCanvasItem *item, GdkDrawable *drawable, gint x, gint y, gint width, gint height)
+ecb_draw (GnomeCanvasItem *item,
+          GdkDrawable *drawable,
+          gint x,
+          gint y,
+          gint width,
+          gint height)
 {
 	ECanvasBackground *ecb = E_CANVAS_BACKGROUND (item);
 	gint x1, x2, y1, y2;
-	double i2c [6];
+	gdouble i2c[6];
 	ArtPoint upper_left, lower_right, ecb_base_point;
 
 	/*
@@ -402,7 +413,7 @@ ecb_draw (GnomeCanvasItem *item, GdkDrawable *drawable, gint x, gint y, gint wid
 }
 
 static double
-ecb_point (GnomeCanvasItem *item, double x, double y, gint cx, gint cy,
+ecb_point (GnomeCanvasItem *item, gdouble x, gdouble y, gint cx, gint cy,
 	   GnomeCanvasItem **actual_item)
 {
 	ECanvasBackground *ecb = E_CANVAS_BACKGROUND (item);
@@ -421,12 +432,17 @@ ecb_point (GnomeCanvasItem *item, double x, double y, gint cx, gint cy,
 }
 
 static void
-ecb_style_set (ECanvasBackground *ecb, GtkStyle *previous_style)
+ecb_style_set (ECanvasBackground *ecb,
+               GtkStyle *previous_style)
 {
 	GnomeCanvasItem *item = GNOME_CANVAS_ITEM (ecb);
+	GtkStyle *style;
 
-	if (GTK_WIDGET_REALIZED (item->canvas)) {
-		gdk_gc_set_foreground (ecb->priv->gc, &GTK_WIDGET(item->canvas)->style->base[GTK_STATE_NORMAL]);
+	style = gtk_widget_get_style (GTK_WIDGET (item->canvas));
+
+	if (gtk_widget_get_realized (GTK_WIDGET (item->canvas))) {
+		gdk_gc_set_foreground (
+			ecb->priv->gc, &style->base[GTK_STATE_NORMAL]);
 		gnome_canvas_item_request_update (GNOME_CANVAS_ITEM (ecb));
 	}
 }
@@ -451,60 +467,60 @@ ecb_class_init (ECanvasBackgroundClass *ecb_class)
 
 	g_object_class_install_property (object_class, PROP_FILL_COLOR,
 					 g_param_spec_string ("fill_color",
-							      _( "Fill color" ),
-							      _( "Fill color" ),
+							      "Fill color",
+							      "Fill color",
 							      NULL,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_FILL_COLOR_GDK,
 					 g_param_spec_boxed ("fill_color_gdk",
-							     _( "GDK fill color" ),
-							     _( "GDK fill color" ),
+							     "GDK fill color",
+							     "GDK fill color",
 							     GDK_TYPE_COLOR,
 							     G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_FILL_COLOR_RGBA,
 					 g_param_spec_uint ("fill_color_rgba",
-							    _( "GDK fill color" ),
-							    _( "GDK fill color" ),
+							    "GDK fill color",
+							    "GDK fill color",
 							    0, G_MAXUINT, 0,
 							    G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_FILL_STIPPLE,
 					 g_param_spec_object ("fill_stipple",
-							      _( "Fill stipple" ),
-							      _( "Fill stipple" ),
+							      "Fill stipple",
+							      "Fill stipple",
 							      GDK_TYPE_WINDOW,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_X1,
 					 g_param_spec_double ("x1",
-							      _( "X1" ),
-							      _( "X1" ),
+							      "X1",
+							      "X1",
 							      0.0, G_MAXDOUBLE, 0.0,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_X2,
 					 g_param_spec_double ("x2",
-							      _( "X2" ),
-							      _( "X2" ),
+							      "X2",
+							      "X2",
 							      0.0, G_MAXDOUBLE, 0.0,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_Y1,
 					 g_param_spec_double ("y1",
-							      _( "Y1" ),
-							      _( "Y1" ),
+							      "Y1",
+							      "Y1",
 							      0.0, G_MAXDOUBLE, 0.0,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_Y2,
 					 g_param_spec_double ("y2",
-							      _( "Y2" ),
-							      _( "Y2" ),
+							      "Y2",
+							      "Y2",
 							      0.0, G_MAXDOUBLE, 0.0,
 							      G_PARAM_READWRITE));
-	ecb_signals [STYLE_SET] =
+	ecb_signals[STYLE_SET] =
 		g_signal_new ("style_set",
 			      G_OBJECT_CLASS_TYPE (object_class),
 			      G_SIGNAL_RUN_LAST,

@@ -1,0 +1,138 @@
+diff -up evolution-2.32.3/e-util/e-plugin-ui.c.plugin-actions-not-updated evolution-2.32.3/e-util/e-plugin-ui.c
+--- evolution-2.32.3/e-util/e-plugin-ui.c.plugin-actions-not-updated	2011-03-29 20:38:47.000000000 +0200
++++ evolution-2.32.3/e-util/e-plugin-ui.c	2013-09-11 16:27:09.093290371 +0200
+@@ -344,8 +344,10 @@ plugin_ui_disable_manager (EPluginUIHook
+ 		merge_id = GPOINTER_TO_UINT (data);
+ 
+ 		/* Merge ID could be 0 if the plugin is disabled. */
+-		if (merge_id > 0)
++		if (merge_id > 0) {
+ 			gtk_ui_manager_remove_ui (ui_manager, merge_id);
++			gtk_ui_manager_ensure_update (ui_manager);
++		}
+ 
+ 		if (remove)
+ 			g_hash_table_remove (hash_table, id);
+diff -up evolution-2.32.3/modules/mail/e-mail-shell-view-actions.c.plugin-actions-not-updated evolution-2.32.3/modules/mail/e-mail-shell-view-actions.c
+--- evolution-2.32.3/modules/mail/e-mail-shell-view-actions.c.plugin-actions-not-updated	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/modules/mail/e-mail-shell-view-actions.c	2013-09-11 16:27:09.086290371 +0200
+@@ -1561,6 +1561,7 @@ e_mail_shell_view_update_popup_labels (E
+ 	/* Unmerge the previous menu items. */
+ 	gtk_ui_manager_remove_ui (ui_manager, merge_id);
+ 	e_action_group_remove_all_actions (action_group);
++	gtk_ui_manager_ensure_update (ui_manager);
+ 
+ 	mail_shell_content = mail_shell_view->priv->mail_shell_content;
+ 	mail_view = e_mail_shell_content_get_mail_view (mail_shell_content);
+diff -up evolution-2.32.3/modules/mail/e-mail-shell-view.c.plugin-actions-not-updated evolution-2.32.3/modules/mail/e-mail-shell-view.c
+--- evolution-2.32.3/modules/mail/e-mail-shell-view.c.plugin-actions-not-updated	2013-09-11 16:27:09.083290371 +0200
++++ evolution-2.32.3/modules/mail/e-mail-shell-view.c	2013-09-11 16:27:09.087290371 +0200
+@@ -193,6 +193,7 @@ mail_shell_view_toggled (EShellView *she
+ 			ui_manager, priv->merge_id);
+ 	} else if (!view_is_active && priv->merge_id != 0) {
+ 		gtk_ui_manager_remove_ui (ui_manager, priv->merge_id);
++		gtk_ui_manager_ensure_update (ui_manager);
+ 		priv->merge_id = 0;
+ 	}
+ 
+diff -up evolution-2.32.3/modules/mail/e-mail-shell-view-private.c.plugin-actions-not-updated evolution-2.32.3/modules/mail/e-mail-shell-view-private.c
+--- evolution-2.32.3/modules/mail/e-mail-shell-view-private.c.plugin-actions-not-updated	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/modules/mail/e-mail-shell-view-private.c	2013-09-11 16:27:09.088290371 +0200
+@@ -386,6 +386,20 @@ mail_shell_view_reader_changed_cb (EMail
+ }
+ 
+ static void
++mail_shell_view_reader_update_actions_cb (EMailReader *reader,
++					  guint32 state,
++					  EMailShellView *mail_shell_view)
++{
++	EMailShellContent *mail_shell_content;
++
++	g_return_if_fail (mail_shell_view != NULL);
++	g_return_if_fail (mail_shell_view->priv != NULL);
++
++	mail_shell_content = mail_shell_view->priv->mail_shell_content;
++	e_mail_reader_update_actions (E_MAIL_READER (mail_shell_content), state);
++}
++
++static void
+ mail_shell_view_prepare_for_quit_done_cb (CamelFolder *folder,
+                                           gpointer user_data)
+ {
+@@ -605,6 +619,11 @@ e_mail_shell_view_private_constructed (E
+ 		mail_shell_view, G_CONNECT_SWAPPED);
+ 
+ 	g_signal_connect_object (
++		e_mail_shell_content_get_mail_view (mail_shell_content), "update-actions",
++		G_CALLBACK (mail_shell_view_reader_update_actions_cb),
++		mail_shell_view, 0);
++
++	g_signal_connect_object (
+ 		reader, "folder-loaded",
+ 		G_CALLBACK (e_mail_view_update_view_instance),
+ 		mail_view, G_CONNECT_SWAPPED);
+diff -up evolution-2.32.3/plugins/mailing-list-actions/mailing-list-actions.c.plugin-actions-not-updated evolution-2.32.3/plugins/mailing-list-actions/mailing-list-actions.c
+--- evolution-2.32.3/plugins/mailing-list-actions/mailing-list-actions.c.plugin-actions-not-updated	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/plugins/mailing-list-actions/mailing-list-actions.c	2013-09-11 16:27:09.088290371 +0200
+@@ -345,7 +345,8 @@ update_actions_cb (EMailReader *reader,
+ {
+ 	gboolean sensitive;
+ 
+-	sensitive = (state & E_MAIL_READER_SELECTION_IS_MAILING_LIST);
++	sensitive = (state & E_MAIL_READER_SELECTION_IS_MAILING_LIST) != 0
++		 && (state & E_MAIL_READER_SELECTION_SINGLE) != 0;
+ 	gtk_action_group_set_sensitive (action_group, sensitive);
+ }
+ 
+diff -up evolution-2.32.3/plugins/templates/templates.c.plugin-actions-not-updated evolution-2.32.3/plugins/templates/templates.c
+--- evolution-2.32.3/plugins/templates/templates.c.plugin-actions-not-updated	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/plugins/templates/templates.c	2013-09-11 16:27:09.089290371 +0200
+@@ -754,6 +754,7 @@ update_actions_cb (EShellView *shell_vie
+ 
+ 	gtk_ui_manager_remove_ui (ui_manager, merge_id);
+ 	e_action_group_remove_all_actions (action_group);
++	gtk_ui_manager_ensure_update (ui_manager);
+ 
+ 	if (!plugin_enabled)
+ 		return;
+diff -up evolution-2.32.3/shell/e-shell-view.c.plugin-actions-not-updated evolution-2.32.3/shell/e-shell-view.c
+--- evolution-2.32.3/shell/e-shell-view.c.plugin-actions-not-updated	2013-09-11 16:27:08.339290373 +0200
++++ evolution-2.32.3/shell/e-shell-view.c	2013-09-11 16:27:09.092290371 +0200
+@@ -729,6 +729,7 @@ shell_view_toggled (EShellView *shell_vi
+ 	} else if (!view_is_active && priv->merge_id != 0) {
+ 		e_plugin_ui_disable_manager (ui_manager, id);
+ 		gtk_ui_manager_remove_ui (ui_manager, priv->merge_id);
++		gtk_ui_manager_ensure_update (ui_manager);
+ 		priv->merge_id = 0;
+ 	}
+ 
+diff -up evolution-2.32.3/shell/e-shell-window-actions.c.plugin-actions-not-updated evolution-2.32.3/shell/e-shell-window-actions.c
+--- evolution-2.32.3/shell/e-shell-window-actions.c.plugin-actions-not-updated	2013-09-11 16:27:08.178290373 +0200
++++ evolution-2.32.3/shell/e-shell-window-actions.c	2013-09-11 16:27:09.091290371 +0200
+@@ -2275,6 +2275,7 @@ e_shell_window_update_view_menu (EShellW
+ 	/* Unmerge the previous menu. */
+ 	gtk_ui_manager_remove_ui (ui_manager, merge_id);
+ 	e_action_group_remove_all_actions (action_group);
++	gtk_ui_manager_ensure_update (ui_manager);
+ 
+ 	/* We have a view ID, so forge ahead. */
+ 	count = gal_view_collection_get_count (view_collection);
+@@ -2385,6 +2386,7 @@ e_shell_window_update_search_menu (EShel
+ 	/* Unmerge the previous menu. */
+ 	gtk_ui_manager_remove_ui (ui_manager, merge_id);
+ 	e_action_group_remove_all_actions (action_group);
++	gtk_ui_manager_ensure_update (ui_manager);
+ 
+ 	rule = e_rule_context_next_rule (context, NULL, source);
+ 	while (rule != NULL) {
+diff -up evolution-2.32.3/widgets/misc/e-attachment-view.c.plugin-actions-not-updated evolution-2.32.3/widgets/misc/e-attachment-view.c
+--- evolution-2.32.3/widgets/misc/e-attachment-view.c.plugin-actions-not-updated	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/widgets/misc/e-attachment-view.c	2013-09-11 16:27:09.090290371 +0200
+@@ -715,6 +715,7 @@ attachment_view_update_actions (EAttachm
+ 	gtk_ui_manager_remove_ui (priv->ui_manager, priv->merge_id);
+ 	action_group = e_attachment_view_get_action_group (view, "openwith");
+ 	e_action_group_remove_all_actions (action_group);
++	gtk_ui_manager_ensure_update (priv->ui_manager);
+ 
+ 	if (attachment == NULL || busy)
+ 		return;

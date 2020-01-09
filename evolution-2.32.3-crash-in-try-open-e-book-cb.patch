@@ -1,0 +1,112 @@
+diff -up evolution-2.32.3/mail/em-utils.c.crash-in-try-open-e-book-cb evolution-2.32.3/mail/em-utils.c
+--- evolution-2.32.3/mail/em-utils.c.crash-in-try-open-e-book-cb	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/mail/em-utils.c	2013-06-14 20:06:24.221991177 +0200
+@@ -1622,12 +1622,25 @@ emu_addr_cancel_stop (gpointer data)
+ }
+ 
+ struct TryOpenEBookStruct {
+-	GError **error;
++	gint ref_count;
++	GError *error;
+ 	EFlag *flag;
+ 	gboolean result;
+ };
+ 
+ static void
++try_open_ebook_struct_unref (struct TryOpenEBookStruct *data)
++{
++	g_return_if_fail (data != NULL);
++
++	if (g_atomic_int_dec_and_test (&data->ref_count)) {
++		e_flag_free (data->flag);
++		g_clear_error (&data->error);
++		g_free (data);
++	}
++}
++
++static void
+ try_open_e_book_cb (EBook *book, const GError *error, gpointer closure)
+ {
+ 	struct TryOpenEBookStruct *data = (struct TryOpenEBookStruct *)closure;
+@@ -1638,11 +1651,13 @@ try_open_e_book_cb (EBook *book, const G
+ 	data->result = error == NULL;
+ 
+ 	if (!data->result) {
+-		g_clear_error (data->error);
+-		g_propagate_error (data->error, g_error_copy (error));
++		g_clear_error (&data->error);
++		g_propagate_error (&data->error, g_error_copy (error));
+ 	}
+ 
+ 	e_flag_set (data->flag);
++
++	try_open_ebook_struct_unref (data);
+ }
+ 
+ /**
+@@ -1655,43 +1670,48 @@ try_open_e_book_cb (EBook *book, const G
+ static gboolean
+ try_open_e_book (EBook *book, gboolean only_if_exists, GError **error)
+ {
+-	struct TryOpenEBookStruct data;
+-	gboolean canceled = FALSE;
+-	EFlag *flag = e_flag_new ();
+-
+-	data.error = error;
+-	data.flag = flag;
+-	data.result = FALSE;
++	struct TryOpenEBookStruct *data;
++	gboolean canceled = FALSE, result;
++
++	data = g_new0 (struct TryOpenEBookStruct, 1);
++	data->ref_count = 2; /* one for this function, the other for try_open_e_book_cb() */
++	data->error = NULL;
++	data->flag = e_flag_new ();
++	data->result = FALSE;
+ 
+-	if (!e_book_open_async (book, only_if_exists, try_open_e_book_cb, &data)) {
+-		e_flag_free (flag);
++	if (!e_book_open_async (book, only_if_exists, try_open_e_book_cb, data)) {
++		try_open_ebook_struct_unref (data);
+ 		g_clear_error (error);
+ 		g_set_error (error, E_BOOK_ERROR, E_BOOK_ERROR_OTHER_ERROR, "Failed to call e_book_open_async.");
+ 		return FALSE;
+ 	}
+ 
+-	while (canceled = camel_operation_cancel_check (NULL), !canceled && !e_flag_is_set (flag)) {
++	while (canceled = camel_operation_cancel_check (NULL), !canceled && !e_flag_is_set (data->flag)) {
+ 		GTimeVal wait;
+ 
+ 		g_get_current_time (&wait);
+ 		g_time_val_add (&wait, 250000); /* waits 250ms */
+ 
+-		e_flag_timed_wait (flag, &wait);
++		e_flag_timed_wait (data->flag, &wait);
+ 	}
+ 
+ 	if (canceled) {
+-		g_clear_error (error);
+-		g_set_error (error, E_BOOK_ERROR, E_BOOK_ERROR_CANCELLED, "Operation has been canceled.");
++		g_clear_error (&data->error);
++		g_set_error (&data->error, E_BOOK_ERROR, E_BOOK_ERROR_CANCELLED, "Operation has been canceled.");
+ 		/* if the operation is cancelled sucessfully set the flag else wait. file, groupwise,.. backend's operations
+ 		   are not cancellable */
+ 		if (e_book_cancel_async_op (book, NULL))
+-			e_flag_set (flag);
++			e_flag_set (data->flag);
+ 	}
+ 
+-	e_flag_wait (flag);
+-	e_flag_free (flag);
++	e_flag_wait (data->flag);
++
++	result = data->result && !data->error;
++	if (data->error)
++		g_propagate_error (error, g_error_copy (data->error));
++	try_open_ebook_struct_unref (data);
+ 
+-	return data.result && (!error || !*error);
++	return result;
+ }
+ 
+ #define NOT_FOUND_BOOK (GINT_TO_POINTER (1))

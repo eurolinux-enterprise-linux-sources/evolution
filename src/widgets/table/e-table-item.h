@@ -29,7 +29,6 @@
 #include <table/e-table-model.h>
 #include <table/e-table-header.h>
 #include <table/e-table-defines.h>
-#include <table/e-table-tooltip.h>
 #include <misc/e-selection-model.h>
 #include <misc/e-printable.h>
 
@@ -79,11 +78,6 @@ typedef struct {
 
 	/* View row, -1 means unknown */
 	gint              old_cursor_row;
-
-	gint              hadjustment_change_id;
-	gint              hadjustment_value_change_id;
-	gint              vadjustment_change_id;
-	gint              vadjustment_value_change_id;
 
 	GdkGC           *fill_gc;
 	GdkGC           *grid_gc;
@@ -164,11 +158,6 @@ typedef struct {
 	gint grabbed_col, grabbed_row;
 	gint grabbed_count;
 
-	/*
-	 * Tooltip
-	 */
-	ETableTooltip *tooltip;
-
 } ETableItem;
 
 typedef struct {
@@ -177,10 +166,10 @@ typedef struct {
 	void        (*cursor_change)    (ETableItem *eti, gint row);
 	void        (*cursor_activated) (ETableItem *eti, gint row);
 	void        (*double_click)     (ETableItem *eti, gint row, gint col, GdkEvent *event);
-	gint        (*right_click)      (ETableItem *eti, gint row, gint col, GdkEvent *event);
-	gint        (*click)            (ETableItem *eti, gint row, gint col, GdkEvent *event);
-	gint        (*key_press)        (ETableItem *eti, gint row, gint col, GdkEvent *event);
-	gint        (*start_drag)       (ETableItem *eti, gint row, gint col, GdkEvent *event);
+	gboolean    (*right_click)      (ETableItem *eti, gint row, gint col, GdkEvent *event);
+	gboolean    (*click)            (ETableItem *eti, gint row, gint col, GdkEvent *event);
+	gboolean    (*key_press)        (ETableItem *eti, gint row, gint col, GdkEvent *event);
+	gboolean    (*start_drag)       (ETableItem *eti, gint row, gint col, GdkEvent *event);
 	void        (*style_set)        (ETableItem *eti, GtkStyle *previous_style);
 	void        (*selection_model_removed)    (ETableItem *eti, ESelectionModel *selection);
 	void        (*selection_model_added)    (ETableItem *eti, ESelectionModel *selection);

@@ -30,7 +30,7 @@
 #include <gtk/gtk.h>
 #include <libgnomecanvas/gnome-canvas-rect-ellipse.h>
 
-#include "a11y/e-table/gal-a11y-e-tree.h"
+#include "gal-a11y-e-tree.h"
 #include <glib/gi18n.h>
 #include "e-util/e-util.h"
 #include "misc/e-canvas.h"
@@ -54,15 +54,7 @@
 
 #define COLUMN_HEADER_HEIGHT 16
 
-G_DEFINE_TYPE (ETree, e_tree, GTK_TYPE_TABLE)
-
 #define d(x)
-
-#if d(!)0
-#define e_table_item_leave_edit_(x) (e_table_item_leave_edit((x)), g_print ("%s: e_table_item_leave_edit\n", __FUNCTION__))
-#else
-#define e_table_item_leave_edit_(x) (e_table_item_leave_edit((x)))
-#endif
 
 enum {
 	CURSOR_CHANGE,
@@ -75,6 +67,11 @@ enum {
 	START_DRAG,
 	STATE_CHANGE,
 	WHITE_SPACE_EVENT,
+
+	CUT_CLIPBOARD,
+	COPY_CLIPBOARD,
+	PASTE_CLIPBOARD,
+	SELECT_ALL,
 
 	TREE_DRAG_BEGIN,
 	TREE_DRAG_END,
@@ -133,6 +130,8 @@ struct ETreePriv {
 	gint reflow_idle_id;
 	gint scroll_idle_id;
 	gint hover_idle_id;
+
+	gboolean show_cursor_after_reflow;
 
 	gint table_model_change_id;
 	gint table_row_change_id;
@@ -194,7 +193,7 @@ struct ETreePriv {
 	GList *expanded_list;
 };
 
-static guint et_signals [LAST_SIGNAL] = { 0, };
+static guint et_signals[LAST_SIGNAL] = { 0, };
 
 static void et_grab_focus (GtkWidget *widget);
 
@@ -204,33 +203,33 @@ static void et_drag_begin (GtkWidget *widget,
 static void et_drag_end (GtkWidget *widget,
 			 GdkDragContext *context,
 			 ETree *et);
-static void et_drag_data_get(GtkWidget *widget,
+static void et_drag_data_get (GtkWidget *widget,
 			     GdkDragContext *context,
 			     GtkSelectionData *selection_data,
 			     guint info,
 			     guint time,
 			     ETree *et);
-static void et_drag_data_delete(GtkWidget *widget,
+static void et_drag_data_delete (GtkWidget *widget,
 				GdkDragContext *context,
 				ETree *et);
 
-static void et_drag_leave(GtkWidget *widget,
+static void et_drag_leave (GtkWidget *widget,
 			  GdkDragContext *context,
 			  guint time,
 			  ETree *et);
-static gboolean et_drag_motion(GtkWidget *widget,
+static gboolean et_drag_motion (GtkWidget *widget,
 			       GdkDragContext *context,
 			       gint x,
 			       gint y,
 			       guint time,
 			       ETree *et);
-static gboolean et_drag_drop(GtkWidget *widget,
+static gboolean et_drag_drop (GtkWidget *widget,
 			     GdkDragContext *context,
 			     gint x,
 			     gint y,
 			     guint time,
 			     ETree *et);
-static void et_drag_data_received(GtkWidget *widget,
+static void et_drag_data_received (GtkWidget *widget,
 				  GdkDragContext *context,
 				  gint x,
 				  gint y,
@@ -244,6 +243,8 @@ static void scroll_on (ETree *et, guint scroll_direction);
 static void hover_off (ETree *et);
 static void hover_on (ETree *et, gint x, gint y);
 static void context_destroyed (gpointer data, GObject *ctx);
+
+G_DEFINE_TYPE (ETree, e_tree, GTK_TYPE_TABLE)
 
 static void
 et_disconnect_from_etta (ETree *et)
@@ -291,7 +292,7 @@ current_search_col (ETree *et)
 static void
 e_tree_state_change (ETree *et)
 {
-	g_signal_emit (G_OBJECT (et), et_signals [STATE_CHANGE], 0);
+	g_signal_emit (G_OBJECT (et), et_signals[STATE_CHANGE], 0);
 }
 
 static void
@@ -327,9 +328,9 @@ disconnect_header (ETree *e_tree)
 			g_signal_handler_disconnect (G_OBJECT (e_tree->priv->sort_info),
 						     e_tree->priv->group_info_change_id);
 
-		g_object_unref(e_tree->priv->sort_info);
+		g_object_unref (e_tree->priv->sort_info);
 	}
-	g_object_unref(e_tree->priv->header);
+	g_object_unref (e_tree->priv->header);
 	e_tree->priv->header = NULL;
 	e_tree->priv->sort_info = NULL;
 }
@@ -342,24 +343,27 @@ connect_header (ETree *e_tree, ETableState *state)
 	if (e_tree->priv->header != NULL)
 		disconnect_header (e_tree);
 
-	e_tree->priv->header = e_table_state_to_header (GTK_WIDGET(e_tree), e_tree->priv->full_header, state);
+	e_tree->priv->header = e_table_state_to_header (
+		GTK_WIDGET (e_tree), e_tree->priv->full_header, state);
 
-	e_tree->priv->structure_change_id =
-		g_signal_connect (G_OBJECT (e_tree->priv->header), "structure_change",
-				  G_CALLBACK (search_col_change_trigger), e_tree);
-	e_tree->priv->expansion_change_id =
-		g_signal_connect (G_OBJECT (e_tree->priv->header), "expansion_change",
-				  G_CALLBACK (change_trigger), e_tree);
+	e_tree->priv->structure_change_id = g_signal_connect (
+		e_tree->priv->header, "structure_change",
+		G_CALLBACK (search_col_change_trigger), e_tree);
+
+	e_tree->priv->expansion_change_id = g_signal_connect (
+		e_tree->priv->header, "expansion_change",
+		G_CALLBACK (change_trigger), e_tree);
 
 	if (state->sort_info) {
-		e_tree->priv->sort_info = e_table_sort_info_duplicate(state->sort_info);
+		e_tree->priv->sort_info = e_table_sort_info_duplicate (state->sort_info);
 		e_table_sort_info_set_can_group (e_tree->priv->sort_info, FALSE);
-		e_tree->priv->sort_info_change_id =
-			g_signal_connect (G_OBJECT (e_tree->priv->sort_info), "sort_info_changed",
-					  G_CALLBACK (search_col_change_trigger), e_tree);
-		e_tree->priv->group_info_change_id =
-			g_signal_connect (G_OBJECT (e_tree->priv->sort_info), "group_info_changed",
-					  G_CALLBACK (search_col_change_trigger), e_tree);
+		e_tree->priv->sort_info_change_id = g_signal_connect (
+			e_tree->priv->sort_info, "sort_info_changed",
+			G_CALLBACK (search_col_change_trigger), e_tree);
+
+		e_tree->priv->group_info_change_id = g_signal_connect (
+			e_tree->priv->sort_info, "group_info_changed",
+			G_CALLBACK (search_col_change_trigger), e_tree);
 	} else
 		e_tree->priv->sort_info = NULL;
 
@@ -387,7 +391,7 @@ et_dispose (GObject *object)
 		}
 
 		if (et->priv->reflow_idle_id)
-			g_source_remove(et->priv->reflow_idle_id);
+			g_source_remove (et->priv->reflow_idle_id);
 		et->priv->reflow_idle_id = 0;
 
 		scroll_off (et);
@@ -420,7 +424,7 @@ et_dispose (GObject *object)
 			e_tree_drag_source_unset (et);
 
 		if (et->priv->last_drop_context)
-			g_object_weak_unref (G_OBJECT(et->priv->last_drop_context), context_destroyed, et);
+			g_object_weak_unref (G_OBJECT (et->priv->last_drop_context), context_destroyed, et);
 		et->priv->last_drop_context = NULL;
 
 		if (et->priv->info_text)
@@ -430,7 +434,7 @@ et_dispose (GObject *object)
 
 		gtk_widget_destroy (GTK_WIDGET (et->priv->table_canvas));
 
-		g_free(et->priv);
+		g_free (et->priv);
 		et->priv = NULL;
 	}
 
@@ -460,13 +464,17 @@ search_search_callback (ETreeModel *model, ETreePath path, gpointer data)
 	gconstpointer value;
 	ETableCol *col = current_search_col (cb_data->et);
 
-	value = e_tree_model_value_at (model, path, cb_data->et->priv->current_search_col->col_idx);
+	value = e_tree_model_value_at (
+		model, path, cb_data->et->priv->current_search_col->col_idx);
 
 	return col->search (value, cb_data->string);
 }
 
 static gboolean
-et_search_search (ETableSearch *search, gchar *string, ETableSearchFlags flags, ETree *et)
+et_search_search (ETableSearch *search,
+                  gchar *string,
+                  ETableSearchFlags flags,
+                  ETree *et)
 {
 	ETreePath cursor;
 	ETreePath found;
@@ -491,9 +499,15 @@ et_search_search (ETableSearch *search, gchar *string, ETableSearchFlags flags, 
 		}
 	}
 
-	found = e_tree_model_node_find (et->priv->model, cursor, NULL, E_TREE_FIND_NEXT_FORWARD, search_search_callback, &cb_data);
+	found = e_tree_model_node_find (
+			et->priv->model, cursor, NULL,
+			E_TREE_FIND_NEXT_FORWARD,
+			search_search_callback, &cb_data);
 	if (found == NULL)
-		found = e_tree_model_node_find (et->priv->model, NULL, cursor, E_TREE_FIND_NEXT_FORWARD, search_search_callback, &cb_data);
+		found = e_tree_model_node_find (
+			et->priv->model, NULL, cursor,
+			E_TREE_FIND_NEXT_FORWARD,
+			search_search_callback, &cb_data);
 
 	if (found && found != cursor) {
 		gint model_row;
@@ -501,9 +515,9 @@ et_search_search (ETableSearch *search, gchar *string, ETableSearchFlags flags, 
 		e_tree_table_adapter_show_node (et->priv->etta, found);
 		model_row = e_tree_table_adapter_row_of_node (et->priv->etta, found);
 
-		cursor = found;
-
-		e_selection_model_select_as_key_press(E_SELECTION_MODEL (et->priv->selection), model_row, col->col_idx, GDK_CONTROL_MASK);
+		e_selection_model_select_as_key_press (
+			E_SELECTION_MODEL (et->priv->selection),
+			model_row, col->col_idx, GDK_CONTROL_MASK);
 		return TRUE;
 	} else if (cursor && !(flags & E_TABLE_SEARCH_FLAGS_CHECK_CURSOR_FIRST)) {
 		gconstpointer value;
@@ -524,22 +538,21 @@ et_search_accept (ETableSearch *search, ETree *et)
 	if (col == NULL)
 		return;
 
-	g_object_get(et->priv->selection,
-		     "cursor_row", &cursor,
-		     NULL);
-	e_selection_model_select_as_key_press(E_SELECTION_MODEL (et->priv->selection), cursor, col->col_idx, 0);
+	g_object_get (et->priv->selection, "cursor_row", &cursor, NULL);
+
+	e_selection_model_select_as_key_press (
+		E_SELECTION_MODEL (et->priv->selection),
+		cursor, col->col_idx, 0);
 }
 
 static void
 e_tree_init (ETree *e_tree)
 {
-	GtkTable *gtk_table = GTK_TABLE (e_tree);
+	gtk_widget_set_can_focus (GTK_WIDGET (e_tree), TRUE);
 
-	GTK_WIDGET_SET_FLAGS (GTK_WIDGET (e_tree), GTK_CAN_FOCUS);
+	gtk_table_set_homogeneous (GTK_TABLE (e_tree), FALSE);
 
-	gtk_table->homogeneous               = FALSE;
-
-	e_tree->priv                         = g_new(ETreePriv, 1);
+	e_tree->priv                         = g_new (ETreePriv, 1);
 
 	e_tree->priv->model                  = NULL;
 	e_tree->priv->etta                   = NULL;
@@ -557,6 +570,8 @@ e_tree_init (ETree *e_tree)
 	e_tree->priv->reflow_idle_id         = 0;
 	e_tree->priv->scroll_idle_id         = 0;
 	e_tree->priv->hover_idle_id          = 0;
+
+	e_tree->priv->show_cursor_after_reflow = FALSE;
 
 	e_tree->priv->table_model_change_id  = 0;
 	e_tree->priv->table_row_change_id    = 0;
@@ -598,9 +613,11 @@ e_tree_init (ETree *e_tree)
 	e_tree->priv->do_drag                = FALSE;
 
 #ifdef E_TREE_USE_TREE_SELECTION
-	e_tree->priv->selection              = E_SELECTION_MODEL(e_tree_selection_model_new());
+	e_tree->priv->selection =
+		E_SELECTION_MODEL (e_tree_selection_model_new ());
 #else
-	e_tree->priv->selection              = E_SELECTION_MODEL(e_table_selection_model_new());
+	e_tree->priv->selection =
+		E_SELECTION_MODEL (e_table_selection_model_new ());
 #endif
 	e_tree->priv->spec                   = NULL;
 
@@ -616,7 +633,7 @@ e_tree_init (ETree *e_tree)
 	e_tree->priv->white_item             = NULL;
 	e_tree->priv->item                   = NULL;
 
-	e_tree->priv->search                 = e_table_search_new();
+	e_tree->priv->search                 = e_table_search_new ();
 
 	e_tree->priv->search_search_id       =
 		g_signal_connect (G_OBJECT (e_tree->priv->search), "search",
@@ -649,7 +666,7 @@ et_focus (GtkWidget *container, GtkDirectionType direction)
 
 	e_tree = E_TREE (container);
 
-	if (GTK_CONTAINER (container)->focus_child) {
+	if (gtk_container_get_focus_child (GTK_CONTAINER (container))) {
 		gtk_container_set_focus_child (GTK_CONTAINER (container), NULL);
 		return FALSE;
 	}
@@ -660,9 +677,10 @@ et_focus (GtkWidget *container, GtkDirectionType direction)
 static void
 set_header_canvas_width (ETree *e_tree)
 {
-	double oldwidth, oldheight, width;
+	gdouble oldwidth, oldheight, width;
 
-	if (!(e_tree->priv->header_item && e_tree->priv->header_canvas && e_tree->priv->table_canvas))
+	if (!(e_tree->priv->header_item &&
+		e_tree->priv->header_canvas && e_tree->priv->table_canvas))
 		return;
 
 	gnome_canvas_get_scroll_region (GNOME_CANVAS (e_tree->priv->table_canvas),
@@ -682,26 +700,33 @@ set_header_canvas_width (ETree *e_tree)
 static void
 header_canvas_size_allocate (GtkWidget *widget, GtkAllocation *alloc, ETree *e_tree)
 {
+	GtkAllocation allocation;
+
 	set_header_canvas_width (e_tree);
+
+	widget = GTK_WIDGET (e_tree->priv->header_canvas);
+	gtk_widget_get_allocation (widget, &allocation);
 
 	/* When the header item is created ->height == 0,
 	   as the font is only created when everything is realized.
 	   So we set the usize here as well, so that the size of the
 	   header is correct */
-	if (GTK_WIDGET (e_tree->priv->header_canvas)->allocation.height !=
-	    E_TABLE_HEADER_ITEM (e_tree->priv->header_item)->height)
-		gtk_widget_set_size_request (GTK_WIDGET (e_tree->priv->header_canvas), -1,
-				      E_TABLE_HEADER_ITEM (e_tree->priv->header_item)->height);
+	if (allocation.height != E_TABLE_HEADER_ITEM (e_tree->priv->header_item)->height)
+		gtk_widget_set_size_request (
+			widget, -1,
+			E_TABLE_HEADER_ITEM (e_tree->priv->header_item)->height);
 }
 
 static void
 e_tree_setup_header (ETree *e_tree)
 {
+	GtkWidget *widget;
 	gchar *pointer;
-	e_tree->priv->header_canvas = GNOME_CANVAS (e_canvas_new ());
-	GTK_WIDGET_UNSET_FLAGS (e_tree->priv->header_canvas, GTK_CAN_FOCUS);
 
-	gtk_widget_show (GTK_WIDGET (e_tree->priv->header_canvas));
+	widget = e_canvas_new ();
+	gtk_widget_set_can_focus (widget, FALSE);
+	e_tree->priv->header_canvas = GNOME_CANVAS (widget);
+	gtk_widget_show (widget);
 
 	pointer = g_strdup_printf("%p", (gpointer) e_tree);
 
@@ -715,7 +740,7 @@ e_tree_setup_header (ETree *e_tree)
 		"tree", e_tree,
 		NULL);
 
-	g_free(pointer);
+	g_free (pointer);
 
 	g_signal_connect (
 		e_tree->priv->header_canvas, "size_allocate",
@@ -726,30 +751,83 @@ e_tree_setup_header (ETree *e_tree)
 		E_TABLE_HEADER_ITEM (e_tree->priv->header_item)->height);
 }
 
+static void
+scroll_to_cursor (ETree *e_tree)
+{
+	ETreePath path;
+	GtkAdjustment *adjustment;
+	GtkLayout *layout;
+	gint x, y, w, h;
+	gdouble page_size;
+	gdouble lower;
+	gdouble upper;
+	gdouble value;
+
+	path = e_tree_get_cursor (e_tree);
+	x = y = w = h = 0;
+
+	if (path) {
+		gint row = e_tree_row_of_node (e_tree, path);
+		gint col = 0;
+
+		if (row >= 0)
+			e_table_item_get_cell_geometry (
+				E_TABLE_ITEM (e_tree->priv->item),
+				&row, &col, &x, &y, &w, &h);
+	}
+
+	layout = GTK_LAYOUT (e_tree->priv->table_canvas);
+	adjustment = gtk_layout_get_vadjustment (layout);
+
+	page_size = gtk_adjustment_get_page_size (adjustment);
+	lower = gtk_adjustment_get_lower (adjustment);
+	upper = gtk_adjustment_get_upper (adjustment);
+	value = gtk_adjustment_get_value (adjustment);
+
+	if (y < value || y + h > value + page_size) {
+		value = CLAMP (y - page_size / 2, lower, upper - page_size);
+		gtk_adjustment_set_value (adjustment, value);
+	}
+}
+
 static gboolean
 tree_canvas_reflow_idle (ETree *e_tree)
 {
 	gdouble height, width;
 	gdouble oldheight, oldwidth;
-	GtkAllocation *alloc = &(GTK_WIDGET (e_tree->priv->table_canvas)->allocation);
+	GtkAllocation allocation;
+	GtkWidget *widget;
 
-	g_object_get (e_tree->priv->item,
-		      "height", &height,
-		      "width", &width,
-		      NULL);
-	height = MAX ((gint)height, alloc->height);
-	width = MAX((gint)width, alloc->width);
+	widget = GTK_WIDGET (e_tree->priv->table_canvas);
+	gtk_widget_get_allocation (widget, &allocation);
+
+	g_object_get (
+		e_tree->priv->item,
+		"height", &height, "width", &width, NULL);
+
+	height = MAX ((gint)height, allocation.height);
+	width = MAX ((gint)width, allocation.width);
+
 	/* I have no idea why this needs to be -1, but it works. */
-	gnome_canvas_get_scroll_region (GNOME_CANVAS (e_tree->priv->table_canvas),
-					NULL, NULL, &oldwidth, &oldheight);
+	gnome_canvas_get_scroll_region (
+		GNOME_CANVAS (e_tree->priv->table_canvas),
+		NULL, NULL, &oldwidth, &oldheight);
 
 	if (oldwidth != width - 1 ||
 	    oldheight != height - 1) {
-		gnome_canvas_set_scroll_region (GNOME_CANVAS (e_tree->priv->table_canvas),
-						0, 0, width - 1, height - 1);
+		gnome_canvas_set_scroll_region (
+			GNOME_CANVAS (e_tree->priv->table_canvas),
+			0, 0, width - 1, height - 1);
 		set_header_canvas_width (e_tree);
 	}
+
 	e_tree->priv->reflow_idle_id = 0;
+
+	if (e_tree->priv->show_cursor_after_reflow) {
+		e_tree->priv->show_cursor_after_reflow = FALSE;
+		scroll_to_cursor (e_tree);
+	}
+
 	return FALSE;
 }
 
@@ -759,9 +837,6 @@ tree_canvas_size_allocate (GtkWidget *widget, GtkAllocation *alloc,
 {
 	gdouble width;
 	gdouble height;
-	GtkAdjustment *adj = GTK_LAYOUT(e_tree->priv->table_canvas)->vadjustment;
-	ETreePath path = e_tree_get_cursor (e_tree);
-	gint x, y, w, h;
 	GValue *val = g_new0 (GValue, 1);
 	g_value_init (val, G_TYPE_DOUBLE);
 
@@ -779,77 +854,66 @@ tree_canvas_size_allocate (GtkWidget *widget, GtkAllocation *alloc,
 	g_free (val);
 
 	if (e_tree->priv->reflow_idle_id)
-		g_source_remove(e_tree->priv->reflow_idle_id);
-	tree_canvas_reflow_idle(e_tree);
-
-	x = y = w = h = 0;
-	if (path) {
-		gint row = e_tree_row_of_node(e_tree, path);
-		gint col = 0;
-
-		if (row >= 0)
-			e_table_item_get_cell_geometry (E_TABLE_ITEM (e_tree->priv->item),
-							&row, &col, &x, &y, &w, &h);
-	}
-
-	if (y < adj->value || y + h > adj->value + adj->page_size)
-		gtk_adjustment_set_value(adj, CLAMP(y - adj->page_size / 2, adj->lower, adj->upper - adj->page_size));
+		g_source_remove (e_tree->priv->reflow_idle_id);
+	tree_canvas_reflow_idle (e_tree);
+	scroll_to_cursor (e_tree);
 }
 
 static void
 tree_canvas_reflow (GnomeCanvas *canvas, ETree *e_tree)
 {
 	if (!e_tree->priv->reflow_idle_id)
-		e_tree->priv->reflow_idle_id = g_idle_add_full (400, (GSourceFunc) tree_canvas_reflow_idle, e_tree, NULL);
+		e_tree->priv->reflow_idle_id = g_idle_add_full (
+			400, (GSourceFunc) tree_canvas_reflow_idle,
+			e_tree, NULL);
 }
 
 static void
 item_cursor_change (ETableItem *eti, gint row, ETree *et)
 {
-	ETreePath path = e_tree_table_adapter_node_at_row(et->priv->etta, row);
-	g_signal_emit (et,
-		       et_signals [CURSOR_CHANGE], 0,
-		       row, path);
+	ETreePath path = e_tree_table_adapter_node_at_row (et->priv->etta, row);
+
+	g_signal_emit (et, et_signals[CURSOR_CHANGE], 0, row, path);
 }
 
 static void
 item_cursor_activated (ETableItem *eti, gint row, ETree *et)
 {
-	ETreePath path = e_tree_table_adapter_node_at_row(et->priv->etta, row);
-	g_signal_emit (et,
-		       et_signals [CURSOR_ACTIVATED], 0,
-		       row, path);
-	d(g_print("%s: Emitted CURSOR_ACTIVATED signal on row: %d and path: 0x%p\n", __FUNCTION__, row, path));
+	ETreePath path = e_tree_table_adapter_node_at_row (et->priv->etta, row);
+
+	g_signal_emit (et, et_signals[CURSOR_ACTIVATED], 0, row, path);
 }
 
 static void
 item_double_click (ETableItem *eti, gint row, gint col, GdkEvent *event, ETree *et)
 {
-	ETreePath path = e_tree_table_adapter_node_at_row(et->priv->etta, row);
-	g_signal_emit (et,
-		       et_signals [DOUBLE_CLICK], 0,
-		       row, path, col, event);
+	ETreePath path = e_tree_table_adapter_node_at_row (et->priv->etta, row);
+
+	g_signal_emit (et, et_signals[DOUBLE_CLICK], 0, row, path, col, event);
 }
 
-static gint
+static gboolean
 item_right_click (ETableItem *eti, gint row, gint col, GdkEvent *event, ETree *et)
 {
-	gint return_val = 0;
-	ETreePath path = e_tree_table_adapter_node_at_row(et->priv->etta, row);
-	g_signal_emit (et,
-		       et_signals [RIGHT_CLICK], 0,
-		       row, path, col, event, &return_val);
+	ETreePath path = e_tree_table_adapter_node_at_row (et->priv->etta, row);
+	gboolean return_val = 0;
+
+	g_signal_emit (
+		et, et_signals[RIGHT_CLICK], 0,
+		row, path, col, event, &return_val);
+
 	return return_val;
 }
 
-static gint
+static gboolean
 item_click (ETableItem *eti, gint row, gint col, GdkEvent *event, ETree *et)
 {
-	gint return_val = 0;
-	ETreePath path = e_tree_table_adapter_node_at_row(et->priv->etta, row);
-	g_signal_emit (et,
-		       et_signals [CLICK], 0,
-		       row, path, col, event, &return_val);
+	gboolean return_val = 0;
+	ETreePath path = e_tree_table_adapter_node_at_row (et->priv->etta, row);
+
+	g_signal_emit (
+		et, et_signals[CLICK], 0, row, path, col, event, &return_val);
+
 	return return_val;
 }
 
@@ -860,38 +924,53 @@ item_key_press (ETableItem *eti, gint row, gint col, GdkEvent *event, ETree *et)
 	GdkEventKey *key = (GdkEventKey *) event;
 	ETreePath path;
 	gint y, row_local, col_local;
-	GtkAdjustment *vadj;
+	GtkAdjustment *adjustment;
+	GtkLayout *layout;
+	gdouble page_size;
+	gdouble upper;
+	gdouble value;
+
+	layout = GTK_LAYOUT (et->priv->table_canvas);
+	adjustment = gtk_layout_get_vadjustment (layout);
+
+	page_size = gtk_adjustment_get_page_size (adjustment);
+	upper = gtk_adjustment_get_upper (adjustment);
+	value = gtk_adjustment_get_value (adjustment);
 
 	switch (key->keyval) {
 	case GDK_Page_Down:
 	case GDK_KP_Page_Down:
-		vadj = gtk_layout_get_vadjustment (GTK_LAYOUT (et->priv->table_canvas));
-		y = CLAMP(vadj->value + (2 * vadj->page_size - 50), 0, vadj->upper);
-		y -= vadj->value;
+		y = CLAMP (value + (2 * page_size - 50), 0, upper);
+		y -= value;
 		e_tree_get_cell_at (et, 30, y, &row_local, &col_local);
 
 		if (row_local == -1)
-			row_local = e_table_model_row_count (E_TABLE_MODEL(et->priv->etta)) - 1;
+			row_local = e_table_model_row_count (E_TABLE_MODEL (et->priv->etta)) - 1;
 
 		row_local = e_tree_view_to_model_row (et, row_local);
-		col_local = e_selection_model_cursor_col (E_SELECTION_MODEL (et->priv->selection));
-		e_selection_model_select_as_key_press (E_SELECTION_MODEL (et->priv->selection), row_local, col_local, key->state);
+		col_local = e_selection_model_cursor_col (
+			E_SELECTION_MODEL (et->priv->selection));
+		e_selection_model_select_as_key_press (
+			E_SELECTION_MODEL (et->priv->selection),
+			row_local, col_local, key->state);
 
 		return_val = 1;
 		break;
 	case GDK_Page_Up:
 	case GDK_KP_Page_Up:
-		vadj = gtk_layout_get_vadjustment (GTK_LAYOUT (et->priv->table_canvas));
-		y = CLAMP(vadj->value - (vadj->page_size - 50), 0, vadj->upper);
-		y -= vadj->value;
+		y = CLAMP (value - (page_size - 50), 0, upper);
+		y -= value;
 		e_tree_get_cell_at (et, 30, y, &row_local, &col_local);
 
 		if (row_local == -1)
-			row_local = e_table_model_row_count (E_TABLE_MODEL(et->priv->etta)) - 1;
+			row_local = e_table_model_row_count (E_TABLE_MODEL (et->priv->etta)) - 1;
 
 		row_local = e_tree_view_to_model_row (et, row_local);
-		col_local = e_selection_model_cursor_col (E_SELECTION_MODEL (et->priv->selection));
-		e_selection_model_select_as_key_press (E_SELECTION_MODEL (et->priv->selection), row_local, col_local, key->state);
+		col_local = e_selection_model_cursor_col (
+			E_SELECTION_MODEL (et->priv->selection));
+		e_selection_model_select_as_key_press (
+			E_SELECTION_MODEL (et->priv->selection),
+			row_local, col_local, key->state);
 
 		return_val = 1;
 		break;
@@ -899,11 +978,13 @@ item_key_press (ETableItem *eti, gint row, gint col, GdkEvent *event, ETree *et)
 	case GDK_KP_Add:
 	case GDK_Right:
 	case GDK_KP_Right:
-		/* Only allow if the Shift modifier is used -- eg. Ctrl-Equal shouldn't be handled.  */
-		if ((key->state & (GDK_SHIFT_MASK | GDK_LOCK_MASK | GDK_MOD1_MASK)) != GDK_SHIFT_MASK)
+		/* Only allow if the Shift modifier is used.
+		 * eg. Ctrl-Equal shouldn't be handled.  */
+		if ((key->state & (GDK_SHIFT_MASK | GDK_LOCK_MASK |
+			GDK_MOD1_MASK)) != GDK_SHIFT_MASK)
 			break;
 		if (row != -1) {
-			path = e_tree_table_adapter_node_at_row(et->priv->etta, row);
+			path = e_tree_table_adapter_node_at_row (et->priv->etta, row);
 			if (path)
 				e_tree_table_adapter_node_set_expanded (et->priv->etta, path, TRUE);
 		}
@@ -913,11 +994,13 @@ item_key_press (ETableItem *eti, gint row, gint col, GdkEvent *event, ETree *et)
 	case GDK_KP_Subtract:
 	case GDK_Left:
 	case GDK_KP_Left:
-		/* Only allow if the Shift modifier is used -- eg. Ctrl-Minus shouldn't be handled.  */
-		if ((key->state & (GDK_SHIFT_MASK | GDK_LOCK_MASK | GDK_MOD1_MASK)) != GDK_SHIFT_MASK)
+		/* Only allow if the Shift modifier is used.
+		 * eg. Ctrl-Minus shouldn't be handled.  */
+		if ((key->state & (GDK_SHIFT_MASK | GDK_LOCK_MASK |
+			GDK_MOD1_MASK)) != GDK_SHIFT_MASK)
 			break;
 		if (row != -1) {
-			path = e_tree_table_adapter_node_at_row(et->priv->etta, row);
+			path = e_tree_table_adapter_node_at_row (et->priv->etta, row);
 			if (path)
 				e_tree_table_adapter_node_set_expanded (et->priv->etta, path, FALSE);
 		}
@@ -928,15 +1011,17 @@ item_key_press (ETableItem *eti, gint row, gint col, GdkEvent *event, ETree *et)
 			return TRUE;
 		/* Fallthrough */
 	default:
-		if ((key->state & ~(GDK_SHIFT_MASK | GDK_LOCK_MASK | GDK_MOD1_MASK | GDK_MOD2_MASK | GDK_MOD3_MASK | GDK_MOD4_MASK | GDK_MOD5_MASK)) == 0
+		if ((key->state & ~(GDK_SHIFT_MASK | GDK_LOCK_MASK |
+			GDK_MOD1_MASK | GDK_MOD2_MASK | GDK_MOD3_MASK |
+			GDK_MOD4_MASK | GDK_MOD5_MASK)) == 0
 		    && ((key->keyval >= GDK_a && key->keyval <= GDK_z) ||
 			(key->keyval >= GDK_A && key->keyval <= GDK_Z) ||
 			(key->keyval >= GDK_0 && key->keyval <= GDK_9))) {
 			e_table_search_input_character (et->priv->search, key->keyval);
 		}
-		path = e_tree_table_adapter_node_at_row(et->priv->etta, row);
+		path = e_tree_table_adapter_node_at_row (et->priv->etta, row);
 		g_signal_emit (et,
-			       et_signals [KEY_PRESS], 0,
+			       et_signals[KEY_PRESS], 0,
 			       row, path, col, event, &return_val);
 		break;
 	}
@@ -949,11 +1034,11 @@ item_start_drag (ETableItem *eti, gint row, gint col, GdkEvent *event, ETree *et
 	ETreePath path;
 	gint return_val = 0;
 
-	path = e_tree_table_adapter_node_at_row(et->priv->etta, row);
+	path = e_tree_table_adapter_node_at_row (et->priv->etta, row);
 
-	g_signal_emit (et,
-		       et_signals [START_DRAG], 0,
-		       row, path, col, event, &return_val);
+	g_signal_emit (
+		et, et_signals[START_DRAG], 0,
+		row, path, col, event, &return_val);
 
 	return return_val;
 }
@@ -961,33 +1046,35 @@ item_start_drag (ETableItem *eti, gint row, gint col, GdkEvent *event, ETree *et
 static void
 et_selection_model_selection_changed (ETableSelectionModel *etsm, ETree *et)
 {
-	g_signal_emit (et,
-		       et_signals [SELECTION_CHANGE], 0);
+	g_signal_emit (et, et_signals[SELECTION_CHANGE], 0);
 }
 
 static void
-et_selection_model_selection_row_changed (ETableSelectionModel *etsm, gint row, ETree *et)
+et_selection_model_selection_row_changed (ETableSelectionModel *etsm,
+                                          gint row,
+                                          ETree *et)
 {
-	g_signal_emit (et,
-		       et_signals [SELECTION_CHANGE], 0);
+	g_signal_emit (et, et_signals[SELECTION_CHANGE], 0);
 }
 
 static void
 et_build_item (ETree *et)
 {
-	et->priv->item = gnome_canvas_item_new(GNOME_CANVAS_GROUP (gnome_canvas_root(et->priv->table_canvas)),
-					 e_table_item_get_type(),
-					 "ETableHeader", et->priv->header,
-					 "ETableModel", et->priv->etta,
-					 "selection_model", et->priv->selection,
-					 "alternating_row_colors", et->priv->alternating_row_colors,
-					 "horizontal_draw_grid", et->priv->horizontal_draw_grid,
-					 "vertical_draw_grid", et->priv->vertical_draw_grid,
-					 "drawfocus", et->priv->draw_focus,
-					 "cursor_mode", et->priv->cursor_mode,
-					 "length_threshold", et->priv->length_threshold,
-					 "uniform_row_height", et->priv->uniform_row_height,
-					 NULL);
+	et->priv->item = gnome_canvas_item_new (
+		GNOME_CANVAS_GROUP (
+			gnome_canvas_root (et->priv->table_canvas)),
+		e_table_item_get_type (),
+		"ETableHeader", et->priv->header,
+		"ETableModel", et->priv->etta,
+		"selection_model", et->priv->selection,
+		"alternating_row_colors", et->priv->alternating_row_colors,
+		"horizontal_draw_grid", et->priv->horizontal_draw_grid,
+		"vertical_draw_grid", et->priv->vertical_draw_grid,
+		"drawfocus", et->priv->draw_focus,
+		"cursor_mode", et->priv->cursor_mode,
+		"length_threshold", et->priv->length_threshold,
+		"uniform_row_height", et->priv->uniform_row_height,
+		NULL);
 
 	g_signal_connect (et->priv->item, "cursor_change",
 			  G_CALLBACK (item_cursor_change), et);
@@ -1008,18 +1095,22 @@ et_build_item (ETree *et)
 static void
 et_canvas_style_set (GtkWidget *widget, GtkStyle *prev_style)
 {
-	gnome_canvas_item_set(
-		E_TREE(widget)->priv->white_item,
-		"fill_color_gdk", &widget->style->base[GTK_STATE_NORMAL],
+	GtkStyle *style;
+
+	style = gtk_widget_get_style (widget);
+
+	gnome_canvas_item_set (
+		E_TREE (widget)->priv->white_item,
+		"fill_color_gdk", &style->base[GTK_STATE_NORMAL],
 		NULL);
 }
 
-static gint
+static gboolean
 white_item_event (GnomeCanvasItem *white_item, GdkEvent *event, ETree *e_tree)
 {
-	gint return_val = 0;
+	gboolean return_val = 0;
 	g_signal_emit (e_tree,
-		       et_signals [WHITE_SPACE_EVENT], 0,
+		       et_signals[WHITE_SPACE_EVENT], 0,
 		       event, &return_val);
 	return return_val;
 }
@@ -1032,11 +1123,11 @@ et_canvas_root_event (GnomeCanvasItem *root, GdkEvent *event, ETree *e_tree)
 	case GDK_2BUTTON_PRESS:
 	case GDK_BUTTON_RELEASE:
 		if (event->button.button != 4 && event->button.button != 5) {
-			if (GTK_WIDGET_HAS_FOCUS(root->canvas)) {
-				GnomeCanvasItem *item = GNOME_CANVAS(root->canvas)->focused_item;
+			if (gtk_widget_has_focus (GTK_WIDGET (root->canvas))) {
+				GnomeCanvasItem *item = GNOME_CANVAS (root->canvas)->focused_item;
 
-				if (E_IS_TABLE_ITEM(item)) {
-					e_table_item_leave_edit_(E_TABLE_ITEM(item));
+				if (E_IS_TABLE_ITEM (item)) {
+					e_table_item_leave_edit (E_TABLE_ITEM (item));
 					return TRUE;
 				}
 			}
@@ -1066,7 +1157,8 @@ table_canvas_focus_event_cb (GtkWidget *widget, GdkEventFocus *event, gpointer d
 	canvas = GNOME_CANVAS (widget);
 	tree = E_TREE (data);
 
-	if (!canvas->focused_item || (e_selection_model_cursor_row (tree->priv->selection) == -1)) {
+	if (!canvas->focused_item ||
+		(e_selection_model_cursor_row (tree->priv->selection) == -1)) {
 		e_table_item_set_cursor (E_TABLE_ITEM (tree->priv->item), 0, 0);
 		gnome_canvas_item_grab_focus (tree->priv->item);
 	}
@@ -1077,6 +1169,9 @@ table_canvas_focus_event_cb (GtkWidget *widget, GdkEventFocus *event, gpointer d
 static void
 e_tree_setup_table (ETree *e_tree)
 {
+	GtkWidget *widget;
+	GtkStyle *style;
+
 	e_tree->priv->table_canvas = GNOME_CANVAS (e_canvas_new ());
 	g_signal_connect (
 		e_tree->priv->table_canvas, "size_allocate",
@@ -1116,21 +1211,25 @@ e_tree_setup_table (ETree *e_tree)
 	g_signal_connect (e_tree->priv->table_canvas, "reflow",
 			  G_CALLBACK (tree_canvas_reflow), e_tree);
 
-	gtk_widget_show (GTK_WIDGET (e_tree->priv->table_canvas));
+	widget = GTK_WIDGET (e_tree->priv->table_canvas);
+	style = gtk_widget_get_style (widget);
 
-	e_tree->priv->white_item = gnome_canvas_item_new(
-		gnome_canvas_root(e_tree->priv->table_canvas),
-		e_canvas_background_get_type(),
-		"fill_color_gdk", &GTK_WIDGET(e_tree->priv->table_canvas)->style->base[GTK_STATE_NORMAL],
+	gtk_widget_show (widget);
+
+	e_tree->priv->white_item = gnome_canvas_item_new (
+		gnome_canvas_root (e_tree->priv->table_canvas),
+		e_canvas_background_get_type (),
+		"fill_color_gdk", &style->base[GTK_STATE_NORMAL],
 		NULL);
 
-	g_signal_connect (e_tree->priv->white_item, "event",
-			  G_CALLBACK (white_item_event), e_tree);
+	g_signal_connect (
+		e_tree->priv->white_item, "event",
+		G_CALLBACK (white_item_event), e_tree);
 	g_signal_connect (
 		gnome_canvas_root (e_tree->priv->table_canvas), "event",
-		G_CALLBACK(et_canvas_root_event), e_tree);
+		G_CALLBACK (et_canvas_root_event), e_tree);
 
-	et_build_item(e_tree);
+	et_build_item (e_tree);
 }
 
 /**
@@ -1151,29 +1250,37 @@ e_tree_set_search_column (ETree *e_tree, gint  col)
 	}
 
 	e_tree->priv->search_col_set = TRUE;
-	e_tree->priv->current_search_col = e_table_header_get_column (e_tree->priv->full_header, col);
+	e_tree->priv->current_search_col = e_table_header_get_column (
+		e_tree->priv->full_header, col);
 }
 
 void
-e_tree_set_state_object(ETree *e_tree, ETableState *state)
+e_tree_set_state_object (ETree *e_tree, ETableState *state)
 {
-	GValue *val = g_new0 (GValue, 1);
+	GValue *val;
+	GtkAllocation allocation;
+	GtkWidget *widget;
+
+	val = g_new0 (GValue, 1);
 	g_value_init (val, G_TYPE_DOUBLE);
 
 	connect_header (e_tree, state);
 
-	g_value_set_double (val, (double) (GTK_WIDGET(e_tree->priv->table_canvas)->allocation.width));
+	widget = GTK_WIDGET (e_tree->priv->table_canvas);
+	gtk_widget_get_allocation (widget, &allocation);
+
+	g_value_set_double (val, (gdouble) allocation.width);
 	g_object_set_property (G_OBJECT (e_tree->priv->header), "width", val);
 	g_free (val);
 
 	if (e_tree->priv->header_item)
-		g_object_set(e_tree->priv->header_item,
+		g_object_set (e_tree->priv->header_item,
 			     "ETableHeader", e_tree->priv->header,
 			     "sort_info", e_tree->priv->sort_info,
 			     NULL);
 
 	if (e_tree->priv->item)
-		g_object_set(e_tree->priv->item,
+		g_object_set (e_tree->priv->item,
 			     "ETableHeader", e_tree->priv->header,
 			     NULL);
 
@@ -1197,17 +1304,17 @@ e_tree_set_state (ETree      *e_tree,
 {
 	ETableState *state;
 
-	g_return_if_fail(e_tree != NULL);
-	g_return_if_fail(E_IS_TREE(e_tree));
-	g_return_if_fail(state_str != NULL);
+	g_return_if_fail (e_tree != NULL);
+	g_return_if_fail (E_IS_TREE (e_tree));
+	g_return_if_fail (state_str != NULL);
 
-	state = e_table_state_new();
-	e_table_state_load_from_string(state, state_str);
+	state = e_table_state_new ();
+	e_table_state_load_from_string (state, state_str);
 
 	if (state->col_count > 0)
-		e_tree_set_state_object(e_tree, state);
+		e_tree_set_state_object (e_tree, state);
 
-	g_object_unref(state);
+	g_object_unref (state);
 }
 
 /**
@@ -1224,17 +1331,17 @@ e_tree_load_state (ETree      *e_tree,
 {
 	ETableState *state;
 
-	g_return_if_fail(e_tree != NULL);
-	g_return_if_fail(E_IS_TREE(e_tree));
-	g_return_if_fail(filename != NULL);
+	g_return_if_fail (e_tree != NULL);
+	g_return_if_fail (E_IS_TREE (e_tree));
+	g_return_if_fail (filename != NULL);
 
-	state = e_table_state_new();
-	e_table_state_load_from_file(state, filename);
+	state = e_table_state_new ();
+	e_table_state_load_from_file (state, filename);
 
 	if (state->col_count > 0)
-		e_tree_set_state_object(e_tree, state);
+		e_tree_set_state_object (e_tree, state);
 
-	g_object_unref(state);
+	g_object_unref (state);
 }
 
 /**
@@ -1254,20 +1361,20 @@ e_tree_get_state_object (ETree *e_tree)
 	gint full_col_count;
 	gint i, j;
 
-	state = e_table_state_new();
+	state = e_table_state_new ();
 	state->sort_info = e_tree->priv->sort_info;
 	if (state->sort_info)
-		g_object_ref(state->sort_info);
+		g_object_ref (state->sort_info);
 
 	state->col_count = e_table_header_count (e_tree->priv->header);
 	full_col_count = e_table_header_count (e_tree->priv->full_header);
-	state->columns = g_new(int, state->col_count);
-	state->expansions = g_new(double, state->col_count);
+	state->columns = g_new (int, state->col_count);
+	state->expansions = g_new (double, state->col_count);
 	for (i = 0; i < state->col_count; i++) {
-		ETableCol *col = e_table_header_get_column(e_tree->priv->header, i);
+		ETableCol *col = e_table_header_get_column (e_tree->priv->header, i);
 		state->columns[i] = -1;
 		for (j = 0; j < full_col_count; j++) {
-			if (col->col_idx == e_table_header_index(e_tree->priv->full_header, j)) {
+			if (col->col_idx == e_table_header_index (e_tree->priv->full_header, j)) {
 				state->columns[i] = j;
 				break;
 			}
@@ -1294,9 +1401,9 @@ e_tree_get_state (ETree *e_tree)
 	ETableState *state;
 	gchar *string;
 
-	state = e_tree_get_state_object(e_tree);
-	string = e_table_state_save_to_string(state);
-	g_object_unref(state);
+	state = e_tree_get_state_object (e_tree);
+	string = e_table_state_save_to_string (state);
+	g_object_unref (state);
 	return string;
 }
 
@@ -1314,9 +1421,9 @@ e_tree_save_state (ETree      *e_tree,
 {
 	ETableState *state;
 
-	state = e_tree_get_state_object(e_tree);
-	e_table_state_save_to_file(state, filename);
-	g_object_unref(state);
+	state = e_tree_get_state_object (e_tree);
+	e_table_state_save_to_file (state, filename);
+	g_object_unref (state);
 }
 
 /**
@@ -1337,7 +1444,7 @@ static void
 et_table_model_changed (ETableModel *model, ETree *et)
 {
 	if (et->priv->horizontal_scrolling)
-		e_table_header_update_horizontal(et->priv->header);
+		e_table_header_update_horizontal (et->priv->header);
 }
 
 static void
@@ -1381,17 +1488,21 @@ et_table_rows_deleted (ETableModel *table_model, gint row, gint count, ETree *et
 static void
 et_connect_to_etta (ETree *et)
 {
-	et->priv->table_model_change_id = g_signal_connect (et->priv->etta, "model_changed",
-							    G_CALLBACK (et_table_model_changed), et);
+	et->priv->table_model_change_id = g_signal_connect (
+		et->priv->etta, "model_changed",
+		G_CALLBACK (et_table_model_changed), et);
 
-	et->priv->table_row_change_id = g_signal_connect (et->priv->etta, "model_row_changed",
-							  G_CALLBACK (et_table_row_changed), et);
+	et->priv->table_row_change_id = g_signal_connect (
+		et->priv->etta, "model_row_changed",
+		G_CALLBACK (et_table_row_changed), et);
 
-	et->priv->table_cell_change_id = g_signal_connect (et->priv->etta, "model_cell_changed",
-							   G_CALLBACK (et_table_cell_changed), et);
+	et->priv->table_cell_change_id = g_signal_connect (
+		et->priv->etta, "model_cell_changed",
+		G_CALLBACK (et_table_cell_changed), et);
 
-	et->priv->table_rows_delete_id = g_signal_connect (et->priv->etta, "model_rows_deleted",
-							   G_CALLBACK (et_table_rows_deleted), et);
+	et->priv->table_rows_delete_id = g_signal_connect (
+		et->priv->etta, "model_rows_deleted",
+		G_CALLBACK (et_table_rows_deleted), et);
 
 }
 
@@ -1399,19 +1510,21 @@ static gboolean
 et_real_construct (ETree *e_tree, ETreeModel *etm, ETableExtras *ete,
 		   ETableSpecification *specification, ETableState *state)
 {
+	GtkAdjustment *adjustment;
+	GtkLayout *layout;
 	gint row = 0;
 
 	if (ete)
-		g_object_ref(ete);
+		g_object_ref (ete);
 	else
-		ete = e_table_extras_new();
+		ete = e_table_extras_new ();
 
 	e_tree->priv->alternating_row_colors = specification->alternating_row_colors;
 	e_tree->priv->horizontal_draw_grid = specification->horizontal_draw_grid;
 	e_tree->priv->vertical_draw_grid = specification->vertical_draw_grid;
 	e_tree->priv->draw_focus = specification->draw_focus;
 	e_tree->priv->cursor_mode = specification->cursor_mode;
-	e_tree->priv->full_header = e_table_spec_to_full_header(specification, ete);
+	e_tree->priv->full_header = e_table_spec_to_full_header (specification, ete);
 
 	connect_header (e_tree, state);
 
@@ -1420,13 +1533,15 @@ et_real_construct (ETree *e_tree, ETreeModel *etm, ETableExtras *ete,
 	e_tree->priv->model = etm;
 	g_object_ref (etm);
 
-	e_tree->priv->etta = E_TREE_TABLE_ADAPTER(e_tree_table_adapter_new(e_tree->priv->model, e_tree->priv->sort_info, e_tree->priv->full_header));
+	e_tree->priv->etta = E_TREE_TABLE_ADAPTER (
+		e_tree_table_adapter_new (e_tree->priv->model,
+		e_tree->priv->sort_info, e_tree->priv->full_header));
 
 	et_connect_to_etta (e_tree);
 
 	gtk_widget_push_colormap (gdk_rgb_get_colormap ());
 
-	e_tree->priv->sorter = e_sorter_new();
+	e_tree->priv->sorter = e_sorter_new ();
 
 	g_object_set (e_tree->priv->selection,
 		      "sorter", e_tree->priv->sorter,
@@ -1450,10 +1565,13 @@ et_real_construct (ETree *e_tree, ETreeModel *etm, ETableExtras *ete,
 	}
 	e_tree_setup_table (e_tree);
 
-	gtk_layout_get_vadjustment (GTK_LAYOUT (e_tree->priv->table_canvas))->step_increment = 20;
-	gtk_adjustment_changed(gtk_layout_get_vadjustment (GTK_LAYOUT (e_tree->priv->table_canvas)));
-	gtk_layout_get_hadjustment (GTK_LAYOUT (e_tree->priv->table_canvas))->step_increment = 20;
-	gtk_adjustment_changed(gtk_layout_get_hadjustment (GTK_LAYOUT (e_tree->priv->table_canvas)));
+	layout = GTK_LAYOUT (e_tree->priv->table_canvas);
+
+	adjustment = gtk_layout_get_vadjustment (layout);
+	gtk_adjustment_set_step_increment (adjustment, 20);
+
+	adjustment = gtk_layout_get_hadjustment (layout);
+	gtk_adjustment_set_step_increment (adjustment, 20);
 
 	if (!specification->no_headers) {
 		/*
@@ -1463,7 +1581,7 @@ et_real_construct (ETree *e_tree, ETreeModel *etm, ETableExtras *ete,
 				  0, 1, 0 + row, 1 + row,
 				  GTK_FILL | GTK_EXPAND,
 				  GTK_FILL, 0, 0);
-		row ++;
+		row++;
 	}
 	gtk_table_attach (GTK_TABLE (e_tree), GTK_WIDGET (e_tree->priv->table_canvas),
 			  0, 1, 0 + row, 1 + row,
@@ -1473,7 +1591,7 @@ et_real_construct (ETree *e_tree, ETreeModel *etm, ETableExtras *ete,
 
 	gtk_widget_pop_colormap ();
 
-	g_object_unref(ete);
+	g_object_unref (ete);
 
 	return e_tree != NULL;
 }
@@ -1498,29 +1616,29 @@ e_tree_construct (ETree *e_tree, ETreeModel *etm, ETableExtras *ete,
 	ETableSpecification *specification;
 	ETableState *state;
 
-	g_return_val_if_fail(e_tree != NULL, FALSE);
-	g_return_val_if_fail(E_IS_TREE(e_tree), FALSE);
-	g_return_val_if_fail(etm != NULL, FALSE);
-	g_return_val_if_fail(E_IS_TREE_MODEL(etm), FALSE);
-	g_return_val_if_fail(ete == NULL || E_IS_TABLE_EXTRAS(ete), FALSE);
-	g_return_val_if_fail(spec_str != NULL, FALSE);
+	g_return_val_if_fail (e_tree != NULL, FALSE);
+	g_return_val_if_fail (E_IS_TREE (e_tree), FALSE);
+	g_return_val_if_fail (etm != NULL, FALSE);
+	g_return_val_if_fail (E_IS_TREE_MODEL (etm), FALSE);
+	g_return_val_if_fail (ete == NULL || E_IS_TABLE_EXTRAS (ete), FALSE);
+	g_return_val_if_fail (spec_str != NULL, FALSE);
 
-	specification = e_table_specification_new();
-	if (!e_table_specification_load_from_string(specification, spec_str)) {
+	specification = e_table_specification_new ();
+	if (!e_table_specification_load_from_string (specification, spec_str)) {
 		g_object_unref (specification);
 		return FALSE;
 	}
 	if (state_str) {
-		state = e_table_state_new();
-		e_table_state_load_from_string(state, state_str);
+		state = e_table_state_new ();
+		e_table_state_load_from_string (state, state_str);
 		if (state->col_count <= 0) {
-			g_object_unref(state);
+			g_object_unref (state);
 			state = specification->state;
-			g_object_ref(state);
+			g_object_ref (state);
 		}
 	} else {
 		state = specification->state;
-		g_object_ref(state);
+		g_object_ref (state);
 	}
 
 	if (!et_real_construct (e_tree, etm, ete, specification, state)) {
@@ -1557,33 +1675,33 @@ e_tree_construct_from_spec_file (ETree *e_tree, ETreeModel *etm, ETableExtras *e
 	ETableSpecification *specification;
 	ETableState *state;
 
-	g_return_val_if_fail(e_tree != NULL, FALSE);
-	g_return_val_if_fail(E_IS_TREE(e_tree), FALSE);
-	g_return_val_if_fail(etm != NULL, FALSE);
-	g_return_val_if_fail(E_IS_TREE_MODEL(etm), FALSE);
-	g_return_val_if_fail(ete == NULL || E_IS_TABLE_EXTRAS(ete), FALSE);
-	g_return_val_if_fail(spec_fn != NULL, FALSE);
+	g_return_val_if_fail (e_tree != NULL, FALSE);
+	g_return_val_if_fail (E_IS_TREE (e_tree), FALSE);
+	g_return_val_if_fail (etm != NULL, FALSE);
+	g_return_val_if_fail (E_IS_TREE_MODEL (etm), FALSE);
+	g_return_val_if_fail (ete == NULL || E_IS_TABLE_EXTRAS (ete), FALSE);
+	g_return_val_if_fail (spec_fn != NULL, FALSE);
 
-	specification = e_table_specification_new();
-	if (!e_table_specification_load_from_file(specification, spec_fn)) {
-		g_object_unref(specification);
+	specification = e_table_specification_new ();
+	if (!e_table_specification_load_from_file (specification, spec_fn)) {
+		g_object_unref (specification);
 		return FALSE;
 	}
 	if (state_fn) {
-		state = e_table_state_new();
-		if (!e_table_state_load_from_file(state, state_fn)) {
-			g_object_unref(state);
+		state = e_table_state_new ();
+		if (!e_table_state_load_from_file (state, state_fn)) {
+			g_object_unref (state);
 			state = specification->state;
-			g_object_ref(state);
+			g_object_ref (state);
 		}
 		if (state->col_count <= 0) {
-			g_object_unref(state);
+			g_object_unref (state);
 			state = specification->state;
-			g_object_ref(state);
+			g_object_ref (state);
 		}
 	} else {
 		state = specification->state;
-		g_object_ref(state);
+		g_object_ref (state);
 	}
 
 	if (!et_real_construct (e_tree, etm, ete, specification, state)) {
@@ -1594,7 +1712,7 @@ e_tree_construct_from_spec_file (ETree *e_tree, ETreeModel *etm, ETableExtras *e
 
 	e_tree->priv->spec = specification;
 
-	g_object_unref(state);
+	g_object_unref (state);
 
 	return TRUE;
 }
@@ -1625,10 +1743,10 @@ e_tree_new (ETreeModel *etm, ETableExtras *ete, const gchar *spec, const gchar *
 {
 	ETree *e_tree;
 
-	g_return_val_if_fail(etm != NULL, NULL);
-	g_return_val_if_fail(E_IS_TREE_MODEL(etm), NULL);
-	g_return_val_if_fail(ete == NULL || E_IS_TABLE_EXTRAS(ete), NULL);
-	g_return_val_if_fail(spec != NULL, NULL);
+	g_return_val_if_fail (etm != NULL, NULL);
+	g_return_val_if_fail (E_IS_TREE_MODEL (etm), NULL);
+	g_return_val_if_fail (ete == NULL || E_IS_TABLE_EXTRAS (ete), NULL);
+	g_return_val_if_fail (spec != NULL, NULL);
 
 	e_tree = g_object_new (E_TREE_TYPE, NULL);
 
@@ -1661,14 +1779,17 @@ e_tree_new (ETreeModel *etm, ETableExtras *ete, const gchar *spec, const gchar *
  * The newly created #ETree or %NULL if there's an error.
  **/
 GtkWidget *
-e_tree_new_from_spec_file (ETreeModel *etm, ETableExtras *ete, const gchar *spec_fn, const gchar *state_fn)
+e_tree_new_from_spec_file (ETreeModel *etm,
+                           ETableExtras *ete,
+                           const gchar *spec_fn,
+                           const gchar *state_fn)
 {
 	ETree *e_tree;
 
-	g_return_val_if_fail(etm != NULL, NULL);
-	g_return_val_if_fail(E_IS_TREE_MODEL(etm), NULL);
-	g_return_val_if_fail(ete == NULL || E_IS_TABLE_EXTRAS(ete), NULL);
-	g_return_val_if_fail(spec_fn != NULL, NULL);
+	g_return_val_if_fail (etm != NULL, NULL);
+	g_return_val_if_fail (E_IS_TREE_MODEL (etm), NULL);
+	g_return_val_if_fail (ete == NULL || E_IS_TABLE_EXTRAS (ete), NULL);
+	g_return_val_if_fail (spec_fn != NULL, NULL);
 
 	e_tree = g_object_new (E_TREE_TYPE, NULL);
 
@@ -1681,25 +1802,37 @@ e_tree_new_from_spec_file (ETreeModel *etm, ETableExtras *ete, const gchar *spec
 }
 
 void
+e_tree_show_cursor_after_reflow (ETree *e_tree)
+{
+	g_return_if_fail (e_tree != NULL);
+	g_return_if_fail (E_IS_TREE (e_tree));
+
+	e_tree->priv->show_cursor_after_reflow = TRUE;
+}
+
+void
 e_tree_set_cursor (ETree *e_tree, ETreePath path)
 {
 #ifndef E_TREE_USE_TREE_SELECTION
 	gint row;
 #endif
-	g_return_if_fail(e_tree != NULL);
-	g_return_if_fail(E_IS_TREE(e_tree));
-	g_return_if_fail(path != NULL);
+	g_return_if_fail (e_tree != NULL);
+	g_return_if_fail (E_IS_TREE (e_tree));
+	g_return_if_fail (path != NULL);
 
 #ifdef E_TREE_USE_TREE_SELECTION
-	e_tree_selection_model_select_single_path (E_TREE_SELECTION_MODEL(e_tree->priv->selection), path);
-	e_tree_selection_model_change_cursor (E_TREE_SELECTION_MODEL(e_tree->priv->selection), path);
+	e_tree_selection_model_select_single_path (
+		E_TREE_SELECTION_MODEL (e_tree->priv->selection), path);
+	e_tree_selection_model_change_cursor (
+		E_TREE_SELECTION_MODEL (e_tree->priv->selection), path);
 #else
-	row = e_tree_table_adapter_row_of_node(E_TREE_TABLE_ADAPTER(e_tree->priv->etta), path);
+	row = e_tree_table_adapter_row_of_node (
+		E_TREE_TABLE_ADAPTER (e_tree->priv->etta), path);
 
 	if (row == -1)
 		return;
 
-	g_object_set(e_tree->priv->selection,
+	g_object_set (e_tree->priv->selection,
 		     "cursor_row", row,
 		     NULL);
 #endif
@@ -1709,20 +1842,21 @@ ETreePath
 e_tree_get_cursor (ETree *e_tree)
 {
 #ifdef E_TREE_USE_TREE_SELECTION
-	return e_tree_selection_model_get_cursor (E_TREE_SELECTION_MODEL(e_tree->priv->selection));
+	return e_tree_selection_model_get_cursor (
+		E_TREE_SELECTION_MODEL (e_tree->priv->selection));
 #else
 	gint row;
-	ETreePath path;
-	g_return_val_if_fail(e_tree != NULL, NULL);
-	g_return_val_if_fail(E_IS_TREE(e_tree), NULL);
+	g_return_val_if_fail (e_tree != NULL, NULL);
+	g_return_val_if_fail (E_IS_TREE (e_tree), NULL);
 
-	g_object_get(e_tree->priv->selection,
+	g_object_get (e_tree->priv->selection,
 		     "cursor_row", &row,
 		     NULL);
 	if (row == -1)
 		return NULL;
-	path = e_tree_table_adapter_node_at_row(E_TREE_TABLE_ADAPTER(e_tree->priv->etta), row);
-	return path;
+
+	return e_tree_table_adapter_node_at_row (
+		E_TREE_TABLE_ADAPTER (e_tree->priv->etta), row);
 #endif
 }
 
@@ -1731,10 +1865,10 @@ e_tree_selected_row_foreach     (ETree *e_tree,
 				  EForeachFunc callback,
 				  gpointer closure)
 {
-	g_return_if_fail(e_tree != NULL);
-	g_return_if_fail(E_IS_TREE(e_tree));
+	g_return_if_fail (e_tree != NULL);
+	g_return_if_fail (E_IS_TREE (e_tree));
 
-	e_selection_model_foreach(e_tree->priv->selection,
+	e_selection_model_foreach (e_tree->priv->selection,
 				  callback,
 				  closure);
 }
@@ -1745,12 +1879,12 @@ e_tree_selected_path_foreach     (ETree *e_tree,
 				 ETreeForeachFunc callback,
 				 gpointer closure)
 {
-	g_return_if_fail(e_tree != NULL);
-	g_return_if_fail(E_IS_TREE(e_tree));
+	g_return_if_fail (e_tree != NULL);
+	g_return_if_fail (E_IS_TREE (e_tree));
 
-	e_tree_selection_model_foreach(E_TREE_SELECTION_MODEL (e_tree->priv->selection),
-				       callback,
-				       closure);
+	e_tree_selection_model_foreach (
+		E_TREE_SELECTION_MODEL (e_tree->priv->selection),
+		callback, closure);
 }
 
 /* Standard functions */
@@ -1762,10 +1896,10 @@ et_foreach_recurse (ETreeModel *model,
 {
 	ETreePath child;
 
-	callback(path, closure);
+	callback (path, closure);
 
-	child = e_tree_model_node_get_first_child(E_TREE_MODEL(model), path);
-	for (; child; child = e_tree_model_node_get_next(E_TREE_MODEL(model), child))
+	child = e_tree_model_node_get_first_child (E_TREE_MODEL (model), path);
+	for (; child; child = e_tree_model_node_get_next (E_TREE_MODEL (model), child))
 		if (child)
 			et_foreach_recurse (model, child, callback, closure);
 }
@@ -1777,8 +1911,8 @@ e_tree_path_foreach (ETree *e_tree,
 {
 	ETreePath root;
 
-	g_return_if_fail(e_tree != NULL);
-	g_return_if_fail(E_IS_TREE(e_tree));
+	g_return_if_fail (e_tree != NULL);
+	g_return_if_fail (E_IS_TREE (e_tree));
 
 	root = e_tree_model_get_root (e_tree->priv->model);
 
@@ -1793,10 +1927,10 @@ e_tree_path_foreach (ETree *e_tree,
 EPrintable *
 e_tree_get_printable (ETree *e_tree)
 {
-	g_return_val_if_fail(e_tree != NULL, NULL);
-	g_return_val_if_fail(E_IS_TREE(e_tree), NULL);
+	g_return_val_if_fail (e_tree != NULL, NULL);
+	g_return_val_if_fail (E_IS_TREE (e_tree), NULL);
 
-	return e_table_item_get_printable(E_TABLE_ITEM(e_tree->priv->item));
+	return e_table_item_get_printable (E_TABLE_ITEM (e_tree->priv->item));
 }
 
 static void
@@ -1840,7 +1974,7 @@ et_set_property (GObject *object,
 	case PROP_LENGTH_THRESHOLD:
 		etree->priv->length_threshold = g_value_get_int (value);
 		if (etree->priv->item) {
-			gnome_canvas_item_set (GNOME_CANVAS_ITEM(etree->priv->item),
+			gnome_canvas_item_set (GNOME_CANVAS_ITEM (etree->priv->item),
 					       "length_threshold", etree->priv->length_threshold,
 					       NULL);
 		}
@@ -1849,7 +1983,7 @@ et_set_property (GObject *object,
 	case PROP_HORIZONTAL_DRAW_GRID:
 		etree->priv->horizontal_draw_grid = g_value_get_boolean (value);
 		if (etree->priv->item) {
-			gnome_canvas_item_set (GNOME_CANVAS_ITEM(etree->priv->item),
+			gnome_canvas_item_set (GNOME_CANVAS_ITEM (etree->priv->item),
 					       "horizontal_draw_grid", etree->priv->horizontal_draw_grid,
 					       NULL);
 		}
@@ -1858,7 +1992,7 @@ et_set_property (GObject *object,
 	case PROP_VERTICAL_DRAW_GRID:
 		etree->priv->vertical_draw_grid = g_value_get_boolean (value);
 		if (etree->priv->item) {
-			gnome_canvas_item_set (GNOME_CANVAS_ITEM(etree->priv->item),
+			gnome_canvas_item_set (GNOME_CANVAS_ITEM (etree->priv->item),
 					       "vertical_draw_grid", etree->priv->vertical_draw_grid,
 					       NULL);
 		}
@@ -1867,7 +2001,7 @@ et_set_property (GObject *object,
 	case PROP_DRAW_FOCUS:
 		etree->priv->draw_focus = g_value_get_boolean (value);
 		if (etree->priv->item) {
-			gnome_canvas_item_set (GNOME_CANVAS_ITEM(etree->priv->item),
+			gnome_canvas_item_set (GNOME_CANVAS_ITEM (etree->priv->item),
 					       "drawfocus", etree->priv->draw_focus,
 					       NULL);
 		}
@@ -1876,7 +2010,7 @@ et_set_property (GObject *object,
 	case PROP_UNIFORM_ROW_HEIGHT:
 		etree->priv->uniform_row_height = g_value_get_boolean (value);
 		if (etree->priv->item) {
-			gnome_canvas_item_set (GNOME_CANVAS_ITEM(etree->priv->item),
+			gnome_canvas_item_set (GNOME_CANVAS_ITEM (etree->priv->item),
 					       "uniform_row_height", etree->priv->uniform_row_height,
 					       NULL);
 		}
@@ -1896,24 +2030,24 @@ set_scroll_adjustments   (ETree *tree,
 			  GtkAdjustment *hadjustment,
 			  GtkAdjustment *vadjustment)
 {
-	if (vadjustment != NULL) {
-		vadjustment->step_increment = 20;
-		gtk_adjustment_changed(vadjustment);
-	}
-	if (hadjustment != NULL) {
-		hadjustment->step_increment = 20;
-		gtk_adjustment_changed(hadjustment);
-	}
+	if (vadjustment != NULL)
+		gtk_adjustment_set_step_increment (vadjustment, 20);
+
+	if (hadjustment != NULL)
+		gtk_adjustment_set_step_increment (hadjustment, 20);
 
 	if (tree->priv) {
-		gtk_layout_set_hadjustment (GTK_LAYOUT(tree->priv->table_canvas),
-					    hadjustment);
-		gtk_layout_set_vadjustment (GTK_LAYOUT(tree->priv->table_canvas),
-					    vadjustment);
+		GtkLayout *layout;
+
+		layout = GTK_LAYOUT (tree->priv->table_canvas);
+
+		gtk_layout_set_hadjustment (layout, hadjustment);
+		gtk_layout_set_vadjustment (layout, vadjustment);
 
 		if (tree->priv->header_canvas != NULL)
-			gtk_layout_set_hadjustment (GTK_LAYOUT(tree->priv->header_canvas),
-						    hadjustment);
+			gtk_layout_set_hadjustment (
+				GTK_LAYOUT (tree->priv->header_canvas),
+				hadjustment);
 	}
 }
 
@@ -1921,19 +2055,19 @@ gint
 e_tree_get_next_row      (ETree *e_tree,
 			   gint    model_row)
 {
-	g_return_val_if_fail(e_tree != NULL, -1);
-	g_return_val_if_fail(E_IS_TREE(e_tree), -1);
+	g_return_val_if_fail (e_tree != NULL, -1);
+	g_return_val_if_fail (E_IS_TREE (e_tree), -1);
 
 	if (e_tree->priv->sorter) {
 		gint i;
-		i = e_sorter_model_to_sorted(E_SORTER (e_tree->priv->sorter), model_row);
+		i = e_sorter_model_to_sorted (E_SORTER (e_tree->priv->sorter), model_row);
 		i++;
-		if (i < e_table_model_row_count(E_TABLE_MODEL(e_tree->priv->etta))) {
-			return e_sorter_sorted_to_model(E_SORTER (e_tree->priv->sorter), i);
+		if (i < e_table_model_row_count (E_TABLE_MODEL (e_tree->priv->etta))) {
+			return e_sorter_sorted_to_model (E_SORTER (e_tree->priv->sorter), i);
 		} else
 			return -1;
 	} else
-		if (model_row < e_table_model_row_count(E_TABLE_MODEL(e_tree->priv->etta)) - 1)
+		if (model_row < e_table_model_row_count (E_TABLE_MODEL (e_tree->priv->etta)) - 1)
 			return model_row + 1;
 		else
 			return -1;
@@ -1943,15 +2077,15 @@ gint
 e_tree_get_prev_row      (ETree *e_tree,
 			  gint    model_row)
 {
-	g_return_val_if_fail(e_tree != NULL, -1);
-	g_return_val_if_fail(E_IS_TREE(e_tree), -1);
+	g_return_val_if_fail (e_tree != NULL, -1);
+	g_return_val_if_fail (E_IS_TREE (e_tree), -1);
 
 	if (e_tree->priv->sorter) {
 		gint i;
-		i = e_sorter_model_to_sorted(E_SORTER (e_tree->priv->sorter), model_row);
+		i = e_sorter_model_to_sorted (E_SORTER (e_tree->priv->sorter), model_row);
 		i--;
 		if (i >= 0)
-			return e_sorter_sorted_to_model(E_SORTER (e_tree->priv->sorter), i);
+			return e_sorter_sorted_to_model (E_SORTER (e_tree->priv->sorter), i);
 		else
 			return -1;
 	} else
@@ -1962,11 +2096,11 @@ gint
 e_tree_model_to_view_row        (ETree *e_tree,
 				  gint    model_row)
 {
-	g_return_val_if_fail(e_tree != NULL, -1);
-	g_return_val_if_fail(E_IS_TREE(e_tree), -1);
+	g_return_val_if_fail (e_tree != NULL, -1);
+	g_return_val_if_fail (E_IS_TREE (e_tree), -1);
 
 	if (e_tree->priv->sorter)
-		return e_sorter_model_to_sorted(E_SORTER (e_tree->priv->sorter), model_row);
+		return e_sorter_model_to_sorted (E_SORTER (e_tree->priv->sorter), model_row);
 	else
 		return model_row;
 }
@@ -1975,8 +2109,8 @@ gint
 e_tree_view_to_model_row        (ETree *e_tree,
 				  gint    view_row)
 {
-	g_return_val_if_fail(e_tree != NULL, -1);
-	g_return_val_if_fail(E_IS_TREE(e_tree), -1);
+	g_return_val_if_fail (e_tree != NULL, -1);
+	g_return_val_if_fail (E_IS_TREE (e_tree), -1);
 
 	if (e_tree->priv->sorter)
 		return e_sorter_sorted_to_model (E_SORTER (e_tree->priv->sorter), view_row);
@@ -1987,7 +2121,7 @@ e_tree_view_to_model_row        (ETree *e_tree,
 gboolean
 e_tree_node_is_expanded (ETree *et, ETreePath path)
 {
-	g_return_val_if_fail(path, FALSE);
+	g_return_val_if_fail (path, FALSE);
 
 	return e_tree_table_adapter_node_is_expanded (et->priv->etta, path);
 }
@@ -1996,7 +2130,7 @@ void
 e_tree_node_set_expanded (ETree *et, ETreePath path, gboolean expanded)
 {
 	g_return_if_fail (et != NULL);
-	g_return_if_fail (E_IS_TREE(et));
+	g_return_if_fail (E_IS_TREE (et));
 
 	e_tree_table_adapter_node_set_expanded (et->priv->etta, path, expanded);
 }
@@ -2005,7 +2139,7 @@ void
 e_tree_node_set_expanded_recurse (ETree *et, ETreePath path, gboolean expanded)
 {
 	g_return_if_fail (et != NULL);
-	g_return_if_fail (E_IS_TREE(et));
+	g_return_if_fail (E_IS_TREE (et));
 
 	e_tree_table_adapter_node_set_expanded_recurse (et->priv->etta, path, expanded);
 }
@@ -2014,7 +2148,7 @@ void
 e_tree_root_node_set_visible (ETree *et, gboolean visible)
 {
 	g_return_if_fail (et != NULL);
-	g_return_if_fail (E_IS_TREE(et));
+	g_return_if_fail (E_IS_TREE (et));
 
 	e_tree_table_adapter_root_node_set_visible (et->priv->etta, visible);
 }
@@ -2036,7 +2170,7 @@ e_tree_row_of_node (ETree *et, ETreePath path)
 }
 
 gboolean
-e_tree_root_node_is_visible(ETree *et)
+e_tree_root_node_is_visible (ETree *et)
 {
 	return e_tree_table_adapter_root_node_is_visible (et->priv->etta);
 }
@@ -2045,7 +2179,7 @@ void
 e_tree_show_node (ETree *et, ETreePath path)
 {
 	g_return_if_fail (et != NULL);
-	g_return_if_fail (E_IS_TREE(et));
+	g_return_if_fail (E_IS_TREE (et));
 
 	e_tree_table_adapter_show_node (et->priv->etta, path);
 }
@@ -2054,7 +2188,7 @@ void
 e_tree_save_expanded_state (ETree *et, gchar *filename)
 {
 	g_return_if_fail (et != NULL);
-	g_return_if_fail (E_IS_TREE(et));
+	g_return_if_fail (E_IS_TREE (et));
 
 	e_tree_table_adapter_save_expanded_state (et->priv->etta, filename);
 }
@@ -2096,13 +2230,13 @@ e_tree_force_expanded_state (ETree *et, gint state)
 gint
 e_tree_row_count (ETree *et)
 {
-	return e_table_model_row_count (E_TABLE_MODEL(et->priv->etta));
+	return e_table_model_row_count (E_TABLE_MODEL (et->priv->etta));
 }
 
 GtkWidget *
 e_tree_get_tooltip (ETree *et)
 {
-	return E_CANVAS(et->priv->table_canvas)->tooltip_window;
+	return E_CANVAS (et->priv->table_canvas)->tooltip_window;
 }
 
 static ETreePath
@@ -2136,7 +2270,10 @@ find_prev_in_range (ETree *et, gint start, gint end, ETreePathFunc func, gpointe
 }
 
 gboolean
-e_tree_find_next (ETree *et, ETreeFindNextParams params, ETreePathFunc func, gpointer data)
+e_tree_find_next (ETree *et,
+                  ETreeFindNextParams params,
+                  ETreePathFunc func,
+                  gpointer data)
 {
 	ETreePath cursor, found;
 	gint row, row_count;
@@ -2175,7 +2312,7 @@ e_tree_find_next (ETree *et, ETreeFindNextParams params, ETreePathFunc func, gpo
 void
 e_tree_right_click_up (ETree *et)
 {
-	e_selection_model_right_click_up(et->priv->selection);
+	e_selection_model_right_click_up (et->priv->selection);
 }
 
 /**
@@ -2230,7 +2367,7 @@ e_tree_get_table_adapter (ETree *et)
 }
 
 ETableItem *
-e_tree_get_item(ETree * et)
+e_tree_get_item (ETree * et)
 {
 	g_return_val_if_fail (et != NULL, NULL);
 	g_return_val_if_fail (E_IS_TREE (et), NULL);
@@ -2239,7 +2376,7 @@ e_tree_get_item(ETree * et)
 }
 
 GnomeCanvasItem *
-e_tree_get_header_item(ETree * et)
+e_tree_get_header_item (ETree * et)
 {
 	g_return_val_if_fail (et != NULL, NULL);
 	g_return_val_if_fail (E_IS_TREE (et), NULL);
@@ -2325,10 +2462,10 @@ e_tree_drag_get_data (ETree         *tree,
 		      GdkAtom         target,
 		      guint32         time)
 {
-	g_return_if_fail(tree != NULL);
-	g_return_if_fail(E_IS_TREE(tree));
+	g_return_if_fail (tree != NULL);
+	g_return_if_fail (E_IS_TREE (tree));
 
-	gtk_drag_get_data(GTK_WIDGET(tree),
+	gtk_drag_get_data (GTK_WIDGET (tree),
 			  context,
 			  target,
 			  time);
@@ -2349,37 +2486,48 @@ e_tree_drag_highlight (ETree *tree,
 		       gint     row,
 		       gint     col)
 {
-	g_return_if_fail(tree != NULL);
-	g_return_if_fail(E_IS_TREE(tree));
+	GtkAdjustment *adjustment;
+	GtkAllocation allocation;
+	GtkLayout *layout;
+	GtkStyle *style;
+
+	g_return_if_fail (E_IS_TREE (tree));
+
+	layout = GTK_LAYOUT (tree->priv->table_canvas);
+	style = gtk_widget_get_style (GTK_WIDGET (tree));
+	gtk_widget_get_allocation (GTK_WIDGET (layout), &allocation);
 
 	if (row != -1) {
 		gint x, y, width, height;
 		if (col == -1) {
 			e_tree_get_cell_geometry (tree, row, 0, &x, &y, &width, &height);
 			x = 0;
-			width = GTK_WIDGET (tree->priv->table_canvas)->allocation.width;
+			width = allocation.width;
 		} else {
 			e_tree_get_cell_geometry (tree, row, col, &x, &y, &width, &height);
-			x += GTK_LAYOUT(tree->priv->table_canvas)->hadjustment->value;
+			adjustment = gtk_layout_get_hadjustment (layout);
+			x += gtk_adjustment_get_value (adjustment);
 		}
-		y += GTK_LAYOUT(tree->priv->table_canvas)->vadjustment->value;
+
+		adjustment = gtk_layout_get_vadjustment (layout);
+		y += gtk_adjustment_get_value (adjustment);
 
 		if (tree->priv->drop_highlight == NULL) {
-			tree->priv->drop_highlight =
-				gnome_canvas_item_new (gnome_canvas_root (tree->priv->table_canvas),
-						       gnome_canvas_rect_get_type (),
-						       "fill_color", NULL,
-						       /*						       "outline_color", "black",
-						       "width_pixels", 1,*/
-						       "outline_color_gdk", &(GTK_WIDGET (tree)->style->fg[GTK_STATE_NORMAL]),
-						       NULL);
+			tree->priv->drop_highlight = gnome_canvas_item_new (
+				gnome_canvas_root (tree->priv->table_canvas),
+				gnome_canvas_rect_get_type (),
+				"fill_color", NULL,
+				"outline_color_gdk", &style->fg[GTK_STATE_NORMAL],
+				NULL);
 		}
-		gnome_canvas_item_set (tree->priv->drop_highlight,
-				       "x1", (double) x,
-				       "x2", (double) x + width - 1,
-				       "y1", (double) y,
-				       "y2", (double) y + height - 1,
-				       NULL);
+
+		gnome_canvas_item_set (
+			tree->priv->drop_highlight,
+			"x1", (gdouble) x,
+			"x2", (gdouble) x + width - 1,
+			"y1", (gdouble) y,
+			"y2", (gdouble) y + height - 1,
+			NULL);
 	} else {
 		gtk_object_destroy (GTK_OBJECT (tree->priv->drop_highlight));
 		tree->priv->drop_highlight = NULL;
@@ -2389,8 +2537,8 @@ e_tree_drag_highlight (ETree *tree,
 void
 e_tree_drag_unhighlight (ETree *tree)
 {
-	g_return_if_fail(tree != NULL);
-	g_return_if_fail(E_IS_TREE(tree));
+	g_return_if_fail (tree != NULL);
+	g_return_if_fail (E_IS_TREE (tree));
 
 	if (tree->priv->drop_highlight) {
 		gtk_object_destroy (GTK_OBJECT (tree->priv->drop_highlight));
@@ -2404,10 +2552,10 @@ void e_tree_drag_dest_set   (ETree               *tree,
 			     gint                  n_targets,
 			     GdkDragAction         actions)
 {
-	g_return_if_fail(tree != NULL);
-	g_return_if_fail(E_IS_TREE(tree));
+	g_return_if_fail (tree != NULL);
+	g_return_if_fail (E_IS_TREE (tree));
 
-	gtk_drag_dest_set(GTK_WIDGET(tree),
+	gtk_drag_dest_set (GTK_WIDGET (tree),
 			  flags,
 			  targets,
 			  n_targets,
@@ -2419,10 +2567,10 @@ void e_tree_drag_dest_set_proxy (ETree         *tree,
 				 GdkDragProtocol protocol,
 				 gboolean        use_coordinates)
 {
-	g_return_if_fail(tree != NULL);
-	g_return_if_fail(E_IS_TREE(tree));
+	g_return_if_fail (tree != NULL);
+	g_return_if_fail (E_IS_TREE (tree));
 
-	gtk_drag_dest_set_proxy(GTK_WIDGET(tree),
+	gtk_drag_dest_set_proxy (GTK_WIDGET (tree),
 				proxy_window,
 				protocol,
 				use_coordinates);
@@ -2436,10 +2584,10 @@ void e_tree_drag_dest_set_proxy (ETree         *tree,
 void
 e_tree_drag_dest_unset (GtkWidget *widget)
 {
-	g_return_if_fail(widget != NULL);
-	g_return_if_fail(E_IS_TREE(widget));
+	g_return_if_fail (widget != NULL);
+	g_return_if_fail (E_IS_TREE (widget));
 
-	gtk_drag_dest_unset(widget);
+	gtk_drag_dest_unset (widget);
 }
 
 /* Source side */
@@ -2488,10 +2636,10 @@ e_tree_drag_source_set  (ETree               *tree,
 	ETreeDragSourceSite *site;
 	GtkWidget *canvas;
 
-	g_return_if_fail(tree != NULL);
-	g_return_if_fail(E_IS_TREE(tree));
+	g_return_if_fail (tree != NULL);
+	g_return_if_fail (E_IS_TREE (tree));
 
-	canvas = GTK_WIDGET(tree->priv->table_canvas);
+	canvas = GTK_WIDGET (tree->priv->table_canvas);
 	site = tree->priv->site;
 
 	tree->priv->do_drag = TRUE;
@@ -2525,7 +2673,7 @@ e_tree_drag_source_unset (ETree *tree)
 	ETreeDragSourceSite *site;
 
 	g_return_if_fail (tree != NULL);
-	g_return_if_fail (E_IS_TREE(tree));
+	g_return_if_fail (E_IS_TREE (tree));
 
 	site = tree->priv->site;
 
@@ -2552,15 +2700,15 @@ e_tree_drag_begin (ETree            *tree,
 {
 	ETreePath path;
 	g_return_val_if_fail (tree != NULL, NULL);
-	g_return_val_if_fail (E_IS_TREE(tree), NULL);
+	g_return_val_if_fail (E_IS_TREE (tree), NULL);
 
-	path = e_tree_table_adapter_node_at_row(tree->priv->etta, row);
+	path = e_tree_table_adapter_node_at_row (tree->priv->etta, row);
 
 	tree->priv->drag_row = row;
 	tree->priv->drag_path = path;
 	tree->priv->drag_col = col;
 
-	return gtk_drag_begin(GTK_WIDGET (tree->priv->table_canvas),
+	return gtk_drag_begin (GTK_WIDGET (tree->priv->table_canvas),
 			      targets,
 			      actions,
 			      button,
@@ -2583,7 +2731,9 @@ e_tree_get_cell_at (ETree *tree,
 		     gint x, gint y,
 		     gint *row_return, gint *col_return)
 {
-	g_return_if_fail (tree != NULL);
+	GtkAdjustment *adjustment;
+	GtkLayout *layout;
+
 	g_return_if_fail (E_IS_TREE (tree));
 	g_return_if_fail (row_return != NULL);
 	g_return_if_fail (col_return != NULL);
@@ -2596,9 +2746,17 @@ e_tree_get_cell_at (ETree *tree,
 	if (col_return)
 		*col_return = -1;
 
-	x += GTK_LAYOUT(tree->priv->table_canvas)->hadjustment->value;
-	y += GTK_LAYOUT(tree->priv->table_canvas)->vadjustment->value;
-	e_table_item_compute_location(E_TABLE_ITEM(tree->priv->item), &x, &y, row_return, col_return);
+	layout = GTK_LAYOUT (tree->priv->table_canvas);
+
+	adjustment = gtk_layout_get_hadjustment (layout);
+	x += gtk_adjustment_get_value (adjustment);
+
+	adjustment = gtk_layout_get_vadjustment (layout);
+	y += gtk_adjustment_get_value (adjustment);
+
+	e_table_item_compute_location (
+		E_TABLE_ITEM (tree->priv->item),
+		&x, &y, row_return, col_return);
 }
 
 /**
@@ -2606,8 +2764,10 @@ e_tree_get_cell_at (ETree *tree,
  * @tree: The tree.
  * @row: The row to get the geometry of.
  * @col: The col to get the geometry of.
- * @x_return: Returns the x coordinate of the upper right hand corner of the cell with respect to the widget.
- * @y_return: Returns the y coordinate of the upper right hand corner of the cell with respect to the widget.
+ * @x_return: Returns the x coordinate of the upper right hand corner
+ * of the cell with respect to the widget.
+ * @y_return: Returns the y coordinate of the upper right hand corner
+ * of the cell with respect to the widget.
  * @width_return: Returns the width of the cell.
  * @height_return: Returns the height of the cell.
  *
@@ -2619,7 +2779,9 @@ e_tree_get_cell_geometry (ETree *tree,
 			  gint *x_return, gint *y_return,
 			  gint *width_return, gint *height_return)
 {
-	g_return_if_fail (tree != NULL);
+	GtkAdjustment *adjustment;
+	GtkLayout *layout;
+
 	g_return_if_fail (E_IS_TREE (tree));
 	g_return_if_fail (row >= 0);
 	g_return_if_fail (col >= 0);
@@ -2627,12 +2789,22 @@ e_tree_get_cell_geometry (ETree *tree,
 	/* FIXME it would be nice if it could handle a NULL row_return or
 	 * col_return gracefully.  */
 
-	e_table_item_get_cell_geometry(E_TABLE_ITEM(tree->priv->item), &row, &col, x_return, y_return, width_return, height_return);
+	e_table_item_get_cell_geometry (
+		E_TABLE_ITEM (tree->priv->item),
+		&row, &col, x_return, y_return,
+		width_return, height_return);
 
-	if (x_return)
-		(*x_return) -= GTK_LAYOUT(tree->priv->table_canvas)->hadjustment->value;
-	if (y_return)
-		(*y_return) -= GTK_LAYOUT(tree->priv->table_canvas)->vadjustment->value;
+	layout = GTK_LAYOUT (tree->priv->table_canvas);
+
+	if (x_return) {
+		adjustment = gtk_layout_get_hadjustment (layout);
+		(*x_return) -= gtk_adjustment_get_value (adjustment);
+	}
+
+	if (y_return) {
+		adjustment = gtk_layout_get_vadjustment (layout);
+		(*y_return) -= gtk_adjustment_get_value (adjustment);
+	}
 }
 
 static void
@@ -2641,7 +2813,7 @@ et_drag_begin (GtkWidget *widget,
 	       ETree *et)
 {
 	g_signal_emit (et,
-		       et_signals [TREE_DRAG_BEGIN], 0,
+		       et_signals[TREE_DRAG_BEGIN], 0,
 		       et->priv->drag_row,
 		       et->priv->drag_path,
 		       et->priv->drag_col,
@@ -2654,7 +2826,7 @@ et_drag_end (GtkWidget *widget,
 	     ETree *et)
 {
 	g_signal_emit (et,
-		       et_signals [TREE_DRAG_END], 0,
+		       et_signals[TREE_DRAG_END], 0,
 		       et->priv->drag_row,
 		       et->priv->drag_path,
 		       et->priv->drag_col,
@@ -2662,7 +2834,7 @@ et_drag_end (GtkWidget *widget,
 }
 
 static void
-et_drag_data_get(GtkWidget *widget,
+et_drag_data_get (GtkWidget *widget,
 		 GdkDragContext *context,
 		 GtkSelectionData *selection_data,
 		 guint info,
@@ -2670,7 +2842,7 @@ et_drag_data_get(GtkWidget *widget,
 		 ETree *et)
 {
 	g_signal_emit (et,
-		       et_signals [TREE_DRAG_DATA_GET], 0,
+		       et_signals[TREE_DRAG_DATA_GET], 0,
 		       et->priv->drag_row,
 		       et->priv->drag_path,
 		       et->priv->drag_col,
@@ -2681,12 +2853,12 @@ et_drag_data_get(GtkWidget *widget,
 }
 
 static void
-et_drag_data_delete(GtkWidget *widget,
+et_drag_data_delete (GtkWidget *widget,
 		    GdkDragContext *context,
 		    ETree *et)
 {
 	g_signal_emit (et,
-		       et_signals [TREE_DRAG_DATA_DELETE], 0,
+		       et_signals[TREE_DRAG_DATA_DELETE], 0,
 		       et->priv->drag_row,
 		       et->priv->drag_path,
 		       et->priv->drag_col,
@@ -2694,7 +2866,7 @@ et_drag_data_delete(GtkWidget *widget,
 }
 
 static gboolean
-do_drag_motion(ETree *et,
+do_drag_motion (ETree *et,
 	       GdkDragContext *context,
 	       gint x,
 	       gint y,
@@ -2711,7 +2883,7 @@ do_drag_motion(ETree *et,
 			    &col);
 	if (row != et->priv->drop_row && col != et->priv->drop_col) {
 		g_signal_emit (et,
-			       et_signals [TREE_DRAG_LEAVE], 0,
+			       et_signals[TREE_DRAG_LEAVE], 0,
 			       et->priv->drop_row,
 			       et->priv->drop_path,
 			       et->priv->drop_col,
@@ -2719,13 +2891,13 @@ do_drag_motion(ETree *et,
 			       time);
 	}
 
-	path = e_tree_table_adapter_node_at_row(et->priv->etta, row);
+	path = e_tree_table_adapter_node_at_row (et->priv->etta, row);
 
 	et->priv->drop_row = row;
 	et->priv->drop_path = path;
 	et->priv->drop_col = col;
 	g_signal_emit (et,
-		       et_signals [TREE_DRAG_MOTION], 0,
+		       et_signals[TREE_DRAG_MOTION], 0,
 		       et->priv->drop_row,
 		       et->priv->drop_path,
 		       et->priv->drop_col,
@@ -2743,8 +2915,15 @@ scroll_timeout (gpointer data)
 {
 	ETree *et = data;
 	gint dx = 0, dy = 0;
-	GtkAdjustment *v, *h;
-	double vvalue, hvalue;
+	GtkAdjustment *adjustment;
+	GtkLayout *layout;
+	gdouble old_h_value;
+	gdouble new_h_value;
+	gdouble old_v_value;
+	gdouble new_v_value;
+	gdouble page_size;
+	gdouble lower;
+	gdouble upper;
 
 	if (et->priv->scroll_direction & ET_SCROLL_DOWN)
 		dy += 20;
@@ -2756,22 +2935,37 @@ scroll_timeout (gpointer data)
 	if (et->priv->scroll_direction & ET_SCROLL_LEFT)
 		dx -= 20;
 
-	h = GTK_LAYOUT(et->priv->table_canvas)->hadjustment;
-	v = GTK_LAYOUT(et->priv->table_canvas)->vadjustment;
+	layout = GTK_LAYOUT (et->priv->table_canvas);
 
-	hvalue = h->value;
-	vvalue = v->value;
+	adjustment = gtk_layout_get_hadjustment (layout);
 
-	gtk_adjustment_set_value(h, CLAMP(h->value + dx, h->lower, h->upper - h->page_size));
-	gtk_adjustment_set_value(v, CLAMP(v->value + dy, v->lower, v->upper - v->page_size));
+	page_size = gtk_adjustment_get_page_size (adjustment);
+	lower = gtk_adjustment_get_lower (adjustment);
+	upper = gtk_adjustment_get_upper (adjustment);
 
-	if (h->value != hvalue ||
-	    v->value != vvalue)
-		do_drag_motion(et,
-			       et->priv->last_drop_context,
-			       et->priv->last_drop_x,
-			       et->priv->last_drop_y,
-			       et->priv->last_drop_time);
+	old_h_value = gtk_adjustment_get_value (adjustment);
+	new_h_value = CLAMP (old_h_value + dx, lower, upper - page_size);
+
+	gtk_adjustment_set_value (adjustment, new_h_value);
+
+	adjustment = gtk_layout_get_vadjustment (layout);
+
+	page_size = gtk_adjustment_get_page_size (adjustment);
+	lower = gtk_adjustment_get_lower (adjustment);
+	upper = gtk_adjustment_get_upper (adjustment);
+
+	old_v_value = gtk_adjustment_get_value (adjustment);
+	new_v_value = CLAMP (old_v_value + dy, lower, upper - page_size);
+
+	gtk_adjustment_set_value (adjustment, new_v_value);
+
+	if (new_h_value != old_h_value || new_v_value != old_v_value)
+		do_drag_motion (
+			et,
+			et->priv->last_drop_context,
+			et->priv->last_drop_x,
+			et->priv->last_drop_y,
+			et->priv->last_drop_time);
 
 	return TRUE;
 }
@@ -2811,12 +3005,18 @@ hover_timeout (gpointer data)
 			    &row,
 			    &col);
 
-	path = e_tree_table_adapter_node_at_row(et->priv->etta, row);
+	path = e_tree_table_adapter_node_at_row (et->priv->etta, row);
 	if (path && e_tree_model_node_is_expandable (et->priv->model, path)) {
 		if (!e_tree_table_adapter_node_is_expanded (et->priv->etta, path)) {
-			if (e_tree_model_has_save_id (et->priv->model) && e_tree_model_has_get_node_by_id (et->priv->model))
-				et->priv->expanded_list = g_list_prepend (et->priv->expanded_list, e_tree_model_get_save_id (et->priv->model, path));
-			e_tree_table_adapter_node_set_expanded (et->priv->etta, path, TRUE);
+			if (e_tree_model_has_save_id (et->priv->model) &&
+				e_tree_model_has_get_node_by_id (et->priv->model))
+				et->priv->expanded_list = g_list_prepend (
+					et->priv->expanded_list,
+					e_tree_model_get_save_id (
+					et->priv->model, path));
+
+			e_tree_table_adapter_node_set_expanded (
+				et->priv->etta, path, TRUE);
 		}
 	}
 
@@ -2861,7 +3061,9 @@ collapse_drag (ETree *et, ETreePath drop)
 			ETreePath search;
 			gboolean found = FALSE;
 
-			for (search = drop; search; search = e_tree_model_node_get_parent (et->priv->model, search)) {
+			for (search = drop; search;
+				search = e_tree_model_node_get_parent (
+				et->priv->model, search)) {
 				if (path == search) {
 					found = TRUE;
 					break;
@@ -2869,7 +3071,8 @@ collapse_drag (ETree *et, ETreePath drop)
 			}
 
 			if (!found)
-				e_tree_table_adapter_node_set_expanded (et->priv->etta, path, FALSE);
+				e_tree_table_adapter_node_set_expanded (
+					et->priv->etta, path, FALSE);
 		}
 		g_free (save_id);
 	}
@@ -2900,21 +3103,21 @@ context_connect (ETree *et, GdkDragContext *context)
 		return;
 
 	if (et->priv->last_drop_context)
-		g_object_weak_unref (G_OBJECT(et->priv->last_drop_context), context_destroyed, et);
+		g_object_weak_unref (G_OBJECT (et->priv->last_drop_context), context_destroyed, et);
 	else
 		g_object_ref (et);
 
-	g_object_weak_ref (G_OBJECT(context), context_destroyed, et);
+	g_object_weak_ref (G_OBJECT (context), context_destroyed, et);
 }
 
 static void
-et_drag_leave(GtkWidget *widget,
+et_drag_leave (GtkWidget *widget,
 	      GdkDragContext *context,
 	      guint time,
 	      ETree *et)
 {
 	g_signal_emit (et,
-		       et_signals [TREE_DRAG_LEAVE], 0,
+		       et_signals[TREE_DRAG_LEAVE], 0,
 		       et->priv->drop_row,
 		       et->priv->drop_path,
 		       et->priv->drop_col,
@@ -2928,13 +3131,14 @@ et_drag_leave(GtkWidget *widget,
 }
 
 static gboolean
-et_drag_motion(GtkWidget *widget,
+et_drag_motion (GtkWidget *widget,
 	       GdkDragContext *context,
 	       gint x,
 	       gint y,
 	       guint time,
 	       ETree *et)
 {
+	GtkAllocation allocation;
 	gint ret_val;
 	guint direction = 0;
 
@@ -2953,19 +3157,17 @@ et_drag_motion(GtkWidget *widget,
 		hover_on (et, x, y);
 	}
 
-	ret_val = do_drag_motion (et,
-				  context,
-				  x,
-				  y,
-				  time);
+	ret_val = do_drag_motion (et, context, x, y, time);
+
+	gtk_widget_get_allocation (widget, &allocation);
 
 	if (y < 20)
 		direction |= ET_SCROLL_UP;
-	if (y > widget->allocation.height - 20)
+	if (y > allocation.height - 20)
 		direction |= ET_SCROLL_DOWN;
 	if (x < 20)
 		direction |= ET_SCROLL_LEFT;
-	if (x > widget->allocation.width - 20)
+	if (x > allocation.width - 20)
 		direction |= ET_SCROLL_RIGHT;
 
 	if (direction != 0)
@@ -2977,7 +3179,7 @@ et_drag_motion(GtkWidget *widget,
 }
 
 static gboolean
-et_drag_drop(GtkWidget *widget,
+et_drag_drop (GtkWidget *widget,
 	     GdkDragContext *context,
 	     gint x,
 	     gint y,
@@ -2987,23 +3189,23 @@ et_drag_drop(GtkWidget *widget,
 	gboolean ret_val = FALSE;
 	gint row, col;
 	ETreePath path;
-	e_tree_get_cell_at(et,
+	e_tree_get_cell_at (et,
 			   x,
 			   y,
 			   &row,
 			   &col);
-	path = e_tree_table_adapter_node_at_row(et->priv->etta, row);
+	path = e_tree_table_adapter_node_at_row (et->priv->etta, row);
 
 	if (row != et->priv->drop_row && col != et->priv->drop_row) {
 		g_signal_emit (et,
-			       et_signals [TREE_DRAG_LEAVE], 0,
+			       et_signals[TREE_DRAG_LEAVE], 0,
 			       et->priv->drop_row,
 			       et->priv->drop_path,
 			       et->priv->drop_col,
 			       context,
 			       time);
 		g_signal_emit (et,
-			       et_signals [TREE_DRAG_MOTION], 0,
+			       et_signals[TREE_DRAG_MOTION], 0,
 			       row,
 			       path,
 			       col,
@@ -3018,7 +3220,7 @@ et_drag_drop(GtkWidget *widget,
 	et->priv->drop_col = col;
 
 	g_signal_emit (et,
-		       et_signals [TREE_DRAG_DROP], 0,
+		       et_signals[TREE_DRAG_DROP], 0,
 		       et->priv->drop_row,
 		       et->priv->drop_path,
 		       et->priv->drop_col,
@@ -3039,7 +3241,7 @@ et_drag_drop(GtkWidget *widget,
 }
 
 static void
-et_drag_data_received(GtkWidget *widget,
+et_drag_data_received (GtkWidget *widget,
 		      GdkDragContext *context,
 		      gint x,
 		      gint y,
@@ -3050,14 +3252,14 @@ et_drag_data_received(GtkWidget *widget,
 {
 	gint row, col;
 	ETreePath path;
-	e_tree_get_cell_at(et,
+	e_tree_get_cell_at (et,
 			   x,
 			   y,
 			   &row,
 			   &col);
-	path = e_tree_table_adapter_node_at_row(et->priv->etta, row);
+	path = e_tree_table_adapter_node_at_row (et->priv->etta, row);
 	g_signal_emit (et,
-		       et_signals [TREE_DRAG_DATA_RECEIVED], 0,
+		       et_signals[TREE_DRAG_DATA_RECEIVED], 0,
 		       row,
 		       path,
 		       col,
@@ -3108,7 +3310,7 @@ e_tree_class_init (ETreeClass *class)
 	class->tree_drag_drop          = NULL;
 	class->tree_drag_data_received = NULL;
 
-	et_signals [CURSOR_CHANGE] =
+	et_signals[CURSOR_CHANGE] =
 		g_signal_new ("cursor_change",
 			      G_OBJECT_CLASS_TYPE (object_class),
 			      G_SIGNAL_RUN_LAST,
@@ -3117,7 +3319,7 @@ e_tree_class_init (ETreeClass *class)
 			      e_marshal_NONE__INT_POINTER,
 			      G_TYPE_NONE, 2, G_TYPE_INT, G_TYPE_POINTER);
 
-	et_signals [CURSOR_ACTIVATED] =
+	et_signals[CURSOR_ACTIVATED] =
 		g_signal_new ("cursor_activated",
 			      G_OBJECT_CLASS_TYPE (object_class),
 			      G_SIGNAL_RUN_LAST,
@@ -3126,7 +3328,7 @@ e_tree_class_init (ETreeClass *class)
 			      e_marshal_NONE__INT_POINTER,
 			      G_TYPE_NONE, 2, G_TYPE_INT, G_TYPE_POINTER);
 
-	et_signals [SELECTION_CHANGE] =
+	et_signals[SELECTION_CHANGE] =
 		g_signal_new ("selection_change",
 			      G_OBJECT_CLASS_TYPE (object_class),
 			      G_SIGNAL_RUN_LAST,
@@ -3135,7 +3337,7 @@ e_tree_class_init (ETreeClass *class)
 			      g_cclosure_marshal_VOID__VOID,
 			      G_TYPE_NONE, 0);
 
-	et_signals [DOUBLE_CLICK] =
+	et_signals[DOUBLE_CLICK] =
 		g_signal_new ("double_click",
 			      G_OBJECT_CLASS_TYPE (object_class),
 			      G_SIGNAL_RUN_LAST,
@@ -3145,37 +3347,37 @@ e_tree_class_init (ETreeClass *class)
 			      G_TYPE_NONE, 4, G_TYPE_INT,
 			      G_TYPE_POINTER, G_TYPE_INT, GDK_TYPE_EVENT);
 
-	et_signals [RIGHT_CLICK] =
+	et_signals[RIGHT_CLICK] =
 		g_signal_new ("right_click",
 			      G_OBJECT_CLASS_TYPE (object_class),
 			      G_SIGNAL_RUN_LAST,
 			      G_STRUCT_OFFSET (ETreeClass, right_click),
-			      NULL, NULL,
-			      e_marshal_INT__INT_POINTER_INT_BOXED,
-			      G_TYPE_INT, 4, G_TYPE_INT, G_TYPE_POINTER,
+			      g_signal_accumulator_true_handled, NULL,
+			      e_marshal_BOOLEAN__INT_POINTER_INT_BOXED,
+			      G_TYPE_BOOLEAN, 4, G_TYPE_INT, G_TYPE_POINTER,
 			      G_TYPE_INT, GDK_TYPE_EVENT);
 
-	et_signals [CLICK] =
+	et_signals[CLICK] =
 		g_signal_new ("click",
 			      G_OBJECT_CLASS_TYPE (object_class),
 			      G_SIGNAL_RUN_LAST,
 			      G_STRUCT_OFFSET (ETreeClass, click),
-			      NULL, NULL,
-			      e_marshal_INT__INT_POINTER_INT_BOXED,
-			      G_TYPE_INT, 4, G_TYPE_INT, G_TYPE_POINTER,
+			      g_signal_accumulator_true_handled, NULL,
+			      e_marshal_BOOLEAN__INT_POINTER_INT_BOXED,
+			      G_TYPE_BOOLEAN, 4, G_TYPE_INT, G_TYPE_POINTER,
 			      G_TYPE_INT, GDK_TYPE_EVENT);
 
-	et_signals [KEY_PRESS] =
+	et_signals[KEY_PRESS] =
 		g_signal_new ("key_press",
 			      G_OBJECT_CLASS_TYPE (object_class),
 			      G_SIGNAL_RUN_LAST,
 			      G_STRUCT_OFFSET (ETreeClass, key_press),
-			      NULL, NULL,
-			      e_marshal_INT__INT_POINTER_INT_BOXED,
-			      G_TYPE_INT, 4, G_TYPE_INT, G_TYPE_POINTER,
+			      g_signal_accumulator_true_handled, NULL,
+			      e_marshal_BOOLEAN__INT_POINTER_INT_BOXED,
+			      G_TYPE_BOOLEAN, 4, G_TYPE_INT, G_TYPE_POINTER,
 			      G_TYPE_INT, GDK_TYPE_EVENT);
 
-	et_signals [START_DRAG] =
+	et_signals[START_DRAG] =
 		g_signal_new ("start_drag",
 			      G_OBJECT_CLASS_TYPE (object_class),
 			      G_SIGNAL_RUN_LAST,
@@ -3185,7 +3387,7 @@ e_tree_class_init (ETreeClass *class)
 			      G_TYPE_NONE, 4, G_TYPE_INT, G_TYPE_POINTER,
 			      G_TYPE_INT, GDK_TYPE_EVENT);
 
-	et_signals [STATE_CHANGE] =
+	et_signals[STATE_CHANGE] =
 		g_signal_new ("state_change",
 			      G_OBJECT_CLASS_TYPE (object_class),
 			      G_SIGNAL_RUN_LAST,
@@ -3194,14 +3396,14 @@ e_tree_class_init (ETreeClass *class)
 			      g_cclosure_marshal_VOID__VOID,
 			      G_TYPE_NONE, 0);
 
-	et_signals [WHITE_SPACE_EVENT] =
+	et_signals[WHITE_SPACE_EVENT] =
 		g_signal_new ("white_space_event",
 			      G_OBJECT_CLASS_TYPE (object_class),
 			      G_SIGNAL_RUN_LAST,
 			      G_STRUCT_OFFSET (ETreeClass, white_space_event),
-			      NULL, NULL,
-			      e_marshal_INT__POINTER,
-			      G_TYPE_INT, 1, GDK_TYPE_EVENT);
+			      g_signal_accumulator_true_handled, NULL,
+			      e_marshal_BOOLEAN__POINTER,
+			      G_TYPE_BOOLEAN, 1, GDK_TYPE_EVENT);
 
 	et_signals[TREE_DRAG_BEGIN] =
 		g_signal_new ("tree_drag_begin",
@@ -3330,61 +3532,61 @@ e_tree_class_init (ETreeClass *class)
 
 	g_object_class_install_property (object_class, PROP_LENGTH_THRESHOLD,
 					 g_param_spec_int ("length_threshold",
-							   _( "Length Threshold" ),
-							   _( "Length Threshold" ),
+							   "Length Threshold",
+							   "Length Threshold",
 							   0, G_MAXINT, 0,
 							   G_PARAM_WRITABLE));
 	g_object_class_install_property (object_class, PROP_HORIZONTAL_DRAW_GRID,
 					 g_param_spec_boolean ("horizontal_draw_grid",
-							       _( "Horizontal Draw Grid" ),
-							       _( "Horizontal Draw Grid" ),
+							       "Horizontal Draw Grid",
+							       "Horizontal Draw Grid",
 							       FALSE,
 							       G_PARAM_WRITABLE));
 	g_object_class_install_property (object_class, PROP_VERTICAL_DRAW_GRID,
 					 g_param_spec_boolean ("vertical_draw_grid",
-							       _( "Vertical Draw Grid" ),
-							       _( "Vertical Draw Grid" ),
+							       "Vertical Draw Grid",
+							       "Vertical Draw Grid",
 							       FALSE,
 							       G_PARAM_WRITABLE));
 	g_object_class_install_property (object_class, PROP_DRAW_FOCUS,
 					 g_param_spec_boolean ("drawfocus",
-							       _( "Draw focus" ),
-							       _( "Draw focus" ),
+							       "Draw focus",
+							       "Draw focus",
 							       FALSE,
 							       G_PARAM_WRITABLE));
 
 	g_object_class_install_property (object_class, PROP_ETTA,
 					 g_param_spec_object ("ETreeTableAdapter",
-							      _( "ETree table adapter" ),
-							      _( "ETree table adapter" ),
+							      "ETree table adapter",
+							      "ETree table adapter",
 							      E_TREE_TABLE_ADAPTER_TYPE,
 							      G_PARAM_READABLE));
 
 	g_object_class_install_property (object_class, PROP_UNIFORM_ROW_HEIGHT,
 					 g_param_spec_boolean ("uniform_row_height",
-							       _( "Uniform row height" ),
-							       _( "Uniform row height" ),
+							       "Uniform row height",
+							       "Uniform row height",
 							       FALSE,
 							       G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_ALWAYS_SEARCH,
 					 g_param_spec_boolean ("always_search",
-							       _( "Always search" ),
-							       _( "Always search" ),
+							       "Always search",
+							       "Always search",
 							       FALSE,
 							       G_PARAM_READWRITE));
 
 	gtk_widget_class_install_style_property (widget_class,
 			   g_param_spec_boolean ("retro_look",
-						 _("Retro Look"),
-						 _("Draw lines and +/- expanders."),
+						 "Retro Look",
+						 "Draw lines and +/- expanders.",
 						 FALSE,
 						 G_PARAM_READABLE));
 
 	gtk_widget_class_install_style_property (widget_class,
 			   g_param_spec_int ("expander_size",
-					     _("Expander Size"),
-					     _("Size of the expander arrow"),
+					     "Expander Size",
+					     "Size of the expander arrow",
 					     0,
 					     G_MAXINT,
 					     10,
@@ -3396,17 +3598,21 @@ e_tree_class_init (ETreeClass *class)
 static void
 tree_size_allocate (GtkWidget *widget, GtkAllocation *alloc, ETree *tree)
 {
-	double width;
+	gdouble width;
 
 	g_return_if_fail (tree != NULL);
 	g_return_if_fail (tree->priv != NULL);
 	g_return_if_fail (tree->priv->info_text != NULL);
 
-	gnome_canvas_get_scroll_region (GNOME_CANVAS (tree->priv->table_canvas), NULL, NULL, &width, NULL);
+	gnome_canvas_get_scroll_region (
+		GNOME_CANVAS (tree->priv->table_canvas),
+		NULL, NULL, &width, NULL);
 
 	width -= 60.0;
 
-	g_object_set (tree->priv->info_text, "width", width, "clip_width", width, NULL);
+	g_object_set (
+		tree->priv->info_text, "width", width,
+		"clip_width", width, NULL);
 }
 
 /**
@@ -3419,6 +3625,9 @@ tree_size_allocate (GtkWidget *widget, GtkAllocation *alloc, ETree *tree)
 void
 e_tree_set_info_message (ETree *tree, const gchar *info_message)
 {
+	GtkAllocation allocation;
+	GtkWidget *widget;
+
 	g_return_if_fail (tree != NULL);
 	g_return_if_fail (tree->priv != NULL);
 
@@ -3432,22 +3641,28 @@ e_tree_set_info_message (ETree *tree, const gchar *info_message)
 		return;
 	}
 
+	widget = GTK_WIDGET (tree->priv->table_canvas);
+	gtk_widget_get_allocation (widget, &allocation);
+
 	if (!tree->priv->info_text) {
-		tree->priv->info_text = gnome_canvas_item_new (GNOME_CANVAS_GROUP (gnome_canvas_root (tree->priv->table_canvas)),
-						e_text_get_type (),
-						"anchor", GTK_ANCHOR_NW,
-						"line_wrap", TRUE,
-						"clip", TRUE,
-						"justification", GTK_JUSTIFY_LEFT,
-						"text", info_message,
-						"draw_background", FALSE,
-						"width", (double) GTK_WIDGET (tree->priv->table_canvas)->allocation.width - 60.0,
-						"clip_width", (double) GTK_WIDGET (tree->priv->table_canvas)->allocation.width - 60.0,
-						NULL);
+		tree->priv->info_text = gnome_canvas_item_new (
+			GNOME_CANVAS_GROUP (gnome_canvas_root (tree->priv->table_canvas)),
+			e_text_get_type (),
+			"anchor", GTK_ANCHOR_NW,
+			"line_wrap", TRUE,
+			"clip", TRUE,
+			"justification", GTK_JUSTIFY_LEFT,
+			"text", info_message,
+			"draw_background", FALSE,
+			"width", (gdouble) allocation.width - 60.0,
+			"clip_width", (gdouble) allocation.width - 60.0,
+			NULL);
 
 		e_canvas_item_move_absolute (tree->priv->info_text, 30, 30);
 
-		tree->priv->info_text_resize_id = g_signal_connect (tree, "size_allocate", G_CALLBACK (tree_size_allocate), tree);
+		tree->priv->info_text_resize_id = g_signal_connect (
+			tree, "size_allocate",
+			G_CALLBACK (tree_size_allocate), tree);
 	} else
 		gnome_canvas_item_set (tree->priv->info_text, "text", info_message, NULL);
 }

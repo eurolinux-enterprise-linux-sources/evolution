@@ -1,14 +1,15 @@
 privsolib_LTLIBRARIES = libmenus.la
 
-AM_CPPFLAGS =					\
+libmenus_la_CPPFLAGS =				\
+	$(AM_CPPFLAGS)				\
 	-I$(top_srcdir)				\
 	-I$(top_srcdir)/widgets			\
-	-DEVOLUTION_GLADEDIR=\""$(gladedir)"\"  \
+	-DEVOLUTION_UIDIR=\""$(uidir)"\"  \
 	-DG_LOG_DOMAIN=\"menus\"		\
+	$(GNOME_PLATFORM_CFLAGS)		\
 	$(E_UTIL_CFLAGS)
 
 libmenus_la_SOURCES = 				\
-	gal-view-menus.c			\
 	gal-define-views-dialog.c		\
 	gal-define-views-model.c		\
 	gal-view-collection.c			\
@@ -18,13 +19,12 @@ libmenus_la_SOURCES = 				\
 	gal-view-instance-save-as-dialog.c	\
 	gal-view-instance.c			\
 	gal-view-new-dialog.c			\
-	gal-view.c				\
-	gal-view-menus.h
+	gal-view.c
 
-glade_DATA = 					\
-	gal-define-views.glade			\
-	gal-view-new-dialog.glade		\
-	gal-view-instance-save-as-dialog.glade
+ui_DATA = 					\
+	gal-define-views.ui			\
+	gal-view-new-dialog.ui		\
+	gal-view-instance-save-as-dialog.ui
 
 libmenusincludedir = $(privincludedir)/menus
 
@@ -46,11 +46,12 @@ libmenus_la_LIBADD =					\
 	$(top_builddir)/e-util/libeutil.la		\
 	$(top_builddir)/widgets/table/libetable.la	\
 	$(top_builddir)/widgets/misc/libemiscwidgets.la	\
+	$(GNOME_PLATFORM_LIBS)				\
 	$(E_UTIL_LIBS)
 
 icons =
 EXTRA_DIST =			\
 	 $(icons)		\
-	 $(glade_DATA)
+	 $(ui_DATA)
 
 -include $(top_srcdir)/git.mk

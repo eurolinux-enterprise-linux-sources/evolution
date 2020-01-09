@@ -1,0 +1,230 @@
+diff -up evolution-2.32.3/calendar/gui/dialogs/alarm-dialog.c.no-alarm-after-start-capability evolution-2.32.3/calendar/gui/dialogs/alarm-dialog.c
+--- evolution-2.32.3/calendar/gui/dialogs/alarm-dialog.c.no-alarm-after-start-capability	2013-09-18 18:09:48.236051320 +0200
++++ evolution-2.32.3/calendar/gui/dialogs/alarm-dialog.c	2013-09-18 18:09:48.950051318 +0200
+@@ -188,6 +188,34 @@ clear_widgets (Dialog *dialog)
+ 	gtk_notebook_set_current_page (GTK_NOTEBOOK (dialog->option_notebook), 0);
+ }
+ 
++static void
++populate_relative_time_combobox_widget (GtkWidget *combobox,
++					ECal *cal_client,
++					const gint *map,
++					gint prop)
++{
++	GtkTreeModel *model;
++	GtkTreeIter iter;
++	gboolean valid;
++	gboolean alarm_after_start;
++	gint i;
++
++	alarm_after_start = !e_cal_get_static_capability (
++			cal_client, "no-alarm-after-start" /* CAL_STATIC_CAPABILITY_NO_ALARM_AFTER_START */);
++	model = gtk_combo_box_get_model (GTK_COMBO_BOX (combobox));
++	valid = gtk_tree_model_get_iter_first (model, &iter);
++
++	for (i = 0; valid && map[i] != -1; i++) {
++		gtk_list_store_set (
++				GTK_LIST_STORE (model),
++				&iter,
++				1,
++				alarm_after_start ? TRUE : (map[i] == prop ? FALSE : TRUE),
++				-1);
++		valid = gtk_tree_model_iter_next (model, &iter);
++	}
++}
++
+ /* fill_widgets handler for the alarm page */
+ static void
+ alarm_to_dialog (Dialog *dialog)
+@@ -224,6 +252,10 @@ alarm_to_dialog (Dialog *dialog)
+ 		gtk_widget_hide (dialog->dalarm_description);
+ 	}
+ 
++	populate_relative_time_combobox_widget (dialog->relative_combo, dialog->ecal, relative_map, AFTER);
++	populate_relative_time_combobox_widget (
++			dialog->time_combo, dialog->ecal, time_map, E_CAL_COMPONENT_ALARM_TRIGGER_RELATIVE_END);
++
+ 	/* Set a default address if possible */
+ 	if (!e_cal_get_static_capability (dialog->ecal, CAL_STATIC_CAPABILITY_NO_EMAIL_ALARMS)
+ 		&& !e_cal_component_alarm_has_attendees (dialog->alarm)
+@@ -781,6 +813,43 @@ dialog_to_alarm (Dialog *dialog)
+ 	}
+ }
+ 
++static void
++build_combobox_widget (GtkWidget *combobox,
++		       const gchar *actions[])
++{
++	GtkComboBox *combo = GTK_COMBO_BOX (combobox);
++	GtkCellRenderer *cell;
++	GtkListStore *store;
++	gint i;
++
++	g_return_if_fail (GTK_IS_COMBO_BOX (combo));
++
++	store = gtk_list_store_new (2, G_TYPE_STRING, G_TYPE_BOOLEAN);
++	gtk_combo_box_set_model (combo, GTK_TREE_MODEL (store));
++	g_object_unref (store);
++
++	gtk_cell_layout_clear (GTK_CELL_LAYOUT (combo));
++
++	cell = gtk_cell_renderer_text_new ();
++	gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (combo), cell, TRUE);
++	gtk_cell_layout_set_attributes (
++		GTK_CELL_LAYOUT (combo), cell,
++		"text", 0,
++		"sensitive", 1,
++		NULL);
++
++	for (i = 0; actions[i] != NULL; i++) {
++		GtkTreeIter iter;
++
++		gtk_list_store_append (store, &iter);
++		gtk_list_store_set (
++			store, &iter,
++			0, _(actions[i]),
++			1, TRUE,
++			-1);
++	}
++}
++
+ /* Gets the widgets from the XML file and returns TRUE if they are all available. */
+ static gboolean
+ get_widgets (Dialog *dialog)
+@@ -826,40 +895,31 @@ get_widgets (Dialog *dialog)
+ 			N_("Pop up an alert"),
+ 			N_("Play a sound"),
+ 			N_("Run a program"),
+-			N_("Send an email")
++			N_("Send an email"),
++			NULL
+ 		};
+ 
+-		GtkComboBox *combo = (GtkComboBox*)dialog->action_combo;
+-		GtkCellRenderer *cell;
+-		GtkListStore *store;
+-		gint i;
+-
+-		g_return_val_if_fail (combo != NULL, FALSE);
+-		g_return_val_if_fail (GTK_IS_COMBO_BOX (combo), FALSE);
+-
+-		store = gtk_list_store_new (2, G_TYPE_STRING, G_TYPE_BOOLEAN);
+-		gtk_combo_box_set_model (combo, GTK_TREE_MODEL (store));
+-		g_object_unref (store);
+-
+-		gtk_cell_layout_clear (GTK_CELL_LAYOUT (combo));
+-
+-		cell = gtk_cell_renderer_text_new ();
+-		gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (combo), cell, TRUE);
+-		gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (combo), cell,
+-				"text", 0,
+-				"sensitive", 1,
+-				NULL);
+-
+-		for (i = 0; i < G_N_ELEMENTS (actions); i++) {
+-			GtkTreeIter iter;
+-
+-			gtk_list_store_append (store, &iter);
+-			gtk_list_store_set (
+-				store, &iter,
+-				0, _(actions[i]),
+-				1, TRUE,
+-				-1);
+-		}
++		build_combobox_widget (dialog->action_combo, actions);
++	}
++
++	if (dialog->relative_combo) {
++		const gchar *actions[] = {
++			N_("before"),
++			N_("after"),
++			NULL
++		};
++
++		build_combobox_widget (dialog->relative_combo, actions);
++	}
++
++	if (dialog->time_combo) {
++		const gchar *actions[] = {
++			N_("start of appointment"),
++			N_("end of appointment"),
++			NULL
++		};
++
++		build_combobox_widget (dialog->time_combo, actions);
+ 	}
+ 
+ 	return (dialog->action_combo
+diff -up evolution-2.32.3/calendar/gui/dialogs/alarm-dialog.ui.no-alarm-after-start-capability evolution-2.32.3/calendar/gui/dialogs/alarm-dialog.ui
+--- evolution-2.32.3/calendar/gui/dialogs/alarm-dialog.ui.no-alarm-after-start-capability	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/dialogs/alarm-dialog.ui	2013-09-18 18:09:48.951051318 +0200
+@@ -47,32 +47,6 @@
+     </columns>
+     <data>
+       <row>
+-        <col id="0" translatable="yes">before</col>
+-      </row>
+-      <row>
+-        <col id="0" translatable="yes">after</col>
+-      </row>
+-    </data>
+-  </object>
+-  <object class="GtkListStore" id="model3">
+-    <columns>
+-      <column type="gchararray"/>
+-    </columns>
+-    <data>
+-      <row>
+-        <col id="0" translatable="yes">start of appointment</col>
+-      </row>
+-      <row>
+-        <col id="0" translatable="yes">end of appointment</col>
+-      </row>
+-    </data>
+-  </object>
+-  <object class="GtkListStore" id="model4">
+-    <columns>
+-      <column type="gchararray"/>
+-    </columns>
+-    <data>
+-      <row>
+         <col id="0" translatable="yes">minutes</col>
+       </row>
+       <row>
+@@ -259,13 +233,6 @@
+                         <property name="visible">True</property>
+                         <property name="add_tearoffs">False</property>
+                         <property name="focus_on_click">True</property>
+-                        <property name="model">model2</property>
+-                        <child>
+-                          <object class="GtkCellRendererText" id="renderer2"/>
+-                          <attributes>
+-                            <attribute name="text">0</attribute>
+-                          </attributes>
+-                        </child>
+                       </object>
+                       <packing>
+                         <property name="padding">0</property>
+@@ -278,13 +245,6 @@
+                         <property name="visible">True</property>
+                         <property name="add_tearoffs">False</property>
+                         <property name="focus_on_click">True</property>
+-                        <property name="model">model3</property>
+-                        <child>
+-                          <object class="GtkCellRendererText" id="renderer3"/>
+-                          <attributes>
+-                            <attribute name="text">0</attribute>
+-                          </attributes>
+-                        </child>
+                       </object>
+                       <packing>
+                         <property name="padding">0</property>
+@@ -455,7 +415,7 @@
+                             <property name="visible">True</property>
+                             <property name="add_tearoffs">False</property>
+                             <property name="focus_on_click">True</property>
+-                            <property name="model">model4</property>
++                            <property name="model">model2</property>
+                             <child>
+                               <object class="GtkCellRendererText" id="renderer4"/>
+                               <attributes>

@@ -32,6 +32,7 @@
 #include <gconf/gconf-client.h>
 
 #include <libedataserver/e-uid.h>
+#include <libedataserver/e-data-server-util.h>
 
 #include "e-signature.h"
 
@@ -59,7 +60,10 @@ enum {
 	PROP_UID
 };
 
-static gpointer parent_class;
+G_DEFINE_TYPE (
+	ESignature,
+	e_signature,
+	G_TYPE_OBJECT)
 
 static gboolean
 xml_set_bool (xmlNodePtr node,
@@ -234,7 +238,7 @@ signature_finalize (GObject *object)
 	g_free (priv->uid);
 
 	/* Chain up to parent's finalize() method. */
-	G_OBJECT_CLASS (parent_class)->finalize (object);
+	G_OBJECT_CLASS (e_signature_parent_class)->finalize (object);
 }
 
 static void
@@ -242,7 +246,6 @@ e_signature_class_init (ESignatureClass *class)
 {
 	GObjectClass *object_class;
 
-	parent_class = g_type_class_peek_parent (class);
 	g_type_class_add_private (class, sizeof (ESignaturePrivate));
 
 	object_class = G_OBJECT_CLASS (class);
@@ -323,37 +326,13 @@ e_signature_init (ESignature *signature)
 	signature->priv = E_SIGNATURE_GET_PRIVATE (signature);
 }
 
-GType
-e_signature_get_type (void)
-{
-	static GType type = 0;
-
-	if (G_UNLIKELY (type == 0)) {
-		GTypeInfo type_info = {
-			sizeof (ESignatureClass),
-			(GBaseInitFunc) NULL,
-			(GBaseFinalizeFunc) NULL,
-			(GClassInitFunc) e_signature_class_init,
-			(GClassFinalizeFunc) NULL,
-			NULL,  /* class_data */
-			sizeof (ESignature),
-			0,     /* n_preallocs */
-			(GInstanceInitFunc) e_signature_init,
-			NULL   /* value_table */
-		};
-
-		type = g_type_register_static (
-			G_TYPE_OBJECT, "ESignature", &type_info, 0);
-	}
-
-	return type;
-}
-
 /**
  * e_signature_new:
  *
  * Returns a new signature which can be filled in and
  * added to an #ESignatureList.
+ *
+ * Returns: a new #ESignature
  **/
 ESignature *
 e_signature_new (void)
@@ -425,7 +404,7 @@ e_signature_uid_from_xml (const gchar *xml)
  *
  * Changes @signature to match @xml.
  *
- * Returns %TRUE if the signature was loaded or %FALSE otherwise.
+ * Returns: %TRUE if the signature was loaded or %FALSE otherwise
  **/
 gboolean
 e_signature_set_from_xml (ESignature *signature, const gchar *xml)
@@ -490,8 +469,25 @@ e_signature_set_from_xml (ESignature *signature, const gchar *xml)
 			}
 			break;
 		}
-
 		cur = cur->next;
+	}
+
+	/* If the signature is not a script, replace the directory
+	 * part with the current signatures directory.  This makes
+	 * moving the signatures directory transparent. */
+	if (!e_signature_get_is_script (signature)) {
+		const gchar *user_data_dir;
+		gchar *basename;
+		gchar *filename;
+
+		user_data_dir = e_get_user_data_dir ();
+
+		filename = signature->priv->filename;
+		basename = g_path_get_basename (filename);
+		signature->priv->filename = g_build_filename (
+			user_data_dir, "signatures", basename, NULL);
+		g_free (basename);
+		g_free (filename);
 	}
 
 	xmlFreeDoc (doc);
@@ -542,9 +538,25 @@ e_signature_to_xml (ESignature *signature)
 
 		string = e_signature_get_filename (signature);
 		if (string != NULL) {
-			node = xmlNewTextChild (root, NULL, (xmlChar *) "filename", (xmlChar *) string);
-			if (e_signature_get_is_script (signature))
-				xmlSetProp (node, (xmlChar *) "script", (xmlChar *) "true");
+
+			/* For scripts we save the full filename,
+			 * for normal signatures just the basename. */
+			if (e_signature_get_is_script (signature)) {
+				node = xmlNewTextChild (
+					root, NULL, (xmlChar *) "filename",
+					(xmlChar *) string);
+				xmlSetProp (
+					node, (xmlChar *) "script",
+					(xmlChar *) "true");
+			} else {
+				gchar *basename;
+
+				basename = g_path_get_basename (string);
+				node = xmlNewTextChild (
+					root, NULL, (xmlChar *) "filename",
+					(xmlChar *) basename);
+				g_free (basename);
+			}
 		}
 	} else {
 		/* this is to make Evolution-1.4 and older 1.5 versions happy */

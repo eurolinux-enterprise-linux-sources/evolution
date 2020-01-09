@@ -1,0 +1,275 @@
+diff -up evolution-2.32.3/doc/reference/shell/tmpl/e-attachment-store.sgml.file-chooser-uri evolution-2.32.3/doc/reference/shell/tmpl/e-attachment-store.sgml
+--- evolution-2.32.3/doc/reference/shell/tmpl/e-attachment-store.sgml.file-chooser-uri	2011-04-21 23:20:00.000000000 +0200
++++ evolution-2.32.3/doc/reference/shell/tmpl/e-attachment-store.sgml	2013-06-10 15:00:31.634677342 +0200
+@@ -75,24 +75,6 @@ e-attachment-store
+ @Returns: 
+ 
+ 
+-<!-- ##### FUNCTION e_attachment_store_get_current_folder ##### -->
+-<para>
+-
+-</para>
+-
+-@store: 
+-@Returns: 
+-
+-
+-<!-- ##### FUNCTION e_attachment_store_set_current_folder ##### -->
+-<para>
+-
+-</para>
+-
+-@store: 
+-@current_folder: 
+-
+-
+ <!-- ##### FUNCTION e_attachment_store_get_num_attachments ##### -->
+ <para>
+ 
+diff -up evolution-2.32.3/shell/e-shell-utils.c.file-chooser-uri evolution-2.32.3/shell/e-shell-utils.c
+--- evolution-2.32.3/shell/e-shell-utils.c.file-chooser-uri	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/shell/e-shell-utils.c	2013-06-10 15:00:31.635677342 +0200
+@@ -87,6 +87,28 @@ e_shell_configure_web_view (EShell *shel
+ #endif
+ }
+ 
++static void
++set_current_folder_uri (GtkFileChooser *file_chooser,
++			const gchar *uri_or_path)
++{
++	gchar *uri;
++
++	if (!uri_or_path || !*uri_or_path)
++		return;
++
++	if (strstr (uri_or_path, "://")) {
++		gtk_file_chooser_set_current_folder_uri (file_chooser, uri_or_path);
++		return;
++	}
++
++	if (*uri_or_path != G_DIR_SEPARATOR)
++		return;
++
++	uri = g_strconcat ("file://", uri_or_path, NULL);
++	gtk_file_chooser_set_current_folder_uri (file_chooser, uri);
++	g_free (uri);
++}
++
+ /**
+  * e_shell_run_open_dialog:
+  * @shell: an #EShell
+@@ -139,8 +161,7 @@ e_shell_run_open_dialog (EShell *shell,
+ 
+ 	/* Restore the current folder from the previous file chooser. */
+ 	uri = e_shell_settings_get_string (shell_settings, property_name);
+-	if (uri != NULL)
+-		gtk_file_chooser_set_current_folder_uri (file_chooser, uri);
++	set_current_folder_uri (file_chooser, uri);
+ 	g_free (uri);
+ 
+ 	/* Allow further customizations before running the dialog. */
+@@ -225,8 +246,7 @@ e_shell_run_save_dialog (EShell *shell,
+ 
+ 	/* Restore the current folder from the previous file chooser. */
+ 	uri = e_shell_settings_get_string (shell_settings, property_name);
+-	if (uri != NULL)
+-		gtk_file_chooser_set_current_folder_uri (file_chooser, uri);
++	set_current_folder_uri (file_chooser, uri);
+ 	g_free (uri);
+ 
+ 	if (suggestion != NULL)
+diff -up evolution-2.32.3/widgets/misc/e-attachment-store.c.file-chooser-uri evolution-2.32.3/widgets/misc/e-attachment-store.c
+--- evolution-2.32.3/widgets/misc/e-attachment-store.c.file-chooser-uri	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/widgets/misc/e-attachment-store.c	2013-06-10 15:00:31.636677342 +0200
+@@ -35,14 +35,14 @@
+ 
+ struct _EAttachmentStorePrivate {
+ 	GHashTable *attachment_index;
+-	gchar *current_folder;
++	gchar *current_folder_uri;
+ 
+ 	guint ignore_row_changed : 1;
+ };
+ 
+ enum {
+ 	PROP_0,
+-	PROP_CURRENT_FOLDER,
++	PROP_CURRENT_FOLDER_URI,
+ 	PROP_NUM_ATTACHMENTS,
+ 	PROP_NUM_LOADING,
+ 	PROP_TOTAL_SIZE
+@@ -60,8 +60,8 @@ attachment_store_set_property (GObject *
+                                GParamSpec *pspec)
+ {
+ 	switch (property_id) {
+-		case PROP_CURRENT_FOLDER:
+-			e_attachment_store_set_current_folder (
++		case PROP_CURRENT_FOLDER_URI:
++			e_attachment_store_set_current_folder_uri (
+ 				E_ATTACHMENT_STORE (object),
+ 				g_value_get_string (value));
+ 			return;
+@@ -77,10 +77,10 @@ attachment_store_get_property (GObject *
+                                GParamSpec *pspec)
+ {
+ 	switch (property_id) {
+-		case PROP_CURRENT_FOLDER:
++		case PROP_CURRENT_FOLDER_URI:
+ 			g_value_set_string (
+ 				value,
+-				e_attachment_store_get_current_folder (
++				e_attachment_store_get_current_folder_uri (
+ 				E_ATTACHMENT_STORE (object)));
+ 			return;
+ 
+@@ -131,7 +131,7 @@ attachment_store_finalize (GObject *obje
+ 
+ 	g_hash_table_destroy (priv->attachment_index);
+ 
+-	g_free (priv->current_folder);
++	g_free (priv->current_folder_uri);
+ 
+ 	/* Chain up to parent's finalize() method. */
+ 	G_OBJECT_CLASS (e_attachment_store_parent_class)->finalize (object);
+@@ -146,7 +146,7 @@ attachment_store_constructed (GObject *o
+ 	bridge = gconf_bridge_get ();
+ 
+ 	key = "/apps/evolution/shell/file_chooser_folder";
+-	gconf_bridge_bind_property (bridge, key, object, "current-folder");
++	gconf_bridge_bind_property (bridge, key, object, "current-folder-uri");
+ }
+ 
+ static void
+@@ -165,10 +165,10 @@ e_attachment_store_class_init (EAttachme
+ 
+ 	g_object_class_install_property (
+ 		object_class,
+-		PROP_CURRENT_FOLDER,
++		PROP_CURRENT_FOLDER_URI,
+ 		g_param_spec_string (
+-			"current-folder",
+-			"Current Folder",
++			"current-folder-uri",
++			"Current Folder URI",
+ 			NULL,
+ 			NULL,
+ 			G_PARAM_READWRITE |
+@@ -381,26 +381,31 @@ e_attachment_store_get_attachments (EAtt
+ }
+ 
+ const gchar *
+-e_attachment_store_get_current_folder (EAttachmentStore *store)
++e_attachment_store_get_current_folder_uri (EAttachmentStore *store)
+ {
+ 	g_return_val_if_fail (E_IS_ATTACHMENT_STORE (store), NULL);
+ 
+-	return store->priv->current_folder;
++	return store->priv->current_folder_uri;
+ }
+ 
+ void
+-e_attachment_store_set_current_folder (EAttachmentStore *store,
+-                                       const gchar *current_folder)
++e_attachment_store_set_current_folder_uri (EAttachmentStore *store,
++                                           const gchar *current_folder_uri)
+ {
++	gchar *allocated;
++
+ 	g_return_if_fail (E_IS_ATTACHMENT_STORE (store));
+ 
+-	if (current_folder == NULL)
+-		current_folder = g_get_home_dir ();
++	if (current_folder_uri == NULL) {
++		const gchar *home_dir = g_get_home_dir ();
++		allocated = g_filename_to_uri (home_dir, NULL, NULL);
++	} else
++		allocated = g_strdup (current_folder_uri);
+ 
+-	g_free (store->priv->current_folder);
+-	store->priv->current_folder = g_strdup (current_folder);
++	g_free (store->priv->current_folder_uri);
++	store->priv->current_folder_uri = allocated;
+ 
+-	g_object_notify (G_OBJECT (store), "current-folder");
++	g_object_notify (G_OBJECT (store), "current-folder-uri");
+ }
+ 
+ guint
+@@ -459,21 +464,43 @@ e_attachment_store_get_total_size (EAtta
+ 	return total_size;
+ }
+ 
++static void
++set_current_folder_uri (GtkFileChooser *file_chooser,
++			const gchar *uri_or_path)
++{
++	gchar *uri;
++
++	if (!uri_or_path || !*uri_or_path)
++		return;
++
++	if (strstr (uri_or_path, "://")) {
++		gtk_file_chooser_set_current_folder_uri (file_chooser, uri_or_path);
++		return;
++	}
++
++	if (*uri_or_path != G_DIR_SEPARATOR)
++		return;
++
++	uri = g_strconcat ("file://", uri_or_path, NULL);
++	gtk_file_chooser_set_current_folder_uri (file_chooser, uri);
++	g_free (uri);
++}
++
+ gint
+ e_attachment_store_run_file_chooser_dialog (EAttachmentStore *store,
+                                             GtkWidget *dialog)
+ {
+ 	GtkFileChooser *file_chooser;
+ 	gint response = GTK_RESPONSE_NONE;
+-	const gchar *current_folder;
++	const gchar *current_uri;
+ 	gboolean update_folder;
+ 
+ 	g_return_val_if_fail (E_IS_ATTACHMENT_STORE (store), response);
+ 	g_return_val_if_fail (GTK_IS_FILE_CHOOSER_DIALOG (dialog), response);
+ 
+ 	file_chooser = GTK_FILE_CHOOSER (dialog);
+-	current_folder = e_attachment_store_get_current_folder (store);
+-	gtk_file_chooser_set_current_folder (file_chooser, current_folder);
++	current_uri = e_attachment_store_get_current_folder_uri (store);
++	set_current_folder_uri (file_chooser, current_uri);
+ 
+ 	response = gtk_dialog_run (GTK_DIALOG (dialog));
+ 
+@@ -484,11 +511,11 @@ e_attachment_store_run_file_chooser_dial
+ 		(response == GTK_RESPONSE_APPLY);
+ 
+ 	if (update_folder) {
+-		gchar *folder;
++		gchar *uri;
+ 
+-		folder = gtk_file_chooser_get_current_folder (file_chooser);
+-		e_attachment_store_set_current_folder (store, folder);
+-		g_free (folder);
++		uri = gtk_file_chooser_get_current_folder_uri (file_chooser);
++		e_attachment_store_set_current_folder_uri (store, uri);
++		g_free (uri);
+ 	}
+ 
+ 	return response;
+diff -up evolution-2.32.3/widgets/misc/e-attachment-store.h.file-chooser-uri evolution-2.32.3/widgets/misc/e-attachment-store.h
+--- evolution-2.32.3/widgets/misc/e-attachment-store.h.file-chooser-uri	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/widgets/misc/e-attachment-store.h	2013-06-10 15:00:31.637677342 +0200
+@@ -86,9 +86,9 @@ void		e_attachment_store_add_to_multipar
+ 						 const gchar *default_charset);
+ GList *		e_attachment_store_get_attachments
+ 						(EAttachmentStore *store);
+-const gchar *	e_attachment_store_get_current_folder
++const gchar *	e_attachment_store_get_current_folder_uri
+ 						(EAttachmentStore *store);
+-void		e_attachment_store_set_current_folder
++void		e_attachment_store_set_current_folder_uri
+ 						(EAttachmentStore *store,
+ 						 const gchar *current_folder);
+ guint		e_attachment_store_get_num_attachments

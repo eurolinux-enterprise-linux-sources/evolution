@@ -33,28 +33,28 @@
 
 #include "em-filter-folder-element.h"
 #include "mail/em-folder-selection-button.h"
-#include "mail/mail-component.h"
 #include "mail/em-utils.h"
+#include "filter/e-filter-part.h"
 #include "libedataserver/e-sexp.h"
-#include "e-util/e-error.h"
+#include "e-util/e-alert.h"
 
 #define d(x)
 
-static gboolean validate(FilterElement *fe);
-static gint folder_eq(FilterElement *fe, FilterElement *cm);
-static void xml_create(FilterElement *fe, xmlNodePtr node);
-static xmlNodePtr xml_encode(FilterElement *fe);
-static gint xml_decode(FilterElement *fe, xmlNodePtr node);
-static GtkWidget *get_widget(FilterElement *fe);
-static void build_code(FilterElement *fe, GString *out, struct _FilterPart *ff);
-static void format_sexp(FilterElement *, GString *);
-static void emff_copy_value(FilterElement *de, FilterElement *se);
+static gboolean validate(EFilterElement *fe, EAlert **alert);
+static gint folder_eq(EFilterElement *fe, EFilterElement *cm);
+static void xml_create(EFilterElement *fe, xmlNodePtr node);
+static xmlNodePtr xml_encode(EFilterElement *fe);
+static gint xml_decode(EFilterElement *fe, xmlNodePtr node);
+static GtkWidget *get_widget(EFilterElement *fe);
+static void build_code(EFilterElement *fe, GString *out, EFilterPart *ff);
+static void format_sexp(EFilterElement *, GString *);
+static void emff_copy_value(EFilterElement *de, EFilterElement *se);
 
 static void em_filter_folder_element_class_init(EMFilterFolderElementClass *class);
 static void em_filter_folder_element_init(EMFilterFolderElement *ff);
 static void em_filter_folder_element_finalise(GObject *obj);
 
-static FilterElementClass *parent_class = NULL;
+static EFilterElementClass *parent_class = NULL;
 
 GType
 em_filter_folder_element_get_type(void)
@@ -74,7 +74,7 @@ em_filter_folder_element_get_type(void)
 			(GInstanceInitFunc)em_filter_folder_element_init,
 		};
 
-		type = g_type_register_static(FILTER_TYPE_ELEMENT, "EMFilterFolderElement", &info, 0);
+		type = g_type_register_static(E_TYPE_FILTER_ELEMENT, "EMFilterFolderElement", &info, 0);
 	}
 
 	return type;
@@ -84,9 +84,9 @@ static void
 em_filter_folder_element_class_init(EMFilterFolderElementClass *klass)
 {
 	GObjectClass *object_class = G_OBJECT_CLASS(klass);
-	FilterElementClass *fe_class = FILTER_ELEMENT_CLASS(klass);
+	EFilterElementClass *fe_class = E_FILTER_ELEMENT_CLASS(klass);
 
-	parent_class = g_type_class_ref(FILTER_TYPE_ELEMENT);
+	parent_class = g_type_class_ref(E_TYPE_FILTER_ELEMENT);
 
 	object_class->finalize = em_filter_folder_element_finalise;
 
@@ -139,39 +139,38 @@ em_filter_folder_element_set_value(EMFilterFolderElement *ff, const gchar *uri)
 }
 
 static gboolean
-validate(FilterElement *fe)
+validate(EFilterElement *fe, EAlert **alert)
 {
 	EMFilterFolderElement *ff = (EMFilterFolderElement *)fe;
+
+	g_warn_if_fail (alert == NULL || *alert == NULL);
 
 	if (ff->uri && *ff->uri) {
 		return TRUE;
 	} else {
-		/* FIXME: FilterElement should probably have a
-                   GtkWidget member pointing to the value gotten with
-                   ::get_widget()so that we can get the parent window
-                   here. */
-		e_error_run(NULL, "mail:no-folder", NULL);
+		if (alert)
+			*alert = e_alert_new ("mail:no-folder", NULL);
 
 		return FALSE;
 	}
 }
 
 static gint
-folder_eq(FilterElement *fe, FilterElement *cm)
+folder_eq(EFilterElement *fe, EFilterElement *cm)
 {
-        return FILTER_ELEMENT_CLASS(parent_class)->eq(fe, cm)
+        return E_FILTER_ELEMENT_CLASS(parent_class)->eq(fe, cm)
 		&& strcmp(((EMFilterFolderElement *)fe)->uri, ((EMFilterFolderElement *)cm)->uri)== 0;
 }
 
 static void
-xml_create(FilterElement *fe, xmlNodePtr node)
+xml_create(EFilterElement *fe, xmlNodePtr node)
 {
 	/* parent implementation */
-        FILTER_ELEMENT_CLASS(parent_class)->xml_create(fe, node);
+        E_FILTER_ELEMENT_CLASS(parent_class)->xml_create(fe, node);
 }
 
 static xmlNodePtr
-xml_encode(FilterElement *fe)
+xml_encode(EFilterElement *fe)
 {
 	xmlNodePtr value, work;
 	EMFilterFolderElement *ff = (EMFilterFolderElement *)fe;
@@ -192,7 +191,7 @@ xml_encode(FilterElement *fe)
 }
 
 static gint
-xml_decode(FilterElement *fe, xmlNodePtr node)
+xml_decode(EFilterElement *fe, xmlNodePtr node)
 {
 	EMFilterFolderElement *ff = (EMFilterFolderElement *)fe;
 	xmlNodePtr n;
@@ -231,6 +230,7 @@ xml_decode(FilterElement *fe, xmlNodePtr node)
 static void
 folder_selected(EMFolderSelectionButton *button, EMFilterFolderElement *ff)
 {
+	GtkWidget *toplevel;
 	const gchar *uri;
 
 	uri = em_folder_selection_button_get_selection(button);
@@ -241,11 +241,12 @@ folder_selected(EMFolderSelectionButton *button, EMFilterFolderElement *ff)
 	else
 		ff->uri = uri != NULL ? em_uri_from_camel (uri) : NULL;
 
-	gdk_window_raise(GTK_WIDGET(gtk_widget_get_ancestor(GTK_WIDGET(button), GTK_TYPE_WINDOW))->window);
+	toplevel = gtk_widget_get_toplevel (GTK_WIDGET (button));
+	gtk_window_present (GTK_WINDOW (toplevel));
 }
 
 static GtkWidget *
-get_widget(FilterElement *fe)
+get_widget(EFilterElement *fe)
 {
 	EMFilterFolderElement *ff = (EMFilterFolderElement *)fe;
 	GtkWidget *button;
@@ -255,8 +256,11 @@ get_widget(FilterElement *fe)
 		uri = ff->uri;
 	else
 		uri = em_uri_to_camel (ff->uri);
-	button = em_folder_selection_button_new(_("Select Folder"), NULL);
-	em_folder_selection_button_set_selection(EM_FOLDER_SELECTION_BUTTON(button), uri);
+
+	button = em_folder_selection_button_new (_("Select Folder"), NULL);
+
+	em_folder_selection_button_set_selection(
+		EM_FOLDER_SELECTION_BUTTON (button), uri);
 
 	if (!ff->store_camel_uri)
 		g_free(uri);
@@ -268,13 +272,13 @@ get_widget(FilterElement *fe)
 }
 
 static void
-build_code(FilterElement *fe, GString *out, struct _FilterPart *ff)
+build_code(EFilterElement *fe, GString *out, EFilterPart *ff)
 {
 	return;
 }
 
 static void
-format_sexp(FilterElement *fe, GString *out)
+format_sexp(EFilterElement *fe, GString *out)
 {
 	EMFilterFolderElement *ff = (EMFilterFolderElement *)fe;
 
@@ -282,7 +286,7 @@ format_sexp(FilterElement *fe, GString *out)
 }
 
 static void
-emff_copy_value(FilterElement *de, FilterElement *se)
+emff_copy_value(EFilterElement *de, EFilterElement *se)
 {
 	if (EM_IS_FILTER_FOLDER_ELEMENT(se)) {
 		((EMFilterFolderElement *)de)->store_camel_uri = ((EMFilterFolderElement *)se)->store_camel_uri;

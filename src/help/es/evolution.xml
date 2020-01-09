@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
 <!ENTITY appname "Evolution">
-<!ENTITY appversion "2.28">
+<!ENTITY appversion "2.30">
 <!ENTITY z-3rdParty "*">
 <!ENTITY z-SM "(SM)">
 <!ENTITY z-CM "(CM)">
@@ -19,7 +19,7 @@
    <date>2002-2009</date>
    <revhistory>
      <revision>
-       <revnumber>2.28</revnumber>
+       <revnumber>2.30</revnumber>
        <date>Septiembre de 2009</date>
        <revdescription>
 	 <para role="author">Akhil Laddha</para>
@@ -68,20 +68,20 @@
      </revision>
    </revhistory>
 
-   <releaseinfo>Este manual describe la versión 2.28 de Evolution</releaseinfo>
+   <releaseinfo>Este manual describe la versión 2.30 de Evolution</releaseinfo>
    <abstract role="description">
      <para>Una guía de usuario para Evolution que explica como usar sus características de correo, calendario, libreta de direcciones y listas de tareas.</para>
    </abstract>
    <productname class="trade">Evolution</productname>
-   <productnumber>2.28</productnumber>
+   <productnumber>2.30</productnumber>
    <invpartnumber>Febrero de 2008</invpartnumber>
-   <title>Guía de usuario de Evolution 2.28</title>
- <copyright><year>2007-2009</year><holder>Jorge González (jorgegonz@svn.gnome.org)</holder></copyright><copyright><year>2005, 2006</year><holder>Francisco Javier F. Serrador (serrador@openshine.com)</holder></copyright></bookinfo>
+   <title>Guía de usuario de Evolution 2.30</title>
+ <copyright><year>2007-2010</year><holder>Jorge González (jorgegonz@svn.gnome.org)</holder></copyright><copyright><year>2005, 2006</year><holder>Francisco Javier F. Serrador (serrador@openshine.com)</holder></copyright></bookinfo>
 
 
  <preface id="preface">
   <title>Acerca de esta guía</title>
-  <para>Esta guía describe cómo usar y gestionar el cliente de <trademark>Evolution</trademark> 2.28. Esta guía está dirigida a los usuarios y se divide en las siguientes secciones:</para>
+  <para>Esta guía describe cómo usar y gestionar el cliente de <trademark>Evolution</trademark> 2.30. Esta guía está dirigida a los usuarios y se divide en las siguientes secciones:</para>
   <itemizedlist>
    <listitem>
     <para><link linkend="usage-mainwindow">Inicio</link></para>
@@ -1492,7 +1492,7 @@
     <title>Borrado de correo</title>
     <para>Evolution le permite borrar correos no deseados. Para borrar un correo, selecciónelo y pulse la tecla Suprimir, o pulse el botón Borrar en la barra de herramientas, pulse Ctrl+D o pulse con el botón derecho del ratón sobre el mensaje y después pulse Borrar.</para>
     <para>Cuando pulsa Borrar o pulsa en el la carpeta de la Papelera, su correo no se borra realmente sino que se marca para ser eliminado. Su correo es recuperable hasta que no lo haya purgado. Cuando Purga una carpeta realmente está eliminando todo el correo marcado como borrado. Para mostrar los mensajes borrados, desmarque la casilla Ocultar mensajes borrados del menú Ver. Puede ver los mensajes marcados para ser borrados posteriormente. Puede además encontrar los mensajes borrados en la carpeta Papelera.</para>
-    <para>Para borrar permanentemente todos los mensajes borrados en una carpeta, pulse Carpeta &gt; Compactar o pulse Ctrl+E.</para>
+    <para>Para borrar permanentemente todos los mensajes borrados en una carpeta, pulse Carpeta &gt; Purgar o pulse Ctrl+E.</para>
     <para>Las carpetas papelera en cuentas GroupWise, local e IMAP realmente son carpetas de búsqueda virtual que muestran todos los mensajes que ha marcado para un borrado posterior. De tal manera que vaciar la Papelera no es otra cosa que purgar los correos borrados de todas sus carpetas en la cuenta.</para>
     <para>Sin embargo esto no es cierto para la carpeta Papelera situada en servidores Exchange, que se comporta exactamente igual que lo haría en Outlook. Es una carpeta normal con verdaderos mensajes dentro. Para obtener más información acerca de carpetas de búsquedas, vea <link linkend="usage-mail-organize-vfolders">Uso de carpetas de búsqueda</link>.</para>
    </section>
@@ -2525,7 +2525,7 @@
     </formalpara>
     <formalpara id="b141jcun">
      <title>vCalendar:</title>
-     <para>Un formato para almacenar archivos de calendario. generalmente usado por Evolution, Microsoft Outlook, Sunbird y Korganizer.</para>
+     <para>Un formato para almacenar archivos de calendario, generalmente usado por Evolution, Microsoft Outlook, Sunbird y Korganizer.</para>
     </formalpara>
     <formalpara id="bsawccr">
      <title>iCalendar o iCal (.ics):</title>
@@ -6759,7 +6759,7 @@
     <para>Para agrupar mensajes por conversaciones, seleccione Ver &gt; Agrupar por conversaciones o pulse Ctrl +T.</para>
     <formalpara id="bsbhq3y">
      <title>Borrar correo:</title>
-     <para>Elija si desea borrar automáticamente los correos al salir de Evolution y con qué frecuencia, y también si desea confirmar la eliminación de los mensajes. Seleccione Confirmar antes de compactar una carpeta para confirmar la eliminación. Puede tener cuatro opciones diferentes para establecer la frecuencia para la eliminación: Cada vez, Una vez por día, Una vez por semana y Una vez por mes.</para>
+     <para>Elija si desea borrar automáticamente los correos al salir de Evolution y con qué frecuencia, y también si desea confirmar la eliminación de los mensajes. Seleccione Confirmar antes de purgar una carpeta para confirmar la eliminación. Puede tener cuatro opciones diferentes para establecer la frecuencia para la eliminación: Cada vez, Una vez por día, Una vez por semana y Una vez por mes.</para>
     </formalpara>
     <formalpara id="bsbhq7t">
      <title>Notificaciones de correo nuevo:</title>
@@ -7018,7 +7018,7 @@
      <para>Seleccione esta opción para mostrar los fines de semana en una caja en lugar de dos en la vista mensual.</para>
     </formalpara>
     <formalpara id="bsbhw7p">
-     <title>Muestra los números de las semanas en el navegador de fechas:</title>
+     <title>Muestra los números de las semanas:</title>
      <para>Muestra los números de la semana junto a las respectivas semanas en el calendario.</para>
     </formalpara>
     <formalpara id="bsbhwdz">
@@ -7862,7 +7862,7 @@
     <member>EE. UU.</member>
     <member>www.novell.com</member>
    </simplelist>
-   <para id="Bktitle">Guía de usuario de Evolution 2.28</para>
+   <para id="Bktitle">Guía de usuario de Evolution 2.30</para>
    <para>Julio de 2007</para>
    <simplelist>
     <member>Para acceder a la documentación en línea para éste y otros productos de Novell así como para obtener actualizaciones, consulte www.novell.com/documentation.</member>

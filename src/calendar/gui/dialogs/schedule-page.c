@@ -31,7 +31,7 @@
 
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
-#include <glade/glade.h>
+#include <e-util/e-binding.h>
 #include <e-util/e-dialog-widgets.h>
 #include <e-util/e-util-private.h>
 #include <misc/e-dateedit.h>
@@ -48,10 +48,9 @@
 
 /* Private part of the SchedulePage structure */
 struct _SchedulePagePrivate {
-	/* Glade XML data */
-	GladeXML *xml;
+	GtkBuilder *builder;
 
-	/* Widgets from the Glade file */
+	/* Widgets from the UI file */
 	GtkWidget *main;
 
 	/* Model */
@@ -66,92 +65,9 @@ struct _SchedulePagePrivate {
 	icaltimezone *zone;
 };
 
-static GtkWidget *schedule_page_get_widget (CompEditorPage *page);
-static void schedule_page_focus_main_widget (CompEditorPage *page);
-static gboolean schedule_page_fill_widgets (CompEditorPage *page, ECalComponent *comp);
-static gboolean schedule_page_fill_component (CompEditorPage *page, ECalComponent *comp);
-static void schedule_page_set_dates (CompEditorPage *page, CompEditorPageDates *dates);
-
 static void times_changed_cb (GtkWidget *widget, SchedulePage *spage);
 
 G_DEFINE_TYPE (SchedulePage, schedule_page, TYPE_COMP_EDITOR_PAGE)
-
-static void
-schedule_page_dispose (GObject *object)
-{
-	SchedulePagePrivate *priv;
-
-	priv = SCHEDULE_PAGE_GET_PRIVATE (object);
-
-	if (priv->main != NULL) {
-		g_object_unref (priv->main);
-		priv->main = NULL;
-	}
-
-	if (priv->xml != NULL) {
-		g_object_unref (priv->xml);
-		priv->xml = NULL;
-	}
-
-	if (priv->model != NULL) {
-		g_object_unref (priv->model);
-		priv->model = NULL;
-	}
-
-	/* Chain up to parent's dispose() method. */
-	G_OBJECT_CLASS (schedule_page_parent_class)->dispose (object);
-}
-
-static void
-schedule_page_class_init (SchedulePageClass *class)
-{
-	GObjectClass *object_class;
-	CompEditorPageClass *editor_page_class;
-
-	g_type_class_add_private (class, sizeof (SchedulePagePrivate));
-
-	object_class = G_OBJECT_CLASS (class);
-	object_class->dispose = schedule_page_dispose;
-
-	editor_page_class = COMP_EDITOR_PAGE_CLASS (class);
-	editor_page_class->get_widget = schedule_page_get_widget;
-	editor_page_class->focus_main_widget = schedule_page_focus_main_widget;
-	editor_page_class->fill_widgets = schedule_page_fill_widgets;
-	editor_page_class->fill_component = schedule_page_fill_component;
-	editor_page_class->set_dates = schedule_page_set_dates;
-}
-
-static void
-schedule_page_init (SchedulePage *spage)
-{
-	spage->priv = SCHEDULE_PAGE_GET_PRIVATE (spage);
-}
-
-/* get_widget handler for the schedule page */
-static GtkWidget *
-schedule_page_get_widget (CompEditorPage *page)
-{
-	SchedulePage *spage;
-	SchedulePagePrivate *priv;
-
-	spage = SCHEDULE_PAGE (page);
-	priv = spage->priv;
-
-	return priv->main;
-}
-
-/* focus_main_widget handler for the schedule page */
-static void
-schedule_page_focus_main_widget (CompEditorPage *page)
-{
-	SchedulePage *spage;
-	SchedulePagePrivate *priv;
-
-	spage = SCHEDULE_PAGE (page);
-	priv = spage->priv;
-
-	gtk_widget_grab_focus (GTK_WIDGET (priv->sel));
-}
 
 static void
 sensitize_widgets (SchedulePage *spage)
@@ -172,7 +88,9 @@ sensitize_widgets (SchedulePage *spage)
 
 /* Set date/time */
 static void
-update_time (SchedulePage *spage, ECalComponentDateTime *start_date, ECalComponentDateTime *end_date)
+update_time (SchedulePage *spage,
+             ECalComponentDateTime *start_date,
+             ECalComponentDateTime *end_date)
 {
 	SchedulePagePrivate *priv = spage->priv;
 	CompEditor *editor;
@@ -218,7 +136,7 @@ update_time (SchedulePage *spage, ECalComponentDateTime *start_date, ECalCompone
 	if (start_zone != end_zone) {
 		icaltimezone_convert_time (&end_tt, end_zone, start_zone);
 	}
-	e_meeting_store_set_zone (priv->model, priv->zone);
+	e_meeting_store_set_timezone (priv->model, priv->zone);
 
 	all_day = (start_tt.is_date && end_tt.is_date) ? TRUE : FALSE;
 
@@ -242,26 +160,64 @@ update_time (SchedulePage *spage, ECalComponentDateTime *start_date, ECalCompone
 
 }
 
-/* Fills the widgets with default values */
 static void
-clear_widgets (SchedulePage *spage)
+schedule_page_dispose (GObject *object)
 {
+	SchedulePagePrivate *priv;
+
+	priv = SCHEDULE_PAGE_GET_PRIVATE (object);
+
+	if (priv->main != NULL) {
+		g_object_unref (priv->main);
+		priv->main = NULL;
+	}
+
+	if (priv->builder != NULL) {
+		g_object_unref (priv->builder);
+		priv->builder = NULL;
+	}
+
+	if (priv->model != NULL) {
+		g_object_unref (priv->model);
+		priv->model = NULL;
+	}
+
+	/* Chain up to parent's dispose() method. */
+	G_OBJECT_CLASS (schedule_page_parent_class)->dispose (object);
 }
 
-/* fill_widgets handler for the schedule page */
-static gboolean
-schedule_page_fill_widgets (CompEditorPage *page, ECalComponent *comp)
+static GtkWidget *
+schedule_page_get_widget (CompEditorPage *page)
 {
 	SchedulePage *spage;
 	SchedulePagePrivate *priv;
-	ECalComponentDateTime start_date, end_date;
-	gboolean validated = TRUE;
 
 	spage = SCHEDULE_PAGE (page);
 	priv = spage->priv;
 
-	/* Clean the screen */
-	clear_widgets (spage);
+	return priv->main;
+}
+
+static void
+schedule_page_focus_main_widget (CompEditorPage *page)
+{
+	SchedulePage *spage;
+	SchedulePagePrivate *priv;
+
+	spage = SCHEDULE_PAGE (page);
+	priv = spage->priv;
+
+	gtk_widget_grab_focus (GTK_WIDGET (priv->sel));
+}
+
+static gboolean
+schedule_page_fill_widgets (CompEditorPage *page, ECalComponent *comp)
+{
+	SchedulePage *spage;
+	ECalComponentDateTime start_date, end_date;
+	gboolean validated = TRUE;
+
+	spage = SCHEDULE_PAGE (page);
 
 	/* Start and end times */
 	e_cal_component_get_dtstart (comp, &start_date);
@@ -281,7 +237,6 @@ schedule_page_fill_widgets (CompEditorPage *page, ECalComponent *comp)
 	return validated;
 }
 
-/* fill_component handler for the schedule page */
 static gboolean
 schedule_page_fill_component (CompEditorPage *page, ECalComponent *comp)
 {
@@ -292,17 +247,38 @@ static void
 schedule_page_set_dates (CompEditorPage *page, CompEditorPageDates *dates)
 {
 	SchedulePage *spage;
-	SchedulePagePrivate *priv;
 
 	spage = SCHEDULE_PAGE (page);
-	priv = spage->priv;
 
 	comp_editor_page_set_updating (page, TRUE);
 	update_time (spage, dates->start, dates->end);
 	comp_editor_page_set_updating (page, FALSE);
 }
 
-
+static void
+schedule_page_class_init (SchedulePageClass *class)
+{
+	GObjectClass *object_class;
+	CompEditorPageClass *editor_page_class;
+
+	g_type_class_add_private (class, sizeof (SchedulePagePrivate));
+
+	object_class = G_OBJECT_CLASS (class);
+	object_class->dispose = schedule_page_dispose;
+
+	editor_page_class = COMP_EDITOR_PAGE_CLASS (class);
+	editor_page_class->get_widget = schedule_page_get_widget;
+	editor_page_class->focus_main_widget = schedule_page_focus_main_widget;
+	editor_page_class->fill_widgets = schedule_page_fill_widgets;
+	editor_page_class->fill_component = schedule_page_fill_component;
+	editor_page_class->set_dates = schedule_page_set_dates;
+}
+
+static void
+schedule_page_init (SchedulePage *spage)
+{
+	spage->priv = SCHEDULE_PAGE_GET_PRIVATE (spage);
+}
 
 /* Gets the widgets from the XML file and returns if they are all available. */
 static gboolean
@@ -312,10 +288,11 @@ get_widgets (SchedulePage *spage)
 	SchedulePagePrivate *priv;
 	GSList *accel_groups;
 	GtkWidget *toplevel;
+	GtkWidget *parent;
 
 	priv = spage->priv;
 
-#define GW(name) glade_xml_get_widget (priv->xml, name)
+#define GW(name) e_builder_get_widget (priv->builder, name)
 
 	priv->main = GW ("schedule-page");
 	if (!priv->main)
@@ -329,7 +306,8 @@ get_widgets (SchedulePage *spage)
 		page->accel_group = g_object_ref (accel_groups->data);
 
 	g_object_ref (priv->main);
-	gtk_container_remove (GTK_CONTAINER (priv->main->parent), priv->main);
+	parent = gtk_widget_get_parent (priv->main);
+	gtk_container_remove (GTK_CONTAINER (parent), priv->main);
 
 #undef GW
 
@@ -348,9 +326,10 @@ init_widgets (SchedulePage *spage)
 	return TRUE;
 }
 
-
 void
-schedule_page_set_meeting_time (SchedulePage *spage, icaltimetype *start_tt, icaltimetype *end_tt)
+schedule_page_set_meeting_time (SchedulePage *spage,
+                                icaltimetype *start_tt,
+                                icaltimetype *end_tt)
 {
 	SchedulePagePrivate *priv;
 	gboolean all_day;
@@ -365,9 +344,11 @@ schedule_page_set_meeting_time (SchedulePage *spage, icaltimetype *start_tt, ica
 		}
 	}
 
-	e_meeting_time_selector_set_meeting_time (priv->sel, start_tt->year, start_tt->month, start_tt->day,
-			start_tt->hour, start_tt->minute, end_tt->year, end_tt->month, end_tt->day, end_tt->hour,
-			end_tt->minute);
+	e_meeting_time_selector_set_meeting_time (
+		priv->sel, start_tt->year, start_tt->month,
+		start_tt->day, start_tt->hour, start_tt->minute,
+		end_tt->year, end_tt->month, end_tt->day,
+		end_tt->hour, end_tt->minute);
 	e_meeting_time_selector_set_all_day (priv->sel, all_day);
 
 }
@@ -386,21 +367,11 @@ schedule_page_construct (SchedulePage *spage, EMeetingStore *ems)
 {
 	SchedulePagePrivate *priv = spage->priv;
 	CompEditor *editor;
-	gchar *gladefile;
 
 	editor = comp_editor_page_get_editor (COMP_EDITOR_PAGE (spage));
 
-	gladefile = g_build_filename (EVOLUTION_GLADEDIR,
-				      "schedule-page.glade",
-				      NULL);
-	priv->xml = glade_xml_new (gladefile, NULL, NULL);
-	g_free (gladefile);
-
-	if (!priv->xml) {
-		g_message ("schedule_page_construct(): "
-			   "Could not load the Glade XML file!");
-		return NULL;
-	}
+	priv->builder = gtk_builder_new ();
+	e_load_ui_builder_definition (priv->builder, "schedule-page.ui");
 
 	if (!get_widgets (spage)) {
 		g_message ("schedule_page_construct(): "

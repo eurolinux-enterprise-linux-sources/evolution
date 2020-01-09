@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef _E_MEETING_TIME_SELECTOR_H_
-#define _E_MEETING_TIME_SELECTOR_H_
+#ifndef E_MEETING_TIME_SELECTOR_H
+#define E_MEETING_TIME_SELECTOR_H
 
 #include <gtk/gtk.h>
 #include <libgnomecanvas/gnome-canvas.h>
@@ -31,13 +31,30 @@
 #include "e-meeting-store.h"
 #include "e-meeting-list-view.h"
 
-G_BEGIN_DECLS
-
 /*
  * EMeetingTimeSelector displays a list of attendees for a meeting and a
  * graphical summary of the times which they are free and busy, allowing the
  * user to select an appropriate time for a meeting.
  */
+
+/* Standard GObject macros */
+#define E_TYPE_MEETING_TIME_SELECTOR \
+	(e_meeting_time_selector_get_type ())
+#define E_MEETING_TIME_SELECTOR(obj) \
+	(G_TYPE_CHECK_INSTANCE_CAST \
+	((obj), E_TYPE_MEETING_TIME_SELECTOR, EMeetingTimeSelector))
+#define E_MEETING_TIME_SELECTOR_CLASS(cls) \
+	(G_TYPE_CHECK_CLASS_CAST \
+	((cls), E_TYPE_MEETING_TIME_SELECTOR, EMeetingTimeSelectorClass))
+#define E_IS_MEETING_TIME_SELECTOR(obj) \
+	(G_TYPE_CHECK_INSTANCE_TYPE \
+	((obj), E_TYPE_MEETING_TIME_SELECTOR))
+#define E_IS_MEETING_TIME_SELECTOR_CLASS(cls) \
+	(G_TYPE_CHECK_CLASS_TYPE \
+	((cls), E_TYPE_MEETING_TIME_SELECTOR))
+#define E_MEETING_TIME_SELECTOR_GET_CLASS(obj) \
+	(G_TYPE_INSTANCE_GET_CLASS \
+	((obj), E_TYPE_MEETING_TIME_SELECTOR))
 
 /* Define this to include the debugging functions. */
 #undef E_MEETING_TIME_SELECTOR_DEBUG
@@ -47,6 +64,8 @@ G_BEGIN_DECLS
 
 #define E_MEETING_TIME_SELECTOR_TEXT_Y_PAD		3
 #define E_MEETING_TIME_SELECTOR_TEXT_X_PAD		2
+
+G_BEGIN_DECLS
 
 /* This is used to specify the format used when displaying the dates.
    The full format is like 'Sunday, September 12, 1999'. The abbreviated format
@@ -84,18 +103,16 @@ extern const gchar *EMeetingTimeSelectorHours[24];
 /* An array of hour strings for 12 hour time, "12:00am" .. "11:00pm". */
 extern const gchar *EMeetingTimeSelectorHours12[24];
 
-#define E_MEETING_TIME_SELECTOR(obj)          G_TYPE_CHECK_INSTANCE_CAST (obj, e_meeting_time_selector_get_type (), EMeetingTimeSelector)
-#define E_MEETING_TIME_SELECTOR_CLASS(klass)  G_TYPE_CHECK_CLASS_CAST (klass, e_meeting_time_selector_get_type (), EMeetingTimeSelectorClass)
-#define IS_E_MEETING_TIME_SELECTOR(obj)       G_TYPE_CHECK_INSTANCE_TYPE (obj, e_meeting_time_selector_get_type ())
+typedef struct _EMeetingTimeSelector EMeetingTimeSelector;
+typedef struct _EMeetingTimeSelectorClass EMeetingTimeSelectorClass;
+typedef struct _EMeetingTimeSelectorPrivate EMeetingTimeSelectorPrivate;
 
-typedef struct _EMeetingTimeSelector       EMeetingTimeSelector;
-typedef struct _EMeetingTimeSelectorClass  EMeetingTimeSelectorClass;
-
-struct _EMeetingTimeSelector
-{
+struct _EMeetingTimeSelector {
 	/* We subclass a GtkTable which makes it easy to add extra widgets
 	   if neccesary. */
 	GtkTable table;
+
+	EMeetingTimeSelectorPrivate *priv;
 
 	/*
 	 * User Interface stuff - widgets, colors etc.
@@ -246,9 +263,6 @@ struct _EMeetingTimeSelector
 	/* This is used to determine the delay between scrolls. */
 	gint scroll_count;
 
-	/* The notification function id for Free/Busy template uri changes */
-	guint fb_uri_not;
-
 	/* The notification function id for Free/Busy refreshes */
 	gboolean fb_refresh_not;
 
@@ -257,8 +271,7 @@ struct _EMeetingTimeSelector
 	guint style_change_idle_id;
 };
 
-struct _EMeetingTimeSelectorClass
-{
+struct _EMeetingTimeSelectorClass {
 	GtkTableClass parent_class;
 
 	void (* changed) (EMeetingTimeSelector *mts);
@@ -269,79 +282,110 @@ struct _EMeetingTimeSelectorClass
  * know where the data is coming from. This is mainly just for testing for now.
  */
 
-GType e_meeting_time_selector_get_type (void);
-GtkWidget* e_meeting_time_selector_new (EMeetingStore *ems);
-void e_meeting_time_selector_construct (EMeetingTimeSelector * mts, EMeetingStore *ems);
+GType		e_meeting_time_selector_get_type (void);
+GtkWidget *	e_meeting_time_selector_new	(EMeetingStore *ems);
+void		e_meeting_time_selector_construct
+						(EMeetingTimeSelector *mts,
+						 EMeetingStore *ems);
+gboolean	e_meeting_time_selector_get_show_week_numbers
+						(EMeetingTimeSelector *mts);
+void		e_meeting_time_selector_set_show_week_numbers
+						(EMeetingTimeSelector *mts,
+						 gboolean show_week_numbers);
+gboolean	e_meeting_time_selector_get_use_24_hour_format
+						(EMeetingTimeSelector *mts);
+void		e_meeting_time_selector_set_use_24_hour_format
+						(EMeetingTimeSelector *mts,
+						 gboolean use_24_hour_format);
+gint		e_meeting_time_selector_get_week_start_day
+						(EMeetingTimeSelector *mts);
+void		e_meeting_time_selector_set_week_start_day
+						(EMeetingTimeSelector *mts,
+						 gint week_start_day);
 
 /* This returns the currently selected meeting time.
    Note that months are 1-12 and days are 1-31. The start time is guaranteed to
    be before or equal to the end time. You may want to check if they are equal
    if that if it is a problem. */
-void e_meeting_time_selector_get_meeting_time (EMeetingTimeSelector *mts,
-					       gint *start_year,
-					       gint *start_month,
-					       gint *start_day,
-					       gint *start_hour,
-					       gint *start_minute,
-					       gint *end_year,
-					       gint *end_month,
-					       gint *end_day,
-					       gint *end_hour,
-					       gint *end_minute);
+void		e_meeting_time_selector_get_meeting_time
+						(EMeetingTimeSelector *mts,
+						 gint *start_year,
+						 gint *start_month,
+						 gint *start_day,
+						 gint *start_hour,
+						 gint *start_minute,
+						 gint *end_year,
+						 gint *end_month,
+						 gint *end_day,
+						 gint *end_hour,
+						 gint *end_minute);
 
 /* This sets the meeting time, returning TRUE if it is valid. */
-gboolean e_meeting_time_selector_set_meeting_time (EMeetingTimeSelector *mts,
-						   gint start_year,
-						   gint start_month,
-						   gint start_day,
-						   gint start_hour,
-						   gint start_minute,
-						   gint end_year,
-						   gint end_month,
-						   gint end_day,
-						   gint end_hour,
-						   gint end_minute);
+gboolean	e_meeting_time_selector_set_meeting_time
+						(EMeetingTimeSelector *mts,
+						 gint start_year,
+						 gint start_month,
+						 gint start_day,
+						 gint start_hour,
+						 gint start_minute,
+						 gint end_year,
+						 gint end_month,
+						 gint end_day,
+						 gint end_hour,
+						 gint end_minute);
 
-void e_meeting_time_selector_set_all_day (EMeetingTimeSelector *mts,
-					  gboolean all_day);
-void e_meeting_time_selector_set_working_hours_only (EMeetingTimeSelector *mts,
-						     gboolean working_hours_only);
-void e_meeting_time_selector_set_working_hours (EMeetingTimeSelector *mts,
-						gint day_start_hour,
-						gint day_start_minute,
-						gint day_end_hour,
-						gint day_end_minute);
+void		e_meeting_time_selector_set_all_day
+						(EMeetingTimeSelector *mts,
+						 gboolean all_day);
+void		e_meeting_time_selector_set_working_hours_only
+						(EMeetingTimeSelector *mts,
+						 gboolean working_hours_only);
+void		e_meeting_time_selector_set_working_hours
+						(EMeetingTimeSelector *mts,
+						 gint day_start_hour,
+						 gint day_start_minute,
+						 gint day_end_hour,
+						 gint day_end_minute);
 
-void e_meeting_time_selector_set_zoomed_out (EMeetingTimeSelector *mts,
-					     gboolean zoomed_out);
+void		e_meeting_time_selector_set_zoomed_out
+						(EMeetingTimeSelector *mts,
+						 gboolean zoomed_out);
 
-EMeetingTimeSelectorAutopickOption e_meeting_time_selector_get_autopick_option (EMeetingTimeSelector *mts);
-void e_meeting_time_selector_set_autopick_option (EMeetingTimeSelector *mts,
-						  EMeetingTimeSelectorAutopickOption autopick_option);
+EMeetingTimeSelectorAutopickOption
+		e_meeting_time_selector_get_autopick_option
+						(EMeetingTimeSelector *mts);
+void		e_meeting_time_selector_set_autopick_option
+						(EMeetingTimeSelector *mts,
+						 EMeetingTimeSelectorAutopickOption autopick_option);
 
-void e_meeting_time_selector_attendee_set_send_meeting_to (EMeetingTimeSelector *mts,
-							   gint row,
-							   gboolean send_meeting_to);
+void		e_meeting_time_selector_attendee_set_send_meeting_to
+						(EMeetingTimeSelector *mts,
+						 gint row,
+						 gboolean send_meeting_to);
 
-void e_meeting_time_selector_set_read_only (EMeetingTimeSelector *mts, gboolean read_only);
+void		e_meeting_time_selector_set_read_only
+						(EMeetingTimeSelector *mts,
+						 gboolean read_only);
 
 /* Clears all busy times for the given attendee. */
-void e_meeting_time_selector_attendee_clear_busy_periods (EMeetingTimeSelector *mts,
-							  gint row);
+void		e_meeting_time_selector_attendee_clear_busy_periods
+						(EMeetingTimeSelector *mts,
+						 gint row);
 /* Adds one busy time for the given attendee. */
-gboolean e_meeting_time_selector_attendee_add_busy_period (EMeetingTimeSelector *mts,
-							   gint row,
-							   gint start_year,
-							   gint start_month,
-							   gint start_day,
-							   gint start_hour,
-							   gint start_minute,
-							   gint end_year,
-							   gint end_month,
-							   gint end_day,
-							   gint end_hour,
-							   gint end_minute,
-							   EMeetingFreeBusyType busy_type);
+gboolean	e_meeting_time_selector_attendee_add_busy_period
+						(EMeetingTimeSelector *mts,
+						 gint row,
+						 gint start_year,
+						 gint start_month,
+						 gint start_day,
+						 gint start_hour,
+						 gint start_minute,
+						 gint end_year,
+						 gint end_month,
+						 gint end_day,
+						 gint end_hour,
+						 gint end_minute,
+						 EMeetingFreeBusyType busy_type);
 
 /*
  * INTERNAL ROUTINES - functions to communicate with the canvas items within
@@ -351,36 +395,52 @@ gboolean e_meeting_time_selector_attendee_add_busy_period (EMeetingTimeSelector 
 /* This returns the x pixel coordinates of the meeting start and end times,
    in the entire canvas scroll area. If it returns FALSE, then the meeting
    time isn't in the current scroll area (which shouldn't really happen). */
-gboolean e_meeting_time_selector_get_meeting_time_positions (EMeetingTimeSelector *mts,
-							     gint *start_x,
-							     gint *end_x);
+gboolean	e_meeting_time_selector_get_meeting_time_positions
+						(EMeetingTimeSelector *mts,
+						 gint *start_x,
+						 gint *end_x);
 
-void e_meeting_time_selector_drag_meeting_time (EMeetingTimeSelector *mts,
-						gint x);
+void		e_meeting_time_selector_drag_meeting_time
+						(EMeetingTimeSelector *mts,
+						 gint x);
 
-void e_meeting_time_selector_remove_timeout (EMeetingTimeSelector *mts);
+void		e_meeting_time_selector_remove_timeout
+						(EMeetingTimeSelector *mts);
 
-void e_meeting_time_selector_fix_time_overflows (EMeetingTime*mtstime);
+void		e_meeting_time_selector_fix_time_overflows
+						(EMeetingTime*mtstime);
 
-void e_meeting_time_selector_calculate_day_and_position (EMeetingTimeSelector *mts,
-							 gint x,
-							 GDate *date,
-							 gint *day_position);
-void e_meeting_time_selector_convert_day_position_to_hours_and_mins (EMeetingTimeSelector *mts, gint day_position, guint8 *hours, guint8 *minutes);
-void e_meeting_time_selector_calculate_time (EMeetingTimeSelector *mts,
-					     gint x,
-					     EMeetingTime*time);
-gint e_meeting_time_selector_calculate_time_position (EMeetingTimeSelector *mts,
-						      EMeetingTime *mtstime);
-void e_meeting_time_selector_refresh_free_busy (EMeetingTimeSelector *mts, gint row, gboolean all);
+void		e_meeting_time_selector_calculate_day_and_position
+						(EMeetingTimeSelector *mts,
+						 gint x,
+						 GDate *date,
+						 gint *day_position);
+void		e_meeting_time_selector_convert_day_position_to_hours_and_mins
+						(EMeetingTimeSelector *mts,
+						 gint day_position,
+						 guint8 *hours,
+						 guint8 *minutes);
+void		e_meeting_time_selector_calculate_time
+						(EMeetingTimeSelector *mts,
+						 gint x,
+						 EMeetingTime*time);
+gint		e_meeting_time_selector_calculate_time_position
+						(EMeetingTimeSelector *mts,
+						 EMeetingTime *mtstime);
+void		e_meeting_time_selector_refresh_free_busy
+						(EMeetingTimeSelector *mts,
+						 gint row,
+						 gboolean all);
 
 /* Debugging function to dump information on all attendees. */
 #ifdef E_MEETING_TIME_SELECTOR_DEBUG
-void e_meeting_time_selector_dump (EMeetingTimeSelector *mts);
-gchar * e_meeting_time_selector_dump_time (EMeetingTime*mtstime);
-gchar * e_meeting_time_selector_dump_date (GDate *date);
+void		e_meeting_time_selector_dump	(EMeetingTimeSelector *mts);
+gchar *		e_meeting_time_selector_dump_time
+						(EMeetingTime *mtstime);
+gchar *		e_meeting_time_selector_dump_date
+						(GDate *date);
 #endif /* E_MEETING_TIME_SELECTOR_DEBUG */
 
 G_END_DECLS
 
-#endif /* _E_MEETING_TIME_SELECTOR_H_ */
+#endif /* E_MEETING_TIME_SELECTOR_H */

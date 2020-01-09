@@ -26,13 +26,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <glib/gi18n.h>
-#include <glade/glade.h>
 #include <libedataserver/e-time-utils.h>
 #include <libecal/e-cal-time-util.h>
 #include "alarm-notify-dialog.h"
 #include "config-data.h"
 #include "util.h"
+
+#include "e-util/e-util.h"
 #include "e-util/e-util-private.h"
+#include "misc/e-buffer-tagger.h"
 
 enum {
 	ALARM_DISPLAY_COLUMN,
@@ -56,7 +58,7 @@ typedef struct {
 } AlarmFuncInfo;
 
 typedef struct {
-	GladeXML *xml;
+	GtkBuilder *builder;
 
 	GtkWidget *dialog;
 	GtkWidget *snooze_time_min;
@@ -68,7 +70,6 @@ typedef struct {
 	GtkWidget *description;
 	GtkWidget *location;
 	GtkWidget *treeview;
-	GtkWidget *scrolledwindow;
 
 	AlarmFuncInfo *cur_funcinfo;
 
@@ -112,7 +113,7 @@ an_update_hrs_label (GtkSpinButton *sb, gpointer data)
 	an = (AlarmNotify *) data;
 
 	snooze_timeout_hrs  = gtk_spin_button_get_value_as_int (sb);
-	new_label = g_strdup (ngettext ("hours", "hours", snooze_timeout_hrs));
+	new_label = g_strdup (ngettext ("hour", "hours", snooze_timeout_hrs));
 	gtk_label_set_text (GTK_LABEL (an->hrs_label), new_label);
 	g_free (new_label);
 }
@@ -218,7 +219,7 @@ dialog_destroyed_cb (GtkWidget *dialog, gpointer user_data)
 {
 	AlarmNotify *an = user_data;
 
-	g_object_unref (an->xml);
+	g_object_unref (an->builder);
 	g_free (an);
 }
 
@@ -230,6 +231,7 @@ dialog_destroyed_cb (GtkWidget *dialog, gpointer user_data)
 AlarmNotificationsDialog *
 notified_alarms_dialog_new (void)
 {
+	GtkWidget *container;
 	GtkWidget *edit_btn;
 	GtkWidget *snooze_btn;
 	GtkWidget *image;
@@ -251,40 +253,31 @@ notified_alarms_dialog_new (void)
 
 			G_TYPE_POINTER /* FuncInfo*/));
 
-	gchar *gladefile;
+	an->builder = gtk_builder_new ();
+	e_load_ui_builder_definition (an->builder, "alarm-notify.ui");
 
-	gladefile = g_build_filename (EVOLUTION_GLADEDIR,
-				      "alarm-notify.glade",
-				      NULL);
-	an->xml = glade_xml_new (gladefile, NULL, NULL);
-	g_free (gladefile);
-	if (!an->xml) {
-		g_message ("alarm_notify_dialog(): Could not load the Glade XML file!");
-		g_free (an);
-		return NULL;
-	}
-
-	an->dialog = glade_xml_get_widget (an->xml, "alarm-notify");
-	an->snooze_time_min = glade_xml_get_widget (an->xml, "snooze-time-min");
-	an->minutes_label = glade_xml_get_widget (an->xml, "minutes-label");
-	an->snooze_time_hrs = glade_xml_get_widget (an->xml, "snooze-time-hrs");
-	an->hrs_label = glade_xml_get_widget (an->xml, "hrs-label");
-	an->description = glade_xml_get_widget (an->xml, "description-label");
-	an->location = glade_xml_get_widget (an->xml, "location-label");
-	an->treeview = glade_xml_get_widget (an->xml, "appointments-treeview");
-	an->scrolledwindow = glade_xml_get_widget (an->xml, "treeview-scrolledwindow");
-	snooze_btn = glade_xml_get_widget (an->xml, "snooze-button");
+	an->dialog = e_builder_get_widget (an->builder, "alarm-notify");
+	an->snooze_time_min = e_builder_get_widget (an->builder, "snooze-time-min");
+	an->minutes_label = e_builder_get_widget (an->builder, "minutes-label");
+	an->snooze_time_hrs = e_builder_get_widget (an->builder, "snooze-time-hrs");
+	an->hrs_label = e_builder_get_widget (an->builder, "hrs-label");
+	an->description = e_builder_get_widget (an->builder, "description-label");
+	an->location = e_builder_get_widget (an->builder, "location-label");
+	an->treeview = e_builder_get_widget (an->builder, "appointments-treeview");
+	snooze_btn = e_builder_get_widget (an->builder, "snooze-button");
 	an->snooze_btn = snooze_btn;
-	an->dismiss_btn = glade_xml_get_widget (an->xml, "dismiss-button");
-	edit_btn = glade_xml_get_widget (an->xml, "edit-button");
+	an->dismiss_btn = e_builder_get_widget (an->builder, "dismiss-button");
+	edit_btn = e_builder_get_widget (an->builder, "edit-button");
 
-	if (!(an->dialog && an->scrolledwindow && an->treeview && an->snooze_time_min && an->snooze_time_hrs
+	if (!(an->dialog && an->treeview && an->snooze_time_min && an->snooze_time_hrs
 	      && an->description && an->location && edit_btn && snooze_btn && an->dismiss_btn)) {
-		g_message ("alarm_notify_dialog(): Could not find all widgets in Glade file!");
-		g_object_unref (an->xml);
+		g_warning ("alarm_notify_dialog(): Could not find all widgets in alarm-notify.ui file!");
+		g_object_unref (an->builder);
 		g_free (an);
 		return NULL;
 	}
+
+	e_buffer_tagger_connect (GTK_TEXT_VIEW (an->description));
 
 	gtk_tree_view_set_model (GTK_TREE_VIEW(an->treeview), model);
 
@@ -304,9 +297,14 @@ notified_alarms_dialog_new (void)
 		G_CALLBACK (tree_selection_changed_cb), an);
 
 	gtk_widget_realize (an->dialog);
-	gtk_container_set_border_width (GTK_CONTAINER (GTK_DIALOG (an->dialog)->vbox), 0);
-	gtk_container_set_border_width (GTK_CONTAINER (GTK_DIALOG (an->dialog)->action_area), 12);
-	image = glade_xml_get_widget (an->xml, "alarm-image");
+
+	container = gtk_dialog_get_action_area (GTK_DIALOG (an->dialog));
+	gtk_container_set_border_width (GTK_CONTAINER (container), 12);
+
+	container = gtk_dialog_get_content_area (GTK_DIALOG (an->dialog));
+	gtk_container_set_border_width (GTK_CONTAINER (container), 0);
+
+	image = e_builder_get_widget (an->builder, "alarm-image");
 	gtk_image_set_from_icon_name (
 		GTK_IMAGE (image), "stock_alarm", GTK_ICON_SIZE_DIALOG);
 
@@ -316,8 +314,8 @@ notified_alarms_dialog_new (void)
 	g_signal_connect (G_OBJECT (an->dialog), "response", G_CALLBACK (dialog_response_cb), an);
 	g_signal_connect (G_OBJECT (an->dialog), "destroy", G_CALLBACK (dialog_destroyed_cb), an);
 
-	if (!GTK_WIDGET_REALIZED (an->dialog))
-	gtk_widget_realize (an->dialog);
+	if (!gtk_widget_get_realized (an->dialog))
+		gtk_widget_realize (an->dialog);
 
 	gtk_window_set_icon_name (GTK_WINDOW (an->dialog), "stock_alarm");
 
@@ -441,8 +439,11 @@ fill_in_labels (AlarmNotify *an, const gchar *summary, const gchar *description,
 	GtkTextTagTable *table = gtk_text_tag_table_new ();
 	GtkTextBuffer *buffer =  gtk_text_buffer_new (table);
 	gtk_text_buffer_set_text (buffer, description, -1);
+	e_buffer_tagger_disconnect (GTK_TEXT_VIEW (an->description));
 	gtk_text_view_set_buffer (GTK_TEXT_VIEW (an->description), buffer);
 	gtk_label_set_text (GTK_LABEL (an->location), location);
+	e_buffer_tagger_connect (GTK_TEXT_VIEW (an->description));
+	e_buffer_tagger_update_tags (GTK_TEXT_VIEW (an->description));
 	g_object_unref (table);
 	g_object_unref (buffer);
 }

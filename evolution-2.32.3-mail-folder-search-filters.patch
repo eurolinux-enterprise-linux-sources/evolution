@@ -1,0 +1,34 @@
+diff -up evolution-2.32.3/mail/message-list.c.evo evolution-2.32.3/mail/message-list.c
+--- evolution-2.32.3/mail/message-list.c.evo	2013-10-02 16:10:59.777248803 +0200
++++ evolution-2.32.3/mail/message-list.c	2013-10-02 16:10:59.811248800 +0200
+@@ -3714,6 +3714,12 @@ message_list_set_folder (MessageList *me
+ 	if (message_list->folder == folder)
+ 		return;
+ 
++	g_free (message_list->search);
++	message_list->search = NULL;
++
++	g_free (message_list->frozen_search);
++	message_list->frozen_search = NULL;
++
+ 	if (message_list->seen_id) {
+ 		g_source_remove (message_list->seen_id);
+ 		message_list->seen_id = 0;
+diff -up evolution-2.32.3/modules/mail/e-mail-shell-view-private.c.evo evolution-2.32.3/modules/mail/e-mail-shell-view-private.c
+--- evolution-2.32.3/modules/mail/e-mail-shell-view-private.c.evo	2013-10-02 16:10:59.812248800 +0200
++++ evolution-2.32.3/modules/mail/e-mail-shell-view-private.c	2013-10-02 16:12:23.979243045 +0200
+@@ -785,8 +785,13 @@ e_mail_shell_view_restore_state (EMailSh
+ 	folder = e_mail_reader_get_folder (reader);
+ 	folder_uri = e_mail_reader_get_folder_uri (reader);
+ 
+-	if (folder_uri == NULL)
++	if (folder_uri == NULL) {
++		if (e_shell_searchbar_get_state_group (searchbar)) {
++			e_shell_searchbar_set_state_group (searchbar, NULL);
++			e_shell_searchbar_load_state (searchbar);
++		}
+ 		return;
++	}
+ 
+ 	/* Do not restore state if we're running a "Current Account"
+ 	 * or "All Accounts" search, since we don't want the search

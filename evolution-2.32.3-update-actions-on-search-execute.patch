@@ -1,0 +1,60 @@
+diff -up evolution-2.32.3/modules/addressbook/e-book-shell-view.c.update-actions-on-search-execute evolution-2.32.3/modules/addressbook/e-book-shell-view.c
+--- evolution-2.32.3/modules/addressbook/e-book-shell-view.c.update-actions-on-search-execute	2011-04-20 18:26:50.000000000 +0200
++++ evolution-2.32.3/modules/addressbook/e-book-shell-view.c	2013-09-03 13:33:23.791041647 +0200
+@@ -246,6 +246,8 @@ book_shell_view_execute_search (EShellVi
+ 
+ 	e_book_shell_content_set_preview_contact (book_shell_content, NULL);
+ 	priv->preview_index = -1;
++
++	e_shell_view_update_actions (shell_view);
+ }
+ 
+ static void
+diff -up evolution-2.32.3/modules/calendar/e-cal-shell-view.c.update-actions-on-search-execute evolution-2.32.3/modules/calendar/e-cal-shell-view.c
+--- evolution-2.32.3/modules/calendar/e-cal-shell-view.c.update-actions-on-search-execute	2013-09-03 13:33:23.328041648 +0200
++++ evolution-2.32.3/modules/calendar/e-cal-shell-view.c	2013-09-03 13:33:23.793041647 +0200
+@@ -214,6 +214,8 @@ cal_shell_view_execute_search (EShellVie
+ 	gnome_calendar_set_search_query (
+ 		calendar, query, range_search, start_range, end_range);
+ 	g_free (query);
++
++	e_shell_view_update_actions (shell_view);
+ }
+ 
+ static icalproperty *
+diff -up evolution-2.32.3/modules/calendar/e-memo-shell-view.c.update-actions-on-search-execute evolution-2.32.3/modules/calendar/e-memo-shell-view.c
+--- evolution-2.32.3/modules/calendar/e-memo-shell-view.c.update-actions-on-search-execute	2011-04-20 18:26:50.000000000 +0200
++++ evolution-2.32.3/modules/calendar/e-memo-shell-view.c	2013-09-03 13:33:23.794041647 +0200
+@@ -163,6 +163,8 @@ memo_shell_view_execute_search (EShellVi
+ 	web_view = e_preview_pane_get_web_view (preview_pane);
+ 	memo_preview = E_CAL_COMPONENT_PREVIEW (web_view);
+ 	e_cal_component_preview_clear (memo_preview);
++
++	e_shell_view_update_actions (shell_view);
+ }
+ 
+ static void
+diff -up evolution-2.32.3/modules/calendar/e-task-shell-view.c.update-actions-on-search-execute evolution-2.32.3/modules/calendar/e-task-shell-view.c
+--- evolution-2.32.3/modules/calendar/e-task-shell-view.c.update-actions-on-search-execute	2011-04-20 18:26:50.000000000 +0200
++++ evolution-2.32.3/modules/calendar/e-task-shell-view.c	2013-09-03 13:33:23.792041647 +0200
+@@ -279,6 +279,8 @@ task_shell_view_execute_search (EShellVi
+ 	web_view = e_preview_pane_get_web_view (preview_pane);
+ 	task_preview = E_CAL_COMPONENT_PREVIEW (web_view);
+ 	e_cal_component_preview_clear (task_preview);
++
++	e_shell_view_update_actions (shell_view);
+ }
+ 
+ static void
+diff -up evolution-2.32.3/modules/mail/e-mail-shell-view.c.update-actions-on-search-execute evolution-2.32.3/modules/mail/e-mail-shell-view.c
+--- evolution-2.32.3/modules/mail/e-mail-shell-view.c.update-actions-on-search-execute	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/modules/mail/e-mail-shell-view.c	2013-09-03 13:33:23.792041647 +0200
+@@ -763,6 +763,8 @@ execute:
+ 
+ 	g_object_unref (model);
+ 	g_free (query);
++
++	e_shell_view_update_actions (shell_view);
+ }
+ 
+ static void

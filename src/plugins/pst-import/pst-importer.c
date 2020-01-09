@@ -41,6 +41,7 @@
 #include <gtk/gtk.h>
 
 #include <e-util/e-import.h>
+#include <e-util/e-plugin.h>
 
 #include <libebook/e-contact.h>
 #include <libebook/e-book.h>
@@ -51,23 +52,20 @@
 #include <libedataserver/e-data-server-util.h>
 #include <libedataserverui/e-source-selector-dialog.h>
 
-#include <camel/camel-folder.h>
-#include <camel/camel-store.h>
-#include <camel/camel-exception.h>
-#include <camel/camel-mime-message.h>
-#include <camel/camel-multipart.h>
-#include <camel/camel-data-wrapper.h>
-#include <camel/camel-stream-mem.h>
-#include <camel/camel-stream-fs.h>
-#include <camel/camel-file-utils.h>
-
-#include <mail/mail-component.h>
+#include <mail/e-mail-local.h>
 #include <mail/mail-mt.h>
 #include <mail/mail-tools.h>
 #include <mail/em-utils.h>
 
 #include <libpst/libpst.h>
 #include <libpst/timeconv.h>
+
+#ifdef WIN32
+#ifdef gmtime_r
+#undef gmtime_r
+#endif
+#define gmtime_r(tp,tmp) (gmtime(tp)?(*(tmp)=*gmtime(tp),(tmp)):0)
+#endif
 
 typedef struct _PstImporter PstImporter;
 
@@ -94,7 +92,7 @@ gboolean org_credativ_evolution_readpst_supported (EPlugin *epl, EImportTarget *
 GtkWidget *org_credativ_evolution_readpst_getwidget (EImport *ei, EImportTarget *target, EImportImporter *im);
 void org_credativ_evolution_readpst_import (EImport *ei, EImportTarget *target, EImportImporter *im);
 void org_credativ_evolution_readpst_cancel (EImport *ei, EImportTarget *target, EImportImporter *im);
-gint e_plugin_lib_enable (EPluginLib *ep, gint enable);
+gint e_plugin_lib_enable (EPlugin *ep, gint enable);
 
 /* em-folder-selection-button.h is private, even though other internal evo plugins use it!
    so declare the functions here
@@ -105,7 +103,7 @@ GtkWidget *em_folder_selection_button_new (const gchar *title, const gchar *capt
 void        em_folder_selection_button_set_selection (EMFolderSelectionButton *button, const gchar *uri);
 const gchar *em_folder_selection_button_get_selection (EMFolderSelectionButton *button);
 
-static guchar pst_signature [] = { '!', 'B', 'D', 'N' };
+static guchar pst_signature[] = { '!', 'B', 'D', 'N' };
 
 struct _PstImporter {
 	MailMsg base;
@@ -118,7 +116,6 @@ struct _PstImporter {
 	gint status_pc;
 	gint status_timeout_id;
 	CamelOperation *status;
-	CamelException ex;
 
 	pst_file pst;
 
@@ -225,7 +222,7 @@ get_suggested_foldername (EImportTargetURI *target)
 
 	/* Suggest a folder that is in the same mail storage as the users' inbox,
 	   with a name derived from the .PST file */
-	inbox = mail_component_get_folder_uri (NULL, MAIL_COMPONENT_FOLDER_INBOX);
+	inbox = e_mail_local_get_folder_uri (E_MAIL_FOLDER_INBOX);
 
 	delim = g_strrstr (inbox, "#");
 	if (delim != NULL) {
@@ -255,10 +252,11 @@ get_suggested_foldername (EImportTargetURI *target)
 	}
 
 	if (mail_tool_uri_to_folder (foldername->str, 0, NULL) != NULL) {
+		CamelFolder *folder;
+
 		/* Folder exists - add a number */
 		gint i, len;
 		len = foldername->len;
-		CamelFolder *folder;
 
 		for (i=1; i<10000; i++) {
 			g_string_truncate (foldername, len);
@@ -350,7 +348,7 @@ pst_import_describe (PstImporter *m, gint complete)
 }
 
 static ECal*
-open_ecal (ECalSourceType type, gchar *name)
+open_ecal (ECalSourceType type, const gchar *name)
 {
 	/* Hack - grab the first calendar we can find
 		TODO - add a selection mechanism in get_widget */
@@ -451,10 +449,10 @@ pst_import_file (PstImporter *m)
 	filename = g_filename_from_uri (((EImportTargetURI *)m->target)->uri_src, NULL, NULL);
 	m->parent_uri = g_strdup (((EImportTargetURI *)m->target)->uri_dest); /* Destination folder, was set in our widget */
 
-	camel_operation_start (NULL, _("Importing `%s'"), filename);
+	camel_operation_start (NULL, _("Importing '%s'"), filename);
 
 	if (GPOINTER_TO_INT (g_datalist_get_data (&m->target->data, "pst-do-mail"))) {
-		mail_tool_uri_to_folder (m->parent_uri, CAMEL_STORE_FOLDER_CREATE, &m->base.ex);
+		mail_tool_uri_to_folder (m->parent_uri, CAMEL_STORE_FOLDER_CREATE, &m->base.error);
 	}
 
 	ret = pst_init (&m->pst, filename);
@@ -467,24 +465,24 @@ pst_import_file (PstImporter *m)
 
 	g_free (filename);
 
-	camel_operation_progress_count (NULL, 1);
+	camel_operation_progress (NULL, 1);
 
 	if ((item = pst_parse_item (&m->pst, m->pst.d_head, NULL)) == NULL) {
 		pst_error_msg ("Could not get root record");
 		return;
 	}
 
-	camel_operation_progress_count (NULL, 2);
+	camel_operation_progress (NULL, 2);
 
 	if ((d_ptr = pst_getTopOfFolders (&m->pst, item)) == NULL) {
 		pst_error_msg ("Top of folders record not found. Cannot continue");
 		return;
 	}
 
-	camel_operation_progress_count (NULL, 3);
+	camel_operation_progress (NULL, 3);
 	pst_import_folders (m, d_ptr);
 
-	camel_operation_progress_count (NULL, 4);
+	camel_operation_progress (NULL, 4);
 
 	camel_operation_end (NULL);
 
@@ -557,7 +555,7 @@ pst_process_item (PstImporter *m, pst_desc_tree *d_ptr)
 
 	if (item->folder != NULL) {
 		pst_process_folder (m, item);
-		camel_operation_start (NULL, _("Importing `%s'"), item->file_as.str);
+		camel_operation_start (NULL, _("Importing '%s'"), item->file_as.str);
 	} else {
 		if (m->folder_count && (m->current_item < m->folder_count)) {
 			camel_operation_progress (NULL, (m->current_item * 100) / m->folder_count);
@@ -669,7 +667,7 @@ pst_process_folder (PstImporter *m, pst_item *item)
 	m->folder_uri = uri;
 
 	if (m->folder) {
-		camel_object_unref (m->folder);
+		g_object_unref (m->folder);
 		m->folder = NULL;
 	}
 
@@ -705,8 +703,8 @@ pst_create_folder (PstImporter *m)
 
 			*pos = '\0';
 
-			folder = mail_tool_uri_to_folder (dest, CAMEL_STORE_FOLDER_CREATE, &m->base.ex);
-			camel_object_unref(folder);
+			folder = mail_tool_uri_to_folder (dest, CAMEL_STORE_FOLDER_CREATE, &m->base.error);
+			g_object_unref (folder);
 			*pos = '/';
 		}
 	}
@@ -714,10 +712,10 @@ pst_create_folder (PstImporter *m)
 	g_free (dest);
 
 	if (m->folder) {
-		camel_object_unref (m->folder);
+		g_object_unref (m->folder);
 	}
 
-	m->folder = mail_tool_uri_to_folder (m->folder_uri, CAMEL_STORE_FOLDER_CREATE, &m->base.ex);
+	m->folder = mail_tool_uri_to_folder (m->folder_uri, CAMEL_STORE_FOLDER_CREATE, &m->base.error);
 
 }
 
@@ -730,7 +728,7 @@ static CamelMimePart *
 attachment_to_part (PstImporter *m, pst_item_attach *attach)
 {
 	CamelMimePart *part;
-	gchar *mimetype;
+	const gchar *mimetype;
 
 	part = camel_mime_part_new ();
 
@@ -770,6 +768,7 @@ pst_process_email (PstImporter *m, pst_item *item)
 	CamelMimePart *part;
 	CamelMessageInfo *info;
 	pst_item_attach *attach;
+	gboolean success;
 
 	if (m->folder == NULL) {
 		pst_create_folder (m);
@@ -806,7 +805,7 @@ pst_process_email (PstImporter *m, pst_item *item)
 	}
 
 	camel_mime_message_set_from (msg, addr);
-	camel_object_unref (addr);
+	g_object_unref (addr);
 
 	if (item->email->sent_date != NULL) {
 		camel_mime_message_set_date (msg, pst_fileTimeToUnixTime (item->email->sent_date), 0);
@@ -823,7 +822,7 @@ pst_process_email (PstImporter *m, pst_item *item)
 		/*g_message ("  Email headers... %s...", item->email->header);*/
 
 		stream = camel_stream_mem_new_with_buffer (item->email->header.str, strlen (item->email->header.str));
-		if (camel_data_wrapper_construct_from_stream ((CamelDataWrapper *)msg, stream) == -1)
+		if (camel_data_wrapper_construct_from_stream ((CamelDataWrapper *)msg, stream, NULL) == -1)
 			g_warning ("Error reading headers, skipped");
 
 	} else {
@@ -831,19 +830,19 @@ pst_process_email (PstImporter *m, pst_item *item)
 		if (item->email->sentto_address.str != NULL) {
 			addr = camel_internet_address_new ();
 
-			if (camel_address_decode (CAMEL_ADDRESS (addr), item->email->sentto_address.str) > 0);
+			if (camel_address_decode (CAMEL_ADDRESS (addr), item->email->sentto_address.str) > 0)
 				camel_mime_message_set_recipients (msg, "To", addr);
 
-			camel_object_unref (addr);
+			g_object_unref (addr);
 		}
 
 		if (item->email->cc_address.str != NULL) {
 			addr = camel_internet_address_new ();
 
-			if (camel_address_decode (CAMEL_ADDRESS (addr), item->email->cc_address.str) > 0);
+			if (camel_address_decode (CAMEL_ADDRESS (addr), item->email->cc_address.str) > 0)
 				camel_mime_message_set_recipients (msg, "CC", addr);
 
-			camel_object_unref (addr);
+			g_object_unref (addr);
 		}
 	}
 
@@ -874,7 +873,7 @@ pst_process_email (PstImporter *m, pst_item *item)
 		part = camel_mime_part_new ();
 		camel_mime_part_set_content (part, item->body.str, strlen (item->body.str), "text/plain");
 		camel_multipart_add_part (mp, part);
-		camel_object_unref (part);
+		g_object_unref (part);
 	}
 
 	if (item->email->htmlbody.str != NULL) {
@@ -882,21 +881,21 @@ pst_process_email (PstImporter *m, pst_item *item)
 		part = camel_mime_part_new ();
 		camel_mime_part_set_content (part, item->email->htmlbody.str, strlen (item->email->htmlbody.str), "text/html");
 		camel_multipart_add_part (mp, part);
-		camel_object_unref (part);
+		g_object_unref (part);
 	}
 
 	for (attach = item->attach; attach; attach = attach->next) {
 		if (attach->data.data || attach->i_id) {
 			part = attachment_to_part(m, attach);
 			camel_multipart_add_part (mp, part);
-			camel_object_unref (part);
+			g_object_unref (part);
 		}
 	}
 
 	/*camel_mime_message_dump (msg, TRUE);*/
 
 	if (item->email->htmlbody.str || item->attach) {
-		camel_medium_set_content_object (CAMEL_MEDIUM (msg), CAMEL_DATA_WRAPPER (mp));
+		camel_medium_set_content (CAMEL_MEDIUM (msg), CAMEL_DATA_WRAPPER (mp));
 	} else if (item->body.str) {
 		camel_mime_part_set_content (CAMEL_MIME_PART (msg), item->body.str, strlen (item->body.str), "text/plain");
 	} else {
@@ -917,16 +916,16 @@ pst_process_email (PstImporter *m, pst_item *item)
 	if (item->flags & 0x08)
 		camel_message_info_set_flags (info, CAMEL_MESSAGE_DRAFT, ~0);
 
-	camel_folder_append_message (m->folder, msg, info, NULL, &m->ex);
+	success = camel_folder_append_message (
+		m->folder, msg, info, NULL, NULL);
 	camel_message_info_free (info);
-	camel_object_unref (msg);
+	g_object_unref (msg);
 
 	camel_folder_sync (m->folder, FALSE, NULL);
 	camel_folder_thaw (m->folder);
 
-	if (camel_exception_is_set (&m->ex)) {
+	if (!success) {
 		g_critical ("Exception!");
-		camel_exception_clear (&m->ex);
 		return;
 	}
 
@@ -941,7 +940,7 @@ contact_set_string (EContact *contact, EContactField id, gchar *string)
 }
 
 static void
-unknown_field (EContact *contact, GString *notes, gchar *name, gchar *string)
+unknown_field (EContact *contact, GString *notes, const gchar *name, gchar *string)
 {
 	/* Field could not be mapped directly so add to notes field */
 	if (string != NULL) {
@@ -1010,9 +1009,9 @@ pst_process_contact (PstImporter *m, pst_item *item)
 {
 	pst_item_contact *c;
 	EContact *ec;
-	c = item->contact;
 	GString *notes;
 
+	c = item->contact;
 	notes = g_string_sized_new (2048);
 
 	ec = e_contact_new ();
@@ -1233,30 +1232,30 @@ set_cal_attachments (ECal *cal, ECalComponent *ec, PstImporter *m, pst_item_atta
 			continue;
 		}
 
-		if (!(stream = camel_stream_fs_new_with_name (path, O_WRONLY | O_CREAT | O_TRUNC, 0666))) {
+		if (!(stream = camel_stream_fs_new_with_name (path, O_WRONLY | O_CREAT | O_TRUNC, 0666, NULL))) {
 			g_warning ("Could not create stream for file %s - %s", path, g_strerror (errno));
 			attach = attach->next;
 			continue;
 		}
 
-		content = camel_medium_get_content_object (CAMEL_MEDIUM (part));
+		content = camel_medium_get_content (CAMEL_MEDIUM (part));
 
-		if (camel_data_wrapper_decode_to_stream (content, stream) == -1
-			|| camel_stream_flush (stream) == -1)
+		if (camel_data_wrapper_decode_to_stream (content, stream, NULL) == -1
+			|| camel_stream_flush (stream, NULL) == -1)
 		{
 			g_warning ("Could not write attachment to %s: %s", path, g_strerror (errno));
-			camel_object_unref (stream);
+			g_object_unref (stream);
 			attach = attach->next;
 			continue;
 		}
 
-		camel_object_unref (stream);
+		g_object_unref (stream);
 
 		uri = g_filename_to_uri (path, NULL, NULL);
 		list = g_slist_append (list, g_strdup (uri));
 		g_free (uri);
 
-		camel_object_unref (part);
+		g_object_unref (part);
 		g_free (path);
 
 		attach = attach->next;
@@ -1274,11 +1273,12 @@ fill_calcomponent (PstImporter *m, pst_item *item, ECalComponent *ec, const gcha
 	pst_item_appointment *a;
 	pst_item_email *e;
 
-	a = item->appointment;
-	e = item->email;
 	ECalComponentText text;
 	struct icaltimetype tt_start, tt_end;
 	ECalComponentDateTime dt_start, dt_end;
+
+	a = item->appointment;
+	e = item->email;
 
 	g_return_if_fail (item->appointment != NULL);
 
@@ -1475,12 +1475,11 @@ pst_process_task (PstImporter *m, pst_item *item)
 static void
 pst_process_journal (PstImporter *m, pst_item *item)
 {
-	struct pst_item_journal *j;
 	ECalComponent *ec;
 
 	g_return_if_fail (item->appointment != NULL);
 
-	j = item->journal;
+	/*j = item->journal;*/
 	ec = e_cal_component_new ();
 	e_cal_component_set_new_vtype (ec, E_CAL_COMPONENT_JOURNAL);
 
@@ -1661,7 +1660,7 @@ org_credativ_evolution_readpst_cancel (EImport *ei, EImportTarget *target, EImpo
 }
 
 gint
-e_plugin_lib_enable (EPluginLib *ep, gint enable)
+e_plugin_lib_enable (EPlugin *ep, gint enable)
 {
 	if (enable) {
 		bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);

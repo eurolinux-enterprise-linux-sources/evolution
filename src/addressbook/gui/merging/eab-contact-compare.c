@@ -24,8 +24,8 @@
 #include <config.h>
 #include <ctype.h>
 #include <string.h>
-#include "util/eab-book-util.h"
-#include "../component/addressbook.h"
+#include "addressbook/util/addressbook.h"
+#include "addressbook/util/eab-book-util.h"
 #include "eab-contact-compare.h"
 
 /* This is an "optimistic" combiner: the best of the two outcomes is
@@ -323,7 +323,7 @@ eab_contact_compare_name (EContact *contact1, EContact *contact2)
 	if (a->family && b->family && *a->family && *b->family) {
 		++possible;
 		/* We don't allow "loose matching" (i.e. John vs. Jon) on family names */
-		if (! e_utf8_casefold_collate (a->family, b->family)) {
+		if (!e_utf8_casefold_collate (a->family, b->family)) {
 			++matches;
 			family_match = TRUE;
 		}
@@ -565,7 +565,7 @@ match_search_info_free (MatchSearchInfo *info)
 }
 
 static void
-query_cb (EBook *book, EBookStatus status, GList *contacts, gpointer closure)
+query_cb (EBook *book, const GError *error, GList *contacts, gpointer closure)
 {
 	/* XXX we need to free contacts */
 	MatchSearchInfo *info = (MatchSearchInfo *) closure;
@@ -574,7 +574,7 @@ query_cb (EBook *book, EBookStatus status, GList *contacts, gpointer closure)
 	GList *remaining_contacts = NULL;
 	const GList *i;
 
-	if (status != E_BOOK_ERROR_OK) {
+	if (error) {
 		info->cb (info->contact, NULL, EAB_CONTACT_MATCH_NONE, info->closure);
 		match_search_info_free (info);
 		return;
@@ -626,7 +626,7 @@ query_cb (EBook *book, EBookStatus status, GList *contacts, gpointer closure)
 
 #define MAX_QUERY_PARTS 10
 static void
-use_common_book_cb (EBook *book, gpointer closure)
+use_common_book_cb (EBook *book, const GError *error, gpointer closure)
 {
 	MatchSearchInfo *info = (MatchSearchInfo *) closure;
 	EContact *contact = info->contact;
@@ -707,9 +707,9 @@ use_common_book_cb (EBook *book, gpointer closure)
 	}
 
 	if (query)
-		e_book_async_get_contacts (book, query, query_cb, info);
+		e_book_get_contacts_async (book, query, query_cb, info);
 	else
-		query_cb (book, E_BOOK_ERROR_OK, NULL, info);
+		query_cb (book, NULL, NULL, info);
 
 	g_free (qj);
 	if (query)
@@ -731,7 +731,7 @@ eab_contact_locate_match (EContact *contact, EABContactMatchQueryCallback cb, gp
 	info->closure = closure;
 	info->avoid = NULL;
 
-	addressbook_load_default_book ((EBookCallback) use_common_book_cb, info);
+	addressbook_load_default_book ((EBookAsyncCallback) use_common_book_cb, info);
 }
 
 /**
@@ -762,8 +762,8 @@ eab_contact_locate_match_full (EBook *book, EContact *contact, GList *avoid, EAB
 	g_list_foreach (info->avoid, (GFunc) g_object_ref, NULL);
 
 	if (book)
-		use_common_book_cb (book, info);
+		use_common_book_cb (book, NULL, info);
 	else
-		addressbook_load_default_book ((EBookCallback) use_common_book_cb, info);
+		addressbook_load_default_book ((EBookAsyncCallback) use_common_book_cb, info);
 }
 

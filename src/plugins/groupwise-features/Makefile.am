@@ -2,7 +2,14 @@ if OS_WIN32
 NO_UNDEFINED_REQUIRED_LIBS = $(top_builddir)/mail/libevolution-mail.la
 endif
 
-AM_CPPFLAGS =						\
+@EVO_PLUGIN_RULE@
+
+plugin_DATA = org-gnome-groupwise-features.eplug org-gnome-compose-send-options.xml
+
+plugin_LTLIBRARIES = liborg-gnome-groupwise-features.la
+
+liborg_gnome_groupwise_features_la_CPPFLAGS =		\
+	$(AM_CPPFLAGS)					\
 	-I$(top_srcdir)					\
 	-I$(top_srcdir)/widgets				\
 	-I$(top_srcdir)/widgets/misc			\
@@ -12,15 +19,13 @@ AM_CPPFLAGS =						\
 	$(EVOLUTION_CALENDAR_CFLAGS)			\
 	$(EVOLUTION_ADDRESSBOOK_CFLAGS)			\
 	$(CAMEL_GROUPWISE_CFLAGS)			\
-	-DEVOLUTION_GLADEDIR=\""$(gladedir)"\"		\
+	$(GNOME_PLATFORM_CFLAGS)			\
+	-DEVOLUTION_UIDIR=\""$(uidir)"\"		\
 	-DEVOLUTION_IMAGESDIR=\""$(imagesdir)"\"	
 
-@EVO_PLUGIN_RULE@
-
-plugin_DATA = org-gnome-groupwise-features.eplug org-gnome-compose-send-options.xml
-plugin_LTLIBRARIES = liborg-gnome-groupwise-features.la
-
 liborg_gnome_groupwise_features_la_SOURCES = 	\
+		gw-ui.h	     			\
+		gw-ui.c	     			\
 		share-folder-common.c	     	\
 	       	share-folder.c 		     	\
 		share-folder.h               	\
@@ -38,28 +43,32 @@ liborg_gnome_groupwise_features_la_SOURCES = 	\
 		proxy-login.h			\
 		proxy-login.c			\
 		process-meeting.c               \
-		mail-retract.c
+		mail-retract.c			\
+		camel-gw-listener.c		\
+		camel-gw-listener.h		\
+		groupwise-account-setup.c
 
 liborg_gnome_groupwise_features_la_LIBADD=			\
 	$(top_builddir)/e-util/libeutil.la			\
+	$(top_builddir)/composer/libcomposer.la			\
+	$(top_builddir)/shell/libeshell.la			\
 	$(top_builddir)/calendar/gui/libevolution-calendar.la	\
 	$(top_builddir)/widgets/misc/libemiscwidgets.la		\
 	$(top_builddir)/filter/libfilter.la			\
-	$(NO_UNDEFINED_REQUIRED_LIBS)				\
+	$(top_builddir)/mail/libevolution-mail.la		\
 	$(EVOLUTION_CALENDAR_LIBS)				\
 	$(EVOLUTION_MAIL_LIBS)					\
-	$(CAMEL_GROUPWISE_LIBS)
-
-
+	$(CAMEL_GROUPWISE_LIBS)					\
+	$(GNOME_PLATFORM_LIBS)
 
 liborg_gnome_groupwise_features_la_LDFLAGS = -module -avoid-version $(NO_UNDEFINED)
 
-glade_DATA =			\
-	properties.glade	\
-	junk-settings.glade 	\
-	proxy-add-dialog.glade	\
-	proxy-listing.glade	\
-	proxy-login-dialog.glade
+ui_DATA =			\
+	properties.ui	\
+	junk-settings.ui 	\
+	proxy-add-dialog.ui	\
+	proxy-listing.ui	\
+	proxy-login-dialog.ui
 
 error_DATA = 				\
 	org-gnome-shared-folder.error	\
@@ -73,7 +82,7 @@ errordir = $(privdatadir)/errors
 BUILT_SOURCES = org-gnome-groupwise-features.eplug $(error_DATA)
 
 EXTRA_DIST =						\
-	$(glade_DATA) 					\
+	$(ui_DATA) 					\
 	org-gnome-compose-send-options.xml		\
 	org-gnome-groupwise-features.eplug.xml		\
 	org-gnome-shared-folder.error.xml		\

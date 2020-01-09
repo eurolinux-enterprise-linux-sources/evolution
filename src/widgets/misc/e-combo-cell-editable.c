@@ -35,7 +35,17 @@ struct _EComboCellEditablePriv {
 
 #define GRAB_MASK  (GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK)
 
-static GtkEventBoxClass *parent_class;
+/* Forward Declarations */
+static void	e_combo_cell_editable_interface_init
+					(GtkCellEditableIface *interface);
+
+G_DEFINE_TYPE_WITH_CODE (
+	EComboCellEditable,
+	e_combo_cell_editable,
+	GTK_TYPE_EVENT_BOX,
+	G_IMPLEMENT_INTERFACE (
+		GTK_TYPE_CELL_EDITABLE,
+		e_combo_cell_editable_interface_init))
 
 static void
 kill_popup (EComboCellEditable *ecce)
@@ -73,14 +83,16 @@ static gboolean
 popup_button_press_cb (GtkWidget *widget, GdkEventButton *event, EComboCellEditable *ecce)
 {
 	GtkAllocation alloc;
+	GdkWindow *window;
 	gdouble rel_x, rel_y;
 	gint win_x, win_y;
 
 	if (event->button != 1)
 		return FALSE;
 
-	gdk_window_get_root_origin (widget->window, &win_x, &win_y);
-	alloc = ecce->priv->popup->allocation;
+	window = gtk_widget_get_window (widget);
+	gdk_window_get_root_origin (window, &win_x, &win_y);
+	gtk_widget_get_allocation (ecce->priv->popup, &alloc);
 
 	rel_x = event->x_root - win_x - alloc.x;
 	rel_y = event->y_root - win_y - alloc.y;
@@ -217,6 +229,7 @@ show_popup (EComboCellEditable *ecce)
 {
 	gint row;
 	GtkAllocation  alloc;
+	GdkWindow *window;
 	gint x, y;
 
 	if (!ecce->priv->list)
@@ -227,14 +240,18 @@ show_popup (EComboCellEditable *ecce)
 	set_cursor (ecce->priv->tree_view, row);
 
 	gtk_editable_select_region (GTK_EDITABLE (ecce->priv->entry), 0, 0);
-	gdk_window_get_origin (GTK_WIDGET (ecce)->window, &x, &y);
-	alloc = GTK_WIDGET (ecce)->allocation;
+
+	window = gtk_widget_get_window (GTK_WIDGET (ecce));
+	gtk_widget_get_allocation (GTK_WIDGET (ecce), &alloc);
+	gdk_window_get_origin (window, &x, &y);
 
 	position_popup (ecce, x, y + alloc.height, alloc.height);
 
-	gtk_grab_add (GTK_WIDGET (ecce->priv->popup));
+	gtk_grab_add (ecce->priv->popup);
 	gtk_widget_grab_focus (GTK_WIDGET (ecce->priv->tree_view));
-	grab_popup (GTK_WIDGET (ecce->priv->popup)->window);
+
+	window = gtk_widget_get_window (ecce->priv->popup);
+	grab_popup (window);
 }
 
 static void
@@ -285,24 +302,23 @@ ecce_start_editing (GtkCellEditable *cell_editable, GdkEvent *event)
 }
 
 static void
-ecce_cell_editable_init (GtkCellEditableIface *iface)
+e_combo_cell_editable_interface_init (GtkCellEditableIface *interface)
 {
-	iface->start_editing = ecce_start_editing;
+	interface->start_editing = ecce_start_editing;
 }
 
 static void
-ecce_finalize (GObject *obj)
+ecce_finalize (GObject *object)
 {
-	EComboCellEditable *ecce = (EComboCellEditable *) obj;
+	EComboCellEditable *ecce = (EComboCellEditable *) object;
 
 	g_free (ecce->priv);
 
-	if (G_OBJECT_CLASS (parent_class)->finalize)
-		G_OBJECT_CLASS (parent_class)->finalize (obj);
+	G_OBJECT_CLASS (e_combo_cell_editable_parent_class)->finalize (object);
 }
 
 static void
-ecce_init (EComboCellEditable *ecce)
+e_combo_cell_editable_init (EComboCellEditable *ecce)
 {
 	GtkWidget *entry, *btn, *box;
 
@@ -337,53 +353,22 @@ ecce_grab_focus (GtkWidget *widget)
 }
 
 static void
-ecce_class_init (GObjectClass *klass)
+e_combo_cell_editable_class_init (EComboCellEditableClass *class)
 {
-	GtkWidgetClass *widget_class = (GtkWidgetClass *)klass;
+	GObjectClass *object_class;
+	GtkWidgetClass *widget_class;
 
-	klass->finalize = ecce_finalize;
+	object_class = G_OBJECT_CLASS (class);
+	object_class->finalize = ecce_finalize;
 
+	widget_class = GTK_WIDGET_CLASS (class);
 	widget_class->grab_focus = ecce_grab_focus;
-
-	parent_class = GTK_EVENT_BOX_CLASS (g_type_class_peek_parent (klass));
-}
-
-GType
-e_combo_cell_editable_get_type (void)
-{
-	static GType ecce_type = 0;
-
-	if (!ecce_type) {
-		static const GTypeInfo ecce_info = {
-			sizeof (EComboCellEditableClass),
-			NULL,		/* base_init */
-			NULL,		/* base_finalize */
-			(GClassInitFunc) ecce_class_init,
-			NULL,		/* class_finalize */
-			NULL,		/* class_data */
-			sizeof (EComboCellEditable),
-			0,              /* n_preallocs */
-			(GInstanceInitFunc) ecce_init,
-		};
-
-		static const GInterfaceInfo cell_editable_info = {
-			(GInterfaceInitFunc) ecce_cell_editable_init,
-			NULL,
-			NULL
-		};
-
-		ecce_type = g_type_register_static (GTK_TYPE_EVENT_BOX, "EComboCellEditable", &ecce_info, 0);
-
-		g_type_add_interface_static (ecce_type, GTK_TYPE_CELL_EDITABLE, &cell_editable_info);
-	}
-
-	return ecce_type;
 }
 
 GtkCellEditable *
 e_combo_cell_editable_new (void)
 {
-	return GTK_CELL_EDITABLE (g_object_new (E_TYPE_COMBO_CELL_EDITABLE, NULL));
+	return g_object_new (E_TYPE_COMBO_CELL_EDITABLE, NULL);
 }
 
 const GList *

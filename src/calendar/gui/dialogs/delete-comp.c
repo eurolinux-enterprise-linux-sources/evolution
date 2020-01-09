@@ -27,7 +27,7 @@
 #endif
 
 #include <glib/gi18n.h>
-#include "e-util/e-error.h"
+#include "e-util/e-alert-dialog.h"
 #include "../calendar-config.h"
 #include "delete-comp.h"
 
@@ -64,6 +64,7 @@ delete_component_dialog (ECalComponent *comp,
 	const gchar *id;
 	gchar *arg0 = NULL;
 	gint response;
+	gboolean attendees;
 
 	if (comp) {
 		g_return_val_if_fail (E_IS_CAL_COMPONENT (comp), FALSE);
@@ -91,10 +92,18 @@ delete_component_dialog (ECalComponent *comp,
 
 		switch (vtype) {
 		case E_CAL_COMPONENT_EVENT:
-			if (arg0)
-				id = "calendar:prompt-delete-titled-appointment";
-			else
-				id = "calendar:prompt-delete-appointment";
+                        attendees = e_cal_component_has_attendees (comp);
+			if (arg0) {
+				if (attendees)
+					id = "calendar:prompt-delete-titled-meeting";
+				else
+					id = "calendar:prompt-delete-titled-appointment";
+			} else {
+				if (attendees)
+					id = "calendar:prompt-delete-meeting";
+				else
+					id = "calendar:prompt-delete-appointment";
+			}
 			break;
 
 		case E_CAL_COMPONENT_TODO:
@@ -150,19 +159,19 @@ delete_component_dialog (ECalComponent *comp,
 			arg0 = g_strdup_printf ("%d", n_comps);
 	}
 
-	response = e_error_run ((GtkWindow *) gtk_widget_get_toplevel (widget), id, arg0, NULL);
+	response = e_alert_run_dialog_for_args ((GtkWindow *) gtk_widget_get_toplevel (widget), id, arg0, NULL);
 	g_free (arg0);
 
 	return response == GTK_RESPONSE_YES;
 }
 
 static void
-cb_toggled_cb (GtkWidget *toggle, gpointer data)
+cb_toggled_cb (GtkToggleButton *toggle, gpointer data)
 {
 	gboolean active = FALSE;
 	GtkWidget *entry = (GtkWidget *) data;
 
-	active = GTK_TOGGLE_BUTTON (toggle)->active;
+	active = gtk_toggle_button_get_active (toggle);
 	gtk_widget_set_sensitive (entry, active);
 }
 
@@ -199,13 +208,13 @@ prompt_retract_dialog (ECalComponent *comp, gchar **retract_text, GtkWidget *par
 
 	gtk_window_set_resizable (GTK_WINDOW (dialog), TRUE);
 
-	gtk_box_set_spacing ((GtkBox *) (GTK_DIALOG (dialog)->vbox), 12);
-	vbox = GTK_WIDGET (GTK_DIALOG (dialog)->vbox);
+	vbox = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+	gtk_box_set_spacing (GTK_BOX (vbox), 12);
 
 	cb = gtk_check_button_new_with_mnemonic (_("_Delete this item from all other recipient's mailboxes?"));
 	gtk_container_add (GTK_CONTAINER (vbox), cb);
 
-	label = gtk_label_new_with_mnemonic ("_Retract comment");
+	label = gtk_label_new_with_mnemonic (_("_Retract comment"));
 
 	frame = gtk_frame_new (NULL);
 	gtk_frame_set_label_widget ((GtkFrame *) frame, label);

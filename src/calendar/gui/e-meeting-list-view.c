@@ -27,9 +27,6 @@
 
 #include <string.h>
 #include <gtk/gtk.h>
-#include <bonobo/bonobo-control.h>
-#include <bonobo/bonobo-widget.h>
-#include <bonobo/bonobo-exception.h>
 #include <glib/gi18n.h>
 #include <libebook/e-book.h>
 #include <libebook/e-vcard.h>
@@ -109,7 +106,7 @@ e_meeting_list_view_class_init (EMeetingListViewClass *klass)
 
 	object_class->finalize = e_meeting_list_view_finalize;
 
-	e_meeting_list_view_signals [ATTENDEE_ADDED] =
+	e_meeting_list_view_signals[ATTENDEE_ADDED] =
 		g_signal_new ("attendee_added",
 			      G_TYPE_FROM_CLASS (klass),
 			      G_SIGNAL_RUN_LAST,
@@ -144,8 +141,8 @@ e_meeting_list_view_init (EMeetingListView *view)
 
 	priv->name_selector = e_name_selector_new ();
 
-	for (i = 0; sections [i]; i++)
-		add_section (priv->name_selector, sections [i]);
+	for (i = 0; sections[i]; i++)
+		add_section (priv->name_selector, sections[i]);
 
 	name_selector_dialog = e_name_selector_peek_dialog (view->priv->name_selector);
 	gtk_window_set_title (GTK_WINDOW (name_selector_dialog), _("Attendees"));
@@ -248,7 +245,7 @@ e_meeting_list_view_add_attendee_to_name_selector (EMeetingListView *view, EMeet
 
 	name_selector_model = e_name_selector_peek_model (priv->name_selector);
 	i = get_index_from_role (e_meeting_attendee_get_role (ma));
-	e_name_selector_model_peek_section (name_selector_model, sections [i],
+	e_name_selector_model_peek_section (name_selector_model, sections[i],
 					    NULL, &destination_store);
 	des = e_destination_new ();
 	e_destination_set_email (des, itip_strip_mailto (e_meeting_attendee_get_address (ma)));
@@ -271,7 +268,7 @@ e_meeting_list_view_remove_attendee_from_name_selector (EMeetingListView *view, 
 
 	name_selector_model = e_name_selector_peek_model (priv->name_selector);
 	i = get_index_from_role (e_meeting_attendee_get_role (ma));
-	e_name_selector_model_peek_section (name_selector_model, sections [i],
+	e_name_selector_model_peek_section (name_selector_model, sections[i],
 					    NULL, &destination_store);
 	destinations = e_destination_store_list_destinations (destination_store);
 	madd = itip_strip_mailto (e_meeting_attendee_get_address (ma));
@@ -354,7 +351,6 @@ attendee_edited_cb (GtkCellRenderer *renderer, const gchar *path, GList *address
 	GtkTreePath *treepath = gtk_tree_path_new_from_string (path);
 	gint row = gtk_tree_path_get_indices (treepath)[0];
 	EMeetingAttendee *existing_attendee;
-	gboolean removed = FALSE, address_changed = FALSE;
 
 	existing_attendee = e_meeting_store_find_attendee_at_row (model, row);
 
@@ -388,28 +384,25 @@ attendee_edited_cb (GtkCellRenderer *renderer, const gchar *path, GList *address
 				e_meeting_attendee_set_delfrom (attendee, (gchar *)e_meeting_attendee_get_delfrom (existing_attendee));
 			}
 			e_meeting_list_view_add_attendee_to_name_selector (E_MEETING_LIST_VIEW (view), attendee);
+			g_signal_emit_by_name (G_OBJECT (view), "attendee_added", (gpointer) attendee);
 		}
 
 		if (existing_attendee && can_remove) {
-			removed = TRUE;
-			e_meeting_list_view_remove_attendee_from_name_selector (E_MEETING_LIST_VIEW (view),
-						existing_attendee);
+			e_meeting_list_view_remove_attendee_from_name_selector (E_MEETING_LIST_VIEW (view), existing_attendee);
 			e_meeting_store_remove_attendee (model, existing_attendee);
 		}
-
 	} else if (g_list_length (addresses) == 1) {
 		gchar *name = names->data, *email = addresses->data;
 		gint existing_row;
 
 		if (!((name && *name) || (email && *email)) || ((e_meeting_store_find_attendee (model, email, &existing_row) != NULL) && existing_row != row)) {
 			if (existing_attendee) {
-				removed = TRUE;
-				e_meeting_list_view_remove_attendee_from_name_selector (E_MEETING_LIST_VIEW (view),
-						existing_attendee);
+				e_meeting_list_view_remove_attendee_from_name_selector (E_MEETING_LIST_VIEW (view), existing_attendee);
 				e_meeting_store_remove_attendee (model, existing_attendee);
 			}
 		} else {
-			EMeetingAttendee *attendee = E_MEETING_ATTENDEE (e_meeting_attendee_new ());
+			gboolean address_changed = FALSE;
+			EMeetingAttendee *attendee = e_meeting_store_add_attendee_with_defaults (model);
 
 			if (existing_attendee) {
 				const gchar *addr = e_meeting_attendee_get_address (existing_attendee);
@@ -420,6 +413,7 @@ attendee_edited_cb (GtkCellRenderer *renderer, const gchar *path, GList *address
 				address_changed = addr && g_ascii_strcasecmp (addr, email) != 0;
 
 				e_meeting_list_view_remove_attendee_from_name_selector (E_MEETING_LIST_VIEW (view), existing_attendee);
+				e_meeting_store_remove_attendee (model, existing_attendee);
 			}
 
 			value_edited (view, E_MEETING_STORE_ADDRESS_COL, path, email);
@@ -429,28 +423,22 @@ attendee_edited_cb (GtkCellRenderer *renderer, const gchar *path, GList *address
 			e_meeting_attendee_set_cn (attendee, g_strdup (name));
 			e_meeting_attendee_set_role (attendee, ICAL_ROLE_REQPARTICIPANT);
 			e_meeting_list_view_add_attendee_to_name_selector (E_MEETING_LIST_VIEW (view), attendee);
-			g_object_unref (attendee);
-		}
-	} else {
-		if (existing_attendee) {
-			const gchar *address = e_meeting_attendee_get_address (existing_attendee);
 
-			if (!(address && *address)) {
-				removed = TRUE;
-				e_meeting_list_view_remove_attendee_from_name_selector (E_MEETING_LIST_VIEW (view), existing_attendee);
-				e_meeting_store_remove_attendee (model, existing_attendee);
-			}
+			if (address_changed)
+				e_meeting_attendee_set_status (existing_attendee, ICAL_PARTSTAT_NEEDSACTION);
+
+			g_signal_emit_by_name (G_OBJECT (view), "attendee_added", (gpointer) attendee);
+		}
+	} else if (existing_attendee) {
+		const gchar *address = e_meeting_attendee_get_address (existing_attendee);
+
+		if (!(address && *address)) {
+			e_meeting_list_view_remove_attendee_from_name_selector (E_MEETING_LIST_VIEW (view), existing_attendee);
+			e_meeting_store_remove_attendee (model, existing_attendee);
 		}
 	}
 
 	gtk_tree_path_free (treepath);
-
-	if (!removed) {
-		if (address_changed)
-			e_meeting_attendee_set_status (existing_attendee, ICAL_PARTSTAT_NEEDSACTION);
-
-		g_signal_emit_by_name (G_OBJECT (view), "attendee_added", (gpointer) existing_attendee);
-	}
 }
 
 static void
@@ -774,12 +762,14 @@ process_section (EMeetingListView *view, GList *destinations, icalparameter_role
 			if (contact && e_contact_get (contact , E_CONTACT_IS_LIST)) {
 				EBook *book = NULL;
 				ENameSelectorDialog *dialog;
+				ENameSelectorModel *model;
 				EContactStore *c_store;
 				GList *books, *l;
 				gchar *uri = e_contact_get (contact, E_CONTACT_BOOK_URI);
 
 				dialog = e_name_selector_peek_dialog (view->priv->name_selector);
-				c_store = dialog->name_selector_model->contact_store;
+				model = e_name_selector_dialog_peek_model (dialog);
+				c_store = e_name_selector_model_peek_contact_store (model);
 				books = e_contact_store_get_books (c_store);
 
 				for (l = books; l; l = l->next) {
@@ -835,7 +825,7 @@ process_section (EMeetingListView *view, GList *destinations, icalparameter_role
 			name = e_destination_get_name (dest);
 
 			/* Get the field as attendee from the backend */
-			if (e_cal_get_ldap_attribute (e_meeting_store_get_e_cal (priv->store),
+			if (e_cal_get_ldap_attribute (e_meeting_store_get_client (priv->store),
 						      &attr, NULL)) {
 				/* FIXME this should be more general */
 				if (!g_ascii_strcasecmp (attr, "icscalendar")) {
@@ -920,7 +910,7 @@ name_selector_dialog_close_cb (ENameSelectorDialog *dialog, gint response, gpoin
 		EDestinationStore *destination_store;
 		GList             *destinations;
 
-		e_name_selector_model_peek_section (name_selector_model, sections [i],
+		e_name_selector_model_peek_section (name_selector_model, sections[i],
 						    NULL, &destination_store);
 		if (!destination_store) {
 			g_warning ("destination store is NULL\n");
@@ -928,7 +918,7 @@ name_selector_dialog_close_cb (ENameSelectorDialog *dialog, gint response, gpoin
 		}
 
 		destinations = e_destination_store_list_destinations (destination_store);
-		process_section (view, destinations, roles [i], &la);
+		process_section (view, destinations, roles[i], &la);
 		g_list_free (destinations);
 	}
 
@@ -955,10 +945,8 @@ name_selector_dialog_close_cb (ENameSelectorDialog *dialog, gint response, gpoin
 void
 e_meeting_list_view_invite_others_dialog (EMeetingListView *view)
 {
-	ENameSelectorDialog *dialog;
-
-	dialog = e_name_selector_peek_dialog (view->priv->name_selector);
-	gtk_widget_show (GTK_WIDGET (dialog));
+	e_name_selector_show_dialog (view->priv->name_selector,
+				     GTK_WIDGET (view));
 }
 
 void

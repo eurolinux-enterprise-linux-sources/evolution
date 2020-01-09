@@ -34,7 +34,7 @@
 #include <glib/gi18n.h>
 #include <glib/gstdio.h>
 #include <gdk/gdkkeysyms.h>
-#include <misc/e-gui-utils.h>
+#include <e-util/e-binding.h>
 #include <table/e-table-memory-store.h>
 #include <table/e-cell-checkbox.h>
 #include <table/e-cell-toggle.h>
@@ -42,7 +42,7 @@
 #include <table/e-cell-combo.h>
 #include <table/e-cell-date.h>
 #include <misc/e-popup-menu.h>
-#include <misc/e-cell-date-edit.h>
+#include <table/e-cell-date-edit.h>
 #include <e-util/e-categories-config.h>
 #include <e-util/e-dialog-utils.h>
 #include <e-util/e-util-private.h>
@@ -57,7 +57,6 @@
 #include "dialogs/recur-comp.h"
 #include "comp-util.h"
 #include "itip-utils.h"
-#include "calendar-commands.h"
 #include "calendar-config.h"
 #include "goto.h"
 #include "misc.h"
@@ -72,7 +71,7 @@ static gboolean  e_cal_list_view_get_visible_time_range (ECalendarView *cal_view
 static gboolean  e_cal_list_view_popup_menu             (GtkWidget *widget);
 
 static void      e_cal_list_view_show_popup_menu        (ECalListView *cal_list_view, gint row,
-							 GdkEvent *gdk_event);
+							 GdkEventButton *event);
 static gboolean  e_cal_list_view_on_table_double_click   (GtkWidget *table, gint row, gint col,
 							 GdkEvent *event, gpointer data);
 static gboolean  e_cal_list_view_on_table_right_click   (GtkWidget *table, gint row, gint col,
@@ -102,39 +101,11 @@ e_cal_list_view_class_init (ECalListViewClass *class)
 	view_class->get_visible_time_range = e_cal_list_view_get_visible_time_range;
 }
 
-static gint
-date_compare_cb (gconstpointer a, gconstpointer b)
-{
-	ECellDateEditValue *dv1 = (ECellDateEditValue *) a;
-	ECellDateEditValue *dv2 = (ECellDateEditValue *) b;
-	struct icaltimetype tt;
-
-	/* First check if either is NULL. NULL dates sort last. */
-	if (!dv1 || !dv2) {
-		if (dv1 == dv2)
-			return 0;
-		else if (dv1)
-			return -1;
-		else
-			return 1;
-	}
-
-	/* Copy the 2nd value and convert it to the same timezone as the
-	   first. */
-	tt = dv2->tt;
-
-	icaltimezone_convert_time (&tt, dv2->zone, dv1->zone);
-
-	/* Now we can compare them. */
-
-	return icaltime_compare (dv1->tt, tt);
-}
-
 static void
 e_cal_list_view_init (ECalListView *cal_list_view)
 {
 	cal_list_view->query = NULL;
-	cal_list_view->table_scrolled = NULL;
+	cal_list_view->table = NULL;
 	cal_list_view->cursor_event = NULL;
 	cal_list_view->set_table_id = 0;
 }
@@ -173,7 +144,7 @@ e_cal_list_view_load_state (ECalListView *cal_list_view, gchar *filename)
 	g_return_if_fail (filename != NULL);
 
 	if (g_stat (filename, &st) == 0 && st.st_size > 0 && S_ISREG (st.st_mode))
-		e_table_load_state (e_table_scrolled_get_table (cal_list_view->table_scrolled), filename);
+		e_table_load_state (cal_list_view->table, filename);
 }
 
 void
@@ -183,21 +154,23 @@ e_cal_list_view_save_state (ECalListView *cal_list_view, gchar *filename)
 	g_return_if_fail (E_IS_CAL_LIST_VIEW (cal_list_view));
 	g_return_if_fail (filename != NULL);
 
-	e_table_save_state (e_table_scrolled_get_table (cal_list_view->table_scrolled), filename);
+	e_table_save_state (cal_list_view->table, filename);
 }
 
 static void
 setup_e_table (ECalListView *cal_list_view)
 {
-	ECalModelCalendar *model;
-	ETableExtras      *extras;
-	GList             *strings;
-	ECell             *cell, *popup_cell;
-	GnomeCanvas       *canvas;
-	GtkStyle          *style;
-	gchar		  *etspecfile;
+	ECalModel *model;
+	ETableExtras *extras;
+	GList *strings;
+	ECell *cell, *popup_cell;
+	GnomeCanvas *canvas;
+	GtkStyle *style;
+	GtkWidget *container;
+	GtkWidget *widget;
+	gchar *etspecfile;
 
-	model = E_CAL_MODEL_CALENDAR (e_calendar_view_get_model (E_CALENDAR_VIEW (cal_list_view)));
+	model = e_calendar_view_get_model (E_CALENDAR_VIEW (cal_list_view));
 
 	/* Create the header columns */
 
@@ -219,9 +192,22 @@ setup_e_table (ECalListView *cal_list_view)
 		      "bg_color_column", E_CAL_MODEL_FIELD_COLOR,
 		      NULL);
 
+	e_mutual_binding_new (
+		model, "timezone",
+		cell, "timezone");
+
+	e_mutual_binding_new (
+		model, "use-24-hour-format",
+		cell, "use-24-hour-format");
+
 	popup_cell = e_cell_date_edit_new ();
 	e_cell_popup_set_child (E_CELL_POPUP (popup_cell), cell);
 	g_object_unref (cell);
+
+	e_mutual_binding_new (
+		model, "use-24-hour-format",
+		popup_cell, "use-24-hour-format");
+
 	e_table_extras_add_cell (extras, "dateedit", popup_cell);
 	cal_list_view->dates_cell = E_CELL_DATE_EDIT (popup_cell);
 
@@ -249,13 +235,14 @@ setup_e_table (ECalListView *cal_list_view)
 	strings = g_list_append (strings, (gchar *) _("Confidential"));
 	e_cell_combo_set_popdown_strings (E_CELL_COMBO (popup_cell),
 					  strings);
+	g_list_free (strings);
 
 	e_table_extras_add_cell (extras, "classification", popup_cell);
 
 	/* Sorting */
 
 	e_table_extras_add_compare (extras, "date-compare",
-				    date_compare_cb);
+				    e_cell_date_edit_compare_cb);
 
 	/* set proper format component for a default 'date' cell renderer */
 	cell = e_table_extras_get_cell (extras, "date");
@@ -263,46 +250,52 @@ setup_e_table (ECalListView *cal_list_view)
 
 	/* Create table view */
 
-	etspecfile = g_build_filename (EVOLUTION_ETSPECDIR,
-				       "e-cal-list-view.etspec",
-				       NULL);
-	cal_list_view->table_scrolled = E_TABLE_SCROLLED (
-		e_table_scrolled_new_from_spec_file (E_TABLE_MODEL (model),
-						     extras,
-						     etspecfile,
-						     NULL));
+	container = GTK_WIDGET (cal_list_view);
+
+	widget = gtk_scrolled_window_new (NULL, NULL);
+	gtk_scrolled_window_set_policy (
+		GTK_SCROLLED_WINDOW (widget),
+		GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+	gtk_scrolled_window_set_shadow_type (
+		GTK_SCROLLED_WINDOW (widget), GTK_SHADOW_IN);
+	gtk_table_attach (
+		GTK_TABLE (container), widget, 0, 2, 0, 2,
+		GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 1, 1);
+	gtk_widget_show (widget);
+
+	container = widget;
+
+	etspecfile = g_build_filename (
+		EVOLUTION_ETSPECDIR, "e-cal-list-view.etspec", NULL);
+	widget = e_table_new_from_spec_file (
+		E_TABLE_MODEL (model), extras, etspecfile, NULL);
+	gtk_container_add (GTK_CONTAINER (container), widget);
+	cal_list_view->table = E_TABLE (widget);
+	gtk_widget_show (widget);
 	g_free (etspecfile);
 
 	/* Make sure text is readable on top of our color coding */
 
-	canvas = GNOME_CANVAS (e_table_scrolled_get_table (cal_list_view->table_scrolled)->table_canvas);
+	canvas = GNOME_CANVAS (cal_list_view->table->table_canvas);
 	style = gtk_widget_get_style (GTK_WIDGET (canvas));
 
-	style->fg [GTK_STATE_SELECTED] = style->text [GTK_STATE_NORMAL];
-	style->fg [GTK_STATE_ACTIVE]   = style->text [GTK_STATE_NORMAL];
+	style->fg[GTK_STATE_SELECTED] = style->text[GTK_STATE_NORMAL];
+	style->fg[GTK_STATE_ACTIVE]   = style->text[GTK_STATE_NORMAL];
 	gtk_widget_set_style (GTK_WIDGET (canvas), style);
 
 	/* Connect signals */
-	g_signal_connect (e_table_scrolled_get_table (cal_list_view->table_scrolled),
-			  "double_click", G_CALLBACK (e_cal_list_view_on_table_double_click), cal_list_view);
-	g_signal_connect (e_table_scrolled_get_table (cal_list_view->table_scrolled),
-			  "right-click", G_CALLBACK (e_cal_list_view_on_table_right_click), cal_list_view);
-	g_signal_connect_after (e_table_scrolled_get_table (cal_list_view->table_scrolled),
-				"cursor_change", G_CALLBACK (e_cal_list_view_cursor_change_cb), cal_list_view);
-
-	/* Attach and show widget */
-
-	gtk_table_attach (GTK_TABLE (cal_list_view), GTK_WIDGET (cal_list_view->table_scrolled),
-			  0, 2, 0, 2, GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 1, 1);
-	gtk_widget_show (GTK_WIDGET (cal_list_view->table_scrolled));
-}
-
-GtkWidget *
-e_cal_list_view_construct (ECalListView *cal_list_view)
-{
-	setup_e_table (cal_list_view);
-
-	return GTK_WIDGET (cal_list_view);
+	g_signal_connect (
+		cal_list_view->table, "double_click",
+		G_CALLBACK (e_cal_list_view_on_table_double_click),
+		cal_list_view);
+	g_signal_connect (
+		cal_list_view->table, "right-click",
+		G_CALLBACK (e_cal_list_view_on_table_right_click),
+		cal_list_view);
+	g_signal_connect_after (
+		cal_list_view->table, "cursor_change",
+		G_CALLBACK (e_cal_list_view_cursor_change_cb),
+		cal_list_view);
 }
 
 /**
@@ -311,21 +304,16 @@ e_cal_list_view_construct (ECalListView *cal_list_view)
  *
  * Creates a new #ECalListView.
  **/
-GtkWidget *
+ECalendarView *
 e_cal_list_view_new (ECalModel *model)
 {
-	ECalListView *cal_list_view;
+	ECalendarView *cal_list_view;
 
-	cal_list_view = g_object_new (e_cal_list_view_get_type (), "model", model, NULL);
-	if (!e_cal_list_view_construct (cal_list_view)) {
-		g_message (G_STRLOC ": Could not construct the calendar list GUI");
-		g_object_unref (cal_list_view);
-		return NULL;
-	}
+	cal_list_view = g_object_new (
+		E_TYPE_CAL_LIST_VIEW, "model", model, NULL);
+	setup_e_table (E_CAL_LIST_VIEW (cal_list_view));
 
-	g_object_unref (model);
-
-	return GTK_WIDGET (cal_list_view);
+	return cal_list_view;
 }
 
 static void
@@ -352,21 +340,20 @@ e_cal_list_view_destroy (GtkObject *object)
 		cal_list_view->cursor_event = NULL;
 	}
 
-	if (cal_list_view->table_scrolled) {
-		gtk_widget_destroy (GTK_WIDGET (cal_list_view->table_scrolled));
-		cal_list_view->table_scrolled = NULL;
+	if (cal_list_view->table) {
+		gtk_widget_destroy (GTK_WIDGET (cal_list_view->table));
+		cal_list_view->table = NULL;
 	}
 
 	GTK_OBJECT_CLASS (e_cal_list_view_parent_class)->destroy (object);
 }
 
 static void
-e_cal_list_view_show_popup_menu (ECalListView *cal_list_view, gint row, GdkEvent *gdk_event)
+e_cal_list_view_show_popup_menu (ECalListView *cal_list_view,
+                                 gint row,
+                                 GdkEventButton *event)
 {
-	GtkMenu *menu;
-
-	menu = e_calendar_view_create_popup_menu (E_CALENDAR_VIEW (cal_list_view));
-	gtk_menu_popup(menu, NULL, NULL, NULL, NULL, gdk_event?gdk_event->button.button:0, gdk_event?gdk_event->button.time:gtk_get_current_event_time());
+	e_calendar_view_popup_event (E_CALENDAR_VIEW (cal_list_view), event);
 }
 
 static gboolean
@@ -408,7 +395,7 @@ e_cal_list_view_on_table_right_click (GtkWidget *table, gint row, gint col, GdkE
 {
 	ECalListView *cal_list_view = E_CAL_LIST_VIEW (data);
 
-	e_cal_list_view_show_popup_menu (cal_list_view, row, event);
+	e_cal_list_view_show_popup_menu (cal_list_view, row, (GdkEventButton *) event);
 	return TRUE;
 }
 
@@ -431,6 +418,9 @@ e_cal_list_view_get_selected_time_range (ECalendarView *cal_view, time_t *start_
 		ECalendarViewEvent *event = (ECalendarViewEvent *) selected->data;
 		ECalComponentDateTime dtstart, dtend;
 		ECalComponent *comp;
+
+		if (!is_comp_data_valid (event))
+			return FALSE;
 
 		comp = e_cal_component_new ();
 		e_cal_component_set_icalcomponent (comp, icalcomponent_new_clone (event->comp_data->icalcomp));
@@ -475,7 +465,8 @@ e_cal_list_view_get_selected_events (ECalendarView *cal_view)
 		E_CAL_LIST_VIEW (cal_view)->cursor_event = NULL;
 	}
 
-	cursor_row = e_table_get_cursor_row (e_table_scrolled_get_table (E_CAL_LIST_VIEW (cal_view)->table_scrolled));
+	cursor_row = e_table_get_cursor_row (
+		E_CAL_LIST_VIEW (cal_view)->table);
 
 	if (cursor_row >= 0) {
 		ECalendarViewEvent *event;
@@ -536,6 +527,15 @@ e_cal_list_view_get_visible_time_range (ECalendarView *cal_view, time_t *start_t
 	if (set) {
 		*start_time = earliest;
 		*end_time   = latest;
+		return TRUE;
+	}
+
+	if (!n_rows) {
+		ECalModel *model = e_calendar_view_get_model (cal_view);
+
+		/* Use time range set in the model when nothing shown in the list view */
+		e_cal_model_get_time_range (model, start_time, end_time);
+
 		return TRUE;
 	}
 

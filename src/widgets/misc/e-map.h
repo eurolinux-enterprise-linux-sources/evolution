@@ -26,26 +26,38 @@
 
 #include <gtk/gtk.h>
 
-#define TYPE_E_MAP            (e_map_get_type ())
-#define E_MAP(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), TYPE_E_MAP, EMap))
-#define E_MAP_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), TYPE_E_MAP, EMapClass))
-#define IS_E_MAP(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), TYPE_E_MAP))
-#define IS_E_MAP_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), TYPE_E_MAP))
+/* Standard GObject macros */
+#define E_TYPE_MAP \
+	(e_map_get_type ())
+#define E_MAP(obj) \
+	(G_TYPE_CHECK_INSTANCE_CAST \
+	((obj), E_TYPE_MAP, EMap))
+#define E_MAP_CLASS(cls) \
+	(G_TYPE_CHECK_CLASS_CAST \
+	((cls), E_TYPE_MAP, EMapClass))
+#define E_IS_MAP(obj) \
+	(G_TYPE_CHECK_INSTANCE_TYPE \
+	((obj), E_TYPE_MAP))
+#define E_IS_MAP_CLASS(cls) \
+	(G_TYPE_CHECK_CLASS_TYPE \
+	((cls), E_TYPE_MAP))
+#define E_MAP_GET_CLASS(obj) \
+	(G_TYPE_INSTANCE_GET_CLASS \
+	((obj), E_TYPE_MAP, EMapClass))
+
+G_BEGIN_DECLS
 
 typedef struct _EMap EMap;
 typedef struct _EMapClass EMapClass;
+typedef struct _EMapPrivate EMapPrivate;
 typedef struct _EMapPoint EMapPoint;
 
-struct _EMap
-{
+struct _EMap {
 	GtkWidget widget;
-
-	/* Private data */
-	gpointer priv;
+	EMapPrivate *priv;
 };
 
-struct _EMapClass
-{
+struct _EMapClass {
 	GtkWidgetClass parent_class;
 
 	/* Notification signals */
@@ -59,10 +71,9 @@ struct _EMapClass
 
 /* The definition of Dot */
 
-struct _EMapPoint
-{
+struct _EMapPoint {
 	gchar *name;  /* Can be NULL */
-	double longitude, latitude;
+	gdouble longitude, latitude;
 	guint32 rgba;
 	gpointer user_data;
 };
@@ -83,15 +94,15 @@ void e_map_thaw (EMap *map);
 
 /* Translates window-relative coords to lat/long */
 void e_map_window_to_world (EMap *map,
-			    double win_x, double win_y,
-			    double *world_longitude, double *world_latitude);
+			    gdouble win_x, gdouble win_y,
+			    gdouble *world_longitude, gdouble *world_latitude);
 
 /* Translates lat/long to window-relative coordinates. Note that the
  * returned coordinates can be negative or greater than the current size
  * of the allocation area */
 void e_map_world_to_window (EMap *map,
-			    double world_longitude, double world_latitude,
-			    double *win_x, double *win_y);
+			    gdouble world_longitude, gdouble world_latitude,
+			    gdouble *win_x, gdouble *win_y);
 
 /* --- Zoom --- */
 
@@ -104,7 +115,7 @@ void e_map_set_smooth_zoom (EMap *map, gboolean state);
 gboolean e_map_get_smooth_zoom (EMap *map);
 
 /* NB: Function definition will change shortly */
-void e_map_zoom_to_location (EMap *map, double longitude, double latitude);
+void e_map_zoom_to_location (EMap *map, gdouble longitude, gdouble latitude);
 
 /* Zoom to mag factor 1.0 */
 void e_map_zoom_out (EMap *map);
@@ -112,13 +123,13 @@ void e_map_zoom_out (EMap *map);
 /* --- Points --- */
 
 EMapPoint *e_map_add_point (EMap *map, gchar *name,
-			    double longitude, double latitude,
+			    gdouble longitude, gdouble latitude,
 			    guint32 color_rgba);
 
 void e_map_remove_point (EMap *map, EMapPoint *point);
 
 void e_map_point_get_location (EMapPoint *point,
-			       double *longitude, double *latitude);
+			       gdouble *longitude, gdouble *latitude);
 
 gchar *e_map_point_get_name (EMapPoint *point);
 
@@ -132,7 +143,9 @@ gpointer e_map_point_get_data (EMapPoint *point);
 
 gboolean e_map_point_is_in_view (EMap *map, EMapPoint *point);
 
-EMapPoint *e_map_get_closest_point (EMap *map, double longitude, double latitude,
+EMapPoint *e_map_get_closest_point (EMap *map, gdouble longitude, gdouble latitude,
 				    gboolean in_view);
+
+G_END_DECLS
 
 #endif

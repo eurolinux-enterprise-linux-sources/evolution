@@ -37,16 +37,30 @@ G_BEGIN_DECLS
  * to got to the current day.
  */
 
-#define E_CALENDAR(obj)          G_TYPE_CHECK_INSTANCE_CAST (obj, e_calendar_get_type (), ECalendar)
-#define E_CALENDAR_CLASS(klass)  G_TYPE_CHECK_CLASS_CAST (klass, e_calendar_get_type (), ECalendarClass)
-#define E_IS_CALENDAR(obj)       G_TYPE_CHECK_INSTANCE_TYPE (obj, e_calendar_get_type ())
+/* Standard GObject macros */
+#define E_TYPE_CALENDAR \
+	(e_calendar_get_type ())
+#define E_CALENDAR(obj) \
+	(G_TYPE_CHECK_INSTANCE_CAST \
+	((obj), E_TYPE_CALENDAR, ECalendar))
+#define E_CALENDAR_CLASS(cls) \
+	(G_TYPE_CHECK_CLASS_CAST \
+	((cls), E_TYPE_CALENDAR, ECalendarClass))
+#define E_IS_CALENDAR(obj) \
+	(G_TYPE_CHECK_INSTANCE_TYPE \
+	((obj), E_TYPE_CALENDAR))
+#define E_IS_CALENDAR_CLASS(cls) \
+	(G_TYPE_CHECK_CLASS_TYPE \
+	((cls), E_TYPE_CALENDAR))
+#define E_CALENDAR_GET_CLASS(obj) \
+	(G_TYPE_INSTANCE_GET_CLASS \
+	((obj), E_TYPE_CALENDAR, ECalendarClass))
 
-typedef struct _ECalendar       ECalendar;
+typedef struct _ECalendar ECalendar;
 typedef struct _ECalendarClass  ECalendarClass;
 
-struct _ECalendar
-{
-	ECanvas canvas;
+struct _ECalendar {
+	ECanvas parent;
 
 	ECalendarItem *calitem;
 
@@ -67,29 +81,25 @@ struct _ECalendar
 	gboolean moving_forward;
 };
 
-struct _ECalendarClass
-{
+struct _ECalendarClass {
 	ECanvasClass parent_class;
 };
 
-GType		   e_calendar_get_type		(void);
-GtkWidget* e_calendar_new		(void);
-
-void	   e_calendar_set_minimum_size	(ECalendar	*cal,
-					 gint		 rows,
-					 gint		 cols);
-void	   e_calendar_set_maximum_size	(ECalendar	*cal,
-					 gint		 rows,
-					 gint		 cols);
-
-/* Returns the border size on each side of the month displays. */
-void	   e_calendar_get_border_size	(ECalendar	*cal,
-					 gint		*top,
-					 gint		*bottom,
-					 gint		*left,
-					 gint		*right);
-
-void       e_calendar_set_focusable (ECalendar *cal, gboolean focusable);
+GType		e_calendar_get_type		(void);
+GtkWidget *	e_calendar_new			(void);
+void		e_calendar_set_minimum_size	(ECalendar *cal,
+						 gint rows,
+						 gint cols);
+void		e_calendar_set_maximum_size	(ECalendar *cal,
+						 gint rows,
+						 gint cols);
+void		e_calendar_get_border_size	(ECalendar *cal,
+						 gint *top,
+						 gint *bottom,
+						 gint *left,
+						 gint *right);
+void		e_calendar_set_focusable	(ECalendar *cal,
+						 gboolean focusable);
 
 G_END_DECLS
 

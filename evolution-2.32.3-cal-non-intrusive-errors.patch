@@ -1,0 +1,493 @@
+diff -up evolution-2.32.3/calendar/calendar.error.xml.cal-non-intrusive-errors evolution-2.32.3/calendar/calendar.error.xml
+--- evolution-2.32.3/calendar/calendar.error.xml.cal-non-intrusive-errors	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/calendar.error.xml	2013-06-19 15:25:36.026919799 +0200
+@@ -294,4 +294,9 @@
+  <_secondary>You are connecting to an unsupported GroupWise server and may encounter problems using Evolution. For best results, the server should be upgraded to a supported version.</_secondary>
+  </error>
+ 
++ <error id="generic-backend-error" type="error">
++  <_primary>Error on {0}</_primary>
++  <secondary>{1}</secondary>
++ </error>
++
+ </error-list>
+diff -up evolution-2.32.3/calendar/gui/misc.c.cal-non-intrusive-errors evolution-2.32.3/calendar/gui/misc.c
+--- evolution-2.32.3/calendar/gui/misc.c.cal-non-intrusive-errors	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/misc.c	2013-06-19 15:25:36.027919799 +0200
+@@ -31,6 +31,11 @@
+ #include <libedataserver/e-url.h>
+ #include <glib/gi18n.h>
+ 
++#include <shell/e-shell.h>
++#include <e-util/e-alert.h>
++#include <e-util/e-alert-dialog.h>
++#include <e-util/e-alert-activity.h>
++
+ #include "misc.h"
+ 
+ 
+@@ -135,3 +140,33 @@ calculate_time (time_t start, time_t end
+ 
+ 	return str;
+ }
++
++void
++e_calendar_gui_misc_add_alert_to_shell_window (EShellView *shell_view,
++					       gboolean is_error, /* otherwise it's warning */
++					       const gchar *alert_tag,
++					       ...)
++{
++	va_list ap;
++	EAlert *alert;
++	EActivity *activity;
++	GtkWidget *dlg;
++
++	g_return_if_fail (E_IS_SHELL_VIEW (shell_view));
++	g_return_if_fail (alert_tag != NULL);
++
++	va_start (ap, alert_tag);
++	alert = e_alert_new_valist (alert_tag, ap);
++	va_end (ap);
++
++	dlg = e_alert_dialog_new (GTK_WINDOW (e_shell_view_get_shell_window (shell_view)), alert);
++	g_object_unref (alert);
++
++	if (is_error)
++		activity = e_alert_activity_new_error (dlg);
++	else
++		activity = e_alert_activity_new_warning (dlg);
++
++	e_shell_backend_add_activity (e_shell_view_get_shell_backend (shell_view), activity);
++	g_object_unref (activity);
++}
+diff -up evolution-2.32.3/calendar/gui/misc.h.cal-non-intrusive-errors evolution-2.32.3/calendar/gui/misc.h
+--- evolution-2.32.3/calendar/gui/misc.h.cal-non-intrusive-errors	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/misc.h	2013-06-19 15:25:36.027919799 +0200
+@@ -28,9 +28,16 @@
+ 
+ #include <glib.h>
+ #include <time.h>
++#include <shell/e-shell-view.h>
+ 
+ gboolean string_is_empty (const gchar *value);
+ gchar    *get_uri_without_password (const gchar *uri);
+ gint get_position_in_array (GPtrArray *objects, gpointer item);
+ gchar * calculate_time (time_t start, time_t end);
++
++void e_calendar_gui_misc_add_alert_to_shell_window (EShellView *shell_view,
++						    gboolean is_error, /* otherwise it's warning */
++						    const gchar *alert_tag,
++						    ...) G_GNUC_NULL_TERMINATED;
++
+ #endif
+diff -up evolution-2.32.3/modules/calendar/e-cal-shell-sidebar.c.cal-non-intrusive-errors evolution-2.32.3/modules/calendar/e-cal-shell-sidebar.c
+--- evolution-2.32.3/modules/calendar/e-cal-shell-sidebar.c.cal-non-intrusive-errors	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/modules/calendar/e-cal-shell-sidebar.c	2013-06-19 15:25:36.024919799 +0200
+@@ -113,7 +113,6 @@ cal_shell_sidebar_backend_died_cb (ECalS
+                                    ECal *client)
+ {
+ 	EShellView *shell_view;
+-	EShellWindow *shell_window;
+ 	EShellSidebar *shell_sidebar;
+ 	GHashTable *client_table;
+ 	ESource *source;
+@@ -123,7 +122,6 @@ cal_shell_sidebar_backend_died_cb (ECalS
+ 
+ 	shell_sidebar = E_SHELL_SIDEBAR (cal_shell_sidebar);
+ 	shell_view = e_shell_sidebar_get_shell_view (shell_sidebar);
+-	shell_window = e_shell_view_get_shell_window (shell_view);
+ 
+ 	source = e_cal_get_source (client);
+ 	uid = e_source_peek_uid (source);
+@@ -133,8 +131,9 @@ cal_shell_sidebar_backend_died_cb (ECalS
+ 	g_hash_table_remove (client_table, uid);
+ 	cal_shell_sidebar_emit_status_message (cal_shell_sidebar, NULL);
+ 
+-	e_alert_run_dialog_for_args (
+-		GTK_WINDOW (shell_window),
++	e_calendar_gui_misc_add_alert_to_shell_window (
++		shell_view,
++		TRUE,
+ 		"calendar:calendar-crashed", NULL);
+ 
+ 	g_object_unref (source);
+@@ -146,33 +145,23 @@ cal_shell_sidebar_backend_error_cb (ECal
+                                     ECal *client)
+ {
+ 	EShellView *shell_view;
+-	EShellWindow *shell_window;
+ 	EShellSidebar *shell_sidebar;
+-	GtkWidget *dialog;
+ 	const gchar *uri;
+ 	gchar *uri_no_passwd;
+ 
+ 	shell_sidebar = E_SHELL_SIDEBAR (cal_shell_sidebar);
+ 	shell_view = e_shell_sidebar_get_shell_view (shell_sidebar);
+-	shell_window = e_shell_view_get_shell_window (shell_view);
+ 
+ 	uri = e_cal_get_uri (client);
+ 	uri_no_passwd = get_uri_without_password (uri);
+ 
+-	/* Translators: This string is displayed in a message dialog when
+-	 *              our connection to the calendar service detects an
+-	 *              out-of-band error.  The first string is a URI for
+-	 *              the source of the error, the second string is the
+-	 *              error message. */
+-	dialog = gtk_message_dialog_new (
+-		GTK_WINDOW (shell_window),
+-		GTK_DIALOG_DESTROY_WITH_PARENT,
+-		GTK_MESSAGE_ERROR, GTK_BUTTONS_OK,
+-		_("Error on %s\n%s"),
+-		uri_no_passwd, message);
+-
+-	gtk_dialog_run (GTK_DIALOG (dialog));
+-	gtk_widget_destroy (dialog);
++	e_calendar_gui_misc_add_alert_to_shell_window (
++		shell_view,
++		TRUE,
++		"calendar:generic-backend-error",
++		uri_no_passwd,
++		message,
++		NULL);
+ 
+ 	g_free (uri_no_passwd);
+ }
+@@ -183,13 +172,11 @@ cal_shell_sidebar_client_opened_cb (ECal
+                                     ECal *client)
+ {
+ 	EShellView *shell_view;
+-	EShellWindow *shell_window;
+ 	EShellSidebar *shell_sidebar;
+ 	const gchar *message;
+ 
+ 	shell_sidebar = E_SHELL_SIDEBAR (cal_shell_sidebar);
+ 	shell_view = e_shell_sidebar_get_shell_view (shell_sidebar);
+-	shell_window = e_shell_view_get_shell_window (shell_view);
+ 
+ 	if (g_error_matches (error, E_CALENDAR_ERROR,
+ 		E_CALENDAR_STATUS_AUTHENTICATION_FAILED) ||
+@@ -210,16 +197,18 @@ cal_shell_sidebar_client_opened_cb (ECal
+ 			return;
+ 
+ 		case E_CALENDAR_STATUS_REPOSITORY_OFFLINE:
+-			e_alert_run_dialog_for_args (
+-				GTK_WINDOW (shell_window),
++			e_calendar_gui_misc_add_alert_to_shell_window (
++				shell_view,
++				FALSE,
+ 				"calendar:prompt-no-contents-offline-calendar",
+ 				NULL);
+ 			/* fall through */
+ 
+ 		default:
+ 			if (error->code != E_CALENDAR_STATUS_REPOSITORY_OFFLINE) {
+-				e_alert_run_dialog_for_args (
+-					GTK_WINDOW (shell_window),
++				e_calendar_gui_misc_add_alert_to_shell_window (
++					shell_view,
++					FALSE,
+ 					"calendar:failed-open-calendar",
+ 					error->message, NULL);
+ 			}
+@@ -248,7 +237,6 @@ cal_shell_sidebar_default_loaded_cb (ESo
+                                      EShellSidebar *shell_sidebar)
+ {
+ 	ECalShellSidebarPrivate *priv;
+-	EShellWindow *shell_window;
+ 	EShellView *shell_view;
+ 	ECal *client;
+ 	GError *error = NULL;
+@@ -256,7 +244,6 @@ cal_shell_sidebar_default_loaded_cb (ESo
+ 	priv = E_CAL_SHELL_SIDEBAR_GET_PRIVATE (shell_sidebar);
+ 
+ 	shell_view = e_shell_sidebar_get_shell_view (shell_sidebar);
+-	shell_window = e_shell_view_get_shell_window (shell_view);
+ 
+ 	client = e_load_cal_source_finish (source, result, &error);
+ 
+@@ -265,8 +252,9 @@ cal_shell_sidebar_default_loaded_cb (ESo
+ 		goto exit;
+ 
+ 	} else if (error != NULL) {
+-		e_alert_run_dialog_for_args (
+-			GTK_WINDOW (shell_window),
++		e_calendar_gui_misc_add_alert_to_shell_window (
++			shell_view,
++			FALSE,
+ 			"calendar:failed-open-calendar",
+ 			error->message, NULL);
+ 		g_error_free (error);
+diff -up evolution-2.32.3/modules/calendar/e-memo-shell-sidebar.c.cal-non-intrusive-errors evolution-2.32.3/modules/calendar/e-memo-shell-sidebar.c
+--- evolution-2.32.3/modules/calendar/e-memo-shell-sidebar.c.cal-non-intrusive-errors	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/modules/calendar/e-memo-shell-sidebar.c	2013-06-19 15:25:36.025919799 +0200
+@@ -107,7 +107,6 @@ memo_shell_sidebar_backend_died_cb (EMem
+                                     ECal *client)
+ {
+ 	EShellView *shell_view;
+-	EShellWindow *shell_window;
+ 	EShellSidebar *shell_sidebar;
+ 	GHashTable *client_table;
+ 	ESource *source;
+@@ -117,7 +116,6 @@ memo_shell_sidebar_backend_died_cb (EMem
+ 
+ 	shell_sidebar = E_SHELL_SIDEBAR (memo_shell_sidebar);
+ 	shell_view = e_shell_sidebar_get_shell_view (shell_sidebar);
+-	shell_window = e_shell_view_get_shell_window (shell_view);
+ 
+ 	source = e_cal_get_source (client);
+ 	uid = e_source_peek_uid (source);
+@@ -127,8 +125,9 @@ memo_shell_sidebar_backend_died_cb (EMem
+ 	g_hash_table_remove (client_table, uid);
+ 	memo_shell_sidebar_emit_status_message (memo_shell_sidebar, NULL);
+ 
+-	e_alert_run_dialog_for_args (
+-		GTK_WINDOW (shell_window),
++	e_calendar_gui_misc_add_alert_to_shell_window (
++		shell_view,
++		TRUE,
+ 		"calendar:memos-crashed", NULL);
+ 
+ 	g_object_unref (source);
+@@ -140,33 +139,23 @@ memo_shell_sidebar_backend_error_cb (EMe
+                                      ECal *client)
+ {
+ 	EShellView *shell_view;
+-	EShellWindow *shell_window;
+ 	EShellSidebar *shell_sidebar;
+-	GtkWidget *dialog;
+ 	const gchar *uri;
+ 	gchar *uri_no_passwd;
+ 
+ 	shell_sidebar = E_SHELL_SIDEBAR (memo_shell_sidebar);
+ 	shell_view = e_shell_sidebar_get_shell_view (shell_sidebar);
+-	shell_window = e_shell_view_get_shell_window (shell_view);
+ 
+ 	uri = e_cal_get_uri (client);
+ 	uri_no_passwd = get_uri_without_password (uri);
+ 
+-	/* Translators: This string is displayed in a message dialog when
+-	 *              our connection to the calendar service detects an
+-	 *              out-of-band error.  The first string is a URI for
+-	 *              the source of the error, the second string is the
+-	 *              error message. */
+-	dialog = gtk_message_dialog_new (
+-		GTK_WINDOW (shell_window),
+-		GTK_DIALOG_DESTROY_WITH_PARENT,
+-		GTK_MESSAGE_ERROR, GTK_BUTTONS_OK,
+-		_("Error on %s\n%s"),
+-		uri_no_passwd, message);
+-
+-	gtk_dialog_run (GTK_DIALOG (dialog));
+-	gtk_widget_destroy (dialog);
++	e_calendar_gui_misc_add_alert_to_shell_window (
++		shell_view,
++		TRUE,
++		"calendar:generic-backend-error",
++		uri_no_passwd,
++		message,
++		NULL);
+ 
+ 	g_free (uri_no_passwd);
+ }
+@@ -177,13 +166,11 @@ memo_shell_sidebar_client_opened_cb (EMe
+                                      ECal *client)
+ {
+ 	EShellView *shell_view;
+-	EShellWindow *shell_window;
+ 	EShellSidebar *shell_sidebar;
+ 	const gchar *message;
+ 
+ 	shell_sidebar = E_SHELL_SIDEBAR (memo_shell_sidebar);
+ 	shell_view = e_shell_sidebar_get_shell_view (shell_sidebar);
+-	shell_window = e_shell_view_get_shell_window (shell_view);
+ 
+ 	if (g_error_matches (error, E_CALENDAR_ERROR,
+ 		E_CALENDAR_STATUS_AUTHENTICATION_FAILED) ||
+@@ -204,16 +191,18 @@ memo_shell_sidebar_client_opened_cb (EMe
+ 			return;
+ 
+ 		case E_CALENDAR_STATUS_REPOSITORY_OFFLINE:
+-			e_alert_run_dialog_for_args (
+-				GTK_WINDOW (shell_window),
++			e_calendar_gui_misc_add_alert_to_shell_window (
++				shell_view,
++				FALSE,
+ 				"calendar:prompt-no-contents-offline-memos",
+ 				NULL);
+ 			/* fall through */
+ 
+ 		default:
+ 			if (error->code != E_CALENDAR_STATUS_REPOSITORY_OFFLINE) {
+-				e_alert_run_dialog_for_args (
+-					GTK_WINDOW (shell_window),
++				e_calendar_gui_misc_add_alert_to_shell_window (
++					shell_view,
++					FALSE,
+ 					"calendar:failed-open-memos",
+ 					error->message, NULL);
+ 			}
+@@ -242,7 +231,6 @@ memo_shell_sidebar_default_loaded_cb (ES
+                                       EShellSidebar *shell_sidebar)
+ {
+ 	EMemoShellSidebarPrivate *priv;
+-	EShellWindow *shell_window;
+ 	EShellView *shell_view;
+ 	ECal *client;
+ 	GError *error = NULL;
+@@ -250,7 +238,6 @@ memo_shell_sidebar_default_loaded_cb (ES
+ 	priv = E_MEMO_SHELL_SIDEBAR_GET_PRIVATE (shell_sidebar);
+ 
+ 	shell_view = e_shell_sidebar_get_shell_view (shell_sidebar);
+-	shell_window = e_shell_view_get_shell_window (shell_view);
+ 
+ 	client = e_load_cal_source_finish (source, result, &error);
+ 
+@@ -259,8 +246,9 @@ memo_shell_sidebar_default_loaded_cb (ES
+ 		goto exit;
+ 
+ 	} else if (error != NULL) {
+-		e_alert_run_dialog_for_args (
+-			GTK_WINDOW (shell_window),
++		e_calendar_gui_misc_add_alert_to_shell_window (
++			shell_view,
++			FALSE,
+ 			"calendar:failed-open-memos",
+ 			error->message, NULL);
+ 		g_error_free (error);
+diff -up evolution-2.32.3/modules/calendar/e-task-shell-sidebar.c.cal-non-intrusive-errors evolution-2.32.3/modules/calendar/e-task-shell-sidebar.c
+--- evolution-2.32.3/modules/calendar/e-task-shell-sidebar.c.cal-non-intrusive-errors	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/modules/calendar/e-task-shell-sidebar.c	2013-06-19 15:25:36.024919799 +0200
+@@ -107,7 +107,6 @@ task_shell_sidebar_backend_died_cb (ETas
+                                     ECal *client)
+ {
+ 	EShellView *shell_view;
+-	EShellWindow *shell_window;
+ 	EShellSidebar *shell_sidebar;
+ 	GHashTable *client_table;
+ 	ESource *source;
+@@ -117,7 +116,6 @@ task_shell_sidebar_backend_died_cb (ETas
+ 
+ 	shell_sidebar = E_SHELL_SIDEBAR (task_shell_sidebar);
+ 	shell_view = e_shell_sidebar_get_shell_view (shell_sidebar);
+-	shell_window = e_shell_view_get_shell_window (shell_view);
+ 
+ 	source = e_cal_get_source (client);
+ 	uid = e_source_peek_uid (source);
+@@ -127,8 +125,9 @@ task_shell_sidebar_backend_died_cb (ETas
+ 	g_hash_table_remove (client_table, uid);
+ 	task_shell_sidebar_emit_status_message (task_shell_sidebar, NULL);
+ 
+-	e_alert_run_dialog_for_args (
+-		GTK_WINDOW (shell_window),
++	e_calendar_gui_misc_add_alert_to_shell_window (
++		shell_view,
++		TRUE,
+ 		"calendar:tasks-crashed", NULL);
+ 
+ 	g_object_unref (source);
+@@ -140,33 +139,23 @@ task_shell_sidebar_backend_error_cb (ETa
+                                      ECal *client)
+ {
+ 	EShellView *shell_view;
+-	EShellWindow *shell_window;
+ 	EShellSidebar *shell_sidebar;
+-	GtkWidget *dialog;
+ 	const gchar *uri;
+ 	gchar *uri_no_passwd;
+ 
+ 	shell_sidebar = E_SHELL_SIDEBAR (task_shell_sidebar);
+ 	shell_view = e_shell_sidebar_get_shell_view (shell_sidebar);
+-	shell_window = e_shell_view_get_shell_window (shell_view);
+ 
+ 	uri = e_cal_get_uri (client);
+ 	uri_no_passwd = get_uri_without_password (uri);
+ 
+-	/* Translators: This string is displayed in a message dialog when
+-	 *              our connection to the calendar service detects an
+-	 *              out-of-band error.  The first string is a URI for
+-	 *              the source of the error, the second string is the
+-	 *              error message. */
+-	dialog = gtk_message_dialog_new (
+-		GTK_WINDOW (shell_window),
+-		GTK_DIALOG_DESTROY_WITH_PARENT,
+-		GTK_MESSAGE_ERROR, GTK_BUTTONS_OK,
+-		_("Error on %s\n%s"),
+-		uri_no_passwd, message);
+-
+-	gtk_dialog_run (GTK_DIALOG (dialog));
+-	gtk_widget_destroy (dialog);
++	e_calendar_gui_misc_add_alert_to_shell_window (
++		shell_view,
++		TRUE,
++		"calendar:generic-backend-error",
++		uri_no_passwd,
++		message,
++		NULL);
+ 
+ 	g_free (uri_no_passwd);
+ }
+@@ -177,13 +166,11 @@ task_shell_sidebar_client_opened_cb (ETa
+                                      ECal *client)
+ {
+ 	EShellView *shell_view;
+-	EShellWindow *shell_window;
+ 	EShellSidebar *shell_sidebar;
+ 	const gchar *message;
+ 
+ 	shell_sidebar = E_SHELL_SIDEBAR (task_shell_sidebar);
+ 	shell_view = e_shell_sidebar_get_shell_view (shell_sidebar);
+-	shell_window = e_shell_view_get_shell_window (shell_view);
+ 
+ 	if (g_error_matches (error, E_CALENDAR_ERROR,
+ 		E_CALENDAR_STATUS_AUTHENTICATION_FAILED) ||
+@@ -204,16 +191,18 @@ task_shell_sidebar_client_opened_cb (ETa
+ 			return;
+ 
+ 		case E_CALENDAR_STATUS_REPOSITORY_OFFLINE:
+-			e_alert_run_dialog_for_args (
+-				GTK_WINDOW (shell_window),
++			e_calendar_gui_misc_add_alert_to_shell_window (
++				shell_view,
++				FALSE,
+ 				"calendar:prompt-no-contents-offline-tasks",
+ 				NULL);
+ 			/* fall through */
+ 
+ 		default:
+ 			if (error->code != E_CALENDAR_STATUS_REPOSITORY_OFFLINE) {
+-				e_alert_run_dialog_for_args (
+-					GTK_WINDOW (shell_window),
++				e_calendar_gui_misc_add_alert_to_shell_window (
++					shell_view,
++					FALSE,
+ 					"calendar:failed-open-tasks",
+ 					error->message, NULL);
+ 			}
+@@ -242,7 +231,6 @@ task_shell_sidebar_default_loaded_cb (ES
+                                       EShellSidebar *shell_sidebar)
+ {
+ 	ETaskShellSidebarPrivate *priv;
+-	EShellWindow *shell_window;
+ 	EShellView *shell_view;
+ 	ECal *client;
+ 	GError *error = NULL;
+@@ -250,7 +238,6 @@ task_shell_sidebar_default_loaded_cb (ES
+ 	priv = E_TASK_SHELL_SIDEBAR_GET_PRIVATE (shell_sidebar);
+ 
+ 	shell_view = e_shell_sidebar_get_shell_view (shell_sidebar);
+-	shell_window = e_shell_view_get_shell_window (shell_view);
+ 
+ 	client = e_load_cal_source_finish (source, result, &error);
+ 
+@@ -259,8 +246,9 @@ task_shell_sidebar_default_loaded_cb (ES
+ 		goto exit;
+ 
+ 	} else if (error != NULL) {
+-		e_alert_run_dialog_for_args (
+-			GTK_WINDOW (shell_window),
++		e_calendar_gui_misc_add_alert_to_shell_window (
++			shell_view,
++			FALSE,
+ 			"calendar:failed-open-tasks",
+ 			error->message, NULL);
+ 		g_error_free (error);

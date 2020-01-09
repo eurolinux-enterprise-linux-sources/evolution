@@ -171,7 +171,10 @@ eni_error_level_value_changed (GtkComboBox *w, gpointer *data)
 }
 
 void
-eni_show_logger(ELogger *logger, GtkWidget *top,const gchar *error_timeout_path, const gchar *error_level_path)
+eni_show_logger (ELogger *logger,
+                 GtkWidget *top,
+                 const gchar *error_timeout_path,
+                 const gchar *error_level_path)
 {
 	GtkWidget *container;
 	GtkWidget *label;
@@ -233,8 +236,10 @@ eni_show_logger(ELogger *logger, GtkWidget *top,const gchar *error_timeout_path,
 	widget = gtk_combo_box_new_text ();
 	for (i = E_LOG_ERROR; i <= E_LOG_DEBUG; i++)
 		gtk_combo_box_append_text (
-				GTK_COMBO_BOX (widget), ldata[i].text);
-	gtk_combo_box_set_active ((GtkComboBox *) widget, eni_config_get_error_level(error_level_path));
+			GTK_COMBO_BOX (widget), ldata[i].text);
+	gtk_combo_box_set_active (
+		GTK_COMBO_BOX (widget),
+		eni_config_get_error_level (error_level_path));
 
 	g_signal_connect (
 		widget, "changed",
@@ -257,7 +262,7 @@ eni_show_logger(ELogger *logger, GtkWidget *top,const gchar *error_timeout_path,
 		GTK_SCROLLED_WINDOW (container), GTK_SHADOW_IN);
 	gtk_box_pack_start (GTK_BOX (vbox), container, TRUE, TRUE, 0);
 
-	widget = gtk_tree_view_new();
+	widget = gtk_tree_view_new ();
 	gtk_tree_view_set_rules_hint (GTK_TREE_VIEW (widget), TRUE);
 	gtk_tree_view_set_reorderable (GTK_TREE_VIEW (widget), FALSE);
 	gtk_tree_view_set_model (GTK_TREE_VIEW (widget), GTK_TREE_MODEL (store));
@@ -288,7 +293,7 @@ eni_show_logger(ELogger *logger, GtkWidget *top,const gchar *error_timeout_path,
 		column, renderer, eni_render_date, NULL, NULL);
 
 	renderer = gtk_cell_renderer_text_new ();
-	gtk_tree_view_insert_column_with_attributes(
+	gtk_tree_view_insert_column_with_attributes (
 		GTK_TREE_VIEW (widget), -1, _("Messages"),
 		renderer, "markup", COL_DATA, NULL);
 
@@ -306,4 +311,3 @@ eni_show_logger(ELogger *logger, GtkWidget *top,const gchar *error_timeout_path,
 
 	gtk_widget_show_all (window);
 }
-

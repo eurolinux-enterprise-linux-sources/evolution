@@ -1,0 +1,16 @@
+diff -up evolution-2.32.3/addressbook/gui/widgets/ea-minicard-view.c.atk-minicard evolution-2.32.3/addressbook/gui/widgets/ea-minicard-view.c
+--- evolution-2.32.3/addressbook/gui/widgets/ea-minicard-view.c.atk-minicard	2011-03-29 20:38:45.000000000 +0200
++++ evolution-2.32.3/addressbook/gui/widgets/ea-minicard-view.c	2013-07-08 15:39:22.933840968 +0200
+@@ -260,6 +260,12 @@ ea_minicard_view_ref_child (AtkObject *a
+ 		return NULL;
+ 		/* a minicard */
+ 	if (index < child_num) {
++		if (reflow->items[index] == NULL) {
++			reflow->items[index] = e_reflow_model_incarnate (reflow->model, index, GNOME_CANVAS_GROUP (reflow));
++			g_object_set (reflow->items[index],
++				      "width", (double) reflow->column_width,
++				      NULL);
++		}
+ 		card = E_MINICARD (reflow->items[index]);
+ 		atk_object = atk_gobject_accessible_for_object (G_OBJECT (card));
+ 	} else {

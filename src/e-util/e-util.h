@@ -20,17 +20,24 @@
  *
  */
 
-#ifndef _E_UTIL_H_
-#define _E_UTIL_H_
+#ifndef E_UTIL_H
+#define E_UTIL_H
 
 #include <sys/types.h>
 #include <gtk/gtk.h>
 #include <limits.h>
 #include <gconf/gconf-client.h>
-#include <camel/camel-object.h>
-#include <cairo.h>
 
 #include <e-util/e-marshal.h>
+
+/* e_get_user_data_dir() used to live here, so #include its new home
+ * for backward-compatibility (not that we really care about that). */
+#include <libedataserver/e-data-server-util.h>
+
+/* Convenience macro to help migrate from libglade to GtkBuilder.
+ * Use it as a direct replacement for glade_xml_get_widget(). */
+#define e_builder_get_widget(builder, name) \
+	GTK_WIDGET (gtk_builder_get_object ((builder), (name)))
 
 G_BEGIN_DECLS
 
@@ -41,7 +48,9 @@ typedef enum {
 	E_FOCUS_END
 } EFocus;
 
-const gchar *	e_get_user_data_dir		(void);
+typedef void (*ETypeFunc) (GType type, gpointer user_data);
+
+const gchar *	e_get_gnome2_user_dir		(void);
 const gchar *	e_get_accels_filename		(void);
 void		e_show_uri			(GtkWindow *parent,
 						 const gchar *uri);
@@ -51,14 +60,21 @@ GtkAction *	e_lookup_action			(GtkUIManager *ui_manager,
 						 const gchar *action_name);
 GtkActionGroup *e_lookup_action_group		(GtkUIManager *ui_manager,
 						 const gchar *group_name);
-guint		e_load_ui_definition		(GtkUIManager *ui_manager,
+void		e_load_ui_builder_definition	(GtkBuilder *builder,
 						 const gchar *basename);
 gint		e_action_compare_by_label	(GtkAction *action1,
 						 GtkAction *action2);
 void		e_action_group_remove_all_actions
 						(GtkActionGroup *action_group);
+GtkRadioAction *e_radio_action_get_current_action
+						(GtkRadioAction *radio_action);
+void		e_categories_add_change_hook	(GHookFunc func,
+						 gpointer object);
+void		e_type_traverse			(GType parent_type,
+						 ETypeFunc func,
+						 gpointer user_data);
 
-gchar *		e_str_without_underscores	(const gchar *s);
+gchar *		e_str_without_underscores	(const gchar *string);
 gint		e_str_compare			(gconstpointer x,
 						 gconstpointer y);
 gint		e_str_case_compare		(gconstpointer x,
@@ -67,8 +83,7 @@ gint		e_collate_compare		(gconstpointer x,
 						 gconstpointer y);
 gint		e_int_compare                   (gconstpointer x,
 						 gconstpointer y);
-gboolean	e_write_file_uri		(const gchar *filename,
-						 const gchar *data);
+guint32		e_color_to_value		(GdkColor *color);
 
 /* This only makes a filename safe for usage as a filename.
  * It still may have shell meta-characters in it. */
@@ -113,39 +128,24 @@ gchar *		e_ascii_dtostr			(gchar *buffer,
 						 const gchar *format,
 						 gdouble d);
 
-/* Alternating gchar * and gint arguments with a NULL gchar * to end.
-   Less than 0 for the gint means copy the whole string. */
-gchar *		e_strdup_append_strings		(gchar *first_string,
-						 ...);
-
 cairo_font_options_t *
 		get_font_options		(void);
-
-void		e_file_update_save_path		(gchar *uri,
-						 gboolean free);
-gchar *		e_file_get_save_path		(void);
 
 gboolean	e_file_lock_create		(void);
 void		e_file_lock_destroy		(void);
 gboolean	e_file_lock_exists		(void);
 
-gchar *		e_util_guess_mime_type		(const gchar *filename, gboolean localfile);
-gchar *		e_util_filename_to_uri		(const gchar *filename);
-gchar *		e_util_uri_to_filename		(const gchar *uri);
+gchar *		e_util_guess_mime_type		(const gchar *filename,
+                                                 gboolean localfile);
 
-gboolean	e_util_read_file		(const gchar *filename,
-						 gboolean filename_is_uri,
-						 gchar **buffer,
-						 gsize *read,
-						 GError **error);
+GSList *	e_util_get_category_filter_options
+						(void);
+GList *		e_util_get_searchable_categories(void);
 
-GSList *e_util_get_category_filter_options      (void);
-
-/* Camel uses its own object system, so we have to box
- * CamelObjects to safely use them as GObject properties. */
-#define E_TYPE_CAMEL_OBJECT (e_camel_object_get_type ())
-GType		e_camel_object_get_type		(void);
+void		e_util_set_source_combo_box_list
+						(GtkWidget *source_combo_box,
+						 const gchar *source_gconf_path);
 
 G_END_DECLS
 
-#endif /* _E_UTIL_H_ */
+#endif /* E_UTIL_H */

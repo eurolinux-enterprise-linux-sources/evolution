@@ -76,7 +76,7 @@ EventPage *	event_page_new			(EMeetingStore *model,
 ECalComponent *	event_page_get_cancel_comp	(EventPage *page);
 void		event_page_show_options		(EventPage *page);
 void		event_page_hide_options		(EventPage *page);
-void		event_page_sendoptions_clicked_cb
+void		event_page_send_options_clicked_cb
 						(EventPage *epage);
 void		event_page_set_meeting		(EventPage *page,
 						 gboolean set);
@@ -109,6 +109,8 @@ ENameSelector *	event_page_get_name_selector	(EventPage *epage);
 void		event_page_add_attendee		(EventPage *epage,
 						 EMeetingAttendee *attendee);
 void		event_page_remove_all_attendees (EventPage *epage);
+GtkWidget *	event_page_get_alarm_page	(EventPage *epage);
+GtkWidget *	event_page_get_attendee_page	(EventPage *epage);
 
 G_END_DECLS
 

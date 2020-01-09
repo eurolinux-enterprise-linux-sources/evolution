@@ -127,7 +127,6 @@ ldif_fields[] = {
 	{ "nsAIMid", E_CONTACT_IM_AIM, FLAG_LIST },
 	{ "mozilla_AimScreenName", E_CONTACT_IM_AIM, FLAG_LIST }
 };
-static gint num_ldif_fields = sizeof(ldif_fields) / sizeof (ldif_fields[0]);
 
 static GString *
 getValue( gchar **src )
@@ -137,7 +136,7 @@ getValue( gchar **src )
 	gboolean need_base64 = (*s == ':');
 
  copy_line:
-	while ( *s != 0 && *s != '\n' && *s != '\r' )
+	while (*s != 0 && *s != '\n' && *s != '\r')
 		dest = g_string_append_c (dest, *s++);
 
 	if (*s == '\r') s++;
@@ -222,7 +221,7 @@ populate_contact_address (EContactAddress *address, gchar *attr, gchar *value)
 }
 
 static gboolean
-parseLine (LDIFImporter *gci, EContact *contact,
+parseLine (GHashTable *dn_contact_hash, EContact *contact,
 	   EContactAddress *work_address, EContactAddress *home_address,
 	   gchar **buf)
 {
@@ -250,7 +249,7 @@ parseLine (LDIFImporter *gci, EContact *contact,
 	}
 
 	/* first, check for a 'continuation' line */
-	if ( ptr[0] == ' ' && ptr[1] != '\n' ) {
+	if (ptr[0] == ' ' && ptr[1] != '\n') {
 		g_warning ("unexpected continuation line");
 		return FALSE;
 	}
@@ -261,13 +260,13 @@ parseLine (LDIFImporter *gci, EContact *contact,
 
 		*colon = 0;
 		value = colon + 1;
-		while ( isspace(*value) )
+		while (isspace(*value))
 			value++;
 
 		ldif_value = getValue(&value );
 
 		field_handled = FALSE;
-		for (i = 0; i < num_ldif_fields; i ++) {
+		for (i = 0; i < G_N_ELEMENTS (ldif_fields); i++) {
 			if (!g_ascii_strcasecmp (ptr, ldif_fields[i].ldif_attribute)) {
 				if (ldif_fields[i].flags & FLAG_WORK_ADDRESS) {
 					populate_contact_address (work_address, ptr, ldif_value->str);
@@ -307,11 +306,15 @@ parseLine (LDIFImporter *gci, EContact *contact,
 		/* handle objectclass/dn/member out here */
 		if (!field_handled) {
 			if (!g_ascii_strcasecmp (ptr, "dn"))
-				g_hash_table_insert (gci->dn_contact_hash, g_strdup(ldif_value->str), contact);
-			else if (!g_ascii_strcasecmp (ptr, "objectclass") && !g_ascii_strcasecmp (ldif_value->str, "groupofnames")) {
-				e_contact_set (contact, E_CONTACT_IS_LIST, GINT_TO_POINTER (TRUE));
-			}
-			else if (!g_ascii_strcasecmp (ptr, "member")) {
+				g_hash_table_insert (
+					dn_contact_hash,
+					g_strdup (ldif_value->str), contact);
+			else if (!g_ascii_strcasecmp (ptr, "objectclass") &&
+				!g_ascii_strcasecmp (ldif_value->str, "groupofnames")) {
+				e_contact_set (
+					contact, E_CONTACT_IS_LIST,
+					GINT_TO_POINTER (TRUE));
+			} else if (!g_ascii_strcasecmp (ptr, "member")) {
 				GList *email;
 
 				email = e_contact_get (contact, E_CONTACT_EMAIL);
@@ -327,8 +330,8 @@ parseLine (LDIFImporter *gci, EContact *contact,
 		*colon = ':';
 
 		g_string_free (ldif_value, TRUE);
-	}
-	else {
+
+	} else {
 		g_warning ("unrecognized entry %s", ptr);
 		return FALSE;
 	}
@@ -339,7 +342,7 @@ parseLine (LDIFImporter *gci, EContact *contact,
 }
 
 static EContact *
-getNextLDIFEntry(LDIFImporter *gci, FILE *f )
+getNextLDIFEntry(GHashTable *dn_contact_hash, FILE *f )
 {
 	EContact *contact;
 	EContactAddress *work_address, *home_address;
@@ -369,7 +372,7 @@ getNextLDIFEntry(LDIFImporter *gci, FILE *f )
 
 	buf = str->str;
 	while (buf) {
-		if (!parseLine (gci, contact, work_address, home_address, &buf)) {
+		if (!parseLine (dn_contact_hash, contact, work_address, home_address, &buf)) {
 			/* parsing error */
 			g_string_free (str, TRUE);
 			e_contact_address_free (work_address);
@@ -477,7 +480,7 @@ ldif_import_contacts(gpointer d)
 	   ones till the end */
 
 	if (gci->state == 0) {
-		while (count < 50 && (contact = getNextLDIFEntry(gci, gci->file))) {
+		while (count < 50 && (contact = getNextLDIFEntry(gci->dn_contact_hash, gci->file))) {
 			if (e_contact_get (contact, E_CONTACT_IS_LIST)) {
 				gci->list_contacts = g_slist_prepend(gci->list_contacts, contact);
 			} else {
@@ -509,7 +512,9 @@ ldif_import_contacts(gpointer d)
 		ldif_import_done(gci);
 		return FALSE;
 	} else {
-		e_import_status(gci->import, gci->target, _("Importing..."), ftell(gci->file) * 100 / gci->size);
+		e_import_status (
+			gci->import, gci->target, _("Importing..."),
+			ftell (gci->file) * 100 / gci->size);
 		return TRUE;
 	}
 }
@@ -543,20 +548,25 @@ ldif_getwidget(EImport *ei, EImportTarget *target, EImportImporter *im)
 	if (primary == NULL) {
 		primary = e_source_list_peek_source_any (source_list);
 		g_object_ref(primary);
-		g_datalist_set_data_full(&target->data, "ldif-source", primary, g_object_unref);
+		g_datalist_set_data_full (
+			&target->data, "ldif-source", primary,
+			(GDestroyNotify) g_object_unref);
 	}
-	e_source_selector_set_primary_selection (E_SOURCE_SELECTOR (selector), primary);
+	e_source_selector_set_primary_selection (
+		E_SOURCE_SELECTOR (selector), primary);
 	g_object_unref (source_list);
 
-	g_signal_connect (selector, "primary_selection_changed", G_CALLBACK (primary_selection_changed_cb), target);
+	g_signal_connect (
+		selector, "primary_selection_changed",
+		G_CALLBACK (primary_selection_changed_cb), target);
 
 	gtk_widget_show_all (vbox);
 
 	return vbox;
 }
 
-static const gchar *supported_extensions[2] = {
-	".ldif", NULL
+static const gchar *supported_extensions[3] = {
+	".ldif", ".ldi", NULL
 };
 
 static gboolean
@@ -664,6 +674,58 @@ ldif_cancel(EImport *ei, EImportTarget *target, EImportImporter *im)
 		gci->state = 2;
 }
 
+static GtkWidget *
+ldif_get_preview (EImport *ei, EImportTarget *target, EImportImporter *im)
+{
+	GtkWidget *preview;
+	GList *contacts = NULL;
+	EContact *contact;
+	EImportTargetURI *s = (EImportTargetURI *)target;
+	gchar *filename;
+	GHashTable *dn_contact_hash;
+	FILE *file;
+
+	filename = g_filename_from_uri (s->uri_src, NULL, NULL);
+	if (filename == NULL) {
+		g_message (G_STRLOC ": Couldn't get filename from URI '%s'", s->uri_src);
+		return NULL;
+	}
+
+	file = g_fopen(filename, "r");
+	g_free (filename);
+
+	if (file == NULL) {
+		g_message (G_STRLOC ": Can't open .ldif file");
+		return NULL;
+	}
+
+	dn_contact_hash = g_hash_table_new_full (
+		g_str_hash, g_str_equal,
+		(GDestroyNotify) g_free,
+		(GDestroyNotify) NULL);
+
+	while (contact = getNextLDIFEntry (dn_contact_hash, file), contact != NULL) {
+		if (!e_contact_get (contact, E_CONTACT_IS_LIST)) {
+			add_to_notes(contact, E_CONTACT_OFFICE);
+			add_to_notes(contact, E_CONTACT_SPOUSE);
+			add_to_notes(contact, E_CONTACT_BLOG_URL);
+		}
+
+		contacts = g_list_prepend (contacts, contact);
+	}
+
+	g_hash_table_destroy (dn_contact_hash);
+
+	contacts = g_list_reverse (contacts);
+	preview = evolution_contact_importer_get_preview_widget (contacts);
+
+	g_list_foreach (contacts, (GFunc) g_object_unref, NULL);
+	g_list_free (contacts);
+	fclose (file);
+
+	return preview;
+}
+
 static EImportImporter ldif_importer = {
 	E_IMPORT_TARGET_URI,
 	0,
@@ -671,6 +733,7 @@ static EImportImporter ldif_importer = {
 	ldif_getwidget,
 	ldif_import,
 	ldif_cancel,
+	ldif_get_preview,
 };
 
 EImportImporter *

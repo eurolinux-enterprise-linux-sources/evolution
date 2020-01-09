@@ -41,8 +41,6 @@ static GtkTargetEntry target_table[] = {
 	{ (gchar *) "E-SHORTCUT", 0, TARGET_SHORTCUT }
 };
 
-static guint n_targets = sizeof(target_table) / sizeof(target_table[0]);
-
 static void on_date_range_changed	(ECalendarItem *calitem);
 static void on_selection_changed	(ECalendarItem *calitem);
 
@@ -85,7 +83,7 @@ main (gint argc, gchar **argv)
 
 	gtk_drag_dest_set (cal,
 			   GTK_DEST_DEFAULT_ALL,
-			   target_table, n_targets,
+			   target_table, G_N_ELEMENTS (target_table),
 			   GDK_ACTION_COPY | GDK_ACTION_MOVE);
 
 	vbox = gtk_vbox_new (FALSE, 0);
@@ -114,7 +112,7 @@ on_date_range_changed (ECalendarItem *calitem)
 		 start_day, start_month + 1, start_year,
 		 end_day, end_month + 1, end_year);
 
-	/* These days should appear bold. Remember month is 0 to 11. */
+	/* These days should windowear bold. Remember month is 0 to 11. */
 	e_calendar_item_mark_day (calitem, 2000, 7, 26, /* 26th Aug 2000. */
 				  E_CALENDAR_ITEM_MARK_BOLD, FALSE);
 	e_calendar_item_mark_day (calitem, 2000, 8, 13, /* 13th Sep 2000. */

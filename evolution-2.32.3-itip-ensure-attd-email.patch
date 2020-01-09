@@ -1,0 +1,21 @@
+diff -up evolution-2.32.3/plugins/itip-formatter/itip-formatter.c.itip-ensure-attd-email evolution-2.32.3/plugins/itip-formatter/itip-formatter.c
+--- evolution-2.32.3/plugins/itip-formatter/itip-formatter.c.itip-ensure-attd-email	2013-06-10 14:47:18.845677544 +0200
++++ evolution-2.32.3/plugins/itip-formatter/itip-formatter.c	2013-06-10 14:47:18.847677544 +0200
+@@ -2076,6 +2076,17 @@ view_response_cb (GtkWidget *widget, Iti
+                         find_to_address (pitip, pitip->ical_comp, NULL);
+                 g_assert (pitip->to_address != NULL);
+ 
++		if (!*pitip->to_address) {
++			EAccount *a;
++
++			a = itip_addresses_get_default ();
++
++			if (a && a->id) {
++				g_free (pitip->to_address);
++				pitip->to_address = g_strdup (a->id->address);
++			}
++		}
++
+                 ical_comp = e_cal_component_get_icalcomponent (comp);
+ 
+ 		/* Remove all attendees except the one we are responding as */

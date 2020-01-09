@@ -25,9 +25,8 @@
 #ifndef PRINT_H
 #define PRINT_H
 
-#include "gnome-cal.h"
-
-
+#include <table/e-table.h>
+#include "calendar/gui/gnome-cal.h"
 
 typedef enum {
 	PRINT_VIEW_DAY,

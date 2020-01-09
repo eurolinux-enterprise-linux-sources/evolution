@@ -42,59 +42,83 @@
 #undef interface
 #endif
 
-#include <camel/camel-stream-fs.h>
-#include <camel/camel-url-scanner.h>
-#include <camel/camel-file-utils.h>
-
 #include <libebook/e-book.h>
 
 #include "em-filter-editor.h"
-
-#include <bonobo/bonobo-listener.h>
-#include <bonobo/bonobo-widget.h>
-#include <bonobo/bonobo-event-source.h>
 
 #include <glib/gi18n.h>
 
 #include <gio/gio.h>
 
-#include "mail-component.h"
 #include "mail-mt.h"
 #include "mail-ops.h"
 #include "mail-tools.h"
 #include "mail-config.h"
-#include "message-tag-followup.h"
+#include "e-mail-tag-editor.h"
 
 #include <libedataserver/e-data-server-util.h>
 #include <libedataserver/e-flag.h>
 #include <libedataserver/e-proxy.h>
 #include "e-util/e-util.h"
 #include "e-util/e-util-private.h"
+#include "e-util/e-binding.h"
 #include "e-util/e-mktemp.h"
-#include "libedataserver/e-account-list.h"
+#include "e-util/e-account-utils.h"
 #include "e-util/e-dialog-utils.h"
-#include "e-util/e-error.h"
+#include "e-util/e-alert-activity.h"
+#include "e-util/e-alert-dialog.h"
+#include "shell/e-shell.h"
+#include "widgets/misc/e-attachment.h"
 
 #include "em-utils.h"
 #include "em-composer-utils.h"
-#include "em-folder-view.h"
 #include "em-format-quote.h"
-#include "em-account-editor.h"
-#include "e-attachment.h"
-#include "e-activity-handler.h"
+#include "e-mail-local.h"
+#include "mail-session.h"
+
+/* XXX This is a dirty hack on a dirty hack.  We really need
+ *     to rework or get rid of the functions that use this. */
+extern const gchar *shell_builtin_backend;
+
+/* How many is too many? */
+/* Used in em_util_ask_open_many() */
+#define TOO_MANY 10
 
 static void emu_save_part_done (CamelMimePart *part, gchar *name, gint done, gpointer data);
 
-extern CamelSession *session;
-
 #define d(x)
+
+gboolean
+em_utils_ask_open_many (GtkWindow *parent,
+                        gint how_many)
+{
+	gchar *string;
+	gboolean proceed;
+
+	if (how_many < TOO_MANY)
+		return TRUE;
+
+	string = g_strdup_printf (ngettext (
+		/* Translators: This message is shown only for ten or more
+		 * messages to be opened.  The %d is replaced with the actual
+		 * count of messages. If you need a '%' in your text, then
+		 * write it doubled, like '%%'. */
+		"Are you sure you want to open %d message at once?",
+		"Are you sure you want to open %d messages at once?",
+		how_many), how_many);
+	proceed = em_utils_prompt_user (
+		parent, "/apps/evolution/mail/prompts/open_many",
+		"mail:ask-open-many", string, NULL);
+	g_free (string);
+
+	return proceed;
+}
 
 /**
  * em_utils_prompt_user:
  * @parent: parent window
  * @promptkey: gconf key to check if we should prompt the user or not.
- * @tag: e_error tag.
- * @arg0: The first of a NULL terminated list of arguments for the error.
+ * @tag: e_alert tag.
  *
  * Convenience function to query the user with a Yes/No dialog and a
  * "Do not show this dialog again" checkbox. If the user checks that
@@ -104,25 +128,31 @@ extern CamelSession *session;
  * Returns %TRUE if the user clicks Yes or %FALSE otherwise.
  **/
 gboolean
-em_utils_prompt_user(GtkWindow *parent, const gchar *promptkey, const gchar *tag, const gchar *arg0, ...)
+em_utils_prompt_user(GtkWindow *parent, const gchar *promptkey, const gchar *tag, ...)
 {
 	GtkWidget *mbox, *check = NULL;
+	GtkWidget *container;
 	va_list ap;
 	gint button;
 	GConfClient *gconf = mail_config_get_gconf_client();
+	EAlert *alert = NULL;
 
 	if (promptkey
 	    && !gconf_client_get_bool(gconf, promptkey, NULL))
 		return TRUE;
 
-	va_start(ap, arg0);
-	mbox = e_error_newv(parent, tag, arg0, ap);
+	va_start(ap, tag);
+	alert = e_alert_new_valist (tag, ap);
 	va_end(ap);
 
+	mbox = e_alert_dialog_new (parent, alert);
+	g_object_unref (alert);
+
 	if (promptkey) {
-		check = gtk_check_button_new_with_mnemonic (_("_Do not show this message again."));
+		check = gtk_check_button_new_with_mnemonic (_("_Do not show this message again"));
 		gtk_container_set_border_width((GtkContainer *)check, 12);
-		gtk_box_pack_start ((GtkBox *)((GtkDialog *) mbox)->vbox, check, TRUE, TRUE, 0);
+		container = gtk_dialog_get_content_area (GTK_DIALOG (mbox));
+		gtk_box_pack_start (GTK_BOX (container), check, TRUE, TRUE, 0);
 		gtk_widget_show (check);
 	}
 
@@ -177,64 +207,24 @@ em_utils_uids_free (GPtrArray *uids)
 	g_ptr_array_free (uids, TRUE);
 }
 
-static void
-druid_destroy_cb (gpointer user_data, GObject *deadbeef)
-{
-	gtk_main_quit ();
-}
-
-/**
- * em_utils_configure_account:
- * @parent: parent window for the druid to be a child of.
- *
- * Displays a druid allowing the user to configure an account. If
- * @parent is non-NULL, then the druid will be created as a child
- * window of @parent's toplevel window.
- *
- * Returns %TRUE if an account has been configured or %FALSE
- * otherwise.
- **/
-gboolean
-em_utils_configure_account (GtkWidget *parent)
-{
-	EMAccountEditor *emae;
-
-	emae = em_account_editor_new(NULL, EMAE_DRUID, "org.gnome.evolution.mail.config.accountDruid");
-	if (parent != NULL)
-		e_dialog_set_transient_for ((GtkWindow *)emae->editor, parent);
-
-	g_object_weak_ref((GObject *)emae->editor, (GWeakNotify) druid_destroy_cb, NULL);
-	gtk_widget_show(emae->editor);
-	gtk_grab_add(emae->editor);
-	gtk_main();
-
-	return mail_config_is_configured();
-}
-
 /**
  * em_utils_check_user_can_send_mail:
- * @parent: parent window for the druid to be a child of.
- *
- * If no accounts have been configured, the user will be given a
- * chance to configure an account. In the case that no accounts are
- * configured, a druid will be created. If @parent is non-NULL, then
- * the druid will be created as a child window of @parent's toplevel
- * window.
  *
  * Returns %TRUE if the user has an account configured (to send mail)
  * or %FALSE otherwise.
  **/
 gboolean
-em_utils_check_user_can_send_mail (GtkWidget *parent)
+em_utils_check_user_can_send_mail (void)
 {
+	EAccountList *account_list;
 	EAccount *account;
 
-	if (!mail_config_is_configured ()) {
-		if (!em_utils_configure_account (parent))
-			return FALSE;
-	}
+	account_list = e_get_account_list ();
 
-	if (!(account = mail_config_get_default_account ()))
+	if (e_list_length ((EList *) account_list) == 0)
+		return FALSE;
+
+	if (!(account = e_get_default_account ()))
 		return FALSE;
 
 	/* Check for a transport */
@@ -254,12 +244,13 @@ em_filter_editor_response (GtkWidget *dialog, gint button, gpointer user_data)
 	EMFilterContext *fc;
 
 	if (button == GTK_RESPONSE_OK) {
+		const gchar *config_dir;
 		gchar *user;
 
+		config_dir = mail_session_get_config_dir ();
 		fc = g_object_get_data ((GObject *) dialog, "context");
-		user = g_strdup_printf ("%s/filters.xml",
-					mail_component_peek_base_directory (mail_component_peek ()));
-		rule_context_save ((RuleContext *) fc, user);
+		user = g_build_filename (config_dir, "filters.xml", NULL);
+		e_rule_context_save ((ERuleContext *) fc, user);
 		g_free (user);
 	}
 
@@ -285,24 +276,26 @@ static EMFilterSource em_filter_source_element_names[] = {
 void
 em_utils_edit_filters (GtkWidget *parent)
 {
-	const gchar *base_directory = mail_component_peek_base_directory (mail_component_peek ());
+	const gchar *config_dir;
 	gchar *user, *system;
 	EMFilterContext *fc;
 
 	if (filter_editor) {
-		gdk_window_raise (GTK_WIDGET (filter_editor)->window);
+		gtk_window_present (GTK_WINDOW (filter_editor));
 		return;
 	}
 
+	config_dir = mail_session_get_config_dir ();
+
 	fc = em_filter_context_new ();
-	user = g_strdup_printf ("%s/filters.xml", base_directory);
+	user = g_build_filename (config_dir, "filters.xml", NULL);
 	system = g_build_filename (EVOLUTION_PRIVDATADIR, "filtertypes.xml", NULL);
-	rule_context_load ((RuleContext *) fc, system, user);
+	e_rule_context_load ((ERuleContext *) fc, system, user);
 	g_free (user);
 	g_free (system);
 
-	if (((RuleContext *) fc)->error) {
-		GtkWidget *w = e_error_new((GtkWindow *)parent, "mail:filter-load-error", ((RuleContext *)fc)->error, NULL);
+	if (((ERuleContext *) fc)->error) {
+		GtkWidget *w = e_alert_dialog_new_for_args ((GtkWindow *)parent, "mail:filter-load-error", ((ERuleContext *)fc)->error, NULL);
 		em_utils_show_error_silent (w);
 		return;
 	}
@@ -314,7 +307,9 @@ em_utils_edit_filters (GtkWidget *parent)
 
 	filter_editor = (GtkWidget *) em_filter_editor_new (fc, em_filter_source_element_names);
 	if (parent != NULL)
-		e_dialog_set_transient_for ((GtkWindow *) filter_editor, parent);
+		gtk_window_set_transient_for (
+			GTK_WINDOW (filter_editor),
+			GTK_WINDOW (parent));
 
 	gtk_window_set_title (GTK_WINDOW (filter_editor), _("Message Filters"));
 	g_object_set_data_full ((GObject *) filter_editor, "context", fc, (GDestroyNotify) g_object_unref);
@@ -355,503 +350,12 @@ em_filename_make_safe (gchar *string)
 	}
 }
 
-/* Saving messages... */
-
-static const gchar *
-emu_save_get_filename_for_part (CamelMimePart *part)
-{
-	const gchar *filename;
-
-	filename = camel_mime_part_get_filename (part);
-	if (filename == NULL) {
-		if (CAMEL_IS_MIME_MESSAGE (part)) {
-			filename = camel_mime_message_get_subject (
-				CAMEL_MIME_MESSAGE (part));
-			if (filename == NULL)
-				filename = _("message");
-		} else
-			filename = _("attachment");
-	}
-
-	return filename;
-}
-
-/**
- * em_utils_save_part:
- * @parent: parent window
- * @prompt: prompt string
- * @part: part to save
- *
- * Saves a mime part to disk (prompting the user for filename).
- **/
-void
-em_utils_save_part (GtkWidget *parent, const gchar *prompt, CamelMimePart *part)
-{
-	GtkWidget *file_chooser;
-	const gchar *utf8_filename;
-	gchar *uri = NULL, *filename;
-
-	utf8_filename = emu_save_get_filename_for_part (part);
-	filename = g_filename_from_utf8 (utf8_filename, -1, NULL, NULL, NULL);
-	em_filename_make_safe (filename);
-
-	file_chooser = e_file_get_save_filesel (
-		parent, prompt, filename, GTK_FILE_CHOOSER_ACTION_SAVE);
-
-	if (gtk_dialog_run (GTK_DIALOG (file_chooser)) != GTK_RESPONSE_OK)
-		goto exit;
-
-	uri = gtk_file_chooser_get_uri (GTK_FILE_CHOOSER (file_chooser));
-
-	/* XXX Would be nice to mention _why_ we can't save. */
-	if (!e_file_can_save (GTK_WINDOW (file_chooser), uri)) {
-		g_warning ("Unable to save %s", uri);
-		goto exit;
-	}
-
-	e_file_update_save_path (
-		gtk_file_chooser_get_current_folder_uri (
-		GTK_FILE_CHOOSER (file_chooser)), TRUE);
-
-	mail_save_part (part, uri, NULL, NULL, FALSE);
-
-exit:
-	gtk_widget_destroy (file_chooser);
-	g_free (uri);
-	g_free (filename);
-}
-
-/* It "assigns" to each part its unique file name, based on the appearance.
-   parts contains CamelMimePart, returned value contains gchar *, in same
-   order as parts; resulting list should free data and GSList itself as well.
-*/
-static GSList *
-get_unique_file_names (GSList *parts)
-{
-	GSList *iter;
-	GSList *file_names = NULL;
-
-	if (!parts)
-		return NULL;
-
-	for (iter = parts; iter != NULL; iter = iter->next) {
-		CamelMimePart *part = iter->data;
-		const gchar *utf8_filename;
-		gchar *filename;
-
-		utf8_filename = emu_save_get_filename_for_part (part);
-		filename = g_filename_from_utf8 (utf8_filename, -1, NULL, NULL, NULL);
-		em_filename_make_safe (filename);
-
-		file_names = g_slist_prepend (file_names, filename);
-	}
-
-	if (file_names) {
-		GSList *sorted_file_names;
-		gint counter = 1;
-		const gchar *last;
-		GCompareFunc cmp_func = (GCompareFunc) strcmp;
-
-		#ifdef G_OS_WIN32
-		cmp_func = (GCompareFunc) g_ascii_strcasecmp;
-		#endif
-
-		/* we prepended, so reverse to make right order */
-		file_names = g_slist_reverse (file_names);
-
-		sorted_file_names = g_slist_sort (g_slist_copy (file_names), cmp_func);
-		last = sorted_file_names->data;
-		for (iter = sorted_file_names->next; iter; iter = iter->next) {
-			gchar *name = iter->data;
-
-			if (name && last && cmp_func (name, last) == 0) {
-				gchar *new_name;
-				gchar *p = strrchr (name, '.');
-				GSList *i2;
-
-				/* if we have an extension, then place number before it (at p is ".ext"),
-				   otherwise just append number in brackets */
-				if (p)
-					new_name = g_strdup_printf ("%.*s(%d)%s", (gint) (p - name), name, counter, p);
-				else
-					new_name = g_strdup_printf ("%s(%d)", name, counter);
-
-				/* we need to find the proper item in unsorted list and replace with new name;
-				   we should always find that item, so no check for leaks */
-				for (i2 = file_names; i2; i2 = i2->next) {
-					if (i2->data == name) {
-						g_free (name);
-						i2->data = new_name;
-						break;
-					}
-				}
-
-				counter++;
-			} else {
-				last = name;
-				counter = 1;
-			}
-		}
-
-		g_slist_free (sorted_file_names);
-	}
-
-	return file_names;
-}
-
-void
-em_utils_save_parts (GtkWidget *parent, const gchar *prompt, GSList *parts)
-{
-	GtkWidget *file_chooser;
-	gchar *path_uri;
-	GSList *iter, *file_names, *iter_file;
-
-	file_chooser = e_file_get_save_filesel (
-		parent, prompt, NULL, GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER);
-
-	if (gtk_dialog_run (GTK_DIALOG (file_chooser)) != GTK_RESPONSE_OK)
-		goto exit;
-
-	path_uri = gtk_file_chooser_get_uri (GTK_FILE_CHOOSER (file_chooser));
-
-	e_file_update_save_path (path_uri, FALSE);
-
-	file_names = get_unique_file_names (parts);
-
-	for (iter = parts, iter_file = file_names; iter && iter_file; iter = iter->next, iter_file = iter_file->next) {
-		CamelMimePart *part = iter->data;
-		gchar *uri, *filename;
-
-		filename = iter_file->data;
-		uri = g_build_path ("/", path_uri, filename, NULL);
-		g_free (filename);
-		iter_file->data = NULL;
-
-		/* XXX Would be nice to mention _why_ we can't save. */
-		if (e_file_can_save (GTK_WINDOW (file_chooser), uri))
-			mail_save_part (part, uri, NULL, NULL, FALSE);
-		else
-			g_warning ("Unable to save %s", uri);
-
-		g_free (uri);
-	}
-
-	g_slist_free (file_names);
-	g_free (path_uri);
-
-exit:
-	gtk_widget_destroy (file_chooser);
-}
-
-/**
- * em_utils_save_part_to_file:
- * @parent: parent window
- * @filename: filename to save to
- * @part: part to save
- *
- * Save a part's content to a specific file
- * Creates all needed directories and overwrites without prompting
- *
- * Returns %TRUE if saving succeeded, %FALSE otherwise
- **/
-gboolean
-em_utils_save_part_to_file(GtkWidget *parent, const gchar *filename, CamelMimePart *part)
-{
-	gint done;
-	gchar *dirname;
-	struct stat st;
-
-	if (filename[0] == 0)
-		return FALSE;
-
-	dirname = g_path_get_dirname(filename);
-	if (g_mkdir_with_parents(dirname, 0777) == -1) {
-		GtkWidget *w = e_error_new((GtkWindow *)parent, "mail:no-create-path", filename, g_strerror(errno), NULL);
-		g_free(dirname);
-		em_utils_show_error_silent (w);
-		return FALSE;
-	}
-	g_free(dirname);
-
-	if (g_access(filename, F_OK) == 0) {
-		if (g_access(filename, W_OK) != 0) {
-			e_error_run((GtkWindow *)parent, E_ERROR_ASK_FILE_EXISTS_OVERWRITE, filename, NULL);
-			return FALSE;
-		}
-	}
-
-	if (g_stat(filename, &st) != -1 && !S_ISREG(st.st_mode)) {
-		GtkWidget *w = e_error_new((GtkWindow *)parent, "mail:no-write-path-notfile", filename, NULL);
-		em_utils_show_error_silent (w);
-		return FALSE;
-	}
-
-	/* FIXME: This doesn't handle default charsets */
-	mail_msg_wait(mail_save_part(part, filename, emu_save_part_done, &done, FALSE));
-
-	return done;
-}
-
-struct _save_messages_data {
-	CamelFolder *folder;
-	GPtrArray *uids;
-};
-
-static void
-emu_save_messages_response(GtkWidget *filesel, gint response, struct _save_messages_data *data)
-{
-	gchar *uri;
-
-	if (response == GTK_RESPONSE_OK) {
-		uri = gtk_file_chooser_get_uri (GTK_FILE_CHOOSER (filesel));
-
-		if (!e_file_can_save((GtkWindow *)filesel, uri)) {
-			g_free(uri);
-			return;
-		}
-
-		e_file_update_save_path(gtk_file_chooser_get_current_folder_uri(
-					GTK_FILE_CHOOSER (filesel)), TRUE);
-		mail_save_messages(data->folder, data->uids, uri, NULL, NULL);
-		data->uids = NULL;
-		g_free(uri);
-	}
-
-	camel_object_unref(data->folder);
-	if (data->uids)
-		em_utils_uids_free(data->uids);
-	g_free(data);
-	gtk_widget_destroy((GtkWidget *)filesel);
-}
-
-/**
- * em_utils_save_messages:
- * @parent: parent window
- * @folder: folder containing messages to save
- * @uids: uids of messages to save
- *
- * Saves a group of messages to disk in mbox format (prompting the
- * user for filename).
- **/
-void
-em_utils_save_messages (GtkWidget *parent, CamelFolder *folder, GPtrArray *uids)
-{
-	struct _save_messages_data *data;
-	GtkWidget *filesel;
-	gchar *filename = NULL;
-	CamelMessageInfo *info = NULL;
-
-	g_return_if_fail (CAMEL_IS_FOLDER (folder));
-	g_return_if_fail (uids != NULL);
-
-	info = camel_folder_get_message_info (folder, uids->pdata[0]);
-	if (info) {
-		filename = g_strdup (camel_message_info_subject (info));
-		e_filename_make_safe (filename);
-		camel_message_info_free (info);
-	}
-
-	filesel = e_file_get_save_filesel (parent, _("Save Message..."), filename, GTK_FILE_CHOOSER_ACTION_SAVE);
-	if (filename)
-		g_free (filename);
-
-	camel_object_ref(folder);
-
-	data = g_malloc(sizeof(struct _save_messages_data));
-	data->folder = folder;
-	data->uids = uids;
-
-	g_signal_connect(filesel, "response", G_CALLBACK(emu_save_messages_response), data);
-	gtk_widget_show((GtkWidget *)filesel);
-}
-
-/* ********************************************************************** */
-
-static void
-emu_add_address_cb(BonoboListener *listener, const gchar *name, const CORBA_any *any, CORBA_Environment *ev, gpointer data)
-{
-	gchar *type = bonobo_event_subtype(name);
-
-	if (!strcmp (type, "Destroy")) {
-		GtkWidget *win = data;
-		GSList *addresses;
-
-		addresses = g_object_get_data (G_OBJECT (win), "addresses-list");
-		g_object_set_data (G_OBJECT (win), "addresses-list", NULL);
-
-		/* let the email cache load these addresses again */
-		emu_remove_from_mail_cache (addresses);
-		g_slist_foreach (addresses, (GFunc) g_free, NULL);
-		g_slist_free (addresses);
-
-		gtk_widget_destroy (win);
-	}
-
-	g_free(type);
-}
-
-/* one of email or vcard should be always NULL, never both of them */
-static void
-emu_add_address_or_vcard (GtkWidget *parent, const gchar *email, const gchar *vcard)
-{
-	GtkWidget *win;
-	GtkWidget *control;
-	/*GtkWidget *socket;*/
-	gchar *email_buf = NULL;
-	GSList *addresses = NULL;
-
-	if (email) {
-		CamelInternetAddress *cia;
-
-		cia = camel_internet_address_new ();
-		if (camel_address_decode ((CamelAddress *) cia, email) == -1) {
-			camel_object_unref (cia);
-			return;
-		}
-
-		email_buf = camel_address_format ((CamelAddress *) cia);
-		camel_object_unref (cia);
-	}
-
-	win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	gtk_window_set_title((GtkWindow *)win, _("Add address"));
-
-	if (parent && !GTK_IS_WINDOW (parent)) {
-		parent = gtk_widget_get_toplevel (parent);
-		if (!parent || !(GTK_WIDGET_TOPLEVEL (parent)))
-			parent = NULL;
-	}
-
-	if (parent)
-		gtk_window_set_transient_for ((GtkWindow *)win, ((GtkWindow *)parent));
-
-	gtk_window_set_position((GtkWindow *)win, GTK_WIN_POS_CENTER_ON_PARENT);
-	gtk_window_set_type_hint((GtkWindow *)win, GDK_WINDOW_TYPE_HINT_DIALOG);
-
-	control = bonobo_widget_new_control("OAFIID:GNOME_Evolution_Addressbook_AddressPopup:" BASE_VERSION, CORBA_OBJECT_NIL);
-
-	if (email_buf) {
-		bonobo_widget_set_property ((BonoboWidget *) control, "email", TC_CORBA_string, email_buf, NULL);
-		addresses = g_slist_append (addresses, g_strdup (email_buf));
-	} else {
-		EVCard *card;
-
-		bonobo_widget_set_property ((BonoboWidget *) control, "vcard", TC_CORBA_string, vcard, NULL);
-
-		card = e_vcard_new_from_string (vcard);
-		if (card) {
-			GList *l;
-
-			for (l = e_vcard_get_attributes (card); l; l = l->next) {
-				EVCardAttribute *attr = l->data;
-				const gchar *name;
-
-				name = e_vcard_attribute_get_name (attr);
-
-				if (g_ascii_strcasecmp (name, EVC_EMAIL) == 0) {
-					GList *v = e_vcard_attribute_get_values (attr);
-
-					if (v && v->data)
-						addresses = g_slist_prepend (addresses, g_strdup (v->data));
-				}
-			}
-
-			g_object_unref (card);
-		}
-	}
-
-	g_object_set_data (G_OBJECT (win), "addresses-list", addresses);
-
-	g_free (email_buf);
-
-	bonobo_event_source_client_add_listener(bonobo_widget_get_objref((BonoboWidget *)control), emu_add_address_cb, NULL, NULL, win);
-
-	/*socket = find_socket (GTK_CONTAINER (control));
-	  g_object_weak_ref ((GObject *) socket, (GWeakNotify) gtk_widget_destroy, win);*/
-
-	gtk_container_add((GtkContainer *)win, control);
-	gtk_widget_show_all(win);
-}
-
-/**
- * em_utils_add_address:
- * @parent:
- * @email:
- *
- * Add address @email to the addressbook.
- **/
-void
-em_utils_add_address (GtkWidget *parent, const gchar *email)
-{
-	emu_add_address_or_vcard (parent, email, NULL);
-}
-
-/**
- * em_utils_add_vcard:
- * Adds whole vCard to the addressbook.
- **/
-void
-em_utils_add_vcard (GtkWidget *parent, const gchar *vcard)
-{
-	emu_add_address_or_vcard (parent, NULL, vcard);
-}
-
 /* ********************************************************************** */
 /* Flag-for-Followup... */
 
-/* tag-editor callback data */
-struct ted_t {
-	EMFolderView *emfv;
-	MessageTagEditor *editor;
-	CamelFolder *folder;
-	GPtrArray *uids;
-};
-
-static void
-ted_free (struct ted_t *ted)
-{
-	camel_object_unref (ted->folder);
-	em_utils_uids_free (ted->uids);
-	g_free (ted);
-}
-
-static void
-tag_editor_response (GtkWidget *dialog, gint button, struct ted_t *ted)
-{
-	CamelFolder *folder;
-	CamelTag *tags, *t;
-	GPtrArray *uids;
-	gint i;
-
-	if (button == GTK_RESPONSE_OK && (tags = message_tag_editor_get_tag_list (ted->editor))) {
-		folder = ted->folder;
-		uids = ted->uids;
-
-		camel_folder_freeze (folder);
-		for (i = 0; i < uids->len; i++) {
-			CamelMessageInfo *mi = camel_folder_get_message_info(folder, uids->pdata[i]);
-
-			if (mi) {
-				for (t = tags; t; t = t->next)
-					camel_message_info_set_user_tag(mi, t->name, t->value);
-
-				camel_message_info_free(mi);
-			}
-		}
-
-		camel_folder_thaw (folder);
-		camel_tag_list_free (&tags);
-
-		if (ted->emfv->preview)
-			em_format_redraw (EM_FORMAT (ted->emfv->preview));
-	}
-
-	gtk_widget_destroy (dialog);
-}
-
 /**
  * em_utils_flag_for_followup:
- * @parent: parent window
+ * @reader: an #EMailReader
  * @folder: folder containing messages to flag
  * @uids: uids of messages to flag
  *
@@ -859,38 +363,53 @@ tag_editor_response (GtkWidget *dialog, gint button, struct ted_t *ted)
  * @folder and @uids.
  **/
 void
-em_utils_flag_for_followup (GtkWidget *parent, CamelFolder *folder, GPtrArray *uids)
+em_utils_flag_for_followup (EMailReader *reader,
+                            CamelFolder *folder,
+                            GPtrArray *uids)
 {
+	EShell *shell;
+	EShellSettings *shell_settings;
+	EShellBackend *shell_backend;
+	EMFormatHTML *formatter;
 	GtkWidget *editor;
-	struct ted_t *ted;
+	GtkWindow *window;
+	CamelTag *tags;
 	gint i;
 
+	g_return_if_fail (E_IS_MAIL_READER (reader));
 	g_return_if_fail (CAMEL_IS_FOLDER (folder));
 	g_return_if_fail (uids != NULL);
 
-	editor = (GtkWidget *) message_tag_followup_new ();
+	editor = e_mail_tag_editor_new ();
+	window = e_mail_reader_get_window (reader);
+	gtk_window_set_transient_for (GTK_WINDOW (editor), window);
 
-	if (parent != NULL)
-		e_dialog_set_transient_for ((GtkWindow *) editor, parent);
+	shell_backend = e_mail_reader_get_shell_backend (reader);
+	shell = e_shell_backend_get_shell (shell_backend);
+	shell_settings = e_shell_get_shell_settings (shell);
 
-	camel_object_ref (folder);
-
-	ted = g_new (struct ted_t, 1);
-	ted->emfv = (EMFolderView *) parent;
-	ted->editor = MESSAGE_TAG_EDITOR (editor);
-	ted->folder = folder;
-	ted->uids = uids;
+	/* These settings come from the calendar module. */
+	e_binding_new (
+		shell_settings, "cal-use-24-hour-format",
+		editor, "use-24-hour-format");
+	e_binding_new (
+		shell_settings, "cal-week-start-day",
+		editor, "week-start-day");
 
 	for (i = 0; i < uids->len; i++) {
 		CamelMessageInfo *info;
 
 		info = camel_folder_get_message_info (folder, uids->pdata[i]);
-		if (info) {
-			message_tag_followup_append_message (MESSAGE_TAG_FOLLOWUP (editor),
-							     camel_message_info_from (info),
-							     camel_message_info_subject (info));
-			camel_message_info_free(info);
-		}
+
+		if (info == NULL)
+			continue;
+
+		e_mail_tag_editor_add_message (
+			E_MAIL_TAG_EDITOR (editor),
+			camel_message_info_from (info),
+			camel_message_info_subject (info));
+
+		camel_folder_free_message_info (folder, info);
 	}
 
 	/* special-case... */
@@ -899,18 +418,50 @@ em_utils_flag_for_followup (GtkWidget *parent, CamelFolder *folder, GPtrArray *u
 
 		info = camel_folder_get_message_info (folder, uids->pdata[0]);
 		if (info) {
-			const CamelTag *tags = camel_message_info_user_tags(info);
+			tags = (CamelTag *) camel_message_info_user_tags (info);
 
 			if (tags)
-				message_tag_editor_set_tag_list (MESSAGE_TAG_EDITOR (editor), (CamelTag *)tags);
-			camel_message_info_free(info);
+				e_mail_tag_editor_set_tag_list (
+					E_MAIL_TAG_EDITOR (editor), tags);
+			camel_folder_free_message_info (folder, info);
 		}
 	}
 
-	g_signal_connect (editor, "response", G_CALLBACK (tag_editor_response), ted);
-	g_object_weak_ref ((GObject *) editor, (GWeakNotify) ted_free, ted);
+	if (gtk_dialog_run (GTK_DIALOG (editor)) != GTK_RESPONSE_OK)
+		goto exit;
 
-	gtk_widget_show (editor);
+	tags = e_mail_tag_editor_get_tag_list (E_MAIL_TAG_EDITOR (editor));
+	if (tags == NULL)
+		goto exit;
+
+	camel_folder_freeze (folder);
+	for (i = 0; i < uids->len; i++) {
+		CamelMessageInfo *info;
+		CamelTag *iter;
+
+		info = camel_folder_get_message_info(folder, uids->pdata[i]);
+
+		if (info == NULL)
+			continue;
+
+		for (iter = tags; iter != NULL; iter = iter->next)
+			camel_message_info_set_user_tag (
+				info, iter->name, iter->value);
+
+		camel_folder_free_message_info (folder, info);
+	}
+
+	camel_folder_thaw (folder);
+	camel_tag_list_free (&tags);
+
+	formatter = e_mail_reader_get_formatter (reader);
+	em_format_queue_redraw (EM_FORMAT (formatter));
+
+exit:
+	/* XXX We shouldn't be freeing this. */
+	em_utils_uids_free (uids);
+
+	gtk_widget_destroy (GTK_WIDGET (editor));
 }
 
 /**
@@ -923,10 +474,11 @@ em_utils_flag_for_followup (GtkWidget *parent, CamelFolder *folder, GPtrArray *u
  * @folder and @uids.
  **/
 void
-em_utils_flag_for_followup_clear (GtkWidget *parent, CamelFolder *folder, GPtrArray *uids)
+em_utils_flag_for_followup_clear (GtkWindow *parent, CamelFolder *folder, GPtrArray *uids)
 {
 	gint i;
 
+	g_return_if_fail (GTK_IS_WINDOW (parent));
 	g_return_if_fail (CAMEL_IS_FOLDER (folder));
 	g_return_if_fail (uids != NULL);
 
@@ -938,7 +490,7 @@ em_utils_flag_for_followup_clear (GtkWidget *parent, CamelFolder *folder, GPtrAr
 			camel_message_info_set_user_tag(mi, "follow-up", NULL);
 			camel_message_info_set_user_tag(mi, "due-by", NULL);
 			camel_message_info_set_user_tag(mi, "completed-on", NULL);
-			camel_message_info_free(mi);
+			camel_folder_free_message_info (folder, mi);
 		}
 	}
 	camel_folder_thaw (folder);
@@ -957,11 +509,12 @@ em_utils_flag_for_followup_clear (GtkWidget *parent, CamelFolder *folder, GPtrAr
  * Flag-for-Followup.
  **/
 void
-em_utils_flag_for_followup_completed (GtkWidget *parent, CamelFolder *folder, GPtrArray *uids)
+em_utils_flag_for_followup_completed (GtkWindow *parent, CamelFolder *folder, GPtrArray *uids)
 {
 	gchar *now;
 	gint i;
 
+	g_return_if_fail (GTK_IS_WINDOW (parent));
 	g_return_if_fail (CAMEL_IS_FOLDER (folder));
 	g_return_if_fail (uids != NULL);
 
@@ -976,7 +529,7 @@ em_utils_flag_for_followup_completed (GtkWidget *parent, CamelFolder *folder, GP
 			tag = camel_message_info_user_tag(mi, "follow-up");
 			if (tag && tag[0])
 				camel_message_info_set_user_tag(mi, "completed-on", now);
-			camel_message_info_free(mi);
+			camel_folder_free_message_info (folder, mi);
 		}
 	}
 	camel_folder_thaw (folder);
@@ -986,23 +539,20 @@ em_utils_flag_for_followup_completed (GtkWidget *parent, CamelFolder *folder, GP
 	em_utils_uids_free (uids);
 }
 
-#include "camel/camel-stream-mem.h"
-#include "camel/camel-stream-filter.h"
-#include "camel/camel-mime-filter-from.h"
-
 /* This kind of sucks, because for various reasons most callers need to run synchronously
    in the gui thread, however this could take a long, blocking time, to run */
 static gint
 em_utils_write_messages_to_stream(CamelFolder *folder, GPtrArray *uids, CamelStream *stream)
 {
-	CamelStreamFilter *filtered_stream;
-	CamelMimeFilterFrom *from_filter;
+	CamelStream *filtered_stream;
+	CamelMimeFilter *from_filter;
 	gint i, res = 0;
 
 	from_filter = camel_mime_filter_from_new();
-	filtered_stream = camel_stream_filter_new_with_stream(stream);
-	camel_stream_filter_add(filtered_stream, (CamelMimeFilter *)from_filter);
-	camel_object_unref(from_filter);
+	filtered_stream = camel_stream_filter_new (stream);
+	camel_stream_filter_add (
+		CAMEL_STREAM_FILTER (filtered_stream), from_filter);
+	g_object_unref (from_filter);
 
 	for (i=0; i<uids->len; i++) {
 		CamelMimeMessage *message;
@@ -1017,20 +567,20 @@ em_utils_write_messages_to_stream(CamelFolder *folder, GPtrArray *uids, CamelStr
 		/* we need to flush after each stream write since we are writing to the same stream */
 		from = camel_mime_message_build_mbox_from(message);
 
-		if (camel_stream_write_string(stream, from) == -1
-		    || camel_stream_flush(stream) == -1
-		    || camel_data_wrapper_write_to_stream((CamelDataWrapper *)message, (CamelStream *)filtered_stream) == -1
-		    || camel_stream_flush((CamelStream *)filtered_stream) == -1)
+		if (camel_stream_write_string(stream, from, NULL) == -1
+		    || camel_stream_flush(stream, NULL) == -1
+		    || camel_data_wrapper_write_to_stream((CamelDataWrapper *)message, (CamelStream *)filtered_stream, NULL) == -1
+		    || camel_stream_flush((CamelStream *)filtered_stream, NULL) == -1)
 			res = -1;
 
 		g_free(from);
-		camel_object_unref(message);
+		g_object_unref (message);
 
 		if (res == -1)
 			break;
 	}
 
-	camel_object_unref(filtered_stream);
+	g_object_unref (filtered_stream);
 
 	return res;
 }
@@ -1040,38 +590,36 @@ em_utils_write_messages_to_stream(CamelFolder *folder, GPtrArray *uids, CamelStr
 static gint
 em_utils_read_messages_from_stream(CamelFolder *folder, CamelStream *stream)
 {
-	CamelException *ex = camel_exception_new();
 	CamelMimeParser *mp = camel_mime_parser_new();
-	gint res = -1;
+	gboolean success = TRUE;
 
 	camel_mime_parser_scan_from(mp, TRUE);
-	camel_mime_parser_init_with_stream(mp, stream);
+	camel_mime_parser_init_with_stream(mp, stream, NULL);
 
 	while (camel_mime_parser_step(mp, NULL, NULL) == CAMEL_MIME_PARSER_STATE_FROM) {
 		CamelMimeMessage *msg;
+		gboolean success;
 
 		/* NB: de-from filter, once written */
 		msg = camel_mime_message_new();
-		if (camel_mime_part_construct_from_parser((CamelMimePart *)msg, mp) == -1) {
-			camel_object_unref(msg);
+		if (camel_mime_part_construct_from_parser((CamelMimePart *)msg, mp, NULL) == -1) {
+			g_object_unref (msg);
 			break;
 		}
 
-		camel_folder_append_message(folder, msg, NULL, NULL, ex);
-		camel_object_unref(msg);
+		success = camel_folder_append_message (
+			folder, msg, NULL, NULL, NULL);
+		g_object_unref (msg);
 
-		if (camel_exception_is_set (ex))
+		if (!success)
 			break;
 
 		camel_mime_parser_step(mp, NULL, NULL);
 	}
 
-	camel_object_unref(mp);
-	if (!camel_exception_is_set(ex))
-		res = 0;
-	camel_exception_free(ex);
+	g_object_unref (mp);
 
-	return res;
+	return success ? 0 : -1;
 }
 
 /**
@@ -1085,22 +633,30 @@ em_utils_read_messages_from_stream(CamelFolder *folder, CamelStream *stream)
  * Warning: This could block the ui for an extended period.
  **/
 void
-em_utils_selection_set_mailbox(GtkSelectionData *data, CamelFolder *folder, GPtrArray *uids)
+em_utils_selection_set_mailbox (GtkSelectionData *data,
+                                CamelFolder *folder,
+                                GPtrArray *uids)
 {
+	GByteArray *byte_array;
 	CamelStream *stream;
+	GdkAtom target;
 
-	stream = camel_stream_mem_new();
-	if (em_utils_write_messages_to_stream(folder, uids, stream) == 0)
-		gtk_selection_data_set(data, data->target, 8,
-				       ((CamelStreamMem *)stream)->buffer->data,
-				       ((CamelStreamMem *)stream)->buffer->len);
+	target = gtk_selection_data_get_target (data);
 
-	camel_object_unref(stream);
+	byte_array = g_byte_array_new ();
+	stream = camel_stream_mem_new_with_byte_array (byte_array);
+
+	if (em_utils_write_messages_to_stream (folder, uids, stream) == 0)
+		gtk_selection_data_set(
+			data, target, 8,
+			byte_array->data, byte_array->len);
+
+	g_object_unref (stream);
 }
 
 /**
  * em_utils_selection_get_mailbox:
- * @data: selection data
+ * @selection_data: selection data
  * @folder:
  *
  * Receive a mailbox selection/dnd
@@ -1109,50 +665,61 @@ em_utils_selection_set_mailbox(GtkSelectionData *data, CamelFolder *folder, GPtr
  * FIXME: Exceptions?
  **/
 void
-em_utils_selection_get_mailbox(GtkSelectionData *data, CamelFolder *folder)
+em_utils_selection_get_mailbox (GtkSelectionData *selection_data,
+                                CamelFolder *folder)
 {
 	CamelStream *stream;
+	const guchar *data;
+	gint length;
 
-	if (data->data == NULL || data->length == -1)
+	data = gtk_selection_data_get_data (selection_data);
+	length = gtk_selection_data_get_length (selection_data);
+
+	if (data == NULL || length == -1)
 		return;
 
 	/* TODO: a stream mem with read-only access to existing data? */
 	/* NB: Although copying would let us run this async ... which it should */
-	stream = (CamelStream *)camel_stream_mem_new_with_buffer((gchar *)data->data, data->length);
+	stream = (CamelStream *)
+		camel_stream_mem_new_with_buffer ((gchar *) data, length);
 	em_utils_read_messages_from_stream(folder, stream);
-	camel_object_unref(stream);
+	g_object_unref (stream);
 }
 
 /**
  * em_utils_selection_get_message:
- * @data:
+ * @selection_data:
  * @folder:
  *
  * get a message/rfc822 data.
  **/
 void
-em_utils_selection_get_message(GtkSelectionData *data, CamelFolder *folder)
+em_utils_selection_get_message (GtkSelectionData *selection_data,
+                                CamelFolder *folder)
 {
 	CamelStream *stream;
-	CamelException *ex;
 	CamelMimeMessage *msg;
+	const guchar *data;
+	gint length;
 
-	if (data->data == NULL || data->length == -1)
+	data = gtk_selection_data_get_data (selection_data);
+	length = gtk_selection_data_get_length (selection_data);
+
+	if (data == NULL || length == -1)
 		return;
 
-	ex = camel_exception_new();
-	stream = (CamelStream *)camel_stream_mem_new_with_buffer((gchar *)data->data, data->length);
+	stream = (CamelStream *)
+		camel_stream_mem_new_with_buffer ((gchar *)data, length);
 	msg = camel_mime_message_new();
-	if (camel_data_wrapper_construct_from_stream((CamelDataWrapper *)msg, stream) == 0)
-		camel_folder_append_message(folder, msg, NULL, NULL, ex);
-	camel_object_unref(msg);
-	camel_object_unref(stream);
-	camel_exception_free(ex);
+	if (camel_data_wrapper_construct_from_stream((CamelDataWrapper *)msg, stream, NULL) == 0)
+		camel_folder_append_message(folder, msg, NULL, NULL, NULL);
+	g_object_unref (msg);
+	g_object_unref (stream);
 }
 
 /**
  * em_utils_selection_set_uidlist:
- * @data: selection data
+ * @selection_data: selection data
  * @uri:
  * @uids:
  *
@@ -1161,9 +728,12 @@ em_utils_selection_get_message(GtkSelectionData *data, CamelFolder *folder)
  * FIXME: be nice if this could take a folder argument rather than uri
  **/
 void
-em_utils_selection_set_uidlist(GtkSelectionData *data, const gchar *uri, GPtrArray *uids)
+em_utils_selection_set_uidlist (GtkSelectionData *selection_data,
+                                const gchar *uri,
+                                GPtrArray *uids)
 {
 	GByteArray *array = g_byte_array_new();
+	GdkAtom target;
 	gint i;
 
 	/* format: "uri\0uid1\0uid2\0uid3\0...\0uidn\0" */
@@ -1173,7 +743,9 @@ em_utils_selection_set_uidlist(GtkSelectionData *data, const gchar *uri, GPtrArr
 	for (i=0; i<uids->len; i++)
 		g_byte_array_append(array, uids->pdata[i], strlen(uids->pdata[i])+1);
 
-	gtk_selection_data_set(data, data->target, 8, array->data, array->len);
+	target = gtk_selection_data_get_target (selection_data);
+	gtk_selection_data_set (
+		selection_data, target, 8, array->data, array->len);
 	g_byte_array_free(array, TRUE);
 }
 
@@ -1187,27 +759,37 @@ em_utils_selection_set_uidlist(GtkSelectionData *data, const gchar *uri, GPtrArr
  * Warning: Could take some time to run.
  **/
 void
-em_utils_selection_get_uidlist(GtkSelectionData *data, CamelFolder *dest, gint move, CamelException *ex)
+em_utils_selection_get_uidlist (GtkSelectionData *selection_data,
+                                CamelFolder *dest,
+                                gint move,
+                                GError **error)
 {
 	/* format: "uri\0uid1\0uid2\0uid3\0...\0uidn" */
 	gchar *inptr, *inend;
 	GPtrArray *uids;
 	CamelFolder *folder;
+	const guchar *data;
+	gint length;
 
-	if (data == NULL || data->data == NULL || data->length == -1)
+	g_return_if_fail (selection_data != NULL);
+
+	data = gtk_selection_data_get_data (selection_data);
+	length = gtk_selection_data_get_length (selection_data);
+
+	if (data == NULL || length == -1)
 		return;
 
 	uids = g_ptr_array_new();
 
-	inptr = (gchar *)data->data;
-	inend = (gchar *)(data->data + data->length);
+	inptr = (gchar *) data;
+	inend = (gchar *) (data + length);
 	while (inptr < inend) {
 		gchar *start = inptr;
 
 		while (inptr < inend && *inptr)
 			inptr++;
 
-		if (start > (gchar *)data->data)
+		if (start > (gchar *) data)
 			g_ptr_array_add(uids, g_strndup(start, inptr-start));
 
 		inptr++;
@@ -1218,10 +800,10 @@ em_utils_selection_get_uidlist(GtkSelectionData *data, CamelFolder *dest, gint m
 		return;
 	}
 
-	folder = mail_tool_uri_to_folder((gchar *)data->data, 0, ex);
+	folder = mail_tool_uri_to_folder((gchar *) data, 0, error);
 	if (folder) {
-		camel_folder_transfer_messages_to(folder, uids, dest, NULL, move, ex);
-		camel_object_unref(folder);
+		camel_folder_transfer_messages_to(folder, uids, dest, NULL, move, error);
+		g_object_unref (folder);
 	}
 
 	em_utils_uids_free(uids);
@@ -1255,14 +837,16 @@ em_utils_selection_set_urilist(GtkSelectionData *data, CamelFolder *folder, GPtr
 		info = camel_folder_get_message_info(folder, uids->pdata[0]);
 		if (info) {
 			file = g_strdup(camel_message_info_subject(info));
-			camel_folder_free_message_info(folder, info);
+			camel_folder_free_message_info (folder, info);
 		}
 	}
 
 	/* TODO: Handle conflicts? */
 	if (file == NULL) {
 		/* Drop filename for messages from a mailbox */
-		file = g_strdup_printf(_("Messages from %s"), folder->name);
+		file = g_strdup_printf (
+			_("Messages from %s"),
+			camel_folder_get_name (folder));
 	}
 
 	e_filename_make_safe(file);
@@ -1284,12 +868,14 @@ em_utils_selection_set_urilist(GtkSelectionData *data, CamelFolder *folder, GPtr
 		if (em_utils_write_messages_to_stream(folder, uids, fstream) == 0) {
 			/* terminate with \r\n to be compliant with the spec */
 			gchar *uri_crlf = g_strconcat(uri, "\r\n", NULL);
+			GdkAtom target;
 
-			gtk_selection_data_set(data, data->target, 8, (guchar *)uri_crlf, strlen(uri_crlf));
+			target = gtk_selection_data_get_target (data);
+			gtk_selection_data_set(data, target, 8, (guchar *)uri_crlf, strlen(uri_crlf));
 			g_free(uri_crlf);
 		}
 
-		camel_object_unref(fstream);
+		g_object_unref (fstream);
 	} else
 		close(fd);
 
@@ -1307,18 +893,18 @@ em_utils_selection_set_urilist(GtkSelectionData *data, CamelFolder *folder, GPtr
  * automatically cleaned up when the application quits.
  **/
 void
-em_utils_selection_get_urilist(GtkSelectionData *data, CamelFolder *folder)
+em_utils_selection_get_urilist (GtkSelectionData *selection_data,
+                                CamelFolder *folder)
 {
 	CamelStream *stream;
 	CamelURL *url;
 	gint fd, i, res = 0;
-	gchar *tmp, **uris;
+	gchar **uris;
 
 	d(printf(" * drop uri list\n"));
 
-	tmp = g_strndup((gchar *)data->data, data->length);
-	uris = g_strsplit(tmp, "\n", 0);
-	g_free(tmp);
+	uris = gtk_selection_data_get_uris (selection_data);
+
 	for (i=0;res == 0 && uris[i];i++) {
 		g_strstrip(uris[i]);
 		if (uris[i][0] == '#')
@@ -1333,14 +919,14 @@ em_utils_selection_get_urilist(GtkSelectionData *data, CamelFolder *folder)
 			stream = camel_stream_fs_new_with_fd(fd);
 			if (stream) {
 				res = em_utils_read_messages_from_stream(folder, stream);
-				camel_object_unref(stream);
+				g_object_unref (stream);
 			} else
 				close(fd);
 		}
 		camel_url_free(url);
 	}
 
-	g_strfreev(uris);
+	g_strfreev (uris);
 }
 
 static void
@@ -1370,7 +956,7 @@ em_utils_temp_save_part(GtkWidget *parent, CamelMimePart *part, gboolean mode)
 
 	tmpdir = e_mkdtemp("evolution-tmp-XXXXXX");
 	if (tmpdir == NULL) {
-		w = e_error_new((GtkWindow *)parent, "mail:no-create-tmp-path", g_strerror(errno), NULL);
+		w = e_alert_dialog_new_for_args ((GtkWindow *)parent, "mail:no-create-tmp-path", g_strerror(errno), NULL);
 		em_utils_show_error_silent (w);
 		return NULL;
 	}
@@ -1417,26 +1003,33 @@ em_utils_temp_save_part(GtkWidget *parent, CamelMimePart *part, gboolean mode)
 gboolean
 em_utils_folder_is_templates (CamelFolder *folder, const gchar *uri)
 {
+	CamelFolder *local_templates_folder;
+	CamelStore *parent_store;
 	EAccountList *accounts;
 	EAccount *account;
 	EIterator *iter;
 	gint is = FALSE;
 	gchar *templates_uri;
 
-	if (folder == mail_component_get_folder (NULL, MAIL_COMPONENT_FOLDER_TEMPLATES))
+	local_templates_folder =
+		e_mail_local_get_folder (E_MAIL_FOLDER_TEMPLATES);
+
+	if (folder == local_templates_folder)
 		return TRUE;
 
-	if (uri == NULL)
+	if (folder == NULL || uri == NULL)
 		return FALSE;
 
-	accounts = mail_config_get_accounts();
+	parent_store = camel_folder_get_parent_store (folder);
+
+	accounts = e_get_account_list ();
 	iter = e_list_get_iterator ((EList *)accounts);
 	while (e_iterator_is_valid (iter)) {
 		account = (EAccount *)e_iterator_get (iter);
 
 		if (account->templates_folder_uri) {
 			templates_uri = em_uri_to_camel (account->templates_folder_uri);
-			if (camel_store_folder_uri_equal (folder->parent_store, templates_uri, uri)) {
+			if (camel_store_folder_uri_equal (parent_store, templates_uri, uri)) {
 				g_free (templates_uri);
 				is = TRUE;
 				break;
@@ -1464,26 +1057,33 @@ em_utils_folder_is_templates (CamelFolder *folder, const gchar *uri)
 gboolean
 em_utils_folder_is_drafts(CamelFolder *folder, const gchar *uri)
 {
+	CamelFolder *local_drafts_folder;
+	CamelStore *parent_store;
 	EAccountList *accounts;
 	EAccount *account;
 	EIterator *iter;
 	gint is = FALSE;
 	gchar *drafts_uri;
 
-	if (folder == mail_component_get_folder(NULL, MAIL_COMPONENT_FOLDER_DRAFTS))
+	local_drafts_folder =
+		e_mail_local_get_folder (E_MAIL_FOLDER_DRAFTS);
+
+	if (folder == local_drafts_folder)
 		return TRUE;
 
-	if (uri == NULL)
+	if (folder == NULL || uri == NULL)
 		return FALSE;
 
-	accounts = mail_config_get_accounts();
+	parent_store = camel_folder_get_parent_store (folder);
+
+	accounts = e_get_account_list ();
 	iter = e_list_get_iterator((EList *)accounts);
 	while (e_iterator_is_valid(iter)) {
 		account = (EAccount *)e_iterator_get(iter);
 
 		if (account->drafts_folder_uri) {
 			drafts_uri = em_uri_to_camel (account->drafts_folder_uri);
-			if (camel_store_folder_uri_equal (folder->parent_store, drafts_uri, uri)) {
+			if (camel_store_folder_uri_equal (parent_store, drafts_uri, uri)) {
 				g_free (drafts_uri);
 				is = TRUE;
 				break;
@@ -1511,26 +1111,32 @@ em_utils_folder_is_drafts(CamelFolder *folder, const gchar *uri)
 gboolean
 em_utils_folder_is_sent(CamelFolder *folder, const gchar *uri)
 {
+	CamelFolder *local_sent_folder;
+	CamelStore *parent_store;
 	EAccountList *accounts;
 	EAccount *account;
 	EIterator *iter;
 	gint is = FALSE;
 	gchar *sent_uri;
 
-	if (folder == mail_component_get_folder(NULL, MAIL_COMPONENT_FOLDER_SENT))
+	local_sent_folder = e_mail_local_get_folder (E_MAIL_FOLDER_SENT);
+
+	if (folder == local_sent_folder)
 		return TRUE;
 
-	if (uri == NULL)
+	if (folder == NULL || uri == NULL)
 		return FALSE;
 
-	accounts = mail_config_get_accounts();
+	parent_store = camel_folder_get_parent_store (folder);
+
+	accounts = e_get_account_list ();
 	iter = e_list_get_iterator((EList *)accounts);
 	while (e_iterator_is_valid(iter)) {
 		account = (EAccount *)e_iterator_get(iter);
 
 		if (account->sent_folder_uri) {
 			sent_uri = em_uri_to_camel (account->sent_folder_uri);
-			if (camel_store_folder_uri_equal (folder->parent_store, sent_uri, uri)) {
+			if (camel_store_folder_uri_equal (parent_store, sent_uri, uri)) {
 				g_free (sent_uri);
 				is = TRUE;
 				break;
@@ -1558,42 +1164,91 @@ em_utils_folder_is_sent(CamelFolder *folder, const gchar *uri)
 gboolean
 em_utils_folder_is_outbox(CamelFolder *folder, const gchar *uri)
 {
-	/* <Highlander>There can be only one.</Highlander> */
-	return folder == mail_component_get_folder(NULL, MAIL_COMPONENT_FOLDER_OUTBOX);
-}
+	CamelFolder *local_outbox_folder;
+	const gchar *local_outbox_folder_uri;
 
-/**
- * em_utils_adjustment_page:
- * @adj:
- * @down:
- *
- * Move an adjustment up/down forward/back one page.
- **/
-void
-em_utils_adjustment_page(GtkAdjustment *adj, gboolean down)
-{
-	gfloat page_size = adj->page_size - adj->step_increment;
+	local_outbox_folder =
+		e_mail_local_get_folder (E_MAIL_FOLDER_OUTBOX);
+	local_outbox_folder_uri =
+		e_mail_local_get_folder_uri (E_MAIL_FOLDER_OUTBOX);
 
-	if (down) {
-		if (adj->value < adj->upper - adj->page_size - page_size)
-			adj->value += page_size;
-		else if (adj->upper >= adj->page_size)
-			adj->value = adj->upper - adj->page_size;
-		else
-			adj->value = adj->lower;
-	} else {
-		if (adj->value > adj->lower + page_size)
-			adj->value -= page_size;
-		else
-			adj->value = adj->lower;
-	}
+	if (folder == local_outbox_folder)
+		return TRUE;
 
-	gtk_adjustment_value_changed(adj);
+	if (uri == NULL)
+		return FALSE;
+
+	return camel_store_folder_uri_equal (
+		camel_folder_get_parent_store (local_outbox_folder),
+		local_outbox_folder_uri, uri);
 }
 
 /* ********************************************************************** */
 static EProxy *emu_proxy = NULL;
 static GStaticMutex emu_proxy_lock = G_STATIC_MUTEX_INIT;
+
+/* encode to string this way, because soup_uri_to_string doesn't include passwords */
+static gchar *
+suri_to_string (SoupURI *suri)
+{
+	GString *uri;
+	gchar *tmp;
+
+	if (!suri)
+		return NULL;
+
+	uri = g_string_sized_new (20);
+
+	if (suri->scheme)
+		g_string_append_printf (uri, "%s:", suri->scheme);
+	if (suri->host) {
+		g_string_append (uri, "//");
+		if (suri->user) {
+			tmp = soup_uri_encode (suri->user, ":/;#@?\\");
+			g_string_append (uri, tmp);
+			g_free (tmp);
+		}
+
+		if (suri->password) {
+			g_string_append_c (uri, ':');
+			tmp = soup_uri_encode (suri->password, ":/;#@?\\");
+			g_string_append (uri, tmp);
+			g_free (tmp);
+		}
+
+		if (suri->user || suri->password)
+			g_string_append_c (uri, '@');
+
+		if (strchr (suri->host, ':')) {
+			g_string_append_c (uri, '[');
+			g_string_append (uri, suri->host);
+			g_string_append_c (uri, ']');
+		} else {
+			tmp = soup_uri_encode (suri->host, ":/");
+			g_string_append (uri, tmp);
+			g_free (tmp);
+		}
+
+		if (suri->port && !soup_uri_uses_default_port (suri))
+			g_string_append_printf (uri, ":%d", suri->port);
+		if (!suri->path && (suri->query || suri->fragment))
+			g_string_append_c (uri, '/');
+	}
+
+	if (suri->path && *suri->path)
+		g_string_append (uri, suri->path);
+
+	if (suri->query) {
+		g_string_append_c (uri, '?');
+		g_string_append (uri, suri->query);
+	}
+	if (suri->fragment) {
+		g_string_append_c (uri, '#');
+		g_string_append (uri, suri->fragment);
+	}
+
+	return g_string_free (uri, FALSE);
+}
 
 static gpointer
 emu_proxy_setup (gpointer data)
@@ -1626,58 +1281,11 @@ em_utils_get_proxy_uri (const gchar *pUri)
 	}
 
 	if (e_proxy_require_proxy_for_uri (emu_proxy, pUri))
-		uri = soup_uri_to_string (e_proxy_peek_uri_for (emu_proxy, pUri), FALSE);
+		uri = suri_to_string (e_proxy_peek_uri_for (emu_proxy, pUri));
 
 	g_static_mutex_unlock (&emu_proxy_lock);
 
 	return uri;
-}
-
-/**
- * em_utils_part_to_html:
- * @part:
- *
- * Converts a mime part's contents into html text.  If @credits is given,
- * then it will be used as an attribution string, and the
- * content will be cited.  Otherwise no citation or attribution
- * will be performed.
- *
- * Return Value: The part in displayable html format.
- **/
-gchar *
-em_utils_part_to_html(CamelMimePart *part, gssize *len, EMFormat *source)
-{
-	EMFormatQuote *emfq;
-	CamelStreamMem *mem;
-	GByteArray *buf;
-	gchar *text;
-
-	buf = g_byte_array_new ();
-	mem = (CamelStreamMem *) camel_stream_mem_new ();
-	camel_stream_mem_set_byte_array (mem, buf);
-
-	emfq = em_format_quote_new(NULL, (CamelStream *)mem, 0);
-	((EMFormat *) emfq)->composer = TRUE;
-	em_format_set_session((EMFormat *)emfq, session);
-	if (source) {
-		/* copy over things we can, other things are internal, perhaps need different api than 'clone' */
-		if (source->default_charset)
-			em_format_set_default_charset((EMFormat *)emfq, source->default_charset);
-		if (source->charset)
-			em_format_set_default_charset((EMFormat *)emfq, source->charset);
-	}
-	em_format_part((EMFormat *) emfq, (CamelStream *)mem, part);
-	g_object_unref(emfq);
-
-	camel_stream_write((CamelStream *) mem, "", 1);
-	camel_object_unref(mem);
-
-	text = (gchar *)buf->data;
-	if (len)
-		*len = buf->len-1;
-	g_byte_array_free (buf, FALSE);
-
-	return text;
 }
 
 /**
@@ -1688,6 +1296,9 @@ em_utils_part_to_html(CamelMimePart *part, gssize *len, EMFormat *source)
  * @len:
  * @source:
  * @append: Text to append, can be NULL.
+ * @validity_found: if not NULL, then here will be set what validities
+ *         had been found during message conversion. Value is a bit OR
+ *         of EM_FORMAT_VALIDITY_FOUND_* constants.
  *
  * Convert a message to html, quoting if the @credits attribution
  * string is given.
@@ -1695,7 +1306,7 @@ em_utils_part_to_html(CamelMimePart *part, gssize *len, EMFormat *source)
  * Return value: The html version.
  **/
 gchar *
-em_utils_message_to_html(CamelMimeMessage *message, const gchar *credits, guint32 flags, gssize *len, EMFormat *source, const gchar *append)
+em_utils_message_to_html (CamelMimeMessage *message, const gchar *credits, guint32 flags, gssize *len, EMFormat *source, const gchar *append, guint32 *validity_found)
 {
 	EMFormatQuote *emfq;
 	CamelStreamMem *mem;
@@ -1708,7 +1319,6 @@ em_utils_message_to_html(CamelMimeMessage *message, const gchar *credits, guint3
 
 	emfq = em_format_quote_new(credits, (CamelStream *)mem, flags);
 	((EMFormat *) emfq)->composer = TRUE;
-	em_format_set_session((EMFormat *)emfq, session);
 
 	if (!source) {
 		GConfClient *gconf;
@@ -1723,13 +1333,15 @@ em_utils_message_to_html(CamelMimeMessage *message, const gchar *credits, guint3
 	}
 
 	em_format_format_clone((EMFormat *)emfq, NULL, NULL, message, source);
+	if (validity_found)
+		*validity_found = ((EMFormat *)emfq)->validity_found;
 	g_object_unref (emfq);
 
 	if (append && *append)
-		camel_stream_write ((CamelStream*)mem, append, strlen (append));
+		camel_stream_write ((CamelStream*)mem, append, strlen (append), NULL);
 
-	camel_stream_write((CamelStream *)mem, "", 1);
-	camel_object_unref(mem);
+	camel_stream_write((CamelStream *)mem, "", 1, NULL);
+	g_object_unref (mem);
 
 	text = (gchar *)buf->data;
 	if (len)
@@ -1751,14 +1363,17 @@ em_utils_message_to_html(CamelMimeMessage *message, const gchar *credits, guint3
 void
 em_utils_expunge_folder (GtkWidget *parent, CamelFolder *folder)
 {
-	gchar *name;
+	const gchar *description;
 
-	camel_object_get(folder, NULL, CAMEL_OBJECT_DESCRIPTION, &name, 0);
+	description = camel_folder_get_description (folder);
 
-	if (!em_utils_prompt_user ((GtkWindow *) parent, "/apps/evolution/mail/prompts/expunge", "mail:ask-expunge", name, NULL))
+	if (!em_utils_prompt_user (
+		GTK_WINDOW (parent),
+		"/apps/evolution/mail/prompts/expunge",
+		"mail:ask-expunge", description, NULL))
 		return;
 
-	mail_expunge_folder(folder, NULL, NULL);
+	mail_expunge_folder (folder, NULL, NULL);
 }
 
 /**
@@ -1774,30 +1389,24 @@ em_utils_empty_trash (GtkWidget *parent)
 	EAccountList *accounts;
 	EAccount *account;
 	EIterator *iter;
-	CamelException ex;
 
 	if (!em_utils_prompt_user((GtkWindow *) parent, "/apps/evolution/mail/prompts/empty_trash", "mail:ask-empty-trash", NULL))
 		return;
 
-	camel_exception_init (&ex);
-
-	accounts = mail_config_get_accounts ();
+	accounts = e_get_account_list ();
 	iter = e_list_get_iterator ((EList *) accounts);
 	while (e_iterator_is_valid (iter)) {
 		account = (EAccount *) e_iterator_get (iter);
 
 		/* make sure this is a valid source */
 		if (account->enabled && account->source->url) {
-			provider = camel_provider_get(account->source->url, &ex);
+			provider = camel_provider_get(account->source->url, NULL);
 			if (provider) {
 				/* make sure this store is a remote store */
 				if (provider->flags & CAMEL_PROVIDER_IS_STORAGE) {
 					mail_empty_trash (account, NULL, NULL);
 				}
 			}
-
-			/* clear the exception for the next round */
-			camel_exception_clear (&ex);
 		}
 
 		e_iterator_next (iter);
@@ -1849,22 +1458,18 @@ gchar *em_uri_from_camel(const gchar *curi)
 	const gchar *uid, *path;
 	gchar *euri, *tmp;
 	CamelProvider *provider;
-	CamelException ex;
 
 	/* Easiest solution to code that shouldnt be calling us */
 	if (!strncmp(curi, "email:", 6))
 		return g_strdup(curi);
 
-	camel_exception_init(&ex);
-	provider = camel_provider_get(curi, &ex);
+	provider = camel_provider_get(curi, NULL);
 	if (provider == NULL) {
-		camel_exception_clear(&ex);
 		d(printf("em uri from camel failed '%s'\n", curi));
 		return g_strdup(curi);
 	}
 
-	curl = camel_url_new(curi, &ex);
-	camel_exception_clear(&ex);
+	curl = camel_url_new(curi, NULL);
 	if (curl == NULL)
 		return g_strdup(curi);
 
@@ -1924,7 +1529,7 @@ gchar *em_uri_to_camel(const gchar *euri)
 			else
 				curl = camel_url_new("mbox:", NULL);
 
-			base = g_strdup_printf("%s/.evolution/mail/%s", g_get_home_dir(), eurl->user);
+			base = g_strdup_printf("%s/mail/%s", e_get_user_data_dir(), eurl->user);
 #ifdef G_OS_WIN32
 			/* Turn backslashes into slashes to avoid URI encoding */
 			{
@@ -1949,7 +1554,7 @@ gchar *em_uri_to_camel(const gchar *euri)
 		uid = g_strdup(eurl->host);
 	}
 
-	accounts = mail_config_get_accounts();
+	accounts = e_get_account_list ();
 	account = e_account_list_find(accounts, E_ACCOUNT_FIND_UID, uid);
 	g_free(uid);
 
@@ -1960,7 +1565,8 @@ gchar *em_uri_to_camel(const gchar *euri)
 	}
 
 	service = account->source;
-	if (!(provider = camel_provider_get (service->url, NULL)))
+	provider = camel_provider_get (service->url, NULL);
+	if (provider == NULL)
 		return g_strdup (euri);
 
 	curl = camel_url_new(service->url, NULL);
@@ -2022,18 +1628,18 @@ struct TryOpenEBookStruct {
 };
 
 static void
-try_open_e_book_cb (EBook *book, EBookStatus status, gpointer closure)
+try_open_e_book_cb (EBook *book, const GError *error, gpointer closure)
 {
 	struct TryOpenEBookStruct *data = (struct TryOpenEBookStruct *)closure;
 
 	if (!data)
 		return;
 
-	data->result = status == E_BOOK_ERROR_OK;
+	data->result = error == NULL;
 
 	if (!data->result) {
 		g_clear_error (data->error);
-		g_set_error (data->error, E_BOOK_ERROR, status, "EBookStatus returned %d", status);
+		g_propagate_error (data->error, g_error_copy (error));
 	}
 
 	e_flag_set (data->flag);
@@ -2057,10 +1663,10 @@ try_open_e_book (EBook *book, gboolean only_if_exists, GError **error)
 	data.flag = flag;
 	data.result = FALSE;
 
-	if (e_book_async_open (book, only_if_exists, try_open_e_book_cb, &data) != FALSE) {
+	if (!e_book_open_async (book, only_if_exists, try_open_e_book_cb, &data)) {
 		e_flag_free (flag);
 		g_clear_error (error);
-		g_set_error (error, E_BOOK_ERROR, E_BOOK_ERROR_OTHER_ERROR, "Failed to call e_book_async_open.");
+		g_set_error (error, E_BOOK_ERROR, E_BOOK_ERROR_OTHER_ERROR, "Failed to call e_book_open_async.");
 		return FALSE;
 	}
 
@@ -2138,7 +1744,7 @@ search_address_in_addressbooks (const gchar *address, gboolean local_only, gbool
 		if (!group)
 			continue;
 
-		if (local_only && !(e_source_group_peek_base_uri (group) && g_str_has_prefix (e_source_group_peek_base_uri (group), "file://")))
+		if (local_only && !(e_source_group_peek_base_uri (group) && g_str_has_prefix (e_source_group_peek_base_uri (group), "local:")))
 			continue;
 
 		for (s = e_source_group_peek_sources (group); s; s = g_slist_next (s)) {
@@ -2254,7 +1860,7 @@ search_address_in_addressbooks (const gchar *address, gboolean local_only, gbool
 	g_slist_free (addr_sources);
 
 	e_book_query_unref (query);
-	
+
 	if (!found_any) {
 		g_hash_table_insert (contact_cache, lowercase_addr, NOT_FOUND_BOOK);
 		lowercase_addr = NULL;
@@ -2430,7 +2036,7 @@ emu_remove_from_mail_cache (const GSList *addresses)
 		}
 	}
 
-	camel_object_unref (cia);
+	g_object_unref (cia);
 }
 
 void
@@ -2484,93 +2090,12 @@ emu_free_mail_cache (void)
 	G_UNLOCK (photos_cache);
 }
 
-/**
- * em_utils_snoop_type:
- * @part:
- *
- * Tries to snoop the mime type of a part.
- *
- * Return value: NULL if unknown (more likely application/octet-stream).
- **/
-const gchar *
-em_utils_snoop_type(CamelMimePart *part)
-{
-	/* cache is here only to be able still return const gchar * */
-	static GHashTable *types_cache = NULL;
-
-	const gchar *filename;
-	gchar *name_type = NULL, *magic_type = NULL, *res, *tmp;
-	CamelDataWrapper *dw;
-
-	filename = camel_mime_part_get_filename (part);
-	if (filename != NULL)
-		name_type = e_util_guess_mime_type (filename, FALSE);
-
-	dw = camel_medium_get_content_object((CamelMedium *)part);
-	if (!camel_data_wrapper_is_offline(dw)) {
-		CamelStreamMem *mem = (CamelStreamMem *)camel_stream_mem_new();
-
-		if (camel_data_wrapper_decode_to_stream(dw, (CamelStream *)mem) > 0) {
-			gchar *ct = g_content_type_guess (filename, mem->buffer->data, mem->buffer->len, NULL);
-
-			if (ct)
-				magic_type = g_content_type_get_mime_type (ct);
-
-			g_free (ct);
-		}
-		camel_object_unref(mem);
-	}
-
-	d(printf("snooped part, magic_type '%s' name_type '%s'\n", magic_type, name_type));
-
-	/* If gvfs doesn't recognize the data by magic, but it
-	 * contains English words, it will call it text/plain. If the
-	 * filename-based check came up with something different, use
-	 * that instead and if it returns "application/octet-stream"
-	 * try to do better with the filename check.
-	 */
-
-	if (magic_type) {
-		if (name_type
-		    && (!strcmp(magic_type, "text/plain")
-			|| !strcmp(magic_type, "application/octet-stream")))
-			res = name_type;
-		else
-			res = magic_type;
-	} else
-		res = name_type;
-
-	if (res != name_type)
-		g_free (name_type);
-
-	if (res != magic_type)
-		g_free (magic_type);
-
-	if (!types_cache)
-		types_cache = g_hash_table_new_full (g_str_hash, g_str_equal, (GDestroyNotify) g_free, (GDestroyNotify) NULL);
-
-	if (res) {
-		tmp = g_hash_table_lookup (types_cache, res);
-		if (tmp) {
-			g_free (res);
-			res = tmp;
-		} else {
-			g_hash_table_insert (types_cache, res, res);
-		}
-	}
-
-	return res;
-
-	/* We used to load parts to check their type, we dont anymore,
-	   see bug #11778 for some discussion */
-}
-
 void
 em_utils_clear_get_password_canceled_accounts_flag (void)
 {
 	EAccountList *accounts;
 
-	accounts = mail_config_get_accounts ();
+	accounts = e_get_account_list ();
 	if (accounts) {
 		EIterator *iter;
 
@@ -2590,25 +2115,302 @@ em_utils_clear_get_password_canceled_accounts_flag (void)
 	}
 }
 
-static void error_response(GtkObject *o, gint button, gpointer data)
-{
-	gtk_widget_destroy((GtkWidget *)o);
-}
-
 void
 em_utils_show_error_silent (GtkWidget *widget)
 {
-	EActivityHandler *handler = mail_component_peek_activity_handler (mail_component_peek ());
-	if (!g_object_get_data ((GObject *) widget, "response-handled"))
-		g_signal_connect(widget, "response", G_CALLBACK(error_response), NULL);
-	e_activity_handler_make_error (handler, "mail", E_LOG_ERROR, widget);
+	EShell *shell;
+	EShellBackend *shell_backend;
+	EActivity *activity;
+
+	shell = e_shell_get_default ();
+	shell_backend = e_shell_get_backend_by_name (
+		shell, shell_builtin_backend);
+
+	activity = e_alert_activity_new_warning (widget);
+	e_shell_backend_add_activity (shell_backend, activity);
+	g_object_unref (activity);
+
+	if (g_object_get_data (G_OBJECT (widget), "response-handled") == NULL)
+		g_signal_connect (
+			widget, "response",
+			G_CALLBACK (gtk_widget_destroy), NULL);
 }
 
 void
 em_utils_show_info_silent (GtkWidget *widget)
 {
-	EActivityHandler *handler = mail_component_peek_activity_handler (mail_component_peek ());
-	if (!g_object_get_data ((GObject *) widget, "response-handled"))
-		g_signal_connect(widget, "response", G_CALLBACK(error_response), NULL);
-	e_activity_handler_make_error (handler, "mail", E_LOG_WARNINGS, widget);
+	EShell *shell;
+	EShellBackend *shell_backend;
+	EActivity *activity;
+
+	shell = e_shell_get_default ();
+	shell_backend = e_shell_get_backend_by_name (
+		shell, shell_builtin_backend);
+
+	activity = e_alert_activity_new_info (widget);
+	e_shell_backend_add_activity (shell_backend, activity);
+	g_object_unref (activity);
+
+	if (g_object_get_data (G_OBJECT (widget), "response-handled") == NULL)
+		g_signal_connect (
+			widget, "response",
+			G_CALLBACK (gtk_widget_destroy), NULL);
+}
+
+gchar *
+em_utils_url_unescape_amp (const gchar *url)
+{
+	gchar *buff;
+	gint i, j, amps;
+
+	if (!url)
+		return NULL;
+
+	amps = 0;
+	for (i = 0; url[i]; i++) {
+		if (url [i] == '&' && strncmp (url + i, "&amp;", 5) == 0)
+			amps++;
+	}
+
+	buff = g_strdup (url);
+
+	if (!amps)
+		return buff;
+
+	for (i = 0, j = 0; url[i]; i++, j++) {
+		buff[j] = url[i];
+
+		if (url [i] == '&' && strncmp (url + i, "&amp;", 5) == 0)
+			i += 4;
+	}
+	buff[j] = 0;
+
+	return buff;
+}
+
+static EAccount *
+guess_account_from_folder (CamelFolder *folder)
+{
+	CamelService *service;
+	CamelStore *parent_store;
+	EAccount *account;
+	gchar *source_url;
+
+	parent_store = camel_folder_get_parent_store (folder);
+	service = CAMEL_SERVICE (parent_store);
+
+	source_url = camel_url_to_string (service->url, CAMEL_URL_HIDE_ALL);
+	account = mail_config_get_account_by_source_url (source_url);
+	g_free (source_url);
+
+	return account;
+}
+
+static EAccount *
+guess_account_from_message (CamelMimeMessage *message)
+{
+	const gchar *source_url;
+
+	source_url = camel_mime_message_get_source (message);
+	if (source_url == NULL)
+		return NULL;
+
+	return mail_config_get_account_by_source_url (source_url);
+}
+
+GHashTable *
+em_utils_generate_account_hash (void)
+{
+	GHashTable *account_hash;
+	EAccount *account, *def;
+	EAccountList *accounts;
+	EIterator *iter;
+
+	accounts = e_get_account_list ();
+	account_hash = g_hash_table_new (camel_strcase_hash, camel_strcase_equal);
+
+	def = e_get_default_account ();
+
+	iter = e_list_get_iterator ((EList *) accounts);
+	while (e_iterator_is_valid (iter)) {
+		account = (EAccount *) e_iterator_get (iter);
+
+		if (account->id->address) {
+			EAccount *acnt;
+
+			/* Accounts with identical email addresses that are enabled
+			 * take precedence over the accounts that aren't. If all
+			 * accounts with matching email addresses are disabled, then
+			 * the first one in the list takes precedence. The default
+			 * account always takes precedence no matter what.
+			 */
+			acnt = g_hash_table_lookup (account_hash, account->id->address);
+			if (acnt && acnt != def && !acnt->enabled && account->enabled) {
+				g_hash_table_remove (account_hash, acnt->id->address);
+				acnt = NULL;
+			}
+
+			if (!acnt)
+				g_hash_table_insert (account_hash, (gchar *) account->id->address, (gpointer) account);
+		}
+
+		e_iterator_next (iter);
+	}
+
+	g_object_unref (iter);
+
+	/* The default account has to be there if none of the enabled accounts are present */
+	if (g_hash_table_size (account_hash) == 0 && def && def->id->address)
+		g_hash_table_insert (account_hash, (gchar *) def->id->address, (gpointer) def);
+
+	return account_hash;
+}
+
+EAccount *
+em_utils_guess_account (CamelMimeMessage *message,
+                        CamelFolder *folder)
+{
+	EAccount *account = NULL;
+
+	g_return_val_if_fail (CAMEL_IS_MIME_MESSAGE (message), NULL);
+
+	if (folder != NULL)
+		g_return_val_if_fail (CAMEL_IS_FOLDER (folder), NULL);
+
+	/* check for newsgroup header */
+	if (folder != NULL
+	    && camel_medium_get_header (CAMEL_MEDIUM (message), "Newsgroups"))
+		account = guess_account_from_folder (folder);
+
+	/* check for source folder */
+	if (account == NULL && folder != NULL)
+		account = guess_account_from_folder (folder);
+
+	/* then message source */
+	if (account == NULL)
+		account = guess_account_from_message (message);
+
+	return account;
+}
+
+EAccount *
+em_utils_guess_account_with_recipients (CamelMimeMessage *message,
+                                        CamelFolder *folder)
+{
+	EAccount *account = NULL;
+	EAccountList *account_list;
+	GHashTable *recipients;
+	EIterator *iter;
+	CamelInternetAddress *addr;
+	const gchar *type;
+	const gchar *key;
+
+	/* This policy is subject to debate and tweaking,
+	 * but please also document the rational here. */
+
+	g_return_val_if_fail (CAMEL_IS_MIME_MESSAGE (message), NULL);
+
+	/* Build a set of email addresses in which to test for membership.
+	 * Only the keys matter here; the values just need to be non-NULL. */
+	recipients = g_hash_table_new (g_str_hash, g_str_equal);
+
+	type = CAMEL_RECIPIENT_TYPE_TO;
+	addr = camel_mime_message_get_recipients (message, type);
+	if (addr != NULL) {
+		gint index = 0;
+
+		while (camel_internet_address_get (addr, index++, NULL, &key))
+			g_hash_table_insert (
+				recipients, (gpointer) key,
+				GINT_TO_POINTER (1));
+	}
+
+	type = CAMEL_RECIPIENT_TYPE_CC;
+	addr = camel_mime_message_get_recipients (message, type);
+	if (addr != NULL) {
+		gint index = 0;
+
+		while (camel_internet_address_get (addr, index++, NULL, &key))
+			g_hash_table_insert (
+				recipients, (gpointer) key,
+				GINT_TO_POINTER (1));
+	}
+
+	/* First Preference: We were given a folder that maps to an
+	 * enabled account, and that account's email address appears
+	 * in the list of To: or Cc: recipients. */
+
+	if (folder != NULL)
+		account = guess_account_from_folder (folder);
+
+	if (account == NULL || !account->enabled)
+		goto second_preference;
+
+	if ((key = account->id->address) == NULL)
+		goto second_preference;
+
+	if (g_hash_table_lookup (recipients, key) != NULL)
+		goto exit;
+
+second_preference:
+
+	/* Second Preference: Choose any enabled account whose email
+	 * address appears in the list to To: or Cc: recipients. */
+
+	account_list = e_get_account_list ();
+	iter = e_list_get_iterator (E_LIST (account_list));
+	while (e_iterator_is_valid (iter)) {
+		account = (EAccount *) e_iterator_get (iter);
+		e_iterator_next (iter);
+
+		if (account == NULL || !account->enabled)
+			continue;
+
+		if ((key = account->id->address) == NULL)
+			continue;
+
+		if (g_hash_table_lookup (recipients, key) != NULL) {
+			g_object_unref (iter);
+			goto exit;
+		}
+	}
+	g_object_unref (iter);
+
+	/* Last Preference: Defer to em_utils_guess_account(). */
+	account = em_utils_guess_account (message, folder);
+
+exit:
+	g_hash_table_destroy (recipients);
+
+	return account;
+}
+
+void
+emu_restore_folder_tree_state (EMFolderTree *folder_tree)
+{
+	EShell *shell;
+	EShellBackend *backend;
+	GKeyFile *key_file;
+	const gchar *config_dir;
+	gchar *filename;
+
+	g_return_if_fail (folder_tree != NULL);
+	g_return_if_fail (EM_IS_FOLDER_TREE (folder_tree));
+
+	shell = e_shell_get_default ();
+	backend = e_shell_get_backend_by_name (shell, "mail");
+	g_return_if_fail (backend != NULL);
+
+	config_dir = e_shell_backend_get_config_dir (backend);
+	g_return_if_fail (config_dir != NULL);
+
+	filename = g_build_filename (config_dir, "state.ini", NULL);
+
+	key_file = g_key_file_new ();
+	g_key_file_load_from_file (key_file, filename, 0, NULL);
+	g_free (filename);
+
+	em_folder_tree_restore_state (folder_tree, key_file);
+
+	g_key_file_free (key_file);
 }

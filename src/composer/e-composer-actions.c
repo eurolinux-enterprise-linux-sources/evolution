@@ -21,12 +21,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#include <e-util/e-error.h>
-#include <mail/em-event.h>
-#include <mail/em-format-html-print.h>
-#include <mail/em-composer-utils.h>
-
-#include "misc/e-charset-picker.h"
+#include <e-util/e-alert-dialog.h>
 
 static void
 action_attach_cb (GtkAction *action,
@@ -51,7 +46,7 @@ action_charset_cb (GtkRadioAction *action,
 	if (action != current)
 		return;
 
-	charset = gtk_action_get_name (GTK_ACTION (current));
+	charset = g_object_get_data (G_OBJECT (action), "charset");
 
 	g_free (composer->priv->charset);
 	composer->priv->charset = g_strdup (charset);
@@ -61,48 +56,8 @@ static void
 action_close_cb (GtkAction *action,
                  EMsgComposer *composer)
 {
-	GtkhtmlEditor *editor;
-	EComposerHeaderTable *table;
-	GtkWidget *widget;
-	const gchar *subject;
-	gint response;
-
-	editor = GTKHTML_EDITOR (composer);
-	widget = GTK_WIDGET (composer);
-
-	if (!gtkhtml_editor_get_changed (editor) ||
-	    e_msg_composer_is_exiting (composer)) {
-		gtk_widget_destroy (widget);
-		return;
-	}
-
-	gdk_window_raise (widget->window);
-
-	table = e_msg_composer_get_header_table (composer);
-	subject = e_composer_header_table_get_subject (table);
-
-	if (subject == NULL || *subject == '\0')
-		subject = _("Untitled Message");
-
-	response = e_error_run (
-		GTK_WINDOW (composer),
-		"mail-composer:exit-unsaved",
-		subject, NULL);
-
-	switch (response) {
-		case GTK_RESPONSE_YES:
-			gtk_widget_hide (widget);
-			e_msg_composer_request_close (composer);
-			gtk_action_activate (ACTION (SAVE_DRAFT));
-			break;
-
-		case GTK_RESPONSE_NO:
-			gtk_widget_destroy (widget);
-			break;
-
-		case GTK_RESPONSE_CANCEL:
-			break;
-	}
+	if (e_msg_composer_can_close (composer, TRUE))
+		gtk_widget_destroy (GTK_WIDGET (composer));
 }
 
 static void
@@ -130,15 +85,9 @@ action_print_cb (GtkAction *action,
                  EMsgComposer *composer)
 {
 	GtkPrintOperationAction print_action;
-	CamelMimeMessage *message;
-	EMFormatHTMLPrint *efhp;
 
 	print_action = GTK_PRINT_OPERATION_ACTION_PRINT_DIALOG;
-	message = e_msg_composer_get_message_print (composer, 1);
-
-	efhp = em_format_html_print_new (NULL, print_action);
-	em_format_html_print_raw_message (efhp, message);
-	g_object_unref (efhp);
+	e_msg_composer_print (composer, print_action);
 }
 
 static void
@@ -146,15 +95,9 @@ action_print_preview_cb (GtkAction *action,
                          EMsgComposer *composer)
 {
 	GtkPrintOperationAction print_action;
-	CamelMimeMessage *message;
-	EMFormatHTMLPrint *efhp;
 
 	print_action = GTK_PRINT_OPERATION_ACTION_PREVIEW;
-	message = e_msg_composer_get_message_print (composer, 1);
-
-	efhp = em_format_html_print_new (NULL, print_action);
-	em_format_html_print_raw_message (efhp, message);
-	g_object_unref (efhp);
+	e_msg_composer_print (composer, print_action);
 }
 
 static void
@@ -180,16 +123,16 @@ action_save_cb (GtkAction *action,
 		if (g_file_test (filename, G_FILE_TEST_IS_REGULAR)) {
 			gint response;
 
-			response = e_error_run (
+			response = e_alert_run_dialog_for_args (
 				GTK_WINDOW (composer),
-				E_ERROR_ASK_FILE_EXISTS_OVERWRITE,
+				E_ALERT_ASK_FILE_EXISTS_OVERWRITE,
 				filename, NULL);
 			if (response != GTK_RESPONSE_OK)
 				return;
 		} else {
-			e_error_run (
+			e_alert_run_dialog_for_args (
 				GTK_WINDOW (composer),
-				E_ERROR_NO_SAVE_FILE, filename,
+				E_ALERT_NO_SAVE_FILE, filename,
 				g_strerror (errno_saved), NULL);
 			return;
 		}
@@ -197,16 +140,15 @@ action_save_cb (GtkAction *action,
 		close (fd);
 
 	if (!gtkhtml_editor_save (editor, filename, TRUE, &error)) {
-		e_error_run (
+		e_alert_run_dialog_for_args (
 			GTK_WINDOW (composer),
-			E_ERROR_NO_SAVE_FILE,
+			E_ALERT_NO_SAVE_FILE,
 			filename, error->message, NULL);
 		g_error_free (error);
 		return;
 	}
 
 	gtkhtml_editor_run_command (GTKHTML_EDITOR (composer), "saved");
-	e_composer_autosave_set_saved (composer, FALSE);
 }
 
 static void
@@ -262,32 +204,16 @@ action_send_cb (GtkAction *action,
 }
 
 static void
-action_send_options_cb (GtkAction *action,
-                        EMsgComposer *composer)
-{
-	EMEvent *event = em_event_peek ();
-	EMEventTargetComposer *target;
-
-	target = em_event_target_new_composer (
-		event, composer, EM_EVENT_COMPOSER_SEND_OPTION);
-	e_msg_composer_set_send_options (composer, FALSE);
-
-	e_event_emit (
-		(EEvent *) event,
-		"composer.selectsendoption",
-		(EEventTarget *) target);
-
-	if (!composer->priv->send_invoked)
-		e_error_run (
-			GTK_WINDOW (composer),
-			"mail-composer:send-options-support", NULL);
-}
-
-static void
 action_new_message_cb (GtkAction *action,
-                        EMsgComposer *composer)
+                       EMsgComposer *composer)
 {
-	em_utils_compose_new_message (NULL);
+	EMsgComposer *new_composer;
+	EShell *shell;
+
+	shell = e_msg_composer_get_shell (composer);
+
+	new_composer = e_msg_composer_new (shell);
+	gtk_widget_show (GTK_WIDGET (new_composer));
 }
 
 static void
@@ -368,13 +294,6 @@ static GtkActionEntry entries[] = {
 	  N_("Send this message"),
 	  G_CALLBACK (action_send_cb) },
 
-	{ "send-options",
-	  NULL,
-	  N_("_Send Options"),
-	  NULL,
-	  N_("Insert Send options"),
-	  G_CALLBACK (action_send_options_cb) },
-
 	{ "new-message",
 	  "mail-message-new",
 	  N_("New _Message"),
@@ -391,9 +310,9 @@ static GtkActionEntry entries[] = {
 	  NULL,
 	  NULL },
 
-	{ "security-menu",
+	{ "options-menu",
 	  NULL,
-	  N_("_Security"),
+	  N_("_Options"),
 	  NULL,
 	  NULL,
 	  NULL }
@@ -465,14 +384,6 @@ static GtkToggleActionEntry toggle_entries[] = {
 	  NULL,  /* Handled by property bindings */
 	  FALSE },
 
-	{ "view-from",
-	  NULL,
-	  N_("_From Field"),
-	  NULL,
-	  N_("Toggles whether the From chooser is displayed"),
-	  NULL,  /* Handled by property bindings */
-	  FALSE },
-
 	{ "view-reply-to",
 	  NULL,
 	  N_("_Reply-To Field"),
@@ -510,7 +421,7 @@ e_composer_actions_init (EMsgComposer *composer)
 	gtk_action_group_set_translation_domain (
 		action_group, GETTEXT_PACKAGE);
 	e_charset_add_radio_actions (
-		action_group, composer->priv->charset,
+		action_group, "charset-", composer->priv->charset,
 		G_CALLBACK (action_charset_cb), composer);
 	gtk_ui_manager_insert_action_group (ui_manager, action_group, 0);
 

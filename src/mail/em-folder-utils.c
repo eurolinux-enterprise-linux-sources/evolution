@@ -39,17 +39,9 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <glib/gi18n.h>
 
-#include <camel/camel-session.h>
-#include <camel/camel-vee-store.h>
-#include <camel/camel-vtrash-folder.h>
-#include <camel/camel-stream-mem.h>
-#include <camel/camel-file-utils.h>
-#include <camel/camel-stream-fs.h>
-
 #include "e-util/e-mktemp.h"
-#include "e-util/e-request.h"
 
-#include "e-util/e-error.h"
+#include "e-util/e-alert-dialog.h"
 
 #include "em-vfolder-rule.h"
 
@@ -57,18 +49,18 @@
 #include "mail-ops.h"
 #include "mail-tools.h"
 #include "mail-config.h"
-#include "mail-component.h"
 #include "mail-vfolder.h"
 #include "mail-folder-cache.h"
 
 #include "em-utils.h"
-#include "em-popup.h"
 #include "em-folder-tree.h"
 #include "em-folder-tree-model.h"
 #include "em-folder-utils.h"
 #include "em-folder-selector.h"
-#include "em-folder-selection.h"
 #include "em-folder-properties.h"
+
+#include "e-mail-local.h"
+#include "e-mail-store.h"
 
 #define d(x)
 
@@ -105,14 +97,21 @@ emft_copy_folders__desc (struct _EMCopyFolders *m, gint complete)
 static void
 emft_copy_folders__exec (struct _EMCopyFolders *m)
 {
-	guint32 flags = CAMEL_STORE_FOLDER_INFO_FAST | CAMEL_STORE_FOLDER_INFO_RECURSIVE | CAMEL_STORE_FOLDER_INFO_SUBSCRIBED;
+	guint32 flags = CAMEL_STORE_FOLDER_INFO_FAST | CAMEL_STORE_FOLDER_INFO_SUBSCRIBED;
 	GList *pending = NULL, *deleting = NULL, *l;
 	GString *fromname, *toname;
 	CamelFolderInfo *fi;
 	const gchar *tmp;
 	gint fromlen;
 
-	if (!(fi = camel_store_get_folder_info (m->fromstore, m->frombase, flags, &m->base.ex)))
+	/* If we're copying, then we need to copy every subfolder. If we're
+	 *moving*, though, then we only need to rename the top-level folder */
+	if (!m->delete)
+		flags |= CAMEL_STORE_FOLDER_INFO_RECURSIVE;
+
+	fi = camel_store_get_folder_info (
+		m->fromstore, m->frombase, flags, &m->base.error);
+	if (fi == NULL)
 		return;
 
 	pending = g_list_append (pending, fi);
@@ -137,7 +136,10 @@ emft_copy_folders__exec (struct _EMCopyFolders *m)
 			GPtrArray *uids;
 			gint deleted = 0;
 
-			if (info->child)
+			/* We still get immediate children even without the
+			   CAMEL_STORE_FOLDER_INFO_RECURSIVE flag. But we only
+			   want to process the children too if we're *copying* */
+			if (info->child && !m->delete)
 				pending = g_list_append (pending, info->child);
 
 			if (m->tobase[0])
@@ -152,8 +154,10 @@ emft_copy_folders__exec (struct _EMCopyFolders *m)
 			if ((info->flags & CAMEL_FOLDER_NOSELECT) == 0) {
 				d(printf ("this folder is selectable\n"));
 				if (m->tostore == m->fromstore && m->delete) {
-					camel_store_rename_folder (m->fromstore, info->full_name, toname->str, &m->base.ex);
-					if (camel_exception_is_set (&m->base.ex))
+					camel_store_rename_folder (
+						m->fromstore, info->full_name,
+						toname->str, &m->base.error);
+					if (m->base.error != NULL)
 						goto exception;
 
 					/* this folder no longer exists, unsubscribe it */
@@ -162,34 +166,43 @@ emft_copy_folders__exec (struct _EMCopyFolders *m)
 
 					deleted = 1;
 				} else {
-					if (!(fromfolder = camel_store_get_folder (m->fromstore, info->full_name, 0, &m->base.ex)))
+					fromfolder = camel_store_get_folder (
+						m->fromstore, info->full_name,
+						0, &m->base.error);
+					if (fromfolder == NULL)
 						goto exception;
 
-					if (!(tofolder = camel_store_get_folder (m->tostore, toname->str, CAMEL_STORE_FOLDER_CREATE, &m->base.ex))) {
-						camel_object_unref (fromfolder);
+					tofolder = camel_store_get_folder (
+						m->tostore, toname->str,
+						CAMEL_STORE_FOLDER_CREATE,
+						&m->base.error);
+					if (tofolder == NULL) {
+						g_object_unref (fromfolder);
 						goto exception;
 					}
 
 					uids = camel_folder_get_uids (fromfolder);
-					camel_folder_transfer_messages_to (fromfolder, uids, tofolder, NULL, m->delete, &m->base.ex);
+					camel_folder_transfer_messages_to (
+						fromfolder, uids, tofolder,
+						NULL, m->delete, &m->base.error);
 					camel_folder_free_uids (fromfolder, uids);
 
-					if (m->delete && !camel_exception_is_set (&m->base.ex))
+					if (m->delete && m->base.error == NULL)
 						camel_folder_sync(fromfolder, TRUE, NULL);
 
-					camel_object_unref (fromfolder);
-					camel_object_unref (tofolder);
+					g_object_unref (fromfolder);
+					g_object_unref (tofolder);
 				}
 			}
 
-			if (camel_exception_is_set (&m->base.ex))
+			if (m->base.error != NULL)
 				goto exception;
 			else if (m->delete && !deleted)
 				deleting = g_list_prepend (deleting, info);
 
 			/* subscribe to the new folder if appropriate */
 			if (camel_store_supports_subscriptions (m->tostore)
-			    && !camel_store_folder_subscribed (m->tostore, toname->str))
+			    && !camel_store_folder_is_subscribed (m->tostore, toname->str))
 				camel_store_subscribe_folder (m->tostore, toname->str, NULL);
 
 			info = info->next;
@@ -225,8 +238,8 @@ emft_copy_folders__exec (struct _EMCopyFolders *m)
 static void
 emft_copy_folders__free (struct _EMCopyFolders *m)
 {
-	camel_object_unref (m->fromstore);
-	camel_object_unref (m->tostore);
+	g_object_unref (m->fromstore);
+	g_object_unref (m->tostore);
 
 	g_free (m->frombase);
 	g_free (m->tobase);
@@ -247,9 +260,9 @@ em_folder_utils_copy_folders(CamelStore *fromstore, const gchar *frombase, Camel
 	gint seq;
 
 	m = mail_msg_new (&copy_folders_info);
-	camel_object_ref (fromstore);
+	g_object_ref (fromstore);
 	m->fromstore = fromstore;
-	camel_object_ref (tostore);
+	g_object_ref (tostore);
 	m->tostore = tostore;
 	m->frombase = g_strdup (frombase);
 	m->tobase = g_strdup (tobase);
@@ -271,33 +284,48 @@ emfu_copy_folder_selected (const gchar *uri, gpointer data)
 {
 	struct _copy_folder_data *cfd = data;
 	CamelStore *fromstore = NULL, *tostore = NULL;
+	CamelStore *local_store;
 	const gchar *tobase = NULL;
-	CamelException ex;
 	CamelURL *url;
+	GError *local_error = NULL;
 
 	if (uri == NULL) {
 		g_free (cfd);
 		return;
 	}
 
-	camel_exception_init (&ex);
+	local_store = e_mail_local_get_store ();
 
-	if (!(fromstore = camel_session_get_store (session, cfd->fi->uri, &ex))) {
-		e_error_run(NULL,
-			    cfd->delete?"mail:no-move-folder-notexist":"mail:no-copy-folder-notexist", cfd->fi->full_name, uri, ex.desc, NULL);
+	fromstore = camel_session_get_store (
+		session, cfd->fi->uri, &local_error);
+	if (fromstore == NULL) {
+		e_alert_run_dialog_for_args (
+			e_shell_get_active_window (NULL),
+			cfd->delete ? "mail:no-move-folder-notexist" :
+			"mail:no-copy-folder-notexist",
+			cfd->fi->full_name, uri,
+			local_error->message, NULL);
 		goto fail;
 	}
 
-	if (cfd->delete && fromstore == mail_component_peek_local_store (NULL) && emfu_is_special_local_folder (cfd->fi->full_name)) {
-		GtkWidget *w = e_error_new (NULL,
-			    "mail:no-rename-special-folder", cfd->fi->full_name, NULL);
+	if (cfd->delete && fromstore == local_store && emfu_is_special_local_folder (cfd->fi->full_name)) {
+		GtkWidget *w;
+
+		w = e_alert_dialog_new_for_args (
+			e_shell_get_active_window (NULL), "mail:no-rename-special-folder",
+			cfd->fi->full_name, NULL);
 		em_utils_show_error_silent (w);
 		goto fail;
 	}
 
-	if (!(tostore = camel_session_get_store (session, uri, &ex))) {
-		e_error_run(NULL,
-			    cfd->delete?"mail:no-move-folder-to-notexist":"mail:no-copy-folder-to-notexist", cfd->fi->full_name, uri, ex.desc, NULL);
+	tostore = camel_session_get_store (session, uri, &local_error);
+	if (tostore == NULL) {
+		e_alert_run_dialog_for_args (
+			e_shell_get_active_window (NULL),
+			cfd->delete ? "mail:no-move-folder-to-notexist" :
+			"mail:no-copy-folder-to-notexist",
+			cfd->fi->full_name, uri,
+			local_error->message, NULL);
 		goto fail;
 	}
 
@@ -314,10 +342,12 @@ emfu_copy_folder_selected (const gchar *uri, gpointer data)
 	camel_url_free (url);
 fail:
 	if (fromstore)
-		camel_object_unref(fromstore);
+		g_object_unref (fromstore);
 	if (tostore)
-		camel_object_unref(tostore);
-	camel_exception_clear (&ex);
+		g_object_unref (tostore);
+
+	g_clear_error (&local_error);
+
 	g_free (cfd);
 }
 
@@ -354,29 +384,63 @@ emfu_copy_folder_exclude(EMFolderTree *tree, GtkTreeModel *model, GtkTreeIter *i
 /* FIXME: this interface references the folderinfo without copying it  */
 /* FIXME: these functions must be documented */
 void
-em_folder_utils_copy_folder(CamelFolderInfo *folderinfo, gint delete)
+em_folder_utils_copy_folder (GtkWindow *parent,
+                             CamelFolderInfo *folderinfo,
+                             gint delete)
 {
+	GtkWidget *dialog;
+	EMFolderTree *emft;
+	const gchar *label;
+	const gchar *title;
 	struct _copy_folder_data *cfd;
+
+	g_return_if_fail (folderinfo != NULL);
 
 	cfd = g_malloc (sizeof (*cfd));
 	cfd->fi = folderinfo;
 	cfd->delete = delete;
 
-	em_select_folder (NULL, _("Select folder"), delete?_("_Move"):_("C_opy"),
-			  NULL, emfu_copy_folder_exclude,
-			  emfu_copy_folder_selected, cfd);
+	/* XXX Do we leak this reference. */
+	emft = (EMFolderTree *) em_folder_tree_new ();
+	emu_restore_folder_tree_state (emft);
+
+	em_folder_tree_set_excluded_func (
+		emft, emfu_copy_folder_exclude, cfd);
+
+	label = delete ? _("_Move") : _("C_opy");
+	title = delete ? _("Move Folder To") : _("Copy Folder To");
+
+	dialog = em_folder_selector_new (
+		parent, emft,
+		EM_FOLDER_SELECTOR_CAN_CREATE,
+		title, NULL, label);
+
+	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_OK) {
+		const gchar *uri;
+
+		uri = em_folder_selector_get_selected_uri (
+			EM_FOLDER_SELECTOR (dialog));
+		emfu_copy_folder_selected (uri, cfd);
+	}
+
+	gtk_widget_destroy (dialog);
 }
 
 static void
-emfu_delete_done (CamelFolder *folder, gboolean removed, CamelException *ex, gpointer data)
+emfu_delete_done (CamelFolder *folder, gboolean removed, GError **error, gpointer data)
 {
 	GtkWidget *dialog = data;
 
-	if (ex && camel_exception_is_set (ex)) {
-		GtkWidget *w = e_error_new (NULL,
-			    "mail:no-delete-folder", folder->full_name, camel_exception_get_description (ex), NULL);
+	if (error != NULL && *error != NULL) {
+		GtkWidget *w;
+
+		w = e_alert_dialog_new_for_args (
+			e_shell_get_active_window (NULL),
+			"mail:no-delete-folder",
+			camel_folder_get_full_name (folder),
+			(*error)->message, NULL);
 		em_utils_show_error_silent (w);
-		camel_exception_clear (ex);
+		g_clear_error (error);
 	}
 
 	if (dialog)
@@ -400,113 +464,50 @@ emfu_delete_response (GtkWidget *dialog, gint response, gpointer data)
 void
 em_folder_utils_delete_folder (CamelFolder *folder)
 {
-	CamelStore *local;
+	CamelStore *local_store;
+	CamelStore *parent_store;
+	GtkWindow *parent = e_shell_get_active_window (NULL);
 	GtkWidget *dialog;
+	const gchar *full_name;
 	gint flags = 0;
 
-	local = mail_component_peek_local_store (NULL);
+	full_name = camel_folder_get_full_name (folder);
+	parent_store = camel_folder_get_parent_store (folder);
 
-	if (folder->parent_store == local && emfu_is_special_local_folder (folder->full_name)) {
-		dialog = e_error_new (NULL, "mail:no-delete-special-folder", folder->full_name, NULL);
+	local_store = e_mail_local_get_store ();
+
+	if (parent_store == local_store && emfu_is_special_local_folder (full_name)) {
+		dialog = e_alert_dialog_new_for_args (
+			parent, "mail:no-delete-special-folder",
+			full_name, NULL);
 		em_utils_show_error_silent (dialog);
 		return;
 	}
 
-	if (mail_folder_cache_get_folder_info_flags (folder, &flags) && (flags & CAMEL_FOLDER_SYSTEM))
+	if (mail_folder_cache_get_folder_info_flags (mail_folder_cache_get_default (), folder, &flags) && (flags & CAMEL_FOLDER_SYSTEM))
 	{
-		e_error_run(NULL,"mail:no-delete-special-folder", folder->name, NULL);
+		e_alert_run_dialog_for_args (
+			parent,"mail:no-delete-special-folder",
+			camel_folder_get_name (folder), NULL);
 		return;
 	}
 
-	camel_object_ref (folder);
+	g_object_ref (folder);
 
-	dialog = e_error_new(NULL,
-			     (folder->parent_store && CAMEL_IS_VEE_STORE(folder->parent_store))?"mail:ask-delete-vfolder":"mail:ask-delete-folder",
-			     folder->full_name, NULL);
-	g_object_set_data_full ((GObject *) dialog, "folder", folder, camel_object_unref);
+	if (mail_folder_cache_get_folder_info_flags (mail_folder_cache_get_default (), folder, &flags) && (flags & CAMEL_FOLDER_CHILDREN)) {
+		dialog = e_alert_dialog_new_for_args (parent,
+			     (parent_store && CAMEL_IS_VEE_STORE(parent_store))?"mail:ask-delete-vfolder":"mail:ask-delete-folder",
+			     full_name, NULL);
+	}
+	else {
+		dialog = e_alert_dialog_new_for_args (parent,
+			     (parent_store && CAMEL_IS_VEE_STORE(parent_store))?"mail:ask-delete-vfolder-nochild":"mail:ask-delete-folder-nochild",
+			     full_name, NULL);
+	}
+
+	g_object_set_data_full ((GObject *) dialog, "folder", folder, g_object_unref);
 	g_signal_connect (dialog, "response", G_CALLBACK (emfu_delete_response), NULL);
 	gtk_widget_show (dialog);
-}
-
-/* FIXME: this must become threaded */
-/* FIXME: these functions must be documented */
-void
-em_folder_utils_rename_folder (CamelFolder *folder)
-{
-	gchar *prompt, *new_name;
-	const gchar *p;
-	CamelStore *local;
-	gboolean done = FALSE;
-	gsize base_len;
-
-	local = mail_component_peek_local_store (NULL);
-
-	/* don't allow user to rename one of the special local folders */
-	if (folder->parent_store == local && emfu_is_special_local_folder (folder->full_name)) {
-		e_error_run(NULL,
-			    "mail:no-rename-special-folder", folder->full_name, NULL);
-		return;
-	}
-
-	if ((p = strrchr (folder->full_name, '/')))
-		base_len = (gsize) (p - folder->full_name);
-	else
-		base_len = 0;
-
-	prompt = g_strdup_printf (_("Rename the \"%s\" folder to:"), folder->name);
-	while (!done) {
-		new_name = e_request_string (NULL, _("Rename Folder"), prompt, folder->name);
-		if (new_name == NULL || !strcmp (folder->name, new_name)) {
-			/* old name == new name */
-			done = TRUE;
-		} else if (strchr(new_name, '/') != NULL) {
-			e_error_run(NULL,
-				    "mail:no-rename-folder", folder->name, new_name, _("Folder names cannot contain '/'"), NULL);
-			done = TRUE;
-		} else {
-			CamelFolderInfo *fi;
-			CamelException ex;
-			gchar *path, *tmp;
-
-			if (base_len > 0) {
-				path = g_malloc (base_len + strlen (new_name) + 2);
-				memcpy (path, folder->full_name, base_len);
-				tmp = path + base_len;
-				*tmp++ = '/';
-				strcpy (tmp, new_name);
-			} else {
-				path = g_strdup (new_name);
-			}
-
-			camel_exception_init (&ex);
-			if ((fi = camel_store_get_folder_info (folder->parent_store, path, CAMEL_STORE_FOLDER_INFO_FAST, &ex)) != NULL) {
-				camel_store_free_folder_info (folder->parent_store, fi);
-				e_error_run(NULL,
-					    "mail:no-rename-folder-exists", folder->name, new_name, NULL);
-			} else {
-				const gchar *oldpath, *newpath;
-
-				oldpath = folder->full_name;
-				newpath = path;
-
-				d(printf ("renaming %s to %s\n", oldpath, newpath));
-
-				camel_exception_clear (&ex);
-				camel_store_rename_folder (folder->parent_store, oldpath, newpath, &ex);
-				if (camel_exception_is_set (&ex)) {
-					e_error_run(NULL,
-						    "mail:no-rename-folder", oldpath, newpath, ex.desc, NULL);
-					camel_exception_clear (&ex);
-				}
-
-				done = TRUE;
-			}
-
-			g_free (path);
-		}
-
-		g_free (new_name);
-	}
 }
 
 struct _EMCreateFolder {
@@ -537,7 +538,7 @@ struct _EMCreateFolderTempData
 static gchar *
 emfu_create_folder__desc (struct _EMCreateFolder *m)
 {
-	return g_strdup_printf (_("Creating folder `%s'"), m->full_name);
+	return g_strdup_printf (_("Creating folder '%s'"), m->full_name);
 }
 
 static void
@@ -545,9 +546,9 @@ emfu_create_folder__exec (struct _EMCreateFolder *m)
 {
 	d(printf ("creating folder parent='%s' name='%s' full_name='%s'\n", m->parent, m->name, m->full_name));
 
-	if ((m->fi = camel_store_create_folder (m->store, m->parent, m->name, &m->base.ex))) {
+	if ((m->fi = camel_store_create_folder (m->store, m->parent, m->name, &m->base.error))) {
 		if (camel_store_supports_subscriptions (m->store))
-			camel_store_subscribe_folder (m->store, m->full_name, &m->base.ex);
+			camel_store_subscribe_folder (m->store, m->full_name, &m->base.error);
 	}
 }
 
@@ -562,7 +563,7 @@ static void
 emfu_create_folder__free (struct _EMCreateFolder *m)
 {
 	camel_store_free_folder_info (m->store, m->fi);
-	camel_object_unref (m->store);
+	g_object_unref (m->store);
 	g_free (m->full_name);
 	g_free (m->parent);
 	g_free (m->name);
@@ -594,7 +595,7 @@ emfu_create_folder_real (CamelStore *store, const gchar *full_name, void (* done
 	}
 
 	m = mail_msg_new (&create_folder_info);
-	camel_object_ref (store);
+	g_object_ref (store);
 	m->store = store;
 	m->full_name = g_strdup (full_name);
 	m->parent = g_strdup (parent);
@@ -630,8 +631,8 @@ static void
 emfu_popup_new_folder_response (EMFolderSelector *emfs, gint response, gpointer data)
 {
 	EMFolderTreeModelStoreInfo *si;
+	GtkTreeModel *model;
 	const gchar *uri, *path;
-	CamelException ex;
 	CamelStore *store;
 	struct _EMCreateFolderTempData  *emcftd;
 
@@ -647,14 +648,16 @@ emfu_popup_new_folder_response (EMFolderSelector *emfs, gint response, gpointer 
 
 	g_print ("DEBUG: %s (%s)\n", path, uri);
 
-	camel_exception_init (&ex);
-	if (!(store = (CamelStore *) camel_session_get_service (session, uri, CAMEL_PROVIDER_STORE, &ex))) {
-		camel_exception_clear (&ex);
+	store = (CamelStore *) camel_session_get_service (
+		session, uri, CAMEL_PROVIDER_STORE, NULL);
+	if (store == NULL)
 		return;
-	}
 
-	if (!(si = em_folder_tree_get_model_storeinfo (emfs->emft, store))) {
-		camel_object_unref (store);
+	model = gtk_tree_view_get_model (GTK_TREE_VIEW (emfs->emft));
+	si = em_folder_tree_model_lookup_store_info (
+		EM_FOLDER_TREE_MODEL (model), store);
+	if (si == NULL) {
+		g_object_unref (store);
 		g_return_if_reached();
 	}
 
@@ -666,7 +669,7 @@ emfu_popup_new_folder_response (EMFolderSelector *emfs, gint response, gpointer 
 		vfolder_load_storage ();
 
 		rule = em_vfolder_rule_new();
-		filter_rule_set_name((FilterRule *)rule, path);
+		e_filter_rule_set_name((EFilterRule *)rule, path);
 		vfolder_gui_add_rule(rule);
 		gtk_widget_destroy((GtkWidget *)emfs);
 	} else {
@@ -680,8 +683,7 @@ emfu_popup_new_folder_response (EMFolderSelector *emfs, gint response, gpointer 
 		emfu_create_folder_real (si->store, path, new_folder_created_cb, emcftd);
 	}
 
-	camel_object_unref (store);
-	camel_exception_clear (&ex);
+	g_object_unref (store);
 }
 
 /* FIXME: these functions must be documented */
@@ -689,23 +691,89 @@ void
 em_folder_utils_create_folder (CamelFolderInfo *folderinfo, EMFolderTree *emft, GtkWindow *parent)
 {
 	EMFolderTree *folder_tree;
-	EMFolderTreeModel *model;
 	GtkWidget *dialog;
 
-	model = mail_component_peek_tree_model (mail_component_peek ());
-	folder_tree = (EMFolderTree *) em_folder_tree_new_with_model (model);
+	folder_tree = (EMFolderTree *) em_folder_tree_new ();
+	emu_restore_folder_tree_state (folder_tree);
 
-	dialog = em_folder_selector_create_new (folder_tree, 0, _("Create folder"), _("Specify where to create the folder:"));
+	dialog = em_folder_selector_create_new (
+		parent, folder_tree, 0,
+		_("Create Folder"),
+		_("Specify where to create the folder:"));
 	if (folderinfo != NULL)
 		em_folder_selector_set_selected ((EMFolderSelector *) dialog, folderinfo->uri);
-	if (parent) {
-		gtk_window_set_transient_for (GTK_WINDOW (dialog), parent);
-		gtk_window_set_destroy_with_parent (GTK_WINDOW (dialog), TRUE);
-		if (gtk_window_get_modal (parent))
-			gtk_window_set_modal (GTK_WINDOW (dialog), TRUE);
-	}
 	g_signal_connect (dialog, "response", G_CALLBACK (emfu_popup_new_folder_response), emft);
-	gtk_widget_show (dialog);
+
+	if (!parent || !GTK_IS_DIALOG (parent))
+		gtk_widget_show (dialog);
+	else
+		gtk_dialog_run (GTK_DIALOG (dialog));
+}
+
+struct _folder_unsub_t {
+	MailMsg base;
+	gchar *folder_uri;
+};
+
+static gchar *
+emfu_unsubscribe_folder__desc (struct _folder_unsub_t *msg)
+{
+	return g_strdup_printf (
+		_("Unsubscribing from folder \"%s\""), msg->folder_uri);
+}
+
+static void
+emfu_unsubscribe_folder__exec (struct _folder_unsub_t *msg)
+{
+	CamelStore *store;
+	CamelURL *url;
+	const gchar *path = NULL;
+	gint url_flags;
+
+	store = camel_session_get_store (
+		session, msg->folder_uri, &msg->base.error);
+	if (store == NULL)
+		return;
+
+	url = camel_url_new (msg->folder_uri, NULL);
+	url_flags = CAMEL_SERVICE (store)->provider->url_flags;
+
+	if (url_flags & CAMEL_URL_FRAGMENT_IS_PATH)
+		path = url->fragment;
+	else if (url->path != NULL && *url->path != '\0')
+		path = url->path + 1;
+
+	if (path != NULL)
+		camel_store_unsubscribe_folder (store, path, &msg->base.error);
+
+	camel_url_free (url);
+}
+
+static void
+emfu_unsubscribe_folder__free (struct _folder_unsub_t *msg)
+{
+	g_free (msg->folder_uri);
+}
+
+static MailMsgInfo unsubscribe_info = {
+	sizeof (struct _folder_unsub_t),
+	(MailMsgDescFunc) emfu_unsubscribe_folder__desc,
+	(MailMsgExecFunc) emfu_unsubscribe_folder__exec,
+	(MailMsgDoneFunc) NULL,
+	(MailMsgFreeFunc) emfu_unsubscribe_folder__free
+};
+
+void
+em_folder_utils_unsubscribe_folder (const gchar *folder_uri)
+{
+	struct _folder_unsub_t *unsub;
+
+	g_return_if_fail (folder_uri != NULL);
+
+	unsub = mail_msg_new (&unsubscribe_info);
+	unsub->folder_uri = g_strdup (folder_uri);
+
+	mail_msg_unordered_push (unsub);
 }
 
 const gchar *

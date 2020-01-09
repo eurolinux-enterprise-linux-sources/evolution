@@ -1,0 +1,155 @@
+diff -up evolution-2.32.3/calendar/gui/alarm-notify/alarm-queue.c.custom-msg-in-reminder evolution-2.32.3/calendar/gui/alarm-notify/alarm-queue.c
+--- evolution-2.32.3/calendar/gui/alarm-notify/alarm-queue.c.custom-msg-in-reminder	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/alarm-notify/alarm-queue.c	2013-10-08 18:21:56.258845109 +0200
+@@ -37,6 +37,7 @@
+ 
+ #include <libecal/e-cal-time-util.h>
+ #include <libecal/e-cal-component.h>
++#include <libedataserver/e-data-server-util.h>
+ 
+ #ifdef HAVE_LIBNOTIFY
+ #include <libnotify/notify.h>
+@@ -1425,6 +1426,53 @@ tray_list_add_new (TrayIconData *data)
+ 	message_push ((Message *) msg);
+ }
+ 
++static gchar *
++alarm_queue_get_alarm_summary (ECal *client,
++			       ECalComponent *comp,
++			       const ECalComponentAlarmInstance *instance)
++{
++	ECalComponentAlarm *alarm = NULL;
++	ECalComponentText summary_text, alarm_text;
++	gchar *alarm_summary;
++
++	g_return_val_if_fail (comp != NULL, NULL);
++	g_return_val_if_fail (instance != NULL, NULL);
++	g_return_val_if_fail (instance->auid != NULL, NULL);
++
++	summary_text.value = NULL;
++	alarm_text.value = NULL;
++
++	e_cal_component_get_summary (comp, &summary_text);
++
++	if (e_cal_get_static_capability (client, "alarm-description" /* CAL_STATIC_CAPABILITY_ALARM_DESCRIPTION */)) {
++		alarm = e_cal_component_get_alarm (comp, instance->auid);
++		if (alarm) {
++			e_cal_component_alarm_get_description (alarm, &alarm_text);
++			if (!alarm_text.value || !*alarm_text.value)
++				alarm_text.value = NULL;
++		}
++	}
++
++	if (alarm_text.value && summary_text.value &&
++	    e_util_utf8_strcasecmp (alarm_text.value, summary_text.value) == 0)
++		alarm_text.value = NULL;
++
++	if (summary_text.value && *summary_text.value &&
++	    alarm_text.value && *alarm_text.value)
++		alarm_summary = g_strconcat (summary_text.value, "\n", alarm_text.value, NULL);
++	else if (summary_text.value && *summary_text.value)
++		alarm_summary = g_strdup (summary_text.value);
++	else if (alarm_text.value && *alarm_text.value)
++		alarm_summary = g_strdup (alarm_text.value);
++	else
++		alarm_summary = NULL;
++
++	if (alarm)
++		e_cal_component_alarm_free (alarm);
++
++	return alarm_summary;
++}
++
+ /* Performs notification of a display alarm */
+ static void
+ display_notification (time_t trigger, CompQueuedAlarms *cqa,
+@@ -1433,6 +1481,7 @@ display_notification (time_t trigger, Co
+ 	QueuedAlarm *qa;
+ 	ECalComponent *comp;
+ 	const gchar *summary, *description, *location;
++	gchar *alarm_summary;
+ 	TrayIconData *tray_data;
+ 	ECalComponentText text;
+ 	GSList *text_list;
+@@ -1448,12 +1497,17 @@ display_notification (time_t trigger, Co
+ 		return;
+ 
+ 	/* get a sensible description for the event */
+-	e_cal_component_get_summary (comp, &text);
++	alarm_summary = alarm_queue_get_alarm_summary (cqa->parent_client->client, comp, qa->instance);
+ 	e_cal_component_get_organizer (comp, &organiser);
+ 
+-	if (text.value)
+-		summary = text.value;
+-	else
++	if (alarm_summary && *alarm_summary) {
++		str = g_markup_escape_text (alarm_summary, -1);
++		if (str) {
++			g_free (alarm_summary);
++			alarm_summary = str;
++		}
++		summary = alarm_summary;
++	} else
+ 		summary = _("No summary available.");
+ 
+ 	e_cal_component_get_description_list (comp, &text_list);
+@@ -1523,6 +1577,7 @@ display_notification (time_t trigger, Co
+ 		gtk_status_icon_set_tooltip_text (tray_icon, str);
+ 	}
+ 
++	g_free (alarm_summary);
+ 	g_free (start_str);
+ 	g_free (end_str);
+ 	g_free (alarm_str);
+@@ -1555,7 +1610,7 @@ popup_notification (time_t trigger, Comp
+ 	QueuedAlarm *qa;
+ 	ECalComponent *comp;
+ 	const gchar *summary, *location;
+-	ECalComponentText text;
++	gchar *alarm_summary;
+ 	gchar *str, *start_str, *end_str, *alarm_str, *time_str;
+ 	icaltimezone *current_zone;
+ 	ECalComponentOrganizer organiser;
+@@ -1572,11 +1627,11 @@ popup_notification (time_t trigger, Comp
+ 		notify_init("Evolution Alarm Notify");
+ 
+ 	/* get a sensible description for the event */
+-	e_cal_component_get_summary (comp, &text);
++	alarm_summary = alarm_queue_get_alarm_summary (cqa->parent_client->client, comp, qa->instance);
+ 	e_cal_component_get_organizer (comp, &organiser);
+ 
+-	if (text.value)
+-		summary = text.value;
++	if (alarm_summary && *alarm_summary)
++		summary = alarm_summary;
+ 	else
+ 		summary = _("No summary available.");
+ 
+@@ -1610,7 +1665,7 @@ popup_notification (time_t trigger, Comp
+ 	if (!notify_notification_show(n, NULL))
+ 	    g_warning ("Could not send notification to daemon\n");
+ 
+-	/* create the private structure */
++	g_free (alarm_summary);
+ 	g_free (start_str);
+ 	g_free (end_str);
+ 	g_free (alarm_str);
+diff -up evolution-2.32.3/calendar/gui/dialogs/alarm-dialog.c.custom-msg-in-reminder evolution-2.32.3/calendar/gui/dialogs/alarm-dialog.c
+--- evolution-2.32.3/calendar/gui/dialogs/alarm-dialog.c.custom-msg-in-reminder	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/dialogs/alarm-dialog.c	2013-10-08 18:21:33.880845158 +0200
+@@ -215,6 +215,15 @@ alarm_to_dialog (Dialog *dialog)
+ 		valid = gtk_tree_model_iter_next (model, &iter);
+ 	}
+ 
++	/*
++	 * If the client doesn't support set alarm description, disable the related widgets
++	 */
++	if (!e_cal_get_static_capability (dialog->ecal, "alarm-description" /* CAL_STATIC_CAPABILITY_ALARM_DESCRIPTION */)) {
++		gtk_widget_hide (dialog->dalarm_group);
++		gtk_widget_hide (dialog->dalarm_message);
++		gtk_widget_hide (dialog->dalarm_description);
++	}
++
+ 	/* Set a default address if possible */
+ 	if (!e_cal_get_static_capability (dialog->ecal, CAL_STATIC_CAPABILITY_NO_EMAIL_ALARMS)
+ 		&& !e_cal_component_alarm_has_attendees (dialog->alarm)

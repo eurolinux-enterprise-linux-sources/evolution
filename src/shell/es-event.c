@@ -36,19 +36,19 @@ static GObjectClass *eme_parent;
 static ESEvent *es_event;
 
 static void
-eme_init(GObject *o)
+eme_init (GObject *o)
 {
 	/*ESEvent *eme = (ESEvent *)o; */
 }
 
 static void
-eme_finalise(GObject *o)
+eme_finalise (GObject *o)
 {
-	((GObjectClass *)eme_parent)->finalize(o);
+	((GObjectClass *)eme_parent)->finalize (o);
 }
 
 static void
-eme_target_free(EEvent *ep, EEventTarget *t)
+eme_target_free (EEvent *ep, EEventTarget *t)
 {
 	switch (t->type) {
 	case ES_EVENT_TARGET_STATE: {
@@ -58,31 +58,31 @@ eme_target_free(EEvent *ep, EEventTarget *t)
 		break; }
 	}
 
-	((EEventClass *)eme_parent)->target_free(ep, t);
+	((EEventClass *)eme_parent)->target_free (ep, t);
 }
 
 static void
-eme_class_init(GObjectClass *klass)
+eme_class_init (GObjectClass *klass)
 {
 	klass->finalize = eme_finalise;
 	((EEventClass *)klass)->target_free = eme_target_free;
 }
 
 GType
-es_event_get_type(void)
+es_event_get_type (void)
 {
 	static GType type = 0;
 
 	if (type == 0) {
 		static const GTypeInfo info = {
-			sizeof(ESEventClass),
+			sizeof (ESEventClass),
 			NULL, NULL,
 			(GClassInitFunc)eme_class_init,
 			NULL, NULL,
-			sizeof(ESEvent), 0,
+			sizeof (ESEvent), 0,
 			(GInstanceInitFunc)eme_init
 		};
-		eme_parent = g_type_class_ref(e_event_get_type());
+		eme_parent = g_type_class_ref (e_event_get_type ());
 		type = g_type_register_static(e_event_get_type(), "ESEvent", &info, 0);
 	}
 
@@ -91,16 +91,15 @@ es_event_get_type(void)
 
 /**
  * es_event_peek:
- * @void:
  *
  * Get the singular instance of the shell event handler.
  *
- * Return value:
+ * Return: the shell event handler
  **/
-ESEvent *es_event_peek(void)
+ESEvent *es_event_peek (void)
 {
 	if (es_event == NULL) {
-		es_event = g_object_new(es_event_get_type(), NULL);
+		es_event = g_object_new (es_event_get_type (), NULL);
 		/** @HookPoint: Shell Events Hookpoint
 		 * Id: org.gnome.evolution.shell.events
 		 *
@@ -112,12 +111,22 @@ ESEvent *es_event_peek(void)
 	return es_event;
 }
 
-ESEventTargetState *
-es_event_target_new_state(ESEvent *eme, gint state)
+ESEventTargetShell *
+es_event_target_new (ESEvent *eme)
 {
-	ESEventTargetState *t = e_event_target_new(&eme->event, ES_EVENT_TARGET_STATE, sizeof(*t));
+	return e_event_target_new (
+		&eme->event, ES_EVENT_TARGET_SHELL,
+		sizeof (ESEventTargetShell));
+}
+
+ESEventTargetState *
+es_event_target_new_state (ESEvent *eme, gint state)
+{
+	ESEventTargetState *t;
 	guint32 mask = ~0;
 
+	t = e_event_target_new (
+		&eme->event, ES_EVENT_TARGET_STATE, sizeof (*t));
 	t->state = state;
 
 	if (state)
@@ -130,21 +139,13 @@ es_event_target_new_state(ESEvent *eme, gint state)
 	return t;
 }
 
-ESEventTargetShell *
-es_event_target_new_shell(ESEvent *eme, EShell *shell)
-{
-	ESEventTargetShell *t = e_event_target_new(&eme->event, ES_EVENT_TARGET_SHELL, sizeof(*t));
-
-	t->shell = shell;
-
-	return t;
-}
-
 ESEventTargetUpgrade *
-es_event_target_new_upgrade(ESEvent *eme, gint major, gint minor, gint revision)
+es_event_target_new_upgrade (ESEvent *eme, gint major, gint minor, gint revision)
 {
-	ESEventTargetUpgrade *t = e_event_target_new(&eme->event, ES_EVENT_TARGET_UPGRADE, sizeof(*t));
+	ESEventTargetUpgrade *t;
 
+	t = e_event_target_new (
+		&eme->event, ES_EVENT_TARGET_UPGRADE, sizeof (*t));
 	t->major = major;
 	t->minor = minor;
 	t->revision = revision;
@@ -155,8 +156,10 @@ es_event_target_new_upgrade(ESEvent *eme, gint major, gint minor, gint revision)
 ESEventTargetComponent *
 es_event_target_new_component (ESEvent *eme, const gchar *id)
 {
-	ESEventTargetComponent *t = e_event_target_new (&eme->event, ES_EVENT_TARGET_COMPONENT, sizeof (*t));
+	ESEventTargetComponent *t;
 
+	t = e_event_target_new (
+		&eme->event, ES_EVENT_TARGET_COMPONENT, sizeof (*t));
 	t->id = id;
 
 	return t;
@@ -182,15 +185,15 @@ static const EEventHookTargetMap emeh_targets[] = {
 };
 
 static void
-emeh_finalise(GObject *o)
+emeh_finalise (GObject *o)
 {
 	/*EPluginHook *eph = (EPluginHook *)o;*/
 
-	((GObjectClass *)emeh_parent_class)->finalize(o);
+	((GObjectClass *)emeh_parent_class)->finalize (o);
 }
 
 static void
-emeh_class_init(EPluginHookClass *klass)
+emeh_class_init (EPluginHookClass *klass)
 {
 	gint i;
 
@@ -205,23 +208,23 @@ emeh_class_init(EPluginHookClass *klass)
 	((EPluginHookClass *)klass)->id = "org.gnome.evolution.shell.events:1.0";
 
 	for (i=0;emeh_targets[i].type;i++)
-		e_event_hook_class_add_target_map((EEventHookClass *)klass, &emeh_targets[i]);
+		e_event_hook_class_add_target_map ((EEventHookClass *)klass, &emeh_targets[i]);
 
-	((EEventHookClass *)klass)->event = (EEvent *)es_event_peek();
+	((EEventHookClass *)klass)->event = (EEvent *)es_event_peek ();
 }
 
 GType
-es_event_hook_get_type(void)
+es_event_hook_get_type (void)
 {
 	static GType type = 0;
 
 	if (!type) {
 		static const GTypeInfo info = {
-			sizeof(ESEventHookClass), NULL, NULL, (GClassInitFunc) emeh_class_init, NULL, NULL,
-			sizeof(ESEventHook), 0, (GInstanceInitFunc) NULL,
+			sizeof (ESEventHookClass), NULL, NULL, (GClassInitFunc) emeh_class_init, NULL, NULL,
+			sizeof (ESEventHook), 0, (GInstanceInitFunc) NULL,
 		};
 
-		emeh_parent_class = g_type_class_ref(e_event_hook_get_type());
+		emeh_parent_class = g_type_class_ref (e_event_hook_get_type ());
 		type = g_type_register_static(e_event_hook_get_type(), "ESEventHook", &info, 0);
 	}
 

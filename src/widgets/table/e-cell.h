@@ -26,7 +26,6 @@
 
 #include <gtk/gtk.h>
 #include <table/e-table-model.h>
-#include <table/e-table-tooltip.h>
 
 G_BEGIN_DECLS
 
@@ -67,7 +66,7 @@ typedef enum {
 } ECellActions;
 
 typedef struct {
-	GtkObject       object;
+	GObject parent;
 } ECell;
 
 typedef struct _ECellView {
@@ -85,7 +84,7 @@ typedef struct _ECellView {
 #define E_CELL_IS_FOCUSED(ecell_view) (ecell_view->focus_x1 != -1)
 
 typedef struct {
-	GtkObjectClass parent_class;
+	GObjectClass parent_class;
 
 	ECellView *(*new_view)         (ECell *ecell, ETableModel *table_model, gpointer e_table_item_view);
 	void       (*kill_view)        (ECellView *ecell_view);
@@ -114,7 +113,6 @@ typedef struct {
 					gint model_col, gint view_col, gint row, gdouble width);
 	gint        (*max_width)        (ECellView *ecell_view, gint model_col, gint view_col);
 	gint        (*max_width_by_row) (ECellView *ecell_view, gint model_col, gint view_col, gint row);
-	void       (*show_tooltip)     (ECellView *ecell_view, gint model_col, gint view_col, gint row, gint col_width, ETableTooltip *tooltip);
 	gchar     *(*get_bg_color)     (ECellView *ecell_view, gint row);
 
 	void       (*style_set)        (ECellView *ecell_view, GtkStyle *previous_style);
@@ -153,8 +151,8 @@ void       e_cell_print                         (ECellView         *ecell_view,
 						 gint                model_col,
 						 gint                view_col,
 						 gint                row,
-						 double             width,
-						 double             height);
+						 gdouble             width,
+						 gdouble             height);
 gdouble    e_cell_print_height                  (ECellView         *ecell_view,
 						 GtkPrintContext *context,
 						 gint                model_col,
@@ -169,12 +167,6 @@ gint        e_cell_max_width_by_row              (ECellView         *ecell_view,
 						 gint                view_col,
 						 gint                row);
 gboolean   e_cell_max_width_by_row_implemented  (ECellView         *ecell_view);
-void       e_cell_show_tooltip                  (ECellView         *ecell_view,
-						 gint                model_col,
-						 gint                view_col,
-						 gint                row,
-						 gint                col_width,
-						 ETableTooltip     *tooltip);
 gchar     *e_cell_get_bg_color                  (ECellView         *ecell_view,
 						 gint                row);
 void       e_cell_style_set                     (ECellView         *ecell_view,

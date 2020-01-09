@@ -1,0 +1,117 @@
+commit d7f4482decb43f973ed33eca051f814549f58c59
+Author: Matthew Barnes <mbarnes@redhat.com>
+Date:   Wed Oct 31 20:39:12 2012 -0400
+
+    Roll back gnome-icon-theme dependency to 2.19.91.
+    
+    Reverts use of "avatar-default" icon name back to "stock_person".
+
+diff --git a/addressbook/gui/contact-editor/e-contact-editor.c b/addressbook/gui/contact-editor/e-contact-editor.c
+index 85558a2..e6bb63e 100644
+--- a/addressbook/gui/contact-editor/e-contact-editor.c
++++ b/addressbook/gui/contact-editor/e-contact-editor.c
+@@ -2337,7 +2337,7 @@ fill_in_simple_field (EContactEditor *editor, GtkWidget *widget, gint field_id)
+ 			editor->image_set = TRUE;
+ 		}
+ 		else {
+-			gchar *file_name = e_icon_factory_get_icon_filename ("avatar-default", GTK_ICON_SIZE_DIALOG);
++			gchar *file_name = e_icon_factory_get_icon_filename ("stock_person", GTK_ICON_SIZE_DIALOG);
+ 			e_image_chooser_set_from_file (E_IMAGE_CHOOSER (widget), file_name);
+ 			editor->image_set = FALSE;
+ 			g_free (file_name);
+@@ -2935,7 +2935,7 @@ image_cleared (EContactEditor *editor)
+ 
+ 	image_chooser = e_builder_get_widget (editor->builder, "image-chooser");
+ 
+-	file_name = e_icon_factory_get_icon_filename ("avatar-default", GTK_ICON_SIZE_DIALOG);
++	file_name = e_icon_factory_get_icon_filename ("stock_person", GTK_ICON_SIZE_DIALOG);
+ 
+ 	g_signal_handlers_block_by_func (image_chooser, image_chooser_changed, editor);
+ 	e_image_chooser_set_from_file (E_IMAGE_CHOOSER (image_chooser), file_name);
+@@ -2982,7 +2982,7 @@ update_preview_cb (GtkFileChooser *file_chooser, gpointer data)
+ 	pixbuf = gdk_pixbuf_new_from_file_at_size (filename, 128, 128, NULL);
+ 	if (!pixbuf) {
+ 		gchar *alternate_file;
+-		alternate_file = e_icon_factory_get_icon_filename ("avatar-default", GTK_ICON_SIZE_DIALOG);
++		alternate_file = e_icon_factory_get_icon_filename ("stock_person", GTK_ICON_SIZE_DIALOG);
+ 		if (alternate_file) {
+ 			pixbuf = gdk_pixbuf_new_from_file_at_size (alternate_file, 128, 128, NULL);
+ 			g_free (alternate_file);
+diff --git a/addressbook/gui/merging/eab-contact-commit-duplicate-detected.ui b/addressbook/gui/merging/eab-contact-commit-duplicate-detected.ui
+index 4ee84ac..c12a39e 100644
+--- a/addressbook/gui/merging/eab-contact-commit-duplicate-detected.ui
++++ b/addressbook/gui/merging/eab-contact-commit-duplicate-detected.ui
+@@ -156,7 +156,7 @@
+                 <child>
+                    <object class="GtkImage" id="custom2">
+                      <property name="visible">True</property>
+-                     <property name="icon-name">avatar-default</property>
++                     <property name="icon-name">stock_person</property>
+                    </object>
+                 </child>
+               </object>
+diff --git a/addressbook/gui/merging/eab-contact-duplicate-detected.ui b/addressbook/gui/merging/eab-contact-duplicate-detected.ui
+index 38d8f0e..00ae19f 100644
+--- a/addressbook/gui/merging/eab-contact-duplicate-detected.ui
++++ b/addressbook/gui/merging/eab-contact-duplicate-detected.ui
+@@ -190,7 +190,7 @@ in this folder.  Would you like to add it anyway?</property>
+                         <child>
+                           <object class="GtkImage" id="custom2">
+                             <property name="visible">True</property>
+-                            <property name="icon-name">avatar-default</property>
++                            <property name="icon-name">stock_person</property>
+                           </object>
+                         </child>
+                       </object>
+diff --git a/configure.ac b/configure.ac
+index ab40e36..85413b7 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -38,7 +38,7 @@ dnl Required Packages
+ m4_define([glib_minimum_version], [2.25.12])
+ m4_define([eds_minimum_version], [evo_version])
+ m4_define([gtkhtml_minimum_version], [3.31.90])
+-m4_define([gnome_icon_theme_minimum_version], [2.30.2.1])
++m4_define([gnome_icon_theme_minimum_version], [2.19.91])
+ m4_define([pangoft2_minimum_version], [1.0.1])		dnl For libgnomecanvas
+ m4_define([gconf_minimum_version], [2.0.0])		dnl XXX Just a Guess
+ m4_define([libsoup_minimum_version], [2.4.0])		dnl XXX Just a Guess
+diff --git a/plugins/groupwise-features/proxy-login.c b/plugins/groupwise-features/proxy-login.c
+index 25518ba..41c9a91 100644
+--- a/plugins/groupwise-features/proxy-login.c
++++ b/plugins/groupwise-features/proxy-login.c
+@@ -450,7 +450,7 @@ proxy_login_update_tree (void)
+ 	gchar *proxy_email;
+ 	EGwConnection *cnc;
+ 	proxyLoginPrivate *priv = pld->priv;
+-	gchar *file_name = e_icon_factory_get_icon_filename ("avatar-default", GTK_ICON_SIZE_DIALOG);
++	gchar *file_name = e_icon_factory_get_icon_filename ("stock_person", GTK_ICON_SIZE_DIALOG);
+ 	broken_image = file_name ? gdk_pixbuf_new_from_file (file_name, NULL) : NULL;
+ 
+ 	cnc = proxy_login_get_cnc (pld->account, priv->main ? (GTK_WINDOW (gtk_widget_get_toplevel (priv->main))) : NULL);
+diff --git a/plugins/groupwise-features/proxy.c b/plugins/groupwise-features/proxy.c
+index 7b3cae2..d8471ab 100644
+--- a/plugins/groupwise-features/proxy.c
++++ b/plugins/groupwise-features/proxy.c
+@@ -606,7 +606,7 @@ proxy_update_tree_view (EAccount *account)
+ 	GdkPixbuf *broken_image = NULL;
+ 	GList *list_iter;
+ 	proxyHandler *aclInstance;
+-	gchar *file_name = e_icon_factory_get_icon_filename ("avatar-default", GTK_ICON_SIZE_DIALOG);
++	gchar *file_name = e_icon_factory_get_icon_filename ("stock_person", GTK_ICON_SIZE_DIALOG);
+ 	proxyDialogPrivate *priv;
+ 
+ 	prd = g_object_get_data ((GObject *)account, "prd");
+diff --git a/widgets/misc/e-image-chooser.c b/widgets/misc/e-image-chooser.c
+index 0ddf08c..ccb5c5e 100644
+--- a/widgets/misc/e-image-chooser.c
++++ b/widgets/misc/e-image-chooser.c
+@@ -425,7 +425,7 @@ e_image_chooser_class_init (EImageChooserClass *class)
+ 			"icon-name",
+ 			"Icon Name",
+ 			NULL,
+-			"avatar-default",
++			"stock_person",
+ 			G_PARAM_READWRITE |
+ 			G_PARAM_CONSTRUCT_ONLY));
+ 

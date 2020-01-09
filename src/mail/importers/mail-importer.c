@@ -35,100 +35,17 @@
 
 #include <glib.h>
 #include <glib/gstdio.h>
-
-#include <gmodule.h>
 #include <glib/gi18n.h>
-#include <camel/camel-folder.h>
-#include <camel/camel-store.h>
-#include <camel/camel-mime-message.h>
-#include <camel/camel-mime-parser.h>
-#include <camel/camel-exception.h>
-#include <camel/camel-stream-mem.h>
 
 #include "e-util/e-util-private.h"
+#include "shell/e-shell-backend.h"
 
-#include "mail/mail-mt.h"
-#include "mail/mail-component.h"
-#include "mail/mail-tools.h"
+#include "mail-mt.h"
+#include "mail-tools.h"
+#include "e-mail-local.h"
+#include "mail-session.h"
 
 #include "mail-importer.h"
-
-/**
- * mail_importer_make_local_folder:
- * @folderpath:
- *
- * Check a local folder exists at path @folderpath, and if not, create it.
- *
- * Return value: The physical uri of the folder, or NULL if the folder did
- * not exist and could not be created.
- **/
-gchar *
-mail_importer_make_local_folder(const gchar *folderpath)
-{
-	return g_strdup_printf("mbox:/home/notzed/.evolution/mail/local/%s", folderpath);
-}
-
-/**
- * mail_importer_add_line:
- * importer: A MailImporter structure.
- * str: Next line of the mbox.
- * finished: TRUE if @str is the last line of the message.
- *
- * Adds lines to the message until it is finished, and then adds
- * the complete message to the folder.
- */
-void
-mail_importer_add_line (MailImporter *importer,
-			const gchar *str,
-			gboolean finished)
-{
-	CamelMimeMessage *msg;
-	CamelMessageInfo *info;
-	CamelException *ex;
-
-	if (importer->mstream == NULL)
-		importer->mstream = CAMEL_STREAM_MEM (camel_stream_mem_new ());
-
-	camel_stream_write (CAMEL_STREAM (importer->mstream), str,  strlen (str));
-
-	if (finished == FALSE)
-		return;
-
-	camel_stream_reset (CAMEL_STREAM (importer->mstream));
-	info = camel_message_info_new(NULL);
-	camel_message_info_set_flags(info, CAMEL_MESSAGE_SEEN, ~0);
-
-	msg = camel_mime_message_new ();
-	camel_data_wrapper_construct_from_stream (CAMEL_DATA_WRAPPER (msg),
-						  CAMEL_STREAM (importer->mstream));
-
-	camel_object_unref (importer->mstream);
-	importer->mstream = NULL;
-
-	ex = camel_exception_new ();
-	camel_folder_append_message (importer->folder, msg, info, NULL, ex);
-	camel_object_unref (msg);
-
-	camel_exception_free (ex);
-	camel_message_info_free(info);
-}
-
-struct _BonoboObject *mail_importer_factory_cb(struct _BonoboGenericFactory *factory, const gchar *iid, gpointer data)
-{
-#if 0
-	if (strcmp(iid, ELM_INTELLIGENT_IMPORTER_IID) == 0)
-		return elm_intelligent_importer_new();
-	else if (strcmp(iid, PINE_INTELLIGENT_IMPORTER_IID) == 0)
-		return pine_intelligent_importer_new();
-	else if (strcmp(iid, NETSCAPE_INTELLIGENT_IMPORTER_IID) == 0)
-		return netscape_intelligent_importer_new();
-	else if (strcmp(iid, MBOX_IMPORTER_IID) == 0)
-		return mbox_importer_new();
-	else if (strcmp(iid, OUTLOOK_IMPORTER_IID) == 0)
-		return outlook_importer_new();
-#endif
-	return NULL;
-}
 
 struct _import_mbox_msg {
 	MailMsg base;
@@ -137,7 +54,7 @@ struct _import_mbox_msg {
 	gchar *uri;
 	CamelOperation *cancel;
 
-	void (*done)(gpointer data, CamelException *ex);
+	void (*done)(gpointer data, GError **error);
 	gpointer done_data;
 };
 
@@ -167,7 +84,7 @@ decode_status(const gchar *status)
 
 	p = status;
 	while ((*p++)) {
-		for (i=0;i<sizeof(status_flags)/sizeof(status_flags[0]);i++)
+		for (i = 0; i < G_N_ELEMENTS (status_flags); i++)
 			if (status_flags[i].tag == *p)
 				flags |= status_flags[i].flag;
 	}
@@ -182,7 +99,7 @@ decode_mozilla_status(const gchar *tmp)
 	guint32 flags = 0;
 	gint i;
 
-	for (i=0;i<sizeof(status_flags)/sizeof(status_flags[0]);i++)
+	for (i = 0; i < G_N_ELEMENTS (status_flags); i++)
 		if (status_flags[i].mozflag & status)
 			flags |= status_flags[i].flag;
 	return flags;
@@ -203,9 +120,10 @@ import_mbox_exec (struct _import_mbox_msg *m)
 	}
 
 	if (m->uri == NULL || m->uri[0] == 0)
-		folder = mail_component_get_folder(NULL, MAIL_COMPONENT_FOLDER_INBOX);
+		folder = e_mail_local_get_folder (E_MAIL_FOLDER_INBOX);
 	else
-		folder = mail_tool_uri_to_folder(m->uri, CAMEL_STORE_FOLDER_CREATE, &m->base.ex);
+		folder = mail_tool_uri_to_folder (
+			m->uri, CAMEL_STORE_FOLDER_CREATE, &m->base.error);
 
 	if (folder == NULL)
 		return;
@@ -228,7 +146,9 @@ import_mbox_exec (struct _import_mbox_msg *m)
 		if (m->cancel)
 			oldcancel = camel_operation_register(m->cancel);
 
-		camel_operation_start(NULL, _("Importing `%s'"), folder->full_name);
+		camel_operation_start (
+			NULL, _("Importing '%s'"),
+			camel_folder_get_full_name (folder));
 		camel_folder_freeze(folder);
 		while (camel_mime_parser_step(mp, NULL, NULL) == CAMEL_MIME_PARSER_STATE_FROM) {
 			CamelMimeMessage *msg;
@@ -241,9 +161,9 @@ import_mbox_exec (struct _import_mbox_msg *m)
 			camel_operation_progress(NULL, pc);
 
 			msg = camel_mime_message_new();
-			if (camel_mime_part_construct_from_parser((CamelMimePart *)msg, mp) == -1) {
+			if (camel_mime_part_construct_from_parser((CamelMimePart *)msg, mp, NULL) == -1) {
 				/* set exception? */
-				camel_object_unref(msg);
+				g_object_unref (msg);
 				break;
 			}
 
@@ -260,11 +180,12 @@ import_mbox_exec (struct _import_mbox_msg *m)
 				flags |= decode_status(tmp);
 
 			camel_message_info_set_flags(info, flags, ~0);
-			camel_folder_append_message(folder, msg, info, NULL, &m->base.ex);
+			camel_folder_append_message (
+				folder, msg, info, NULL, &m->base.error);
 			camel_message_info_free(info);
-			camel_object_unref(msg);
+			g_object_unref (msg);
 
-			if (camel_exception_is_set(&m->base.ex))
+			if (m->base.error != NULL)
 				break;
 
 			camel_mime_parser_step(mp, NULL, NULL);
@@ -276,18 +197,18 @@ import_mbox_exec (struct _import_mbox_msg *m)
 		if (m->cancel)
 			camel_operation_register(oldcancel);
 	fail2:
-		camel_object_unref(mp);
+		g_object_unref (mp);
 	}
 fail1:
 	camel_folder_sync(folder, FALSE, NULL);
-	camel_object_unref(folder);
+	g_object_unref (folder);
 }
 
 static void
 import_mbox_done (struct _import_mbox_msg *m)
 {
 	if (m->done)
-		m->done(m->done_data, &m->base.ex);
+		m->done(m->done_data, &m->base.error);
 }
 
 static void
@@ -308,7 +229,7 @@ static MailMsgInfo import_mbox_info = {
 };
 
 gint
-mail_importer_import_mbox(const gchar *path, const gchar *folderuri, CamelOperation *cancel, void (*done)(gpointer data, CamelException *), gpointer data)
+mail_importer_import_mbox(const gchar *path, const gchar *folderuri, CamelOperation *cancel, void (*done)(gpointer data, GError **), gpointer data)
 {
 	struct _import_mbox_msg *m;
 	gint id;
@@ -360,12 +281,15 @@ import_folders_rec(struct _import_folders_data *m, const gchar *filepath, const 
 	GDir *dir;
 	const gchar *d;
 	struct stat st;
+	const gchar *data_dir;
 	gchar *filefull, *foldersub, *uri, *utf8_filename;
 	const gchar *folder;
 
 	dir = g_dir_open(filepath, 0, NULL);
 	if (dir == NULL)
 		return;
+
+	data_dir = mail_session_get_data_dir ();
 
 	utf8_filename = g_filename_to_utf8 (filepath, -1, NULL, NULL, NULL);
 	camel_operation_start(NULL, _("Scanning %s"), utf8_filename);
@@ -395,9 +319,9 @@ import_folders_rec(struct _import_folders_data *m, const gchar *filepath, const 
 					break;
 				}
 			/* FIXME: need a better way to get default store location */
-			uri = g_strdup_printf("mbox:%s/local#%s", mail_component_peek_base_directory(NULL), folder);
+			uri = g_strdup_printf("mbox:%s/local#%s", data_dir, folder);
 		} else {
-			uri = g_strdup_printf("mbox:%s/local#%s/%s", mail_component_peek_base_directory(NULL), folderparent, folder);
+			uri = g_strdup_printf("mbox:%s/local#%s/%s", data_dir, folderparent, folder);
 		}
 
 		printf("importing to uri %s\n", uri);

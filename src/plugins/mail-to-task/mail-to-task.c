@@ -32,54 +32,46 @@
 #include <string.h>
 #include <stdio.h>
 
+#include <gtkhtml/gtkhtml.h>
 #include <gconf/gconf-client.h>
 #include <libecal/e-cal.h>
 #include <libedataserver/e-account.h>
 #include <libedataserverui/e-source-selector-dialog.h>
-#include <camel/camel-folder.h>
-#include <camel/camel-medium.h>
-#include <camel/camel-mime-message.h>
-#include <camel/camel-multipart.h>
-#include <camel/camel-stream.h>
-#include <camel/camel-stream-mem.h>
-#include <camel/camel-utf8.h>
-#include "mail/em-menu.h"
-#include "mail/em-popup.h"
-#include "mail/em-utils.h"
-#include "mail/em-folder-view.h"
-#include "mail/em-format-html.h"
-#include "mail/mail-config.h"
-#include "e-util/e-dialog-utils.h"
-#include <gtkhtml/gtkhtml.h>
+
+#include <mail/e-mail-browser.h>
+#include <mail/em-utils.h>
+#include <mail/em-format-html.h>
+#include <mail/mail-config.h>
+#include <mail/message-list.h>
+#include <e-util/e-account-utils.h>
+#include <e-util/e-dialog-utils.h>
 #include <calendar/common/authentication.h>
+#include <misc/e-popup-action.h>
+#include <shell/e-shell-view.h>
+#include <shell/e-shell-window-actions.h>
 #include <calendar/gui/cal-editor-utils.h>
+#include <misc/e-attachment-store.h>
 
-static gchar *
-clean_name(const guchar *s)
-{
-	GString *out = g_string_new("");
-	guint32 c;
-	gchar *r;
+#define E_SHELL_WINDOW_ACTION_CONVERT_TO_EVENT(window) \
+	E_SHELL_WINDOW_ACTION ((window), "mail-convert-to-event")
+#define E_SHELL_WINDOW_ACTION_CONVERT_TO_MEETING(window) \
+	E_SHELL_WINDOW_ACTION ((window), "mail-convert-to-meeting")
+#define E_SHELL_WINDOW_ACTION_CONVERT_TO_MEMO(window) \
+	E_SHELL_WINDOW_ACTION ((window), "mail-convert-to-memo")
+#define E_SHELL_WINDOW_ACTION_CONVERT_TO_TASK(window) \
+	E_SHELL_WINDOW_ACTION ((window), "mail-convert-to-task")
 
-	while ((c = camel_utf8_getc ((const guchar **)&s)))
-	{
-		if (!g_unichar_isprint (c) || ( c < 0x7f && strchr (" /'\"`&();|<>$%{}!", c )))
-			c = '_';
-		g_string_append_u (out, c);
-	}
-
-	r = g_strdup (out->str);
-	g_string_free (out, TRUE);
-
-	return r;
-}
+gboolean	mail_browser_init		(GtkUIManager *ui_manager,
+						 EMailBrowser *browser);
+gboolean	mail_shell_view_init		(GtkUIManager *ui_manager,
+						 EShellView *shell_view);
 
 static void
 set_attendees (ECalComponent *comp, CamelMimeMessage *message, const gchar *organizer)
 {
 	GSList *attendees = NULL, *to_free = NULL;
 	ECalComponentAttendee *ca;
-	const CamelInternetAddress *from = NULL, *to, *cc, *bcc, *arr[4];
+	CamelInternetAddress *from = NULL, *to, *cc, *bcc, *arr[4];
 	gint len, i, j;
 
 	if (message->reply_to)
@@ -144,30 +136,61 @@ set_attendees (ECalComponent *comp, CamelMimeMessage *message, const gchar *orga
 	g_slist_free (attendees);
 }
 
+static const gchar *
+prepend_from (CamelMimeMessage *message, gchar **text)
+{
+	gchar *res, *tmp, *addr = NULL;
+	const gchar *name = NULL, *eml = NULL;
+	CamelInternetAddress *from = NULL;
+
+	g_return_val_if_fail (message != NULL, NULL);
+	g_return_val_if_fail (text != NULL, NULL);
+
+	if (message->reply_to)
+		from = message->reply_to;
+	else if (message->from)
+		from = message->from;
+
+	if (from && camel_internet_address_get (from, 0, &name, &eml))
+		addr = camel_internet_address_format_address (name, eml);
+
+	/* To Translators: The full sentence looks like: "Created from a mail by John Doe <john.doe@myco.example>" */
+	tmp = g_strdup_printf (_("Created from a mail by %s"), addr ? addr : "");
+
+	res = g_strconcat (tmp, "\n", *text, NULL);
+
+	g_free (tmp);
+	g_free (*text);
+
+	*text = res;
+
+	return res;
+}
+
 static void
 set_description (ECalComponent *comp, CamelMimeMessage *message)
 {
 	CamelDataWrapper *content;
-	CamelStream *mem;
+	CamelStream *stream;
 	CamelContentType *type;
 	CamelMimePart *mime_part = CAMEL_MIME_PART (message);
 	ECalComponentText text;
+	GByteArray *byte_array;
 	GSList sl;
 	gchar *str, *convert_str = NULL;
 	gsize bytes_read, bytes_written;
 	gint count = 2;
 
-	content = camel_medium_get_content_object ((CamelMedium *) message);
+	content = camel_medium_get_content ((CamelMedium *) message);
 	if (!content)
 		return;
 
 	/*
 	 * Get non-multipart content from multipart message.
 	 */
-	while (CAMEL_IS_MULTIPART (content) && count > 0)
-	{
+	while (CAMEL_IS_MULTIPART (content) && count > 0) {
 		mime_part = camel_multipart_get_part (CAMEL_MULTIPART (content), 0);
-		content = camel_medium_get_content_object (CAMEL_MEDIUM (mime_part));
+		content = camel_medium_get_content (CAMEL_MEDIUM (mime_part));
 		count--;
 	}
 
@@ -178,24 +201,23 @@ set_description (ECalComponent *comp, CamelMimeMessage *message)
 	if (!camel_content_type_is (type, "text", "plain"))
 		return;
 
-	mem = camel_stream_mem_new ();
-	camel_data_wrapper_decode_to_stream (content, mem);
-
-	str = g_strndup ((const gchar *)((CamelStreamMem *) mem)->buffer->data, ((CamelStreamMem *) mem)->buffer->len);
-	camel_object_unref (mem);
+	byte_array = g_byte_array_new ();
+	stream = camel_stream_mem_new_with_byte_array (byte_array);
+	camel_data_wrapper_decode_to_stream (content, stream, NULL);
+	str = g_strndup ((gchar *) byte_array->data, byte_array->len);
+	g_object_unref (stream);
 
 	/* convert to UTF-8 string */
-	if (str && content->mime_type->params && content->mime_type->params->value)
-	{
+	if (str && content->mime_type->params && content->mime_type->params->value) {
 		convert_str = g_convert (str, strlen (str),
 					 "UTF-8", content->mime_type->params->value,
 					 &bytes_read, &bytes_written, NULL);
 	}
 
 	if (convert_str)
-		text.value = convert_str;
+		text.value = prepend_from (message, &convert_str);
 	else
-		text.value = str;
+		text.value = prepend_from (message, &str);
 	text.altrep = NULL;
 	sl.next = NULL;
 	sl.data = &text;
@@ -215,7 +237,7 @@ set_organizer (ECalComponent *comp)
 	ECalComponentOrganizer organizer = {NULL, NULL, NULL, NULL};
 	gchar *res;
 
-	account = mail_config_get_default_account ();
+	account = e_get_default_account ();
 	if (!account)
 		return NULL;
 
@@ -234,61 +256,153 @@ set_organizer (ECalComponent *comp)
 }
 
 static void
+attachment_load_finished (EAttachmentStore *store,
+                          GAsyncResult *result,
+                          gpointer user_data)
+{
+	struct {
+		gchar **uris;
+		gboolean done;
+	} *status = user_data;
+
+	/* XXX Should be no need to check for error here.
+	 *     This is just to reset state in the EAttachment. */
+	e_attachment_store_load_finish (store, result, NULL);
+
+	status->done = TRUE;
+}
+
+static void
+attachment_save_finished (EAttachmentStore *store,
+                          GAsyncResult *result,
+                          gpointer user_data)
+{
+	gchar **uris;
+
+	struct {
+		gchar **uris;
+		gboolean done;
+	} *status = user_data;
+
+	/* XXX Add some error handling here! */
+	uris = e_attachment_store_save_finish (store, result, NULL);
+
+	status->uris = uris;
+	status->done = TRUE;
+}
+
+static void
 set_attachments (ECal *client, ECalComponent *comp, CamelMimeMessage *message)
 {
-	gint parts, i;
-	GSList *list = NULL;
-	const gchar *uid;
-	const gchar *store_uri;
-	gchar *store_dir;
-	CamelDataWrapper *content;
+	/* XXX Much of this is copied from CompEditor::get_attachment_list().
+	 *     Perhaps it should be split off as a separate utility? */
 
-	content = camel_medium_get_content_object ((CamelMedium *) message);
+	EAttachmentStore *store;
+	CamelDataWrapper *content;
+	CamelMultipart *multipart;
+	GFile *destination;
+	GList *attachment_list = NULL;
+	GSList *uri_list = NULL;
+	const gchar *comp_uid = NULL;
+	const gchar *local_store;
+	gint ii, n_parts;
+	gchar *path;
+
+	struct {
+		gchar **uris;
+		gboolean done;
+	} status;
+
+	content = camel_medium_get_content ((CamelMedium *) message);
 	if (!content || !CAMEL_IS_MULTIPART (content))
 		return;
 
-	parts = camel_multipart_get_number (CAMEL_MULTIPART (content));
-	if (parts < 1)
+	n_parts = camel_multipart_get_number (CAMEL_MULTIPART (content));
+	if (n_parts < 1)
 		return;
 
-	e_cal_component_get_uid (comp, &uid);
-	store_uri = e_cal_get_local_attachment_store (client);
-	if (!store_uri)
-		return;
-	store_dir = g_filename_from_uri (store_uri, NULL, NULL);
+	e_cal_component_get_uid (comp, &comp_uid);
+	local_store = e_cal_get_local_attachment_store (client);
+	path = g_build_path ("/", local_store, comp_uid, NULL);
+	
+	destination = g_file_new_for_path (path);
+	g_free (path);
 
-	for (i = 1; i < parts; i++)
-	{
-		gchar *filename, *path, *tmp;
-		const gchar *orig_filename;
+	/* Create EAttachments from the MIME parts and add them to the
+	 * attachment store. */
+
+	multipart = CAMEL_MULTIPART (content);
+	store = E_ATTACHMENT_STORE (e_attachment_store_new ());
+
+	for (ii = 1; ii < n_parts; ii++) {
+		EAttachment *attachment;
 		CamelMimePart *mime_part;
 
-		mime_part = camel_multipart_get_part (CAMEL_MULTIPART (content), i);
+		attachment = e_attachment_new ();
+		mime_part = camel_multipart_get_part (multipart, ii);
+		e_attachment_set_mime_part (attachment, mime_part);
 
-		orig_filename = camel_mime_part_get_filename (mime_part);
-		if (!orig_filename)
-			continue;
-
-		tmp = clean_name ((const guchar *)orig_filename);
-		filename = g_strdup_printf ("%s-%s", uid, tmp);
-		path = g_build_filename (store_dir, filename, NULL);
-
-		if (em_utils_save_part_to_file (NULL, path, mime_part))
-		{
-			gchar *uri;
-			uri = g_filename_to_uri (path, NULL, NULL);
-			list = g_slist_append (list, g_strdup (uri));
-			g_free (uri);
-		}
-
-		g_free (tmp);
-		g_free (filename);
-		g_free (path);
+		attachment_list = g_list_append (attachment_list, attachment);
 	}
 
-	g_free (store_dir);
+	status.done = FALSE;
 
-	e_cal_component_set_attachment_list (comp, list);
+	e_attachment_store_load_async (
+		store, attachment_list, (GAsyncReadyCallback)
+		attachment_load_finished, &status);
+
+	/* Loading should be instantaneous since we already have
+	 * the full content, but we still have to crank the main
+	 * loop until the callback gets triggered. */
+	while (!status.done)
+		gtk_main_iteration ();
+
+	g_list_foreach (attachment_list, (GFunc) g_object_unref, NULL);
+	g_list_free (attachment_list);
+
+	status.uris = NULL;
+	status.done = FALSE;
+
+	e_attachment_store_save_async (
+		store, destination, (GAsyncReadyCallback)
+		attachment_save_finished, &status);
+
+	/* We can't return until we have results, so crank
+	 * the main loop until the callback gets triggered. */
+	while (!status.done)
+		gtk_main_iteration ();
+
+	g_return_if_fail (status.uris != NULL);
+
+	/* Transfer the URI strings to the GSList. */
+	for (ii = 0; status.uris[ii] != NULL; ii++) {
+		uri_list = g_slist_prepend (uri_list, status.uris[ii]);
+		status.uris[ii] = NULL;
+	}
+
+	g_free (status.uris);
+
+	/* XXX Does this take ownership of the list? */
+	e_cal_component_set_attachment_list (comp, uri_list);
+
+	g_object_unref (destination);
+	g_object_unref (store);
+}
+
+static void
+set_priority (ECalComponent *comp, CamelMimePart *part)
+{
+	const gchar *prio;
+
+	g_return_if_fail (comp != NULL);
+	g_return_if_fail (part != NULL);
+
+	prio = camel_header_raw_find (& (part->headers), "X-Priority", NULL);
+	if (prio && atoi (prio) > 0) {
+		gint priority = 1;
+
+		e_cal_component_set_priority (comp, &priority);
+	}
 }
 
 struct _report_error
@@ -396,12 +510,21 @@ get_question_create_new (ECalSourceType source_type)
 
 	switch (source_type) {
 	case E_CAL_SOURCE_TYPE_EVENT:
+		/* Translators: Codewise it is impossible to provide separate strings for all
+		   combinations of singular and plural. Please translate it in the way that you
+		   feel is most appropriate for your language. */
 		ask = _("Selected calendar contains some events for the given mails already. Would you like to create new events anyway?");
 		break;
 	case E_CAL_SOURCE_TYPE_TODO:
+		/* Translators: Codewise it is impossible to provide separate strings for all
+		   combinations of singular and plural. Please translate it in the way that you
+		   feel is most appropriate for your language. */
 		ask = _("Selected task list contains some tasks for the given mails already. Would you like to create new tasks anyway?");
 		break;
 	case E_CAL_SOURCE_TYPE_JOURNAL:
+		/* Translators: Codewise it is impossible to provide separate strings for all
+		   combinations of singular and plural. Please translate it in the way that you
+		   feel is most appropriate for your language. */
 		ask = _("Selected memo list contains some memos for the given mails already. Would you like to create new memos anyway?");
 		break;
 	default:
@@ -420,18 +543,27 @@ get_question_create_new_n (ECalSourceType source_type, gint count)
 	switch (source_type) {
 	case E_CAL_SOURCE_TYPE_EVENT:
 		ask = ngettext (
+			/* Translators: Codewise it is impossible to provide separate strings for all
+			   combinations of singular and plural. Please translate it in the way that you
+			   feel is most appropriate for your language. */
 			"Selected calendar contains an event for the given mail already. Would you like to create new event anyway?",
 			"Selected calendar contains events for the given mails already. Would you like to create new events anyway?",
 			count);
 		break;
 	case E_CAL_SOURCE_TYPE_TODO:
 		ask = ngettext (
+			/* Translators: Codewise it is impossible to provide separate strings for all
+			   combinations of singular and plural. Please translate it in the way that you
+			   feel is most appropriate for your language. */
 			"Selected task list contains a task for the given mail already. Would you like to create new task anyway?",
 			"Selected task list contains tasks for the given mails already. Would you like to create new tasks anyway?",
 			count);
 		break;
 	case E_CAL_SOURCE_TYPE_JOURNAL:
 		ask = ngettext (
+			/* Translators: Codewise it is impossible to provide separate strings for all
+			   combinations of singular and plural. Please translate it in the way that you
+			   feel is most appropriate for your language. */
 			"Selected memo list contains a memo for the given mail already. Would you like to create new memo anyway?",
 			"Selected memo list contains memos for the given mails already. Would you like to create new memos anyway?",
 			count);
@@ -522,7 +654,13 @@ do_manage_comp_idle (GSList *manage_comp_datas)
 			}
 
 			if (edit_comp) {
-				open_component_editor (mc->client, edit_comp, edit_comp == mc->comp, &error);
+				EShell *shell;
+
+				/* FIXME Pass in the EShell instance. */
+				shell = e_shell_get_default ();
+				open_component_editor (
+					shell, mc->client, edit_comp,
+					edit_comp == mc->comp, &error);
 				if (edit_comp != mc->comp)
 					g_object_unref (edit_comp);
 			}
@@ -702,6 +840,9 @@ do_mail_to_event (AsyncData *data)
 			/* set attachment files */
 			set_attachments (client, comp, message);
 
+			/* priority */
+			set_priority (comp, CAMEL_MIME_PART (message));
+
 			/* no need to increment a sequence number, this is a new component */
 			e_cal_component_abort_sequence (comp);
 
@@ -742,12 +883,6 @@ do_mail_to_event (AsyncData *data)
 	return TRUE;
 }
 
-static void
-copy_uids (gchar *uid, GPtrArray *uid_array)
-{
-	g_ptr_array_add (uid_array, g_strdup (uid));
-}
-
 static gboolean
 text_contains_nonwhitespace (const gchar *text, gint len)
 {
@@ -775,47 +910,44 @@ text_contains_nonwhitespace (const gchar *text, gint len)
 
 /* should be freed with g_free after done with it */
 static gchar *
-get_selected_text (EMFolderView *emfv)
+get_selected_text (EMailReader *reader)
 {
+	EMFormatHTML *formatter;
+	EWebView *web_view;
 	gchar *text = NULL;
 	gint len;
 
-	if (!emfv || !emfv->preview || !gtk_html_command (((EMFormatHTML *)emfv->preview)->html, "is-selection-active"))
+	formatter = e_mail_reader_get_formatter (reader);
+	web_view = em_format_html_get_web_view (formatter);
+
+	if (!e_web_view_is_selection_active (web_view))
 		return NULL;
 
-	if (gtk_html_command (((EMFormatHTML *)emfv->preview)->html, "is-selection-active")
-	    && (text = gtk_html_get_selection_plain_text (((EMFormatHTML *)emfv->preview)->html, &len))
-	    && len && text && text[0] && text_contains_nonwhitespace (text, len)) {
-		/* selection is ok, so use it as returned from gtkhtml widget */
-	} else {
+	text = gtk_html_get_selection_plain_text (GTK_HTML (web_view), &len);
+
+	if (text == NULL || !text_contains_nonwhitespace (text, len)) {
 		g_free (text);
-		text = NULL;
+		return NULL;
 	}
 
 	return text;
 }
 
 static void
-mail_to_event (ECalSourceType source_type, gboolean with_attendees, GPtrArray *uids, CamelFolder *folder, EMFolderView *emfv)
+mail_to_event (ECalSourceType source_type,
+               gboolean with_attendees,
+               EMailReader *reader)
 {
-	GPtrArray *uid_array = NULL;
+	CamelFolder *folder;
+	GPtrArray *uids;
 	ESourceList *source_list = NULL;
 	gboolean done = FALSE;
 	GSList *groups, *p;
 	ESource *source = NULL;
 	GError *error = NULL;
 
-	g_return_if_fail (uids != NULL);
-	g_return_if_fail (folder != NULL);
-	g_return_if_fail (emfv != NULL);
-
-	if (uids->len > 0) {
-		uid_array = g_ptr_array_new ();
-		g_ptr_array_foreach (uids, (GFunc)copy_uids, (gpointer) uid_array);
-	} else {
-		/* nothing selected */
-		return;
-	}
+	folder = e_mail_reader_get_folder (reader);
+	uids = e_mail_reader_get_selected_uids (reader);
 
 	if (!e_cal_get_sources (&source_list, source_type, &error)) {
 		e_notice (NULL, GTK_MESSAGE_ERROR, _("Cannot get source list. %s"), error ? error->message : _("Unknown error."));
@@ -868,7 +1000,7 @@ mail_to_event (ECalSourceType source_type, gboolean with_attendees, GPtrArray *u
 		AsyncData *data = NULL;
 		GThread *thread = NULL;
 
-		client = auth_new_cal_from_source (source, source_type);
+		client = e_auth_new_cal_from_source (source, source_type);
 		if (!client) {
 			gchar *uri = e_source_get_uri (source);
 
@@ -883,11 +1015,11 @@ mail_to_event (ECalSourceType source_type, gboolean with_attendees, GPtrArray *u
 		data = g_new0 (AsyncData, 1);
 		data->client = client;
 		data->folder = folder;
-		data->uids = uid_array;
+		data->uids = uids;
 		data->with_attendees = with_attendees;
 
-		if (uid_array->len == 1)
-			data->selected_text = get_selected_text (emfv);
+		if (uids->len == 1)
+			data->selected_text = get_selected_text (reader);
 		else
 			data->selected_text = NULL;
 
@@ -901,72 +1033,158 @@ mail_to_event (ECalSourceType source_type, gboolean with_attendees, GPtrArray *u
 	g_object_unref (source_list);
 }
 
-/* ************************************************************************* */
-
-gint e_plugin_lib_enable (EPluginLib *ep, gint enable);
-void org_gnome_mail_to_event (gpointer ep, EMPopupTargetSelect *t);
-void org_gnome_mail_to_event_menu (EPlugin *ep, EMMenuTargetSelect *t);
-void org_gnome_mail_to_meeting (gpointer ep, EMPopupTargetSelect *t);
-void org_gnome_mail_to_meeting_menu (EPlugin *ep, EMMenuTargetSelect *t);
-void org_gnome_mail_to_task (gpointer ep, EMPopupTargetSelect *t);
-void org_gnome_mail_to_task_menu (EPlugin *ep, EMMenuTargetSelect *t);
-void org_gnome_mail_to_memo (gpointer ep, EMPopupTargetSelect *t);
-void org_gnome_mail_to_memo_menu (EPlugin *ep, EMMenuTargetSelect *t);
-
-gint
-e_plugin_lib_enable (EPluginLib *ep, gint enable)
+static void
+action_mail_convert_to_event_cb (GtkAction *action,
+                                 EMailReader *reader)
 {
-	return 0;
+	mail_to_event (E_CAL_SOURCE_TYPE_EVENT, FALSE, reader);
 }
 
-void
-org_gnome_mail_to_event (gpointer ep, EMPopupTargetSelect *t)
+static void
+action_mail_convert_to_meeting_cb (GtkAction *action,
+                                   EMailReader *reader)
 {
-	mail_to_event (E_CAL_SOURCE_TYPE_EVENT, FALSE, t->uids, t->folder, (EMFolderView *) t->target.widget);
+	mail_to_event (E_CAL_SOURCE_TYPE_EVENT, TRUE, reader);
 }
 
-void
-org_gnome_mail_to_event_menu (EPlugin *ep, EMMenuTargetSelect *t)
+static void
+action_mail_convert_to_memo_cb (GtkAction *action,
+                                EMailReader *reader)
 {
-	mail_to_event (E_CAL_SOURCE_TYPE_EVENT, FALSE, t->uids, t->folder, (EMFolderView *) t->target.widget);
+	mail_to_event (E_CAL_SOURCE_TYPE_JOURNAL, FALSE, reader);
 }
 
-void
-org_gnome_mail_to_meeting (gpointer ep, EMPopupTargetSelect *t)
+static void
+action_mail_convert_to_task_cb (GtkAction *action,
+                                EMailReader *reader)
 {
-	mail_to_event (E_CAL_SOURCE_TYPE_EVENT, TRUE, t->uids, t->folder, (EMFolderView *) t->target.widget);
+	mail_to_event (E_CAL_SOURCE_TYPE_TODO, FALSE, reader);
 }
 
-void
-org_gnome_mail_to_meeting_menu (EPlugin *ep, EMMenuTargetSelect *t)
+/* Note, we're not using EPopupActions here because we update the state
+ * of entire actions groups instead of individual actions.  EPopupActions
+ * just proxy the state of individual actions. */
+
+static GtkActionEntry multi_selection_entries[] = {
+
+	{ "mail-convert-to-event",
+	  "appointment-new",
+	  N_("Create an _Event"),
+	  NULL,
+	  N_("Create a new event from the selected message"),
+	  G_CALLBACK (action_mail_convert_to_event_cb) },
+
+	{ "mail-convert-to-memo",
+	  "stock_insert-note",
+	  N_("Create a Mem_o"),
+	  NULL,
+	  N_("Create a new memo from the selected message"),
+	  G_CALLBACK (action_mail_convert_to_memo_cb) },
+
+	{ "mail-convert-to-task",
+	  "stock_todo",
+	  N_("Create a _Task"),
+	  NULL,
+	  N_("Create a new task from the selected message"),
+	  G_CALLBACK (action_mail_convert_to_task_cb) }
+};
+
+static GtkActionEntry single_selection_entries[] = {
+
+	{ "mail-convert-to-meeting",
+	  "stock_new-meeting",
+	  N_("Create a _Meeting"),
+	  NULL,
+	  N_("Create a new meeting from the selected message"),
+	  G_CALLBACK (action_mail_convert_to_meeting_cb) }
+};
+
+static void
+update_actions_any_cb (EMailReader *reader,
+                       guint32 state,
+                       GtkActionGroup *action_group)
 {
-	mail_to_event (E_CAL_SOURCE_TYPE_EVENT, TRUE, t->uids, t->folder, (EMFolderView *) t->target.widget);
+	gboolean sensitive;
+
+	sensitive =
+		(state & E_MAIL_READER_SELECTION_SINGLE) ||
+		(state & E_MAIL_READER_SELECTION_MULTIPLE);
+
+	gtk_action_group_set_sensitive (action_group, sensitive);
 }
 
-void
-org_gnome_mail_to_task (gpointer ep, EMPopupTargetSelect *t)
+static void
+update_actions_one_cb (EMailReader *reader,
+                       guint32 state,
+                       GtkActionGroup *action_group)
 {
-	/* do not create assigned tasks */
-	mail_to_event (E_CAL_SOURCE_TYPE_TODO, FALSE, t->uids, t->folder, (EMFolderView *) t->target.widget);
+	gboolean sensitive;
+
+	sensitive = (state & E_MAIL_READER_SELECTION_SINGLE);
+
+	gtk_action_group_set_sensitive (action_group, sensitive);
 }
 
-void
-org_gnome_mail_to_task_menu (EPlugin *ep, EMMenuTargetSelect *t)
+static void
+setup_actions (EMailReader *reader,
+               GtkUIManager *ui_manager)
 {
-	/* do not create assigned tasks */
-	mail_to_event (E_CAL_SOURCE_TYPE_TODO, FALSE, t->uids, t->folder, (EMFolderView *) t->target.widget);
+	GtkActionGroup *action_group;
+	const gchar *domain = GETTEXT_PACKAGE;
+
+	action_group = gtk_action_group_new ("mail-convert-any");
+	gtk_action_group_set_translation_domain (action_group, domain);
+	gtk_action_group_add_actions (
+		action_group, multi_selection_entries,
+		G_N_ELEMENTS (multi_selection_entries), reader);
+	gtk_ui_manager_insert_action_group (ui_manager, action_group, 0);
+	g_object_unref (action_group);
+
+	/* GtkUIManager now owns the action group reference.
+	 * The signal we're connecting to will only be emitted
+	 * during the GtkUIManager's lifetime, so the action
+	 * group will not disappear on us. */
+
+	g_signal_connect (
+		reader, "update-actions",
+		G_CALLBACK (update_actions_any_cb), action_group);
+
+	action_group = gtk_action_group_new ("mail-convert-one");
+	gtk_action_group_set_translation_domain (action_group, domain);
+	gtk_action_group_add_actions (
+		action_group, single_selection_entries,
+		G_N_ELEMENTS (single_selection_entries), reader);
+	gtk_ui_manager_insert_action_group (ui_manager, action_group, 0);
+	g_object_unref (action_group);
+
+	/* GtkUIManager now owns the action group reference.
+	 * The signal we're connecting to will only be emitted
+	 * during the GtkUIManager's lifetime, so the action
+	 * group will not disappear on us. */
+
+	g_signal_connect (
+		reader, "update-actions",
+		G_CALLBACK (update_actions_one_cb), action_group);
 }
 
-void
-org_gnome_mail_to_memo (gpointer ep, EMPopupTargetSelect *t)
+gboolean
+mail_browser_init (GtkUIManager *ui_manager,
+                   EMailBrowser *browser)
 {
-	/* do not set organizer and attendees for memos */
-	mail_to_event (E_CAL_SOURCE_TYPE_JOURNAL, FALSE, t->uids, t->folder, (EMFolderView *) t->target.widget);
+	setup_actions (E_MAIL_READER (browser), ui_manager);
+
+	return TRUE;
 }
 
-void
-org_gnome_mail_to_memo_menu (EPlugin *ep, EMMenuTargetSelect *t)
+gboolean
+mail_shell_view_init (GtkUIManager *ui_manager,
+                      EShellView *shell_view)
 {
-	/* do not set organizer and attendees for memos */
-	mail_to_event (E_CAL_SOURCE_TYPE_JOURNAL, FALSE, t->uids, t->folder, (EMFolderView *) t->target.widget);
+	EShellContent *shell_content;
+
+	shell_content = e_shell_view_get_shell_content (shell_view);
+
+	setup_actions (E_MAIL_READER (shell_content), ui_manager);
+
+	return TRUE;
 }

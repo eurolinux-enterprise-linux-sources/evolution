@@ -1,29 +1,26 @@
-if OS_WIN32
-WIN32_BOOTSTRAP_LIBS =					\
-	$(top_builddir)/win32/libemiscwidgets.la	\
-	$(top_builddir)/win32/libetext.la
-endif
-
-glade_DATA = 					\
-	e-table-config.glade			\
-	e-table-field-chooser.glade
-
-AM_CPPFLAGS =					\
-	-I$(top_srcdir)                         \
-	-I$(top_srcdir)/widgets                 \
-	$(E_WIDGETS_CFLAGS)			\
-	$(GNOME_PLATFORM_CFLAGS)		\
-	-DEVOLUTION_GLADEDIR=\"$(gladedir)\"	\
-        -DG_LOG_DOMAIN=\"e-table\"
+ui_DATA = 					\
+	e-table-config.ui
 
 privsolib_LTLIBRARIES = libetable.la
+
+libetable_la_CPPFLAGS =				\
+	$(AM_CPPFLAGS)				\
+	-I$(top_srcdir)				\
+	-I$(top_srcdir)/widgets			\
+	$(E_UTIL_CFLAGS)			\
+	$(E_WIDGETS_CFLAGS)			\
+	$(GNOME_PLATFORM_CFLAGS)		\
+	-DEVOLUTION_UIDIR=\"$(uidir)\"	\
+        -DG_LOG_DOMAIN=\"e-table\"
 
 libetable_la_SOURCES = 				\
 	e-cell.c				\
 	e-cell-checkbox.c			\
 	e-cell-combo.c				\
 	e-cell-date.c				\
+	e-cell-date-edit.c			\
 	e-cell-number.c				\
+	e-cell-percent.c			\
 	e-cell-pixbuf.c				\
 	e-cell-popup.c				\
 	e-cell-size.c				\
@@ -52,10 +49,8 @@ libetable_la_SOURCES = 				\
 	e-table-memory.c			\
 	e-table-model.c				\
 	e-table-one.c				\
-	e-table-scrolled.c			\
 	e-table-search.c			\
 	e-table-selection-model.c		\
-	e-table-simple.c			\
 	e-table-sort-info.c			\
 	e-table-sorted.c			\
 	e-table-sorted-variable.c		\
@@ -71,11 +66,25 @@ libetable_la_SOURCES = 				\
 	e-tree-memory-callbacks.c		\
 	e-tree-memory.c				\
 	e-tree-model.c				\
-	e-tree-scrolled.c			\
 	e-tree-selection-model.c		\
 	e-tree-sorted.c				\
 	e-tree-table-adapter.c			\
-	e-tree.c
+	e-tree.c				\
+	gal-a11y-e-cell.c			\
+	gal-a11y-e-cell-popup.c			\
+	gal-a11y-e-cell-registry.c		\
+	gal-a11y-e-cell-toggle.c		\
+	gal-a11y-e-cell-tree.c			\
+	gal-a11y-e-cell-vbox.c			\
+	gal-a11y-e-table.c			\
+	gal-a11y-e-table-click-to-add.c		\
+	gal-a11y-e-table-click-to-add-factory.c	\
+	gal-a11y-e-table-column-header.c	\
+	gal-a11y-e-table-factory.c		\
+	gal-a11y-e-table-item.c			\
+	gal-a11y-e-table-item-factory.c		\
+	gal-a11y-e-tree.c			\
+	gal-a11y-e-tree-factory.c
 
 libetableincludedir = $(privincludedir)/table
 
@@ -84,7 +93,9 @@ libetableinclude_HEADERS = 			\
 	e-cell-checkbox.h			\
 	e-cell-combo.h				\
 	e-cell-date.h				\
+	e-cell-date-edit.h			\
 	e-cell-number.h				\
+	e-cell-percent.h			\
 	e-cell-pixbuf.h				\
 	e-cell-popup.h				\
 	e-cell-size.h				\
@@ -115,10 +126,8 @@ libetableinclude_HEADERS = 			\
 	e-table-memory.h			\
 	e-table-model.h				\
 	e-table-one.h				\
-	e-table-scrolled.h			\
 	e-table-search.h			\
 	e-table-selection-model.h		\
-	e-table-simple.h			\
 	e-table-sort-info.h			\
 	e-table-sorted.h			\
 	e-table-sorted-variable.h		\
@@ -128,26 +137,44 @@ libetableinclude_HEADERS = 			\
 	e-table-state.h				\
 	e-table-subset.h			\
 	e-table-subset-variable.h		\
-	e-table-tooltip.h			\
 	e-table-utils.h				\
 	e-table-without.h			\
 	e-table.h				\
 	e-tree-memory-callbacks.h		\
 	e-tree-memory.h				\
 	e-tree-model.h				\
-	e-tree-scrolled.h			\
 	e-tree-selection-model.h		\
 	e-tree-sorted.h				\
 	e-tree-table-adapter.h			\
-	e-tree.h
+	e-tree.h				\
+	gal-a11y-e-cell.h			\
+	gal-a11y-e-cell-popup.h			\
+	gal-a11y-e-cell-registry.h		\
+	gal-a11y-e-cell-toggle.h		\
+	gal-a11y-e-cell-tree.h			\
+	gal-a11y-e-cell-vbox.h			\
+	gal-a11y-e-table.h			\
+	gal-a11y-e-table-click-to-add.h		\
+	gal-a11y-e-table-click-to-add-factory.h	\
+	gal-a11y-e-table-column-header.h	\
+	gal-a11y-e-table-factory.h		\
+	gal-a11y-e-table-item.h			\
+	gal-a11y-e-table-item-factory.h		\
+	gal-a11y-e-tree.h			\
+	gal-a11y-e-tree-factory.h
 
 libetable_la_LDFLAGS = $(NO_UNDEFINED)
 
-libetable_la_LIBADD =					\
-	$(WIN32_BOOTSTRAP_LIBS)				\
-	$(top_builddir)/e-util/libeutil.la		\
-	$(top_builddir)/a11y/libevolution-a11y.la	\
-	$(E_WIDGETS_LIBS)				\
+libetable_la_LIBADD =						\
+	$(top_builddir)/a11y/libevolution-a11y.la		\
+	$(top_builddir)/e-util/libeutil.la			\
+	$(top_builddir)/widgets/misc/libemiscwidgets.la		\
+	$(top_builddir)/widgets/text/libetext.la		\
+	$(top_builddir)/libgnomecanvas/libgnomecanvas.la	\
+	$(top_builddir)/libart_lgpl/libart_lgpl.la		\
+	$(E_UTIL_LIBS)						\
+	$(E_WIDGETS_LIBS)					\
+	$(MATH_LIB)						\
 	$(GNOME_PLATFORM_LIBS)
 
 icons = 			\
@@ -163,6 +190,6 @@ icons = 			\
 
 EXTRA_DIST =			\
 	$(icons)		\
-	$(glade_DATA)
+	$(ui_DATA)
 
 -include $(top_srcdir)/git.mk

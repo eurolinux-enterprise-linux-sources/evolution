@@ -121,6 +121,7 @@ e_contact_output (GtkPrintContext *context,
 	pango_layout_set_text (layout, text, -1);
 	pango_layout_set_width (layout, pango_units_from_double (width));
 	pango_layout_set_indent (layout, pango_units_from_double (indent));
+	pango_layout_set_wrap (layout, PANGO_WRAP_WORD_CHAR);
 
 	cr = gtk_print_context_get_cairo_context (context);
 
@@ -153,7 +154,8 @@ e_contact_text_height (GtkPrintContext *context,
 }
 
 static void
-e_contact_print_letter_heading (EContactPrintContext *ctxt, gchar *letter)
+e_contact_print_letter_heading (EContactPrintContext *ctxt,
+                                gchar *letter)
 {
 	PangoLayout *layout;
 	PangoFontDescription *desc;
@@ -211,23 +213,84 @@ e_contact_print_letter_heading (EContactPrintContext *ctxt, gchar *letter)
 static void
 e_contact_start_new_page (EContactPrintContext *ctxt)
 {
-	cairo_t *cr;
-
-	cr = gtk_print_context_get_cairo_context (ctxt->context);
-
-	/*cairo_show_page (cr);*/
-
 	ctxt->x = ctxt->y = .0;
 	ctxt->column = 0;
 	ctxt->pages++;
 }
 
 static void
-e_contact_print_contact (EContact *contact, EContactPrintContext *ctxt)
+e_contact_start_new_column (EContactPrintContext *ctxt)
 {
+	if (++ctxt->column >= ctxt->style->num_columns)
+		e_contact_start_new_page (ctxt);
+	else {
+		ctxt->x = ctxt->column *
+			(ctxt->column_width + ctxt->column_spacing);
+		ctxt->y = .0;
+	}
+}
+
+static gdouble
+e_contact_get_contact_height (EContact *contact,
+                              EContactPrintContext *ctxt)
+{
+	GtkPageSetup *setup;
+	gchar *file_as;
+	gdouble page_height;
+	gint field;
+	gdouble cntct_height = 0.0;
+
+	setup = gtk_print_context_get_page_setup (ctxt->context);
+	page_height = gtk_page_setup_get_page_height (setup, GTK_UNIT_POINTS);
+
+	cntct_height += get_font_height (ctxt->style->headings_font) * .2;
+
+	file_as = e_contact_get (contact, E_CONTACT_FILE_AS);
+
+	cntct_height += e_contact_text_height (
+		ctxt->context, ctxt->style->headings_font, file_as);
+
+	g_free (file_as);
+
+	cntct_height += get_font_height (ctxt->style->headings_font) * .2;
+
+	for (field = E_CONTACT_FILE_AS; field != E_CONTACT_LAST_SIMPLE_STRING; field++)
+	{
+		const gchar *value;
+		gchar *text;
+
+		value = e_contact_get_const (contact, field);
+		if (value == NULL || *value == '\0')
+			continue;
+
+		text = g_strdup_printf ("%s:  %s",
+			e_contact_pretty_name (field), value);
+
+		cntct_height += e_contact_text_height (
+			ctxt->context, ctxt->style->body_font, text);
+
+		cntct_height += .2 * get_font_height (ctxt->style->body_font);
+
+		g_free (text);
+	}
+
+	cntct_height += get_font_height (ctxt->style->headings_font) * .4 + 8;
+
+	return cntct_height;
+}
+
+static void
+e_contact_print_contact (EContact *contact,
+                         EContactPrintContext *ctxt)
+{
+	GtkPageSetup *setup;
 	gchar *file_as;
 	cairo_t *cr;
+	gdouble page_height;
 	gint field;
+
+	setup = gtk_print_context_get_page_setup (ctxt->context);
+	page_height = gtk_page_setup_get_page_height (setup, GTK_UNIT_POINTS);
 
 	cr = gtk_print_context_get_cairo_context (ctxt->context);
 	cairo_save(cr);
@@ -260,6 +323,10 @@ e_contact_print_contact (EContact *contact, EContactPrintContext *ctxt)
 	{
 		const gchar *value;
 		gchar *text;
+		gint wrapped_lines=0;
+
+		if (ctxt->y > page_height)
+			e_contact_start_new_column (ctxt);
 
 		value = e_contact_get_const (contact, field);
 		if (value == NULL || *value == '\0')
@@ -271,10 +338,18 @@ e_contact_print_contact (EContact *contact, EContactPrintContext *ctxt)
 		if (ctxt->pages == ctxt->page_nr)
 			e_contact_output (
 				ctxt->context, ctxt->style->body_font,
-				ctxt->x, ctxt->y, -1, text);
+				ctxt->x, ctxt->y, ctxt->column_width + 4, text);
 
-		ctxt->y += e_contact_text_height (
-			ctxt->context, ctxt->style->body_font, text);
+		if (get_font_width (ctxt->context,
+			ctxt->style->body_font, text) > ctxt->column_width)
+			wrapped_lines =
+				(get_font_width (ctxt->context,
+				ctxt->style->body_font, text) /
+				(ctxt->column_width+4)) + 1;
+		ctxt->y =
+			ctxt->y + ((wrapped_lines + 1) *
+			e_contact_text_height (ctxt->context,
+			ctxt->style->body_font, text));
 
 		ctxt->y += .2 * get_font_height (ctxt->style->body_font);
 
@@ -286,20 +361,9 @@ e_contact_print_contact (EContact *contact, EContactPrintContext *ctxt)
 	cairo_restore (cr);
 }
 
-static void
-e_contact_start_new_column (EContactPrintContext *ctxt)
-{
-	if (++ctxt->column >= ctxt->style->num_columns)
-		e_contact_start_new_page (ctxt);
-	else {
-		ctxt->x = ctxt->column *
-			(ctxt->column_width + ctxt->column_spacing);
-		ctxt->y = .0;
-	}
-}
-
 static gint
-contact_compare (EContact *contact1, EContact *contact2)
+contact_compare (EContact *contact1,
+                 EContact *contact2)
 {
 	const gchar *field1, *field2;
 
@@ -324,7 +388,8 @@ contact_compare (EContact *contact1, EContact *contact2)
 }
 
 static void
-contacts_added (EBookView *book_view, const GList *contact_list,
+contacts_added (EBookView *book_view,
+                const GList *contact_list,
                 EContactPrintContext *ctxt)
 {
 	while (contact_list != NULL) {
@@ -337,8 +402,10 @@ contacts_added (EBookView *book_view, const GList *contact_list,
 }
 
 static void
-sequence_complete (EBookView *book_view, const GList *contact_list,
-                   EFlag *book_view_started)
+view_complete (EBookView *book_view,
+               EBookViewStatus status,
+               const gchar *error_msg,
+               EFlag *book_view_started)
 {
 	e_flag_set (book_view_started);
 }
@@ -372,7 +439,8 @@ get_float (gchar *data)
 }
 
 static void
-get_font (gchar *data, PangoFontDescription **variable)
+get_font (gchar *data,
+          PangoFontDescription **variable)
 {
 	PangoFontDescription *desc = NULL;
 
@@ -445,72 +513,72 @@ e_contact_build_style (EContactPrintStyle *style)
 		xmlNodePtr node;
 		for (node = stylenode->children; node; node = node->next) {
 			gchar *data = (gchar *)xmlNodeGetContent ( node );
-			if ( !strcmp( (gchar *)node->name, "title" ) ) {
+			if (!strcmp( (gchar *)node->name, "title" )) {
 				get_string(data, &(style->title));
-			} else if ( !strcmp( (gchar *)node->name, "type" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "type" )) {
 				if (g_ascii_strcasecmp (data, "cards") == 0)
 					style->type = E_CONTACT_PRINT_TYPE_CARDS;
 				else if (g_ascii_strcasecmp (data, "memo_style") == 0)
 					style->type = E_CONTACT_PRINT_TYPE_MEMO_STYLE;
 				else if (g_ascii_strcasecmp (data, "phone_list") == 0)
 					style->type = E_CONTACT_PRINT_TYPE_PHONE_LIST;
-			} else if ( !strcmp( (gchar *)node->name, "sections_start_new_page" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "sections_start_new_page" )) {
 				style->sections_start_new_page = get_bool(data);
-			} else if ( !strcmp( (gchar *)node->name, "num_columns" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "num_columns" )) {
 				style->num_columns = get_integer(data);
-			} else if ( !strcmp( (gchar *)node->name, "blank_forms" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "blank_forms" )) {
 				style->blank_forms = get_integer(data);
-			} else if ( !strcmp( (gchar *)node->name, "letter_headings" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "letter_headings" )) {
 				style->letter_headings = get_bool(data);
-			} else if ( !strcmp( (gchar *)node->name, "headings_font" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "headings_font" )) {
 				get_font( data, &(style->headings_font) );
-			} else if ( !strcmp( (gchar *)node->name, "body_font" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "body_font" )) {
 				get_font( data, &(style->body_font) );
-			} else if ( !strcmp( (gchar *)node->name, "print_using_grey" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "print_using_grey" )) {
 				style->print_using_grey = get_bool(data);
-			} else if ( !strcmp( (gchar *)node->name, "paper_width" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "paper_width" )) {
 				style->paper_width = get_float(data);
-			} else if ( !strcmp( (gchar *)node->name, "paper_height" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "paper_height" )) {
 				style->paper_height = get_float(data);
-			} else if ( !strcmp( (gchar *)node->name, "top_margin" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "top_margin" )) {
 				style->top_margin = get_float(data);
-			} else if ( !strcmp( (gchar *)node->name, "left_margin" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "left_margin" )) {
 				style->left_margin = get_float(data);
-			} else if ( !strcmp( (gchar *)node->name, "bottom_margin" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "bottom_margin" )) {
 				style->bottom_margin = get_float(data);
-			} else if ( !strcmp( (gchar *)node->name, "right_margin" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "right_margin" )) {
 				style->right_margin = get_float(data);
-			} else if ( !strcmp( (gchar *)node->name, "page_width" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "page_width" )) {
 				style->page_width = get_float(data);
-			} else if ( !strcmp( (gchar *)node->name, "page_height" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "page_height" )) {
 				style->page_height = get_float(data);
-			} else if ( !strcmp( (gchar *)node->name, "orientation" ) ) {
-				if ( data ) {
+			} else if (!strcmp( (gchar *)node->name, "orientation" )) {
+				if (data) {
 					style->orientation_portrait =
 						(g_ascii_strcasecmp (data, "landscape") != 0);
 				} else {
 					style->orientation_portrait = TRUE;
 				}
-			} else if ( !strcmp( (gchar *)node->name, "header_font" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "header_font" )) {
 				get_font( data, &(style->header_font) );
-			} else if ( !strcmp( (gchar *)node->name, "left_header" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "left_header" )) {
 				get_string(data, &(style->left_header));
-			} else if ( !strcmp( (gchar *)node->name, "center_header" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "center_header" )) {
 				get_string(data, &(style->center_header));
-			} else if ( !strcmp( (gchar *)node->name, "right_header" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "right_header" )) {
 				get_string(data, &(style->right_header));
-			} else if ( !strcmp( (gchar *)node->name, "footer_font" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "footer_font" )) {
 				get_font( data, &(style->footer_font) );
-			} else if ( !strcmp( (gchar *)node->name, "left_footer" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "left_footer" )) {
 				get_string(data, &(style->left_footer));
-			} else if ( !strcmp( (gchar *)node->name, "center_footer" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "center_footer" )) {
 				get_string(data, &(style->center_footer));
-			} else if ( !strcmp( (gchar *)node->name, "right_footer" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "right_footer" )) {
 				get_string(data, &(style->right_footer));
-			} else if ( !strcmp( (gchar *)node->name, "reverse_on_even_pages" ) ) {
+			} else if (!strcmp( (gchar *)node->name, "reverse_on_even_pages" )) {
 				style->reverse_on_even_pages = get_bool(data);
 			}
-			if ( data )
+			if (data)
 				xmlFree (data);
 		}
 		xmlFreeDoc(styledoc);
@@ -536,8 +604,8 @@ load_contacts (EContactPrintContext *ctxt)
 		book_view, "contacts_added",
 		G_CALLBACK (contacts_added), ctxt);
 	g_signal_connect (
-		book_view, "sequence_complete",
-		G_CALLBACK (sequence_complete), book_view_started);
+		book_view, "view_complete",
+		G_CALLBACK (view_complete), book_view_started);
 
 	e_book_view_start (book_view);
 
@@ -546,12 +614,15 @@ load_contacts (EContactPrintContext *ctxt)
 
 	e_flag_free (book_view_started);
 
-	g_signal_handlers_disconnect_by_func (book_view, G_CALLBACK (contacts_added), ctxt);
-	g_signal_handlers_disconnect_by_func (book_view, G_CALLBACK (sequence_complete), book_view_started);
+	g_signal_handlers_disconnect_by_func (
+		book_view, G_CALLBACK (contacts_added), ctxt);
+	g_signal_handlers_disconnect_by_func (
+		book_view, G_CALLBACK (view_complete), book_view_started);
 }
 
 static void
-contact_draw (EContact *contact, EContactPrintContext *ctxt)
+contact_draw (EContact *contact,
+              EContactPrintContext *ctxt)
 {
 	GtkPageSetup *setup;
 	gdouble page_height;
@@ -584,7 +655,7 @@ contact_draw (EContact *contact, EContactPrintContext *ctxt)
 		if (!ctxt->first_contact) {
 			if (ctxt->style->sections_start_new_page)
 				e_contact_start_new_page (ctxt);
-			else if (ctxt->y > page_height)
+			else if ((ctxt->y + e_contact_get_contact_height (contact, ctxt)) > page_height)
 				e_contact_start_new_column (ctxt);
 		}
 		if (ctxt->style->letter_headings)
@@ -592,7 +663,8 @@ contact_draw (EContact *contact, EContactPrintContext *ctxt)
 		ctxt->first_section = FALSE;
 	}
 
-	else if (!ctxt->first_contact && (ctxt->y > page_height)) {
+	else if (!ctxt->first_contact && ((ctxt->y +
+		e_contact_get_contact_height (contact, ctxt)) > page_height)) {
 		e_contact_start_new_column (ctxt);
 		if (ctxt->style->letter_headings)
 			e_contact_print_letter_heading (ctxt, ctxt->section);
@@ -653,6 +725,55 @@ contact_begin_print (GtkPrintOperation *operation,
 	}
 }
 
+/* contact_page_draw_footer inserts the
+ * page number at the end of each page
+ * while printing*/
+void
+contact_page_draw_footer (GtkPrintOperation *operation,
+                          GtkPrintContext *context,
+                          gint page_nr)
+{
+	PangoFontDescription *desc;
+	PangoLayout *layout;
+	gdouble x, y, page_height, page_width, page_margin;
+	/*gint n_pages;*/
+	gchar *text;
+	cairo_t *cr;
+	GtkPageSetup *setup;
+
+	/*Uncomment next if it is successful to get total number if pages in list view
+	 * g_object_get (operation, "n-pages", &n_pages, NULL)*/
+	text = g_strdup_printf (_("Page %d"), page_nr + 1);
+
+	setup = gtk_print_context_get_page_setup ( context);
+	page_height = gtk_page_setup_get_page_height (setup, GTK_UNIT_POINTS);
+	page_width = gtk_page_setup_get_page_width (setup, GTK_UNIT_POINTS);
+	page_margin = gtk_page_setup_get_bottom_margin (setup, GTK_UNIT_POINTS);
+
+	desc = pango_font_description_from_string ("Sans Regular 8");
+	layout = gtk_print_context_create_pango_layout (context);
+	pango_layout_set_alignment (layout, PANGO_ALIGN_CENTER);
+	pango_layout_set_font_description (layout, desc);
+	pango_layout_set_text (layout, text, -1);
+	pango_layout_set_width (layout, -1);
+
+	x = page_width/2.0 - page_margin;
+	y = page_height - page_margin/2.0;
+
+	cr = gtk_print_context_get_cairo_context (context);
+
+	cairo_save (cr);
+	cairo_set_source_rgb (cr, .0, .0, .0);
+	cairo_move_to (cr, x, y);
+	pango_cairo_show_layout (cr, layout);
+	cairo_restore (cr);
+
+	g_object_unref (layout);
+	pango_font_description_free (desc);
+
+	g_free (text);
+}
+
 static void
 contact_draw_page (GtkPrintOperation *operation,
                    GtkPrintContext *context,
@@ -670,6 +791,7 @@ contact_draw_page (GtkPrintOperation *operation,
 	ctxt->section = NULL;
 
 	g_list_foreach (ctxt->contact_list, (GFunc) contact_draw, ctxt);
+	contact_page_draw_footer (operation, context, page_nr);
 }
 
 static void
@@ -690,8 +812,10 @@ contact_end_print (GtkPrintOperation *operation,
 }
 
 void
-e_contact_print (EBook *book, EBookQuery *query,
-                 GList *contact_list, GtkPrintOperationAction action)
+e_contact_print (EBook *book,
+                 EBookQuery *query,
+                 GList *contact_list,
+                 GtkPrintOperationAction action)
 {
 	GtkPrintOperation *operation;
 	EContactPrintContext ctxt;

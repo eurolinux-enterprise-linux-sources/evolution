@@ -31,27 +31,27 @@
 #define E_ATTACHMENT_VIEW(obj) \
 	(G_TYPE_CHECK_INSTANCE_CAST \
 	((obj), E_TYPE_ATTACHMENT_VIEW, EAttachmentView))
-#define E_ATTACHMENT_VIEW_IFACE(cls) \
+#define E_ATTACHMENT_VIEW_INTERFACE(cls) \
 	(G_TYPE_CHECK_CLASS_CAST \
-	((cls), E_TYPE_ATTACHMENT_VIEW, EAttachmentViewIface))
+	((cls), E_TYPE_ATTACHMENT_VIEW, EAttachmentViewInterface))
 #define E_IS_ATTACHMENT_VIEW(obj) \
 	(G_TYPE_CHECK_INSTANCE_TYPE \
 	((obj), E_TYPE_ATTACHMENT_VIEW))
-#define E_IS_ATTACHMENT_VIEW_IFACE(cls) \
+#define E_IS_ATTACHMENT_VIEW_INTERFACE(cls) \
 	(G_TYPE_CHECK_CLASS_TYPE \
 	((cls), E_TYPE_ATTACHMENT_VIEW))
-#define E_ATTACHMENT_VIEW_GET_IFACE(obj) \
+#define E_ATTACHMENT_VIEW_GET_INTERFACE(obj) \
 	(G_TYPE_INSTANCE_GET_INTERFACE \
-	((obj), E_TYPE_ATTACHMENT_VIEW, EAttachmentViewIface))
+	((obj), E_TYPE_ATTACHMENT_VIEW, EAttachmentViewInterface))
 
 G_BEGIN_DECLS
 
 typedef struct _EAttachmentView EAttachmentView;
-typedef struct _EAttachmentViewIface EAttachmentViewIface;
+typedef struct _EAttachmentViewInterface EAttachmentViewInterface;
 typedef struct _EAttachmentViewPrivate EAttachmentViewPrivate;
 
-struct _EAttachmentViewIface {
-	GTypeInterface parent_iface;
+struct _EAttachmentViewInterface {
+	GTypeInterface parent_interface;
 
 	/* General Methods */
 	EAttachmentViewPrivate *
@@ -92,9 +92,6 @@ struct _EAttachmentViewIface {
 
 struct _EAttachmentViewPrivate {
 
-	/* Attachment Handlers */
-	GPtrArray *handlers;
-
 	/* Drag Destination */
 	GtkTargetList *target_list;
 	GdkDragAction drag_actions;
@@ -103,6 +100,13 @@ struct _EAttachmentViewPrivate {
 	GtkUIManager *ui_manager;
 	guint merge_id;
 
+	/* Multi-DnD State */
+	GList *event_list;
+	GList *selected;
+	gint start_x;
+	gint start_y;
+
+	guint dragging : 1;
 	guint editable : 1;
 };
 
@@ -116,6 +120,9 @@ EAttachmentViewPrivate *
 		e_attachment_view_get_private	(EAttachmentView *view);
 EAttachmentStore *
 		e_attachment_view_get_store	(EAttachmentView *view);
+gboolean	e_attachment_view_get_dragging	(EAttachmentView *view);
+void		e_attachment_view_set_dragging	(EAttachmentView *view,
+						 gboolean dragging);
 gboolean	e_attachment_view_get_editable	(EAttachmentView *view);
 void		e_attachment_view_set_editable	(EAttachmentView *view,
 						 gboolean editable);
@@ -123,6 +130,9 @@ GtkTargetList *	e_attachment_view_get_target_list
 						(EAttachmentView *view);
 GdkDragAction	e_attachment_view_get_drag_actions
 						(EAttachmentView *view);
+void		e_attachment_view_add_drag_actions
+						(EAttachmentView *view,
+						 GdkDragAction drag_actions);
 GList *		e_attachment_view_get_selected_attachments
 						(EAttachmentView *view);
 void		e_attachment_view_open_path	(EAttachmentView *view,
@@ -139,6 +149,9 @@ gboolean	e_attachment_view_button_press_event
 gboolean	e_attachment_view_button_release_event
 						(EAttachmentView *view,
 						 GdkEventButton *event);
+gboolean	e_attachment_view_motion_notify_event
+						(EAttachmentView *view,
+						 GdkEventMotion *event);
 gboolean	e_attachment_view_key_press_event
 						(EAttachmentView *view,
 						 GdkEventKey *event);
@@ -159,7 +172,8 @@ void		e_attachment_view_unselect_path	(EAttachmentView *view,
 						 GtkTreePath *path);
 void		e_attachment_view_select_all	(EAttachmentView *view);
 void		e_attachment_view_unselect_all	(EAttachmentView *view);
-void		e_attachment_view_sync_selection(EAttachmentView *view,
+void		e_attachment_view_sync_selection
+						(EAttachmentView *view,
 						 EAttachmentView *target);
 
 /* Drag Source Support */
@@ -209,8 +223,10 @@ GtkActionGroup *e_attachment_view_add_action_group
 GtkActionGroup *e_attachment_view_get_action_group
 						(EAttachmentView *view,
 						 const gchar *group_name);
-GtkWidget *	e_attachment_view_get_popup_menu(EAttachmentView *view);
-GtkUIManager *	e_attachment_view_get_ui_manager(EAttachmentView *view);
+GtkWidget *	e_attachment_view_get_popup_menu
+						(EAttachmentView *view);
+GtkUIManager *	e_attachment_view_get_ui_manager
+						(EAttachmentView *view);
 GtkAction *	e_attachment_view_recent_action_new
 						(EAttachmentView *view,
 						 const gchar *action_name,
@@ -220,7 +236,8 @@ void		e_attachment_view_show_popup_menu
 						 GdkEventButton *event,
 						 GtkMenuPositionFunc func,
 						 gpointer user_data);
-void		e_attachment_view_update_actions(EAttachmentView *view);
+void		e_attachment_view_update_actions
+						(EAttachmentView *view);
 
 G_END_DECLS
 

@@ -53,13 +53,15 @@ enum {
 };
 
 enum {
+	CREATE_CONTACT,
+	CREATE_CONTACT_LIST,
 	SELECTION_CHANGE,
 	COLUMN_WIDTH_CHANGED,
 	RIGHT_CLICK,
 	LAST_SIGNAL
 };
 
-static guint signals [LAST_SIGNAL] = {0, };
+static guint signals[LAST_SIGNAL] = {0, };
 
 GType
 e_minicard_view_widget_get_type (void)
@@ -114,33 +116,51 @@ e_minicard_view_widget_class_init (EMinicardViewWidgetClass *class)
 
 	g_object_class_install_property (object_class, PROP_BOOK,
 					 g_param_spec_object ("book",
-							      _("Book"),
-							      /*_( */"XXX blurb" /*)*/,
+							      "Book",
+							      NULL,
 							      E_TYPE_BOOK,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_QUERY,
 					 g_param_spec_string ("query",
-							      _("Query"),
-							      /*_( */"XXX blurb" /*)*/,
+							      "Query",
+							      NULL,
 							      NULL,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_EDITABLE,
 					 g_param_spec_boolean ("editable",
-							       _("Editable"),
-							       /*_( */"XXX blurb" /*)*/,
+							       "Editable",
+							       NULL,
 							       FALSE,
 							       G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_COLUMN_WIDTH,
 					 g_param_spec_double ("column_width",
-							      _("Column Width"),
-							      /*_( */"XXX blurb" /*)*/,
+							      "Column Width",
+							      NULL,
 							      0.0, G_MAXDOUBLE, 150.0,
 							      G_PARAM_READWRITE));
 
-	signals [SELECTION_CHANGE] =
+	signals[CREATE_CONTACT] =
+		g_signal_new ("create-contact",
+			      G_OBJECT_CLASS_TYPE (object_class),
+			      G_SIGNAL_RUN_LAST,
+			      G_STRUCT_OFFSET (EMinicardViewWidgetClass, create_contact),
+			      NULL, NULL,
+			      g_cclosure_marshal_VOID__VOID,
+			      G_TYPE_NONE, 0);
+
+	signals[CREATE_CONTACT_LIST] =
+		g_signal_new ("create-contact-list",
+			      G_OBJECT_CLASS_TYPE (object_class),
+			      G_SIGNAL_RUN_LAST,
+			      G_STRUCT_OFFSET (EMinicardViewWidgetClass, create_contact_list),
+			      NULL, NULL,
+			      g_cclosure_marshal_VOID__VOID,
+			      G_TYPE_NONE, 0);
+
+	signals[SELECTION_CHANGE] =
 		g_signal_new ("selection_change",
 			      G_OBJECT_CLASS_TYPE (object_class),
 			      G_SIGNAL_RUN_LAST,
@@ -149,7 +169,7 @@ e_minicard_view_widget_class_init (EMinicardViewWidgetClass *class)
 			      g_cclosure_marshal_VOID__VOID,
 			      G_TYPE_NONE, 0);
 
-	signals [COLUMN_WIDTH_CHANGED] =
+	signals[COLUMN_WIDTH_CHANGED] =
 		g_signal_new ("column_width_changed",
 			      G_OBJECT_CLASS_TYPE (object_class),
 			      G_SIGNAL_RUN_LAST,
@@ -158,7 +178,7 @@ e_minicard_view_widget_class_init (EMinicardViewWidgetClass *class)
 			      g_cclosure_marshal_VOID__DOUBLE,
 			      G_TYPE_NONE, 1, G_TYPE_DOUBLE);
 
-	signals [RIGHT_CLICK] =
+	signals[RIGHT_CLICK] =
 		g_signal_new ("right_click",
 			      G_OBJECT_CLASS_TYPE (object_class),
 			      G_SIGNAL_RUN_LAST,
@@ -299,7 +319,7 @@ static void
 selection_change (ESelectionModel *esm, EMinicardViewWidget *widget)
 {
 	g_signal_emit (widget,
-		       signals [SELECTION_CHANGE], 0);
+		       signals[SELECTION_CHANGE], 0);
 }
 
 static void
@@ -312,7 +332,19 @@ static void
 column_width_changed (ESelectionModel *esm, double width, EMinicardViewWidget *widget)
 {
 	g_signal_emit (widget,
-		       signals [COLUMN_WIDTH_CHANGED], 0, width);
+		       signals[COLUMN_WIDTH_CHANGED], 0, width);
+}
+
+static void
+create_contact (EMinicardView *view, EMinicardViewWidget *widget)
+{
+	g_signal_emit (widget, signals[CREATE_CONTACT], 0);
+}
+
+static void
+create_contact_list (EMinicardView *view, EMinicardViewWidget *widget)
+{
+	g_signal_emit (widget, signals[CREATE_CONTACT_LIST], 0);
 }
 
 static guint
@@ -320,7 +352,7 @@ right_click (EMinicardView *view, GdkEvent *event, EMinicardViewWidget *widget)
 {
 	guint ret_val;
 	g_signal_emit (widget,
-		       signals [RIGHT_CLICK], 0,
+		       signals[RIGHT_CLICK], 0,
 		       event, &ret_val);
 	return ret_val;
 }
@@ -329,11 +361,14 @@ static void
 e_minicard_view_widget_style_set (GtkWidget *widget, GtkStyle *previous_style)
 {
 	EMinicardViewWidget *view = E_MINICARD_VIEW_WIDGET(widget);
+	GtkStyle *style;
+
+	style = gtk_widget_get_style (widget);
 
 	if (view->background)
-		gnome_canvas_item_set (view->background,
-				       "fill_color_gdk", &widget->style->base[GTK_STATE_NORMAL],
-				       NULL );
+		gnome_canvas_item_set (
+			view->background, "fill_color_gdk",
+			&style->base[GTK_STATE_NORMAL], NULL);
 
 	if (GTK_WIDGET_CLASS(parent_class)->style_set)
 		GTK_WIDGET_CLASS(parent_class)->style_set (widget, previous_style);
@@ -369,6 +404,12 @@ e_minicard_view_widget_realize (GtkWidget *widget)
 			  "column_width_changed",
 			  G_CALLBACK (column_width_changed), view);
 	g_signal_connect (view->emv,
+			  "create-contact",
+			  G_CALLBACK (create_contact), view);
+	g_signal_connect (view->emv,
+			  "create-contact-list",
+			  G_CALLBACK (create_contact_list), view);
+	g_signal_connect (view->emv,
 			  "right_click",
 			  G_CALLBACK (right_click), view);
 
@@ -382,8 +423,8 @@ e_minicard_view_widget_size_allocate(GtkWidget *widget, GtkAllocation *allocatio
 	if (GTK_WIDGET_CLASS(parent_class)->size_allocate)
 		GTK_WIDGET_CLASS(parent_class)->size_allocate (widget, allocation);
 
-	if (GTK_WIDGET_REALIZED(widget)) {
-		double width;
+	if (gtk_widget_get_realized (widget)) {
+		gdouble width;
 		EMinicardViewWidget *view = E_MINICARD_VIEW_WIDGET(widget);
 
 		gnome_canvas_item_set( view->emv,
@@ -403,17 +444,20 @@ e_minicard_view_widget_size_allocate(GtkWidget *widget, GtkAllocation *allocatio
 static void
 e_minicard_view_widget_reflow(ECanvas *canvas)
 {
-	double width;
+	gdouble width;
 	EMinicardViewWidget *view = E_MINICARD_VIEW_WIDGET(canvas);
+	GtkAllocation allocation;
 
 	if (E_CANVAS_CLASS(parent_class)->reflow)
 		E_CANVAS_CLASS(parent_class)->reflow (canvas);
 
-	g_object_get(view->emv,
-		     "width", &width,
-		     NULL);
-	width = MAX(width, GTK_WIDGET(canvas)->allocation.width);
-	gnome_canvas_set_scroll_region(GNOME_CANVAS(canvas), 0, 0, width - 1, GTK_WIDGET(canvas)->allocation.height - 1);
+	g_object_get (view->emv, "width", &width, NULL);
+	gtk_widget_get_allocation (GTK_WIDGET (canvas), &allocation);
+
+	gnome_canvas_set_scroll_region (
+		GNOME_CANVAS(canvas), 0, 0,
+		MAX (width, allocation.width) - 1,
+		allocation.height - 1);
 }
 
 ESelectionModel *
@@ -449,7 +493,7 @@ e_minicard_view_widget_real_focus_in_event(GtkWidget *widget, GdkEventFocus *eve
 			gint unsorted = e_sorter_sorted_to_model (E_SORTER (reflow->sorter), 0);
 
 			if (unsorted != -1)
-				canvas->focused_item = reflow->items [unsorted];
+				canvas->focused_item = reflow->items[unsorted];
 		}
 	}
 

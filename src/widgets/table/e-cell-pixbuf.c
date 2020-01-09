@@ -99,10 +99,11 @@ pixbuf_kill_view (ECellView *ecell_view)
     ECellPixbufView *pixbuf_view = (ECellPixbufView *) ecell_view;
 
     if (pixbuf_view->cell_view.kill_view_cb)
-        (pixbuf_view->cell_view.kill_view_cb)(ecell_view, pixbuf_view->cell_view.kill_view_cb_data);
+        pixbuf_view->cell_view.kill_view_cb (
+            ecell_view, pixbuf_view->cell_view.kill_view_cb_data);
 
     if (pixbuf_view->cell_view.kill_view_cb_data)
-        g_list_free(pixbuf_view->cell_view.kill_view_cb_data);
+        g_list_free (pixbuf_view->cell_view.kill_view_cb_data);
 
     g_free (pixbuf_view);
 }
@@ -113,7 +114,7 @@ pixbuf_draw (ECellView *ecell_view, GdkDrawable *drawable,
              gint x1, gint y1, gint x2, gint y2)
 {
     GdkPixbuf *cell_pixbuf;
-    gint real_x, real_y, real_w, real_h;
+    gint real_x, real_y;
     gint pix_w, pix_h;
     cairo_t *cr;
 
@@ -135,19 +136,15 @@ pixbuf_draw (ECellView *ecell_view, GdkDrawable *drawable,
     if (x2 - x1 > pix_w) {
         gint diff = (x2 - x1) - pix_w;
         real_x = x1 + diff/2;
-        real_w = pix_w;
     } else {
         real_x = x1;
-        real_w = x2 - x1;
     }
 
     if (y2 - y1 > pix_h) {
         gint diff = (y2 - y1) - pix_h;
         real_y = y1 + diff/2;
-        real_h = pix_h;
     } else {
         real_y = y1;
-        real_h = y2 - y1;
     }
 
     cr = gdk_cairo_create (drawable);
@@ -194,7 +191,7 @@ pixbuf_height (ECellView *ecell_view, gint model_col, gint view_col, gint row)
 static void
 pixbuf_print (ECellView *ecell_view, GtkPrintContext *context,
 	      gint model_col, gint view_col, gint row,
-	      double width, double height)
+	      gdouble width, gdouble height)
 {
 	GdkPixbuf *pixbuf;
 	gint scale;
@@ -206,8 +203,8 @@ pixbuf_print (ECellView *ecell_view, GtkPrintContext *context,
 
 	scale = gdk_pixbuf_get_height (pixbuf);
 	cairo_save (cr);
-	cairo_translate (cr, 0, (double)(height - scale) / (double)2);
-	gdk_cairo_set_source_pixbuf (cr, pixbuf, (double)scale, (double)scale);
+	cairo_translate (cr, 0, (gdouble)(height - scale) / (gdouble)2);
+	gdk_cairo_set_source_pixbuf (cr, pixbuf, (gdouble)scale, (gdouble)scale);
 	cairo_paint (cr);
 	cairo_restore (cr);
 }
@@ -215,7 +212,7 @@ pixbuf_print (ECellView *ecell_view, GtkPrintContext *context,
 static gdouble
 pixbuf_print_height (ECellView *ecell_view, GtkPrintContext *context,
 		     gint model_col, gint view_col, gint row,
-		     double width)
+		     gdouble width)
 {
 	GdkPixbuf *pixbuf;
 
@@ -357,22 +354,22 @@ e_cell_pixbuf_class_init (ECellPixbufClass *klass)
 
 	g_object_class_install_property (object_class, PROP_SELECTED_COLUMN,
 					 g_param_spec_int ("selected_column",
-							   _("Selected Column"),
-							   /*_( */"XXX blurb" /*)*/,
+							   "Selected Column",
+							   NULL,
 							   0, G_MAXINT, 0,
 							   G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_FOCUSED_COLUMN,
 					 g_param_spec_int ("focused_column",
-							   _("Focused Column"),
-							   /*_( */"XXX blurb" /*)*/,
+							   "Focused Column",
+							   NULL,
 							   0, G_MAXINT, 0,
 							   G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_UNSELECTED_COLUMN,
 					 g_param_spec_int ("unselected_column",
-							   _("Unselected Column"),
-							   /*_( */"XXX blurb" /*)*/,
+							   "Unselected Column",
+							   NULL,
 							   0, G_MAXINT, 0,
 							   G_PARAM_READWRITE));
 }

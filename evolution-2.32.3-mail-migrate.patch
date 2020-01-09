@@ -1,0 +1,354 @@
+diff -up evolution-2.32.3/mail/e-mail-backend.c.mail-migrate evolution-2.32.3/mail/e-mail-backend.c
+--- evolution-2.32.3/mail/e-mail-backend.c.mail-migrate	2013-10-01 14:59:00.874769489 +0200
++++ evolution-2.32.3/mail/e-mail-backend.c	2013-10-01 14:59:01.444769489 +0200
+@@ -52,7 +52,7 @@
+ #define QUIT_POLL_INTERVAL 1  /* seconds */
+ 
+ struct _EMailBackendPrivate {
+-	gint placeholder;  /* for future expansion */
++	gboolean migrating;
+ };
+ 
+ static gpointer parent_class;
+@@ -371,14 +371,44 @@ mail_backend_folder_changed_cb (MailFold
+ static gboolean
+ mail_backend_idle_cb (EShellBackend *shell_backend)
+ {
++	EMailBackend *mail_backend = E_MAIL_BACKEND (shell_backend);
+ 	const gchar *data_dir;
+ 
++	g_return_val_if_fail (mail_backend != NULL, FALSE);
++
++	if (mail_backend->priv->migrating)
++		return FALSE;
++
+ 	data_dir = e_shell_backend_get_data_dir (shell_backend);
+ 	e_mail_store_init (data_dir);
+ 
+ 	return FALSE;
+ }
+ 
++static gboolean
++mail_shell_backend_migrate (EShellBackend *shell_backend,
++			    gint major,
++			    gint minor,
++			    gint micro,
++			    GError **error)
++{
++	EMailBackend *mail_backend = E_MAIL_BACKEND (shell_backend);
++	gboolean res;
++
++	g_return_val_if_fail (mail_backend != NULL, FALSE);
++
++	mail_backend->priv->migrating = TRUE;
++
++	res = e_mail_migrate (shell_backend, major, minor, micro, error);
++
++	mail_backend->priv->migrating = FALSE;
++
++	/* do it on idle, thus the main window is visible */
++	g_idle_add ((GSourceFunc) mail_backend_idle_cb, shell_backend);
++
++	return res;
++}
++
+ static void
+ mail_backend_finalize (GObject *object)
+ {
+@@ -460,7 +490,7 @@ mail_backend_class_init (EMailBackendCla
+ 	object_class->constructed = mail_backend_constructed;
+ 
+ 	shell_backend_class = E_SHELL_BACKEND_CLASS (class);
+-	shell_backend_class->migrate = e_mail_migrate;
++	shell_backend_class->migrate = mail_shell_backend_migrate;
+ 	shell_backend_class->get_data_dir = mail_shell_backend_get_data_dir;
+ 	shell_backend_class->get_config_dir = mail_shell_backend_get_config_dir;
+ }
+@@ -469,6 +499,7 @@ static void
+ mail_backend_init (EMailBackend *backend)
+ {
+ 	backend->priv = E_MAIL_BACKEND_GET_PRIVATE (backend);
++	backend->priv->migrating = FALSE;
+ }
+ 
+ GType
+diff -up evolution-2.32.3/mail/e-mail-migrate.c.mail-migrate evolution-2.32.3/mail/e-mail-migrate.c
+--- evolution-2.32.3/mail/e-mail-migrate.c.mail-migrate	2013-10-01 14:59:01.419769489 +0200
++++ evolution-2.32.3/mail/e-mail-migrate.c	2013-10-01 14:59:01.445769489 +0200
+@@ -61,6 +61,7 @@
+ 
+ #include "e-mail-store.h"
+ #include "mail-config.h"
++#include "mail-session.h"
+ #include "em-utils.h"
+ 
+ #define d(x) x
+@@ -75,48 +76,6 @@ update_states_in_main_thread (const stru
+ 
+ /* 1.4 upgrade functions */
+ 
+-#define EM_TYPE_MIGRATE_SESSION \
+-	(em_migrate_session_get_type ())
+-
+-typedef struct _EMMigrateSession {
+-	CamelSession parent_object;
+-
+-	CamelStore *store;   /* new folder tree store */
+-	gchar *srcdir;        /* old folder tree path */
+-} EMMigrateSession;
+-
+-typedef struct _EMMigrateSessionClass {
+-	CamelSessionClass parent_class;
+-
+-} EMMigrateSessionClass;
+-
+-GType em_migrate_session_get_type (void);
+-
+-G_DEFINE_TYPE (EMMigrateSession, em_migrate_session, CAMEL_TYPE_SESSION)
+-
+-static CamelSession *em_migrate_session_new (const gchar *path);
+-
+-static void
+-em_migrate_session_class_init (EMMigrateSessionClass *class)
+-{
+-}
+-
+-static void
+-em_migrate_session_init (EMMigrateSession *session)
+-{
+-}
+-
+-static CamelSession *
+-em_migrate_session_new (const gchar *path)
+-{
+-	CamelSession *session;
+-
+-	session = g_object_new (EM_TYPE_MIGRATE_SESSION, NULL);
+-	camel_session_construct (session, path);
+-
+-	return session;
+-}
+-
+ static GtkWidget *window;
+ static GtkLabel *label;
+ static GtkProgressBar *progress;
+@@ -524,7 +483,6 @@ migrate_folders (CamelStore *store,
+                  gboolean is_local,
+                  CamelFolderInfo *fi,
+                  const gchar *acc,
+-                 gboolean *done,
+                  gint *nth_folder,
+                  gint total_folders)
+ {
+@@ -547,25 +505,23 @@ migrate_folders (CamelStore *store,
+ 		else
+ 				folder = camel_store_get_folder (store, fi->full_name, 0, NULL);
+ 
+-		if (folder != NULL && folder->summary && folder->summary->summary_path)
+-			camel_folder_summary_migrate_infos (folder->summary);
+-		migrate_folders(store, is_local, fi->child, acc, done, nth_folder, total_folders);
+ 		if (folder) {
++			if (folder->summary && folder->summary->summary_path) {
++				camel_folder_summary_migrate_infos (folder->summary);
++			}
++
+ 			/* this recalculates counts in the folder and store summary on local folders */
+-			if (!CAMEL_IS_OFFLINE_FOLDER (folder) && !CAMEL_IS_DISCO_FOLDER (folder)) {
+-				if (folder->summary)
+-					camel_folder_summary_load_from_db (folder->summary, NULL);
++			if (is_local) {
+ 				camel_folder_refresh_info (folder, NULL);
+ 				camel_folder_sync (folder, FALSE, NULL);
+ 			}
+ 
+ 			g_object_unref (folder);
+ 		}
++
++		migrate_folders(store, is_local, fi->child, acc, nth_folder, total_folders);
+ 		fi = fi->next;
+ 	}
+-
+-	if ((*nth_folder) == (total_folders - 1))
+-		*done = TRUE;
+ }
+ 
+ #endif /* G_OS_WIN32 */
+@@ -583,7 +539,7 @@ count_folders (CamelFolderInfo *fi, gint
+ 
+ static CamelStore *
+ setup_local_store (EShellBackend *shell_backend,
+-                   EMMigrateSession *session)
++                   CamelSession *session)
+ {
+ 	CamelURL *url;
+ 	const gchar *data_dir;
+@@ -596,7 +552,7 @@ setup_local_store (EShellBackend *shell_
+ 	camel_url_set_path(url, tmp);
+ 	g_free(tmp);
+ 	tmp = camel_url_to_string(url, 0);
+-	store = (CamelStore *)camel_session_get_service(CAMEL_SESSION (session), tmp, CAMEL_PROVIDER_STORE, NULL);
++	store = (CamelStore *)camel_session_get_service(session, tmp, CAMEL_PROVIDER_STORE, NULL);
+ 	g_free(tmp);
+ 
+ 	return store;
+@@ -607,7 +563,6 @@ setup_local_store (EShellBackend *shell_
+ struct migrate_folders_to_db_structure {
+ 	gchar *account_name;
+ 	CamelStore *store;
+-	CamelFolderInfo *info;
+ 	gboolean done;
+ 	gboolean is_local_store;
+ };
+@@ -615,24 +570,31 @@ struct migrate_folders_to_db_structure {
+ static void
+ migrate_folders_to_db_thread (struct migrate_folders_to_db_structure *migrate_dbs)
+ {
+-		gint num_of_folders = 0, nth_folder = 0;
+-		count_folders (migrate_dbs->info, &num_of_folders);
++	gint num_of_folders = 0, nth_folder = 0;
++	CamelFolderInfo *info;
++
++	info = camel_store_get_folder_info (migrate_dbs->store, NULL, CAMEL_STORE_FOLDER_INFO_RECURSIVE|CAMEL_STORE_FOLDER_INFO_FAST|CAMEL_STORE_FOLDER_INFO_SUBSCRIBED, NULL);
++	if (info) {
++		count_folders (info, &num_of_folders);
+ 		migrate_folders (
+ 			migrate_dbs->store, migrate_dbs->is_local_store,
+-			migrate_dbs->info, migrate_dbs->account_name,
+-			&(migrate_dbs->done), &nth_folder, num_of_folders);
++			info, migrate_dbs->account_name,
++			&nth_folder, num_of_folders);
++
++		camel_store_free_folder_info (migrate_dbs->store, info);
++	}
++
++	migrate_dbs->done = TRUE;
+ }
+ 
+ static void
+ migrate_to_db (EShellBackend *shell_backend)
+ {
+-	EMMigrateSession *session;
+ 	EAccountList *accounts;
+ 	EIterator *iter;
+ 	gint i=0, len;
+ 	CamelStore *store = NULL;
+-	CamelFolderInfo *info;
+-	const gchar *data_dir;
++	struct migrate_folders_to_db_structure migrate_dbs;
+ 
+ 	if (!(accounts = e_get_account_list ()))
+ 		return;
+@@ -640,8 +602,10 @@ migrate_to_db (EShellBackend *shell_back
+ 	iter = e_list_get_iterator ((EList *) accounts);
+ 	len = e_list_length ((EList *) accounts);
+ 
+-	data_dir = e_shell_backend_get_data_dir (shell_backend);
+-	session = (EMMigrateSession *) em_migrate_session_new (data_dir);
++	if (!session)
++		mail_session_start ();
++	g_return_if_fail (session != NULL);
++
+ 	camel_session_set_online ((CamelSession *) session, FALSE);
+ 	em_migrate_setup_progress_dialog (
+ 		_("Migrating Folders"),
+@@ -651,23 +615,16 @@ migrate_to_db (EShellBackend *shell_back
+ 
+ 	em_migrate_set_progress ( (double)i/(len+1));
+ 	store = setup_local_store (shell_backend, session);
+-	info = camel_store_get_folder_info (store, NULL, CAMEL_STORE_FOLDER_INFO_RECURSIVE|CAMEL_STORE_FOLDER_INFO_FAST|CAMEL_STORE_FOLDER_INFO_SUBSCRIBED, NULL);
+-	if (info) {
+-		struct migrate_folders_to_db_structure migrate_dbs;
+ 
+-		if (g_str_has_suffix (((CamelService *)store)->url->path, ".evolution/mail/local"))
+-			migrate_dbs.is_local_store = TRUE;
+-		else
+-			migrate_dbs.is_local_store = FALSE;
+-		migrate_dbs.account_name = _("On This Computer");
+-		migrate_dbs.info = info;
+-		migrate_dbs.store = store;
+-		migrate_dbs.done = FALSE;
+-
+-		g_thread_create ((GThreadFunc) migrate_folders_to_db_thread, &migrate_dbs, TRUE, NULL);
+-		while (!migrate_dbs.done)
+-			g_main_context_iteration (NULL, TRUE);
+-	}
++	migrate_dbs.account_name = _("On This Computer");
++	migrate_dbs.store = store;
++	migrate_dbs.done = FALSE;
++	migrate_dbs.is_local_store = TRUE;
++
++	g_thread_create ((GThreadFunc) migrate_folders_to_db_thread, &migrate_dbs, TRUE, NULL);
++	while (!migrate_dbs.done)
++		g_main_context_iteration (NULL, TRUE);
++
+ 	i++;
+ 	em_migrate_set_progress ( (double)i/(len+1));
+ 
+@@ -683,36 +640,27 @@ migrate_to_db (EShellBackend *shell_back
+ 		    && service->url != NULL
+ 		    && service->url[0]
+ 		    && strncmp(service->url, "mbox:", 5) != 0) {
+-
+-			e_mail_store_add_by_uri (service->url, name);
++			/*e_mail_store_add_by_uri (service->url, name);*/
+ 
+ 			store = (CamelStore *) camel_session_get_service (CAMEL_SESSION (session), service->url, CAMEL_PROVIDER_STORE, NULL);
+-			info = camel_store_get_folder_info (store, NULL, CAMEL_STORE_FOLDER_INFO_RECURSIVE|CAMEL_STORE_FOLDER_INFO_FAST|CAMEL_STORE_FOLDER_INFO_SUBSCRIBED, NULL);
+-			if (info) {
+-				struct migrate_folders_to_db_structure migrate_dbs;
+-
+-				migrate_dbs.account_name = account->name;
+-				migrate_dbs.info = info;
+-				migrate_dbs.store = store;
+-				migrate_dbs.done = FALSE;
+-
+-				g_thread_create ((GThreadFunc) migrate_folders_to_db_thread, &migrate_dbs, TRUE, NULL);
+-				while (!migrate_dbs.done)
+-					g_main_context_iteration (NULL, TRUE);
+-			} else
+-				printf("%s:%s: failed to get folder infos \n", G_STRLOC, G_STRFUNC);
++			migrate_dbs.account_name = account->name;
++			migrate_dbs.store = store;
++			migrate_dbs.done = FALSE;
++			migrate_dbs.is_local_store = FALSE;
++
++			g_thread_create ((GThreadFunc) migrate_folders_to_db_thread, &migrate_dbs, TRUE, NULL);
++			while (!migrate_dbs.done)
++				g_main_context_iteration (NULL, TRUE);
+ 		}
+ 		i++;
+ 		e_iterator_next (iter);
+ 
+ 	}
+ 
+-	//camel_session_set_online ((CamelSession *) session, TRUE);
++	camel_session_set_online ((CamelSession *) session, TRUE);
+ 
+ 	g_object_unref (iter);
+ 	em_migrate_close_progress_dialog ();
+-
+-	g_object_unref (session);
+ }
+ 
+ #endif
+diff -up evolution-2.32.3/plugins/backup-restore/backup.c.mail-migrate evolution-2.32.3/plugins/backup-restore/backup.c
+--- evolution-2.32.3/plugins/backup-restore/backup.c.mail-migrate	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/plugins/backup-restore/backup.c	2013-10-01 14:59:01.443769489 +0200
+@@ -289,7 +289,7 @@ backup (const gchar *filename)
+ 	CANCEL (complete);
+ 	txt = _("Shutting down Evolution");
+ 	/* FIXME Will the versioned setting always work? */
+-	run_cmd (EVOLUTION " --quit");
++	run_cmd (EVOLUTION " --force-shutdown");
+ 
+ 	run_cmd ("rm $DATADIR/.running");
+ 
+@@ -398,7 +398,7 @@ restore (const gchar *filename)
+ 	/* FIXME Will the versioned setting always work? */
+ 	CANCEL (complete);
+ 	txt = _("Shutting down Evolution");
+-	run_cmd (EVOLUTION " --quit");
++	run_cmd (EVOLUTION " --force-shutdown");
+ 
+ 	CANCEL (complete);
+ 	txt = _("Back up current Evolution data");

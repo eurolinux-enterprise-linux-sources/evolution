@@ -58,7 +58,7 @@ Lisätietoja
 	http://mail.gnome.org/mailman/listinfo/evolution-list.
 
     Lisätietoja Evolutionista löytyy osoitteesta
-	http://www.gnome.org/projects/evolution.
+	http://projects.gnome.org/evolution.
 
 
 Evolution-tiimi,
@@ -74,7 +74,7 @@ Content-Type: text/html; charset=utf-8
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <meta name="GENERATOR" content="GtkHTML/0.13.99" />
 </head>
-<body bgcolor="#f8fcf8">
+<body bgcolor="#f8fcf8" TEXT="#000000">
 
 <table background="cid:1001417869.27019.4.camel@spectrolite" cellspacing="0" cellpadding="0" width="100%">
 
@@ -161,8 +161,8 @@ Content-Type: text/html; charset=utf-8
     </p>
     <p>
     Lisätietoja Evolutionista löytyy osoitteesta
-	<a href="http://www.gnome.org/projects/evolution"
-            >http://www.gnome.org/projects/evolution</a>.
+	<a href="http://projects.gnome.org/evolution"
+            >http://projects.gnome.org/evolution</a>.
     </p>
 </blockquote>
 

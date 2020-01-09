@@ -1,0 +1,1422 @@
+diff -up evolution-2.32.3/calendar/gui/e-calendar-view.c.cal-copy-paste-text evolution-2.32.3/calendar/gui/e-calendar-view.c
+--- evolution-2.32.3/calendar/gui/e-calendar-view.c.cal-copy-paste-text	2013-06-24 19:56:39.238962768 +0200
++++ evolution-2.32.3/calendar/gui/e-calendar-view.c	2013-06-24 19:56:39.292962768 +0200
+@@ -84,7 +84,8 @@ enum {
+ 	PROP_0,
+ 	PROP_COPY_TARGET_LIST,
+ 	PROP_MODEL,
+-	PROP_PASTE_TARGET_LIST
++	PROP_PASTE_TARGET_LIST,
++	PROP_IS_EDITING
+ };
+ 
+ /* FIXME Why are we emitting these event signals here? Can't the model just be listened to? */
+@@ -296,6 +297,10 @@ calendar_view_get_property (GObject *obj
+ 				value, e_calendar_view_get_paste_target_list (
+ 				E_CALENDAR_VIEW (object)));
+ 			return;
++
++		case PROP_IS_EDITING:
++			g_value_set_boolean (value, e_calendar_view_is_editing (E_CALENDAR_VIEW (object)));
++			return;
+ 	}
+ 
+ 	G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+@@ -369,12 +374,14 @@ calendar_view_update_actions (ESelectabl
+ 	gboolean can_paste = FALSE;
+ 	gboolean sources_are_editable = TRUE;
+ 	gboolean recurring = FALSE;
++	gboolean is_editing;
+ 	gboolean sensitive;
+ 	const gchar *tooltip;
+ 	gint n_selected;
+ 	gint ii;
+ 
+ 	view = E_CALENDAR_VIEW (selectable);
++	is_editing = e_calendar_view_is_editing (view);
+ 
+ 	list = e_calendar_view_get_selected_events (view);
+ 	n_selected = g_list_length (list);
+@@ -407,25 +414,25 @@ calendar_view_update_actions (ESelectabl
+ 			target_list, clipboard_targets[ii], NULL);
+ 
+ 	action = e_focus_tracker_get_cut_clipboard_action (focus_tracker);
+-	sensitive = (n_selected > 0) && sources_are_editable;
++	sensitive = (n_selected > 0) && sources_are_editable && !is_editing;
+ 	tooltip = _("Cut selected events to the clipboard");
+ 	gtk_action_set_sensitive (action, sensitive);
+ 	gtk_action_set_tooltip (action, tooltip);
+ 
+ 	action = e_focus_tracker_get_copy_clipboard_action (focus_tracker);
+-	sensitive = (n_selected > 0);
++	sensitive = (n_selected > 0) && !is_editing;
+ 	tooltip = _("Copy selected events to the clipboard");
+ 	gtk_action_set_sensitive (action, sensitive);
+ 	gtk_action_set_tooltip (action, tooltip);
+ 
+ 	action = e_focus_tracker_get_paste_clipboard_action (focus_tracker);
+-	sensitive = sources_are_editable && can_paste;
++	sensitive = sources_are_editable && can_paste && !is_editing;
+ 	tooltip = _("Paste events from the clipboard");
+ 	gtk_action_set_sensitive (action, sensitive);
+ 	gtk_action_set_tooltip (action, tooltip);
+ 
+ 	action = e_focus_tracker_get_delete_selection_action (focus_tracker);
+-	sensitive = (n_selected > 0) && sources_are_editable && !recurring;
++	sensitive = (n_selected > 0) && sources_are_editable && !recurring && !is_editing;
+ 	tooltip = _("Delete selected events");
+ 	gtk_action_set_sensitive (action, sensitive);
+ 	gtk_action_set_tooltip (action, tooltip);
+@@ -797,6 +804,16 @@ e_calendar_view_class_init (ECalendarVie
+ 		PROP_PASTE_TARGET_LIST,
+ 		"paste-target-list");
+ 
++	g_object_class_install_property (
++		object_class,
++		PROP_IS_EDITING,
++		g_param_spec_boolean (
++			"is-editing",
++			"Whether is in an editing mode",
++			"Whether is in an editing mode",
++			FALSE,
++			G_PARAM_READABLE));
++
+ 	signals[POPUP_EVENT] = g_signal_new (
+ 		"popup-event",
+ 		G_TYPE_FROM_CLASS (class),
+@@ -2158,3 +2175,28 @@ is_array_index_in_bounds_func (GArray *a
+ 
+ 	return TRUE;
+ }
++
++gboolean
++e_calendar_view_is_editing (ECalendarView *cal_view)
++{
++	static gboolean in = FALSE;
++	gboolean is_editing = FALSE;
++
++	g_return_val_if_fail (E_IS_CALENDAR_VIEW (cal_view), FALSE);
++
++	/* this should be called from the main thread only,
++	   and each descendant overrides the property,
++	   thus might cause no call recursion */
++	if (in) {
++		g_warn_if_reached ();
++		return FALSE;
++	}
++
++	in = TRUE;
++
++	g_object_get (G_OBJECT (cal_view), "is-editing", &is_editing, NULL);
++
++	in = FALSE;
++
++	return is_editing;
++}
+diff -up evolution-2.32.3/calendar/gui/e-calendar-view.h.cal-copy-paste-text evolution-2.32.3/calendar/gui/e-calendar-view.h
+--- evolution-2.32.3/calendar/gui/e-calendar-view.h.cal-copy-paste-text	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/e-calendar-view.h	2013-06-24 19:56:39.293962768 +0200
+@@ -258,6 +258,8 @@ void		draw_curved_rectangle		(cairo_t *c
+ 
+ GdkColor	get_today_background		(GdkColor event_background);
+ 
++gboolean	e_calendar_view_is_editing	(ECalendarView *cal_view);
++
+ G_END_DECLS
+ 
+ #endif /* E_CALENDAR_VIEW_H */
+diff -up evolution-2.32.3/calendar/gui/e-cal-list-view.c.cal-copy-paste-text evolution-2.32.3/calendar/gui/e-cal-list-view.c
+--- evolution-2.32.3/calendar/gui/e-cal-list-view.c.cal-copy-paste-text	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/e-cal-list-view.c	2013-06-24 19:56:39.290962768 +0200
+@@ -61,6 +61,11 @@
+ #include "goto.h"
+ #include "misc.h"
+ 
++enum {
++	PROP_0,
++	PROP_IS_EDITING
++};
++
+ static void      e_cal_list_view_destroy                (GtkObject *object);
+ 
+ static GList    *e_cal_list_view_get_selected_events    (ECalendarView *cal_view);
+@@ -81,6 +86,24 @@ static void e_cal_list_view_cursor_chang
+ G_DEFINE_TYPE (ECalListView, e_cal_list_view, E_TYPE_CALENDAR_VIEW)
+ 
+ static void
++e_cal_list_view_get_property (GObject *object,
++			      guint property_id,
++			      GValue *value,
++			      GParamSpec *pspec)
++{
++	ECalListView *eclv = E_CAL_LIST_VIEW (object);
++
++	switch (property_id) {
++	case PROP_IS_EDITING:
++		g_value_set_boolean (value, e_cal_list_view_is_editing (eclv));
++		break;
++	default:
++		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
++		break;
++	}
++}
++
++static void
+ e_cal_list_view_class_init (ECalListViewClass *class)
+ {
+ 	GtkObjectClass *object_class;
+@@ -93,12 +116,18 @@ e_cal_list_view_class_init (ECalListView
+ 
+ 	/* Method override */
+ 	object_class->destroy		= e_cal_list_view_destroy;
++	((GObjectClass*) object_class)->get_property	= e_cal_list_view_get_property;
+ 
+ 	widget_class->popup_menu = e_cal_list_view_popup_menu;
+ 
+ 	view_class->get_selected_events = e_cal_list_view_get_selected_events;
+ 	view_class->get_selected_time_range = e_cal_list_view_get_selected_time_range;
+ 	view_class->get_visible_time_range = e_cal_list_view_get_visible_time_range;
++
++	g_object_class_override_property (
++		(GObjectClass *) object_class,
++		PROP_IS_EDITING,
++		"is-editing");
+ }
+ 
+ static void
+@@ -158,6 +187,16 @@ e_cal_list_view_save_state (ECalListView
+ }
+ 
+ static void
++e_cal_list_view_table_editing_changed_cb (ETable *table,
++					  GParamSpec *param,
++					  ECalListView *eclv)
++{
++	g_return_if_fail (E_IS_CAL_LIST_VIEW (eclv));
++
++	g_object_notify (G_OBJECT (eclv), "is-editing");
++}
++
++static void
+ setup_e_table (ECalListView *cal_list_view)
+ {
+ 	ECalModel *model;
+@@ -296,6 +335,10 @@ setup_e_table (ECalListView *cal_list_vi
+ 		cal_list_view->table, "cursor_change",
+ 		G_CALLBACK (e_cal_list_view_cursor_change_cb),
+ 		cal_list_view);
++	g_signal_connect_after (
++		cal_list_view->table, "notify::is-editing",
++		G_CALLBACK (e_cal_list_view_table_editing_changed_cb),
++		cal_list_view);
+ }
+ 
+ /**
+@@ -557,3 +600,11 @@ e_cal_list_view_get_range_shown (ECalLis
+ 	*days_shown = g_date_days_between (start_date, &end_date);
+ 	return TRUE;
+ }
++
++gboolean
++e_cal_list_view_is_editing (ECalListView *eclv)
++{
++	g_return_val_if_fail (E_IS_CAL_LIST_VIEW (eclv), FALSE);
++
++	return eclv->table && e_table_is_editing (eclv->table);
++}
+diff -up evolution-2.32.3/calendar/gui/e-cal-list-view.h.cal-copy-paste-text evolution-2.32.3/calendar/gui/e-cal-list-view.h
+--- evolution-2.32.3/calendar/gui/e-cal-list-view.h.cal-copy-paste-text	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/e-cal-list-view.h	2013-06-24 19:56:39.290962768 +0200
+@@ -95,6 +95,8 @@ void e_cal_list_view_save_state (ECalLis
+ gboolean   e_cal_list_view_get_range_shown      (ECalListView *cal_list_view, GDate *start_date,
+ 						 gint *days_shown);
+ 
++gboolean	e_cal_list_view_is_editing	(ECalListView *eclv);
++
+ G_END_DECLS
+ 
+ #endif /* _E_CAL_LIST_VIEW_H_ */
+diff -up evolution-2.32.3/calendar/gui/e-day-view.c.cal-copy-paste-text evolution-2.32.3/calendar/gui/e-day-view.c
+--- evolution-2.32.3/calendar/gui/e-day-view.c.cal-copy-paste-text	2013-06-24 19:56:39.116962767 +0200
++++ evolution-2.32.3/calendar/gui/e-day-view.c	2013-06-24 19:56:39.289962768 +0200
+@@ -433,7 +433,8 @@ enum {
+ 	PROP_WORK_DAY_END_MINUTE,
+ 	PROP_WORK_DAY_START_HOUR,
+ 	PROP_WORK_DAY_START_MINUTE,
+-	PROP_WORKING_DAYS
++	PROP_WORKING_DAYS,
++	PROP_IS_EDITING
+ };
+ 
+ G_DEFINE_TYPE (EDayView, e_day_view, E_TYPE_CALENDAR_VIEW)
+@@ -581,6 +582,10 @@ day_view_get_property (GObject *object,
+ 				e_day_view_get_working_days (
+ 				E_DAY_VIEW (object)));
+ 			return;
++
++		case PROP_IS_EDITING:
++			g_value_set_boolean (value, e_day_view_is_editing (E_DAY_VIEW (object)));
++			return;
+ 	}
+ 
+ 	G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+@@ -740,6 +745,11 @@ e_day_view_class_init (EDayViewClass *cl
+ 			0,
+ 			G_PARAM_READWRITE));
+ 
++	g_object_class_override_property (
++		object_class,
++		PROP_IS_EDITING,
++		"is-editing");
++
+ 	/* init the accessibility support for e_day_view */
+ 	e_day_view_a11y_init ();
+ }
+@@ -2110,6 +2120,7 @@ e_day_view_remove_event_cb (EDayView *da
+ 	if (day_view->editing_event_num == event_num && day_view->editing_event_day == day) {
+ 		day_view->editing_event_num = -1;
+ 		day_view->editing_event_day = -1;
++		g_object_notify (G_OBJECT (day_view), "is-editing");
+ 	}
+ 
+ 	if (day_view->popup_event_num == event_num && day_view->popup_event_day == day) {
+@@ -4623,6 +4634,7 @@ static void
+ e_day_view_free_events (EDayView *day_view)
+ {
+ 	gint day;
++	gboolean did_editing = day_view->editing_event_day != -1;
+ 
+ 	/* Reset all our indices. */
+ 	day_view->editing_event_day = -1;
+@@ -4638,6 +4650,9 @@ e_day_view_free_events (EDayView *day_vi
+ 
+ 	for (day = 0; day < E_DAY_VIEW_MAX_DAYS; day++)
+ 		e_day_view_free_event_array (day_view, day_view->events[day]);
++
++	if (did_editing)
++		g_object_notify (G_OBJECT (day_view), "is-editing");
+ }
+ 
+ static void
+@@ -6786,6 +6801,8 @@ e_day_view_on_editing_started (EDayView 
+ 	}
+ 
+ 	g_signal_emit_by_name (day_view, "selection_changed");
++
++	g_object_notify (G_OBJECT (day_view), "is-editing");
+ }
+ 
+ static void
+@@ -6965,6 +6982,8 @@ e_day_view_on_editing_stopped (EDayView 
+ 	g_free (text);
+ 
+ 	g_signal_emit_by_name (day_view, "selection_changed");
++
++	g_object_notify (G_OBJECT (day_view), "is-editing");
+ }
+ 
+ /* FIXME: It is possible that we may produce an invalid time due to daylight
+@@ -8545,3 +8564,11 @@ e_day_view_paste_text (ECalendarView *ca
+ 		e_text_paste_clipboard (E_TEXT (event->canvas_item));
+ 	}
+ }
++
++gboolean
++e_day_view_is_editing (EDayView *day_view)
++{
++	g_return_val_if_fail (E_IS_DAY_VIEW (day_view), FALSE);
++
++	return day_view->editing_event_day != -1;
++}
+diff -up evolution-2.32.3/calendar/gui/e-day-view.h.cal-copy-paste-text evolution-2.32.3/calendar/gui/e-day-view.h
+--- evolution-2.32.3/calendar/gui/e-day-view.h.cal-copy-paste-text	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/e-day-view.h	2013-06-24 19:56:39.290962768 +0200
+@@ -628,6 +628,8 @@ void e_day_view_ensure_rows_visible (EDa
+ 				     gint start_row,
+ 				     gint end_row);
+ 
++gboolean	e_day_view_is_editing		(EDayView *day_view);
++
+ G_END_DECLS
+ 
+ #endif /* _E_DAY_VIEW_H_ */
+diff -up evolution-2.32.3/calendar/gui/e-memo-table.c.cal-copy-paste-text evolution-2.32.3/calendar/gui/e-memo-table.c
+--- evolution-2.32.3/calendar/gui/e-memo-table.c.cal-copy-paste-text	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/e-memo-table.c	2013-06-24 19:56:39.293962768 +0200
+@@ -684,6 +684,7 @@ memo_table_update_actions (ESelectable *
+ 	GSList *list, *iter;
+ 	gboolean can_paste = FALSE;
+ 	gboolean sources_are_editable = TRUE;
++	gboolean is_editing;
+ 	gboolean sensitive;
+ 	const gchar *tooltip;
+ 	gint n_selected;
+@@ -691,6 +692,7 @@ memo_table_update_actions (ESelectable *
+ 
+ 	memo_table = E_MEMO_TABLE (selectable);
+ 	n_selected = e_table_selected_count (E_TABLE (memo_table));
++	is_editing = e_table_is_editing (E_TABLE (memo_table));
+ 
+ 	list = e_memo_table_get_selected (memo_table);
+ 	for (iter = list; iter != NULL; iter = iter->next) {
+@@ -708,25 +710,25 @@ memo_table_update_actions (ESelectable *
+ 			target_list, clipboard_targets[ii], NULL);
+ 
+ 	action = e_focus_tracker_get_cut_clipboard_action (focus_tracker);
+-	sensitive = (n_selected > 0) && sources_are_editable;
++	sensitive = (n_selected > 0) && sources_are_editable && !is_editing;
+ 	tooltip = _("Cut selected memos to the clipboard");
+ 	gtk_action_set_sensitive (action, sensitive);
+ 	gtk_action_set_tooltip (action, tooltip);
+ 
+ 	action = e_focus_tracker_get_copy_clipboard_action (focus_tracker);
+-	sensitive = (n_selected > 0);
++	sensitive = (n_selected > 0) && !is_editing;
+ 	tooltip = _("Copy selected memos to the clipboard");
+ 	gtk_action_set_sensitive (action, sensitive);
+ 	gtk_action_set_tooltip (action, tooltip);
+ 
+ 	action = e_focus_tracker_get_paste_clipboard_action (focus_tracker);
+-	sensitive = sources_are_editable && can_paste;
++	sensitive = sources_are_editable && can_paste && !is_editing;
+ 	tooltip = _("Paste memos from the clipboard");
+ 	gtk_action_set_sensitive (action, sensitive);
+ 	gtk_action_set_tooltip (action, tooltip);
+ 
+ 	action = e_focus_tracker_get_delete_selection_action (focus_tracker);
+-	sensitive = (n_selected > 0) && sources_are_editable;
++	sensitive = (n_selected > 0) && sources_are_editable && !is_editing;
+ 	tooltip = _("Delete selected memos");
+ 	gtk_action_set_sensitive (action, sensitive);
+ 	gtk_action_set_tooltip (action, tooltip);
+diff -up evolution-2.32.3/calendar/gui/e-task-table.c.cal-copy-paste-text evolution-2.32.3/calendar/gui/e-task-table.c
+--- evolution-2.32.3/calendar/gui/e-task-table.c.cal-copy-paste-text	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/e-task-table.c	2013-06-24 19:56:39.291962768 +0200
+@@ -907,6 +907,7 @@ task_table_update_actions (ESelectable *
+ 	GSList *list, *iter;
+ 	gboolean can_paste = FALSE;
+ 	gboolean sources_are_editable = TRUE;
++	gboolean is_editing;
+ 	gboolean sensitive;
+ 	const gchar *tooltip;
+ 	gint n_selected;
+@@ -914,6 +915,7 @@ task_table_update_actions (ESelectable *
+ 
+ 	task_table = E_TASK_TABLE (selectable);
+ 	n_selected = e_table_selected_count (E_TABLE (task_table));
++	is_editing = e_table_is_editing (E_TABLE (task_table));
+ 
+ 	list = e_task_table_get_selected (task_table);
+ 	for (iter = list; iter != NULL; iter = iter->next) {
+@@ -931,25 +933,25 @@ task_table_update_actions (ESelectable *
+ 			target_list, clipboard_targets[ii], NULL);
+ 
+ 	action = e_focus_tracker_get_cut_clipboard_action (focus_tracker);
+-	sensitive = (n_selected > 0) && sources_are_editable;
++	sensitive = (n_selected > 0) && sources_are_editable && !is_editing;
+ 	tooltip = _("Cut selected tasks to the clipboard");
+ 	gtk_action_set_sensitive (action, sensitive);
+ 	gtk_action_set_tooltip (action, tooltip);
+ 
+ 	action = e_focus_tracker_get_copy_clipboard_action (focus_tracker);
+-	sensitive = (n_selected > 0);
++	sensitive = (n_selected > 0) && !is_editing;
+ 	tooltip = _("Copy selected tasks to the clipboard");
+ 	gtk_action_set_sensitive (action, sensitive);
+ 	gtk_action_set_tooltip (action, tooltip);
+ 
+ 	action = e_focus_tracker_get_paste_clipboard_action (focus_tracker);
+-	sensitive = sources_are_editable && can_paste;
++	sensitive = sources_are_editable && can_paste && !is_editing;
+ 	tooltip = _("Paste tasks from the clipboard");
+ 	gtk_action_set_sensitive (action, sensitive);
+ 	gtk_action_set_tooltip (action, tooltip);
+ 
+ 	action = e_focus_tracker_get_delete_selection_action (focus_tracker);
+-	sensitive = (n_selected > 0) && sources_are_editable;
++	sensitive = (n_selected > 0) && sources_are_editable && !is_editing;
+ 	tooltip = _("Delete selected tasks");
+ 	gtk_action_set_sensitive (action, sensitive);
+ 	gtk_action_set_tooltip (action, tooltip);
+diff -up evolution-2.32.3/calendar/gui/e-week-view.c.cal-copy-paste-text evolution-2.32.3/calendar/gui/e-week-view.c
+--- evolution-2.32.3/calendar/gui/e-week-view.c.cal-copy-paste-text	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/e-week-view.c	2013-06-24 19:56:39.292962768 +0200
+@@ -196,7 +196,8 @@ G_DEFINE_TYPE (EWeekView, e_week_view, E
+ enum {
+ 	PROP_0,
+ 	PROP_COMPRESS_WEEKEND,
+-	PROP_SHOW_EVENT_END_TIMES
++	PROP_SHOW_EVENT_END_TIMES,
++	PROP_IS_EDITING
+ };
+ 
+ static gint map_left[] = {0, 1, 2, 0, 1, 2, 2};
+@@ -535,6 +536,10 @@ week_view_get_property (GObject *object,
+ 				e_week_view_get_show_event_end_times (
+ 				E_WEEK_VIEW (object)));
+ 			return;
++
++		case PROP_IS_EDITING:
++			g_value_set_boolean (value, e_week_view_is_editing (E_WEEK_VIEW (object)));
++			return;
+ 	}
+ 
+ 	G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+@@ -702,6 +707,11 @@ e_week_view_class_init (EWeekViewClass *
+ 			TRUE,
+ 			G_PARAM_READWRITE));
+ 
++	g_object_class_override_property (
++		object_class,
++		PROP_IS_EDITING,
++		"is-editing");
++
+ 	/* init the accessibility support for e_week_view */
+ 	e_week_view_a11y_init ();
+ }
+@@ -1604,8 +1614,11 @@ e_week_view_get_selected_events (ECalend
+ 	g_return_val_if_fail (E_IS_WEEK_VIEW (week_view), NULL);
+ 
+ 	if (week_view->editing_event_num != -1) {
+-		if (!is_array_index_in_bounds (week_view->events, week_view->editing_event_num))
++		if (!is_array_index_in_bounds (week_view->events, week_view->editing_event_num)) {
++			week_view->editing_event_num = -1;
++			g_object_notify (G_OBJECT (week_view), "is-editing");
+ 			return NULL;
++		}
+ 
+ 		event = &g_array_index (week_view->events, EWeekViewEvent,
+ 					week_view->editing_event_num);
+@@ -2271,8 +2284,10 @@ e_week_view_remove_event_cb (EWeekView *
+ 
+ 	/* If we were editing this event, set editing_event_num to -1 so
+ 	   on_editing_stopped doesn't try to update the event. */
+-	if (week_view->editing_event_num == event_num)
++	if (week_view->editing_event_num == event_num) {
+ 		week_view->editing_event_num = -1;
++		g_object_notify (G_OBJECT (week_view), "is-editing");
++	}
+ 
+ 	if (week_view->popup_event_num == event_num)
+ 		week_view->popup_event_num = -1;
+@@ -2737,6 +2752,7 @@ e_week_view_free_events (EWeekView *week
+ 	EWeekViewEvent *event;
+ 	EWeekViewEventSpan *span;
+ 	gint event_num, span_num, num_days, day;
++	gboolean did_editing = week_view->editing_event_num != -1;
+ 
+ 	/* Reset all our indices. */
+ 	week_view->pressed_event_num = -1;
+@@ -2780,6 +2796,9 @@ e_week_view_free_events (EWeekView *week
+ 	for (day = 0; day < E_WEEK_VIEW_MAX_WEEKS * 7; day++) {
+ 		gnome_canvas_item_hide (week_view->jump_buttons[day]);
+ 	}
++
++	if (did_editing)
++		g_object_notify (G_OBJECT (week_view), "is-editing");
+ }
+ 
+ /* This adds one event to the view, adding it to the appropriate array. */
+@@ -3964,6 +3983,8 @@ e_week_view_on_editing_started (EWeekVie
+ 	}
+ 
+ 	g_signal_emit_by_name (week_view, "selection_changed");
++
++	g_object_notify (G_OBJECT (week_view), "is-editing");
+ }
+ 
+ static void
+@@ -4009,8 +4030,10 @@ e_week_view_on_editing_stopped (EWeekVie
+ 
+ 	/* Check that the event is still valid. */
+ 	uid = icalcomponent_get_uid (event->comp_data->icalcomp);
+-	if (!uid)
++	if (!uid) {
++		g_object_notify (G_OBJECT (week_view), "is-editing");
+ 		return;
++	}
+ 
+ 	g_object_set (span->text_item, "handle_popup", FALSE, NULL);
+ 	g_object_get (G_OBJECT (span->text_item), "text", &text, NULL);
+@@ -4132,6 +4155,8 @@ e_week_view_on_editing_stopped (EWeekVie
+ 	g_object_unref (comp);
+ 
+ 	g_signal_emit_by_name (week_view, "selection_changed");
++
++	g_object_notify (G_OBJECT (week_view), "is-editing");
+ }
+ 
+ gboolean
+@@ -4772,3 +4797,11 @@ e_week_view_paste_text (ECalendarView *c
+ 		e_text_paste_clipboard (E_TEXT (span->text_item));
+ 	}
+ }
++
++gboolean
++e_week_view_is_editing (EWeekView *week_view)
++{
++	g_return_val_if_fail (E_IS_WEEK_VIEW (week_view), FALSE);
++
++	return week_view->editing_event_num != -1;
++}
+diff -up evolution-2.32.3/calendar/gui/e-week-view.h.cal-copy-paste-text evolution-2.32.3/calendar/gui/e-week-view.h
+--- evolution-2.32.3/calendar/gui/e-week-view.h.cal-copy-paste-text	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/e-week-view.h	2013-06-24 19:56:39.292962768 +0200
+@@ -472,6 +472,8 @@ void		e_week_view_jump_to_button_item	(E
+ void		e_week_view_scroll_a_step	(EWeekView *week_view,
+ 						 ECalViewMoveDirection direction);
+ 
++gboolean	e_week_view_is_editing		(EWeekView *week_view);
++
+ G_END_DECLS
+ 
+ #endif /* E_WEEK_VIEW_H */
+diff -up evolution-2.32.3/modules/calendar/e-cal-shell-content.c.cal-copy-paste-text evolution-2.32.3/modules/calendar/e-cal-shell-content.c
+--- evolution-2.32.3/modules/calendar/e-cal-shell-content.c.cal-copy-paste-text	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/modules/calendar/e-cal-shell-content.c	2013-06-24 19:56:39.278962768 +0200
+@@ -319,6 +319,16 @@ gc_get_default_time (ECalModel *model, g
+ }
+ 
+ static void
++cal_shell_content_is_editing_changed_cb (gpointer cal_view_tasks_memos_table,
++					 GParamSpec *param,
++					 EShellView *shell_view)
++{
++	g_return_if_fail (E_IS_SHELL_VIEW (shell_view));
++
++	e_shell_view_update_actions (shell_view);
++}
++
++static void
+ cal_shell_content_constructed (GObject *object)
+ {
+ 	ECalShellContentPrivate *priv;
+@@ -407,6 +417,9 @@ cal_shell_content_constructed (GObject *
+ 	for (ii = 0; ii < GNOME_CAL_LAST_VIEW; ii++) {
+ 		calendar_view = gnome_calendar_get_calendar_view (calendar, ii);
+ 
++		g_signal_connect (calendar_view, "notify::is-editing",
++			G_CALLBACK (cal_shell_content_is_editing_changed_cb), shell_view);
++
+ 		gtk_notebook_append_page (
+ 			GTK_NOTEBOOK (container),
+ 			GTK_WIDGET (calendar_view), NULL);
+@@ -461,6 +474,9 @@ cal_shell_content_constructed (GObject *
+ 			G_CALLBACK (e_cal_shell_view_taskpad_open_task),
+ 			shell_view);
+ 
++		g_signal_connect (widget, "notify::is-editing",
++			G_CALLBACK (cal_shell_content_is_editing_changed_cb), shell_view);
++
+ 		container = priv->vpaned;
+ 
+ 		widget = gtk_vbox_new (FALSE, 0);
+@@ -502,6 +518,9 @@ cal_shell_content_constructed (GObject *
+ 			widget, "open-component",
+ 			G_CALLBACK (e_cal_shell_view_memopad_open_memo),
+ 			shell_view);
++
++		g_signal_connect (widget, "notify::is-editing",
++			G_CALLBACK (cal_shell_content_is_editing_changed_cb), shell_view);
+ 	}
+ 
+ 	/* Load the view instance. */
+diff -up evolution-2.32.3/modules/calendar/e-cal-shell-view.c.cal-copy-paste-text evolution-2.32.3/modules/calendar/e-cal-shell-view.c
+--- evolution-2.32.3/modules/calendar/e-cal-shell-view.c.cal-copy-paste-text	2011-04-20 18:26:50.000000000 +0200
++++ evolution-2.32.3/modules/calendar/e-cal-shell-view.c	2013-06-24 19:56:39.277962768 +0200
+@@ -284,6 +284,8 @@ cal_shell_view_update_actions (EShellVie
+ 	GnomeCalendarViewType view_type;
+ 	GnomeCalendar *calendar;
+ 	ECalendarView *view;
++	EMemoTable *memo_table;
++	ETaskTable *task_table;
+ 	GtkAction *action;
+ 	GList *list, *iter;
+ 	gboolean sensitive;
+@@ -329,6 +331,8 @@ cal_shell_view_update_actions (EShellVie
+ 	calendar = e_cal_shell_content_get_calendar (cal_shell_content);
+ 	view_type = gnome_calendar_get_view (calendar);
+ 	view = gnome_calendar_get_calendar_view (calendar, view_type);
++	memo_table = e_cal_shell_content_get_memo_table (cal_shell_content);
++	task_table = e_cal_shell_content_get_task_table (cal_shell_content);
+ 
+ 	list = e_calendar_view_get_selected_events (view);
+ 	n_selected = g_list_length (list);
+@@ -470,6 +474,31 @@ cal_shell_view_update_actions (EShellVie
+ 	action = ACTION (EVENT_MEETING_NEW);
+ 	visible = itip_addresses_get_default () != NULL;
+ 	gtk_action_set_visible (action, visible);
++
++	if ((view && e_calendar_view_is_editing (view)) ||
++	    e_table_is_editing (E_TABLE (memo_table)) ||
++	    e_table_is_editing (E_TABLE (task_table))) {
++		EFocusTracker *focus_tracker;
++
++		/* disable all clipboard actions, if any of the views is in editing mode */
++		focus_tracker = e_shell_window_get_focus_tracker (shell_window);
++
++		action = e_focus_tracker_get_cut_clipboard_action (focus_tracker);
++		if (action)
++			gtk_action_set_sensitive (action, FALSE);
++
++		action = e_focus_tracker_get_copy_clipboard_action (focus_tracker);
++		if (action)
++			gtk_action_set_sensitive (action, FALSE);
++
++		action = e_focus_tracker_get_paste_clipboard_action (focus_tracker);
++		if (action)
++			gtk_action_set_sensitive (action, FALSE);
++
++		action = e_focus_tracker_get_delete_selection_action (focus_tracker);
++		if (action)
++			gtk_action_set_sensitive (action, FALSE);
++	}
+ }
+ 
+ static void
+diff -up evolution-2.32.3/modules/calendar/e-memo-shell-content.c.cal-copy-paste-text evolution-2.32.3/modules/calendar/e-memo-shell-content.c
+--- evolution-2.32.3/modules/calendar/e-memo-shell-content.c.cal-copy-paste-text	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/modules/calendar/e-memo-shell-content.c	2013-06-24 19:56:39.279962768 +0200
+@@ -291,6 +291,16 @@ memo_shell_content_restore_state_cb (ESh
+ 	gconf_bridge_bind_property_delayed (bridge, key, object, "vposition");
+ }
+ 
++static void
++memo_shell_content_is_editing_changed_cb (EMemoTable *memo_table,
++					  GParamSpec *param,
++					  EShellView *shell_view)
++{
++	g_return_if_fail (E_IS_SHELL_VIEW (shell_view));
++
++	e_shell_view_update_actions (shell_view);
++}
++
+ static GtkOrientation
+ memo_shell_content_get_orientation (EMemoShellContent *memo_shell_content)
+ {
+@@ -534,6 +544,9 @@ memo_shell_content_constructed (GObject 
+ 		G_CALLBACK (memo_shell_content_selection_change_cb),
+ 		object);
+ 
++	g_signal_connect (priv->memo_table, "notify::is-editing",
++		G_CALLBACK (memo_shell_content_is_editing_changed_cb), shell_view);
++
+ 	g_signal_connect_swapped (
+ 		priv->memo_model, "model-row-changed",
+ 		G_CALLBACK (memo_shell_content_model_row_changed_cb),
+diff -up evolution-2.32.3/modules/calendar/e-task-shell-content.c.cal-copy-paste-text evolution-2.32.3/modules/calendar/e-task-shell-content.c
+--- evolution-2.32.3/modules/calendar/e-task-shell-content.c.cal-copy-paste-text	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/modules/calendar/e-task-shell-content.c	2013-06-24 19:56:39.278962768 +0200
+@@ -289,6 +289,16 @@ task_shell_content_restore_state_cb (ESh
+ 	gconf_bridge_bind_property_delayed (bridge, key, object, "vposition");
+ }
+ 
++static void
++task_shell_content_is_editing_changed_cb (ETaskTable *task_table,
++					  GParamSpec *param,
++					  EShellView *shell_view)
++{
++	g_return_if_fail (E_IS_SHELL_VIEW (shell_view));
++
++	e_shell_view_update_actions (shell_view);
++}
++
+ static GtkOrientation
+ task_shell_content_get_orientation (ETaskShellContent *task_shell_content)
+ {
+@@ -529,6 +539,9 @@ task_shell_content_constructed (GObject 
+ 		G_CALLBACK (task_shell_content_selection_change_cb),
+ 		object);
+ 
++	g_signal_connect (priv->task_table, "notify::is-editing",
++		G_CALLBACK (task_shell_content_is_editing_changed_cb), shell_view);
++
+ 	g_signal_connect_swapped (
+ 		priv->task_model, "model-row-changed",
+ 		G_CALLBACK (task_shell_content_model_row_changed_cb),
+diff -up evolution-2.32.3/widgets/table/e-table.c.cal-copy-paste-text evolution-2.32.3/widgets/table/e-table.c
+--- evolution-2.32.3/widgets/table/e-table.c.cal-copy-paste-text	2011-03-29 20:38:58.000000000 +0200
++++ evolution-2.32.3/widgets/table/e-table.c	2013-06-24 19:56:39.287962768 +0200
+@@ -101,7 +101,8 @@ enum {
+ 	PROP_MODEL,
+ 	PROP_UNIFORM_ROW_HEIGHT,
+ 	PROP_ALWAYS_SEARCH,
+-	PROP_USE_CLICK_TO_ADD
++	PROP_USE_CLICK_TO_ADD,
++	PROP_IS_EDITING
+ };
+ 
+ enum {
+@@ -972,6 +973,16 @@ et_table_rows_deleted (ETableModel *tabl
+ }
+ 
+ static void
++group_is_editing_changed_cb (ETableClickToAdd *etcta,
++			     GParamSpec *param,
++			     ETable *table)
++{
++	g_return_if_fail (E_IS_TABLE (table));
++
++	g_object_notify (G_OBJECT (table), "is-editing");
++}
++
++static void
+ et_build_groups (ETable *et)
+ {
+ 	gboolean was_grouped = et->is_grouped;
+@@ -1020,6 +1031,9 @@ et_build_groups (ETable *et)
+ 			  G_CALLBACK (group_key_press), et);
+ 	g_signal_connect (G_OBJECT (et->group), "start_drag",
+ 			  G_CALLBACK (group_start_drag), et);
++	g_signal_connect (
++		et->group, "notify::is-editing",
++		G_CALLBACK (group_is_editing_changed_cb), et);
+ 
+ 	if (!(et->is_grouped) && was_grouped)
+ 		et_disconnect_model (et);
+@@ -1237,6 +1251,16 @@ canvas_vbox_event (ECanvasVbox *vbox, Gd
+ 	return TRUE;
+ }
+ 
++static void
++click_to_add_is_editing_changed_cb (ETableClickToAdd *etcta,
++				    GParamSpec *param,
++				    ETable *table)
++{
++	g_return_if_fail (E_IS_TABLE (table));
++
++	g_object_notify (G_OBJECT (table), "is-editing");
++}
++
+ static gboolean
+ click_to_add_event (ETableClickToAdd *etcta, GdkEventKey *key, ETable *etable)
+ {
+@@ -1367,6 +1391,9 @@ e_table_setup_table (ETable *e_table, ET
+                 g_signal_connect (
+                         G_OBJECT (e_table->click_to_add), "cursor_change",
+                         G_CALLBACK (click_to_add_cursor_change), e_table);
++		g_signal_connect (
++			e_table->click_to_add, "notify::is-editing",
++			G_CALLBACK (click_to_add_is_editing_changed_cb), e_table);
+ 	}
+ }
+ 
+@@ -2244,6 +2271,9 @@ et_get_property (GObject *object,
+ 	case PROP_USE_CLICK_TO_ADD:
+ 		g_value_set_boolean (value, etable->use_click_to_add);
+ 		break;
++	case PROP_IS_EDITING:
++		g_value_set_boolean (value, e_table_is_editing (etable));
++		break;
+ 	default:
+ 		break;
+ 	}
+@@ -2309,8 +2339,14 @@ et_set_property (GObject *object,
+ 				e_canvas_vbox_add_item_start (E_CANVAS_VBOX (etable->canvas_vbox),
+ 							      etable->click_to_add);
+ 
++			g_signal_connect (
++				etable->click_to_add, "event",
++				G_CALLBACK (click_to_add_event), etable);
+ 			g_signal_connect (G_OBJECT (etable->click_to_add), "cursor_change",
+ 					  G_CALLBACK (click_to_add_cursor_change), etable);
++			g_signal_connect (
++				etable->click_to_add, "notify::is-editing",
++				G_CALLBACK (click_to_add_is_editing_changed_cb), etable);
+ 		} else {
+ 			gtk_object_destroy (GTK_OBJECT (etable->click_to_add));
+ 			etable->click_to_add = NULL;
+@@ -3267,6 +3303,16 @@ e_table_class_init (ETableClass *class)
+ 	class->table_drag_drop          = NULL;
+ 	class->table_drag_data_received = NULL;
+ 
++	g_object_class_install_property (
++		object_class,
++		PROP_IS_EDITING,
++		g_param_spec_boolean (
++			"is-editing",
++			"Whether is in an editing mode",
++			"Whether is in an editing mode",
++			FALSE,
++			G_PARAM_READABLE));
++
+ 	et_signals[CURSOR_CHANGE] =
+ 		g_signal_new ("cursor_change",
+ 			      G_OBJECT_CLASS_TYPE (object_class),
+@@ -3525,3 +3571,12 @@ e_table_class_init (ETableClass *class)
+ 
+ 	gal_a11y_e_table_init ();
+ }
++
++gboolean
++e_table_is_editing (ETable *table)
++{
++	g_return_val_if_fail (E_IS_TABLE (table), FALSE);
++
++	return (table->click_to_add && e_table_click_to_add_is_editing (E_TABLE_CLICK_TO_ADD (table->click_to_add))) ||
++	       (table->group && e_table_group_is_editing (table->group));
++}
+diff -up evolution-2.32.3/widgets/table/e-table-click-to-add.c.cal-copy-paste-text evolution-2.32.3/widgets/table/e-table-click-to-add.c
+--- evolution-2.32.3/widgets/table/e-table-click-to-add.c.cal-copy-paste-text	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/widgets/table/e-table-click-to-add.c	2013-06-24 19:56:39.285962768 +0200
+@@ -59,7 +59,8 @@ enum {
+ 	PROP_MODEL,
+ 	PROP_MESSAGE,
+ 	PROP_WIDTH,
+-	PROP_HEIGHT
++	PROP_HEIGHT,
++	PROP_IS_EDITING
+ };
+ 
+ static void
+@@ -293,6 +294,9 @@ etcta_get_property (GObject *object, gui
+ 	case PROP_HEIGHT:
+ 		g_value_set_double (value, etcta->height);
+ 		break;
++	case PROP_IS_EDITING:
++		g_value_set_boolean (value, e_table_click_to_add_is_editing (etcta));
++		break;
+ 	default:
+ 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+ 		break;
+@@ -349,6 +353,16 @@ set_initial_selection (ETableClickToAdd 
+ }
+ 
+ static void
++table_click_to_add_row_is_editing_changed_cb (ETableItem *item,
++					      GParamSpec *param,
++					      ETableClickToAdd *etcta)
++{
++	g_return_if_fail (E_IS_TABLE_CLICK_TO_ADD (etcta));
++
++	g_object_notify (G_OBJECT (etcta), "is-editing");
++}
++
++static void
+ finish_editing (ETableClickToAdd *etcta)
+ {
+ 	if (etcta->row) {
+@@ -380,7 +394,13 @@ finish_editing (ETableClickToAdd *etcta)
+ 		g_signal_connect(etcta->row, "key_press",
+ 				 G_CALLBACK (item_key_press), etcta);
+ 
++		g_signal_connect (
++			etcta->row, "notify::is-editing",
++			G_CALLBACK (table_click_to_add_row_is_editing_changed_cb), etcta);
++
+ 		set_initial_selection (etcta);
++
++		g_object_notify (G_OBJECT (etcta), "is-editing");
+ 	}
+ }
+ 
+@@ -428,9 +448,15 @@ etcta_event (GnomeCanvasItem *item, GdkE
+ 			g_signal_connect(etcta->row, "key_press",
+ 					 G_CALLBACK (item_key_press), etcta);
+ 
++			g_signal_connect (
++				etcta->row, "notify::is-editing",
++				G_CALLBACK (table_click_to_add_row_is_editing_changed_cb), etcta);
++
+ 			e_canvas_item_grab_focus (GNOME_CANVAS_ITEM (etcta->row), TRUE);
+ 
+ 			set_initial_selection (etcta);
++
++			g_object_notify (G_OBJECT (etcta), "is-editing");
+ 		}
+ 		break;
+ 
+@@ -543,6 +569,16 @@ etcta_class_init (ETableClickToAddClass 
+ 							      0.0, G_MAXDOUBLE, 0.0,
+ 							      G_PARAM_READABLE | G_PARAM_LAX_VALIDATION));
+ 
++	g_object_class_install_property (
++		object_class,
++		PROP_IS_EDITING,
++		g_param_spec_boolean (
++			"is-editing",
++			"Whether is in an editing mode",
++			"Whether is in an editing mode",
++			FALSE,
++			G_PARAM_READABLE));
++
+ 	etcta_signals[CURSOR_CHANGE] =
+ 		g_signal_new ("cursor_change",
+ 			      G_OBJECT_CLASS_TYPE (object_class),
+@@ -616,3 +652,11 @@ e_table_click_to_add_commit (ETableClick
+ 	create_rect_and_text (etcta);
+ 	e_canvas_item_move_absolute (etcta->text, 3, 3);
+ }
++
++gboolean
++e_table_click_to_add_is_editing (ETableClickToAdd *etcta)
++{
++	g_return_val_if_fail (E_IS_TABLE_CLICK_TO_ADD (etcta), FALSE);
++
++	return etcta->row && e_table_item_is_editing (E_TABLE_ITEM (etcta->row));
++}
+diff -up evolution-2.32.3/widgets/table/e-table-click-to-add.h.cal-copy-paste-text evolution-2.32.3/widgets/table/e-table-click-to-add.h
+--- evolution-2.32.3/widgets/table/e-table-click-to-add.h.cal-copy-paste-text	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/widgets/table/e-table-click-to-add.h	2013-06-24 19:56:39.286962768 +0200
+@@ -71,7 +71,7 @@ typedef struct {
+ GType      e_table_click_to_add_get_type (void);
+ 
+ void       e_table_click_to_add_commit (ETableClickToAdd *etcta);
+-
++gboolean	e_table_click_to_add_is_editing	(ETableClickToAdd *etcta);
+ G_END_DECLS
+ 
+ #endif /* _E_TABLE_CLICK_TO_ADD_H_ */
+diff -up evolution-2.32.3/widgets/table/e-table-group.c.cal-copy-paste-text evolution-2.32.3/widgets/table/e-table-group.c
+--- evolution-2.32.3/widgets/table/e-table-group.c.cal-copy-paste-text	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/widgets/table/e-table-group.c	2013-06-24 19:56:39.288962768 +0200
+@@ -49,6 +49,11 @@ enum {
+ 	LAST_SIGNAL
+ };
+ 
++enum {
++	PROP_0,
++	PROP_IS_EDITING
++};
++
+ static guint etg_signals[LAST_SIGNAL] = { 0, };
+ 
+ static gboolean etg_get_focus (ETableGroup      *etg);
+@@ -77,6 +82,24 @@ etg_dispose (GObject *object)
+ 		G_OBJECT_CLASS (etg_parent_class)->dispose (object);
+ }
+ 
++static void
++etg_get_property (GObject *object,
++		  guint property_id,
++		  GValue *value,
++		  GParamSpec *pspec)
++{
++	ETableGroup *etg = E_TABLE_GROUP (object);
++
++	switch (property_id) {
++	case PROP_IS_EDITING:
++		g_value_set_boolean (value, e_table_group_is_editing (etg));
++		break;
++	default:
++		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
++		break;
++	}
++}
++
+ /**
+  * e_table_group_new
+  * @parent: The %GnomeCanvasGroup to create a child of.
+@@ -648,6 +671,7 @@ etg_class_init (ETableGroupClass *klass)
+ 	GObjectClass *object_class = G_OBJECT_CLASS (klass);
+ 
+ 	object_class->dispose = etg_dispose;
++	object_class->get_property = etg_get_property;
+ 
+ 	item_class->event = etg_event;
+ 
+@@ -673,6 +697,16 @@ etg_class_init (ETableGroupClass *klass)
+ 	klass->get_mouse_over = NULL;
+ 	klass->get_cell_geometry = NULL;
+ 
++	g_object_class_install_property (
++		object_class,
++		PROP_IS_EDITING,
++		g_param_spec_boolean (
++			"is-editing",
++			"Whether is in an editing mode",
++			"Whether is in an editing mode",
++			FALSE,
++			G_PARAM_READABLE));
++
+ 	etg_signals[CURSOR_CHANGE] =
+ 		g_signal_new ("cursor_change",
+ 			      G_OBJECT_CLASS_TYPE (object_class),
+@@ -747,3 +781,28 @@ etg_init (ETableGroup *etg)
+ {
+ 	/* nothing to do */
+ }
++
++gboolean
++e_table_group_is_editing (ETableGroup *table_group)
++{
++	static gboolean in = FALSE;
++	gboolean is_editing = FALSE;
++
++	g_return_val_if_fail (E_IS_TABLE_GROUP (table_group), FALSE);
++
++	/* this should be called from the main thread only,
++	   and each descendant overrides the property,
++	   thus might cause no call recursion */
++	if (in) {
++		g_warn_if_reached ();
++		return FALSE;
++	}
++
++	in = TRUE;
++
++	g_object_get (G_OBJECT (table_group), "is-editing", &is_editing, NULL);
++
++	in = FALSE;
++
++	return is_editing;
++}
+diff -up evolution-2.32.3/widgets/table/e-table-group-container.c.cal-copy-paste-text evolution-2.32.3/widgets/table/e-table-group-container.c
+--- evolution-2.32.3/widgets/table/e-table-group-container.c.cal-copy-paste-text	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/widgets/table/e-table-group-container.c	2013-06-24 19:56:39.285962768 +0200
+@@ -59,7 +59,8 @@ enum {
+ 	PROP_CURSOR_MODE,
+ 	PROP_SELECTION_MODEL,
+ 	PROP_LENGTH_THRESHOLD,
+-	PROP_UNIFORM_ROW_HEIGHT
++	PROP_UNIFORM_ROW_HEIGHT,
++	PROP_IS_EDITING
+ };
+ 
+ static EPrintable *
+@@ -907,6 +908,9 @@ etgc_get_property (GObject *object, guin
+ 	case PROP_UNIFORM_ROW_HEIGHT:
+ 		g_value_set_boolean (value, etgc->uniform_row_height);
+ 		break;
++	case PROP_IS_EDITING:
++		g_value_set_boolean (value, e_table_group_container_is_editing (etgc));
++		break;
+ 	default:
+ 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+ 		break;
+@@ -1025,6 +1029,10 @@ etgc_class_init (ETableGroupContainerCla
+ 							      "Minimum Width",
+ 							      0.0, G_MAXDOUBLE, 0.0,
+ 							      G_PARAM_READWRITE));
++	g_object_class_override_property (
++		object_class,
++		PROP_IS_EDITING,
++		"is-editing");
+ }
+ 
+ static void
+@@ -1507,3 +1515,21 @@ etgc_get_printable (ETableGroup *etg)
+ 
+ 	return printable;
+ }
++
++gboolean
++e_table_group_container_is_editing (ETableGroupContainer *etgc)
++{
++	GList *list;
++
++	g_return_val_if_fail (E_IS_TABLE_GROUP_CONTAINER (etgc), FALSE);
++
++	for (list = etgc->children; list; list = g_list_next (list)) {
++		ETableGroupContainerChildNode *child_node = (ETableGroupContainerChildNode *) list->data;
++
++		if (e_table_group_is_editing (child_node->child)) {
++			return TRUE;
++		}
++	}
++
++	return FALSE;
++}
+diff -up evolution-2.32.3/widgets/table/e-table-group-container.h.cal-copy-paste-text evolution-2.32.3/widgets/table/e-table-group-container.h
+--- evolution-2.32.3/widgets/table/e-table-group-container.h.cal-copy-paste-text	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/widgets/table/e-table-group-container.h	2013-06-24 19:56:39.285962768 +0200
+@@ -102,6 +102,8 @@ void         e_table_group_container_con
+ 
+ GType        e_table_group_container_get_type  (void);
+ 
++gboolean	e_table_group_container_is_editing (ETableGroupContainer *etgc);
++
+ G_END_DECLS
+ 
+ #endif /* _E_TABLE_GROUP_CONTAINER_H_ */
+diff -up evolution-2.32.3/widgets/table/e-table-group.h.cal-copy-paste-text evolution-2.32.3/widgets/table/e-table-group.h
+--- evolution-2.32.3/widgets/table/e-table-group.h.cal-copy-paste-text	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/widgets/table/e-table-group.h	2013-06-24 19:56:39.288962768 +0200
+@@ -177,6 +177,8 @@ void          e_table_group_apply_to_lea
+ 					       ETableGroupLeafFn  fn,
+ 					       void              *closure);
+ 
++gboolean	e_table_group_is_editing	(ETableGroup *table_group);
++
+ G_END_DECLS
+ 
+ #endif /* _E_TABLE_GROUP_H_ */
+diff -up evolution-2.32.3/widgets/table/e-table-group-leaf.c.cal-copy-paste-text evolution-2.32.3/widgets/table/e-table-group-leaf.c
+--- evolution-2.32.3/widgets/table/e-table-group-leaf.c.cal-copy-paste-text	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/widgets/table/e-table-group-leaf.c	2013-06-24 19:56:39.286962768 +0200
+@@ -53,10 +53,21 @@ enum {
+ 	PROP_CURSOR_MODE,
+ 	PROP_LENGTH_THRESHOLD,
+ 	PROP_SELECTION_MODEL,
+-	PROP_UNIFORM_ROW_HEIGHT
++	PROP_UNIFORM_ROW_HEIGHT,
++	PROP_IS_EDITING
+ };
+ 
+ static void
++etgl_item_is_editing_changed_cb (ETableItem *item,
++				 GParamSpec *param,
++				 ETableGroupLeaf *etgl)
++{
++	g_return_if_fail (E_IS_TABLE_GROUP_LEAF (etgl));
++
++	g_object_notify (G_OBJECT (etgl), "is-editing");
++}
++
++static void
+ etgl_dispose (GObject *object)
+ {
+ 	ETableGroupLeaf *etgl = E_TABLE_GROUP_LEAF (object);
+@@ -89,6 +100,9 @@ etgl_dispose (GObject *object)
+ 			g_signal_handler_disconnect (etgl->item,
+ 						     etgl->etgl_start_drag_id);
+ 
++		g_signal_handlers_disconnect_by_func (etgl->item,
++			etgl_item_is_editing_changed_cb, etgl);
++
+ 		etgl->etgl_cursor_change_id = 0;
+ 		etgl->etgl_cursor_activated_id = 0;
+ 		etgl->etgl_double_click_id = 0;
+@@ -307,6 +321,9 @@ etgl_realize (GnomeCanvasItem *item)
+ 							   G_CALLBACK (etgl_start_drag),
+ 							   etgl);
+ 
++	g_signal_connect (etgl->item, "notify::is-editing",
++		G_CALLBACK (etgl_item_is_editing_changed_cb), etgl);
++
+ 	e_canvas_item_request_reflow (item);
+ }
+ 
+@@ -571,6 +588,10 @@ etgl_get_property (GObject *object, guin
+ 		break;
+ 	case PROP_UNIFORM_ROW_HEIGHT:
+ 		g_value_set_boolean (value, etgl->uniform_row_height);
++		break;
++	case PROP_IS_EDITING:
++		g_value_set_boolean (value, e_table_group_leaf_is_editing (etgl));
++		break;
+ 	default:
+ 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+ 		break;
+@@ -687,6 +708,11 @@ etgl_class_init (ETableGroupLeafClass *k
+ 							       "Uniform row height",
+ 							       FALSE,
+ 							       G_PARAM_READWRITE));
++
++	g_object_class_override_property (
++		object_class,
++		PROP_IS_EDITING,
++		"is-editing");
+ }
+ 
+ static void
+@@ -720,3 +746,10 @@ etgl_init (ETableGroupLeaf *etgl)
+ 	e_canvas_item_set_reflow_callback (GNOME_CANVAS_ITEM (etgl), etgl_reflow);
+ }
+ 
++gboolean
++e_table_group_leaf_is_editing (ETableGroupLeaf *etgl)
++{
++	g_return_val_if_fail (E_IS_TABLE_GROUP_LEAF (etgl), FALSE);
++
++	return etgl->item && e_table_item_is_editing (etgl->item);
++}
+diff -up evolution-2.32.3/widgets/table/e-table-group-leaf.h.cal-copy-paste-text evolution-2.32.3/widgets/table/e-table-group-leaf.h
+--- evolution-2.32.3/widgets/table/e-table-group-leaf.h.cal-copy-paste-text	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/widgets/table/e-table-group-leaf.h	2013-06-24 19:56:39.287962768 +0200
+@@ -83,6 +83,8 @@ ETableGroup *e_table_group_leaf_new     
+ 					   ETableSortInfo *sort_info);
+ GType        e_table_group_leaf_get_type  (void);
+ 
++gboolean	e_table_group_leaf_is_editing	(ETableGroupLeaf *etgl);
++
+ G_END_DECLS
+ 
+ #endif /* _E_TABLE_GROUP_LEAF_H_ */
+diff -up evolution-2.32.3/widgets/table/e-table.h.cal-copy-paste-text evolution-2.32.3/widgets/table/e-table.h
+--- evolution-2.32.3/widgets/table/e-table.h.cal-copy-paste-text	2011-03-29 20:38:58.000000000 +0200
++++ evolution-2.32.3/widgets/table/e-table.h	2013-06-24 19:56:39.287962768 +0200
+@@ -350,6 +350,8 @@ void             e_table_right_click_up 
+ 
+ void             e_table_commit_click_to_add       (ETable               *table);
+ 
++gboolean	e_table_is_editing		(ETable *table);
++
+ G_END_DECLS
+ 
+ #endif /* _E_TABLE_H_ */
+diff -up evolution-2.32.3/widgets/table/e-table-item.c.cal-copy-paste-text evolution-2.32.3/widgets/table/e-table-item.c
+--- evolution-2.32.3/widgets/table/e-table-item.c.cal-copy-paste-text	2011-03-29 20:38:58.000000000 +0200
++++ evolution-2.32.3/widgets/table/e-table-item.c	2013-06-24 19:56:39.281962768 +0200
+@@ -98,6 +98,7 @@ enum {
+ 	PROP_LENGTH_THRESHOLD,
+ 	PROP_CURSOR_ROW,
+ 	PROP_UNIFORM_ROW_HEIGHT,
++	PROP_IS_EDITING,
+ 
+ 	PROP_MINIMUM_WIDTH,
+ 	PROP_WIDTH,
+@@ -1551,6 +1552,9 @@ eti_get_property (GObject *object, guint
+ 	case PROP_UNIFORM_ROW_HEIGHT:
+ 		g_value_set_boolean (value, eti->uniform_row_height);
+ 		break;
++	case PROP_IS_EDITING:
++		g_value_set_boolean (value, e_table_item_is_editing (eti));
++		break;
+ 	default:
+ 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+ 		break;
+@@ -2929,6 +2933,16 @@ eti_class_init (ETableItemClass *klass)
+ 							       FALSE,
+ 							       G_PARAM_READWRITE));
+ 
++	g_object_class_install_property (
++		object_class,
++		PROP_IS_EDITING,
++		g_param_spec_boolean (
++			"is-editing",
++			"Whether is in an editing mode",
++			"Whether is in an editing mode",
++			FALSE,
++			G_PARAM_READABLE));
++
+ 	eti_signals[CURSOR_CHANGE] =
+ 		g_signal_new ("cursor_change",
+ 			      G_OBJECT_CLASS_TYPE (object_class),
+@@ -3208,6 +3222,8 @@ e_table_item_enter_edit (ETableItem *eti
+ 	eti->editing_row = row;
+ 
+ 	eti->edit_ctx = e_cell_enter_edit (eti->cell_views[col], view_to_model_col (eti, col), col, row);
++
++	g_object_notify (G_OBJECT (eti), "is-editing");
+ }
+ 
+ /**
+@@ -3241,6 +3257,8 @@ e_table_item_leave_edit (ETableItem *eti
+ 	e_cell_leave_edit (eti->cell_views[col],
+ 			   view_to_model_col (eti, col),
+ 			   col, row, edit_ctx);
++
++	g_object_notify (G_OBJECT (eti), "is-editing");
+ }
+ 
+ /**
+@@ -3657,3 +3675,17 @@ e_table_item_get_printable (ETableItem *
+ 
+ 	return printable;
+ }
++
++/**
++ * e_table_item_is_editing:
++ * @eti: an %ETableItem 
++ *
++ * Returns: Whether the table item is currently editing cell content.
++ **/
++gboolean
++e_table_item_is_editing (ETableItem *eti)
++{
++	g_return_val_if_fail (E_IS_TABLE_ITEM (eti), FALSE);
++
++	return eti_editing (eti);
++}
+diff -up evolution-2.32.3/widgets/table/e-table-item.h.cal-copy-paste-text evolution-2.32.3/widgets/table/e-table-item.h
+--- evolution-2.32.3/widgets/table/e-table-item.h.cal-copy-paste-text	2011-03-29 20:38:58.000000000 +0200
++++ evolution-2.32.3/widgets/table/e-table-item.h	2013-06-24 19:56:39.281962768 +0200
+@@ -219,6 +219,8 @@ gint	    e_table_item_row_diff	     (ETa
+ 					      gint		 start_row,
+ 					      gint		 end_row);
+ 
++gboolean	e_table_item_is_editing		(ETableItem *eti);
++
+ G_END_DECLS
+ 
+ #endif /* _E_TABLE_ITEM_H_ */
+diff -up evolution-2.32.3/widgets/table/e-tree.c.cal-copy-paste-text evolution-2.32.3/widgets/table/e-tree.c
+--- evolution-2.32.3/widgets/table/e-tree.c.cal-copy-paste-text	2013-06-24 19:56:39.230962768 +0200
++++ evolution-2.32.3/widgets/table/e-tree.c	2013-06-24 19:56:39.283962768 +0200
+@@ -94,6 +94,7 @@ enum {
+ 	PROP_DRAW_FOCUS,
+ 	PROP_ETTA,
+ 	PROP_UNIFORM_ROW_HEIGHT,
++	PROP_IS_EDITING,
+ 	PROP_ALWAYS_SEARCH
+ };
+ 
+@@ -247,6 +248,16 @@ static void context_destroyed (gpointer 
+ G_DEFINE_TYPE (ETree, e_tree, GTK_TYPE_TABLE)
+ 
+ static void
++tree_item_is_editing_changed_cb (ETableItem *item,
++				 GParamSpec *param,
++				 ETree *tree)
++{
++	g_return_if_fail (E_IS_TREE (tree));
++
++	g_object_notify (G_OBJECT (tree), "is-editing");
++}
++
++static void
+ et_disconnect_from_etta (ETree *et)
+ {
+ 	if (et->priv->table_model_change_id != 0)
+@@ -1090,6 +1101,9 @@ et_build_item (ETree *et)
+ 			  G_CALLBACK (item_key_press), et);
+ 	g_signal_connect (et->priv->item, "start_drag",
+ 			  G_CALLBACK (item_start_drag), et);
++	g_signal_connect (
++		et->priv->item, "notify::is-editing",
++		G_CALLBACK (tree_item_is_editing_changed_cb), et);
+ }
+ 
+ static void
+@@ -1950,6 +1964,9 @@ et_get_property (GObject *object,
+ 	case PROP_ALWAYS_SEARCH:
+ 		g_value_set_boolean (value, etree->priv->always_search);
+ 		break;
++	case PROP_IS_EDITING:
++		g_value_set_boolean (value, e_tree_is_editing (etree));
++		break;
+ 	default:
+ 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+ 		break;
+@@ -3571,6 +3588,16 @@ e_tree_class_init (ETreeClass *class)
+ 							       FALSE,
+ 							       G_PARAM_READWRITE));
+ 
++	g_object_class_install_property (
++		object_class,
++		PROP_IS_EDITING,
++		g_param_spec_boolean (
++			"is-editing",
++			"Whether is in an editing mode",
++			"Whether is in an editing mode",
++			FALSE,
++			G_PARAM_READABLE));
++
+ 	g_object_class_install_property (object_class, PROP_ALWAYS_SEARCH,
+ 					 g_param_spec_boolean ("always_search",
+ 							       "Always search",
+@@ -3668,3 +3695,11 @@ e_tree_set_info_message (ETree *tree, co
+ 	} else
+ 		gnome_canvas_item_set (tree->priv->info_text, "text", info_message, NULL);
+ }
++
++gboolean
++e_tree_is_editing (ETree *tree)
++{
++	g_return_val_if_fail (E_IS_TREE (tree), FALSE);
++
++	return tree->priv->item && e_table_item_is_editing (E_TABLE_ITEM (tree->priv->item));
++}
+diff -up evolution-2.32.3/widgets/table/e-tree.h.cal-copy-paste-text evolution-2.32.3/widgets/table/e-tree.h
+--- evolution-2.32.3/widgets/table/e-tree.h.cal-copy-paste-text	2011-03-29 20:38:58.000000000 +0200
++++ evolution-2.32.3/widgets/table/e-tree.h	2013-06-24 19:56:39.284962768 +0200
+@@ -315,6 +315,8 @@ GnomeCanvasItem * e_tree_get_header_item
+ 
+ void e_tree_set_info_message (ETree *tree, const gchar *info_message);
+ 
++gboolean	e_tree_is_editing		(ETree *tree);
++
+ G_END_DECLS
+ 
+ #endif /* _E_TREE_H_ */

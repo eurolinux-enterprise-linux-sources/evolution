@@ -26,10 +26,34 @@ public_icons = \
 
 private_icons = \
 	hicolor_apps_16x16_contact-editor.png \
+	hicolor_apps_16x16_im-aim.png \
+	hicolor_apps_16x16_im-icq.png \
+	hicolor_apps_16x16_im-jabber.png \
+	hicolor_apps_16x16_im-msn.png \
+	hicolor_apps_16x16_im-nov.png \
+	hicolor_apps_16x16_im-yahoo.png \
 	hicolor_apps_22x22_contact-editor.png \
+	hicolor_apps_22x22_im-aim.png \
+	hicolor_apps_22x22_im-icq.png \
+	hicolor_apps_22x22_im-jabber.png \
+	hicolor_apps_22x22_im-msn.png \
+	hicolor_apps_22x22_im-nov.png \
+	hicolor_apps_22x22_im-yahoo.png \
 	hicolor_apps_24x24_contact-editor.png \
+	hicolor_apps_24x24_im-aim.png \
+	hicolor_apps_24x24_im-icq.png \
+	hicolor_apps_24x24_im-jabber.png \
+	hicolor_apps_24x24_im-msn.png \
+	hicolor_apps_24x24_im-nov.png \
+	hicolor_apps_24x24_im-yahoo.png \
 	hicolor_apps_32x32_contact-editor.png \
 	hicolor_apps_48x48_contact-editor.png \
+	hicolor_apps_scalable_im-aim.svg \
+	hicolor_apps_scalable_im-icq.svg \
+	hicolor_apps_scalable_im-jabber.svg \
+	hicolor_apps_scalable_im-msn.svg \
+	hicolor_apps_scalable_im-nov.svg \
+	hicolor_apps_scalable_im-yahoo.svg \
 	hicolor_actions_16x16_folder-copy.png \
 	hicolor_actions_16x16_folder-move.png \
 	hicolor_actions_16x16_mail-copy.png \
@@ -84,6 +108,90 @@ private_icons = \
 	hicolor_status_32x32_online.png \
 	$(NULL)
 
+# These icons were in gnome-icon-theme prior to GNOME 2.30.
+# XXX Need to reevaluate which icons we really need and drop the rest.
+#     Many are not Tango-compliant and look dated and out of place.
+stock_private_icons = \
+	hicolor_actions_16x16_stock_bell.png \
+	hicolor_actions_16x16_stock_contact-list.png \
+	hicolor_actions_16x16_stock_insert-note.png \
+	hicolor_actions_16x16_stock_insert-rule.png \
+	hicolor_actions_16x16_stock_insert-table.png \
+	hicolor_actions_16x16_stock_mail-filters-apply.png \
+	hicolor_actions_16x16_stock_mail-flag-for-followup-done.png \
+	hicolor_actions_16x16_stock_mail-flag-for-followup.png \
+	hicolor_actions_16x16_stock_mail-open-multiple.png \
+	hicolor_actions_16x16_stock_mail-unread-multiple.png \
+	hicolor_actions_16x16_stock_new-24h-appointment.png \
+	hicolor_actions_16x16_stock_new-meeting.png \
+	hicolor_actions_16x16_stock_notes.png \
+	hicolor_actions_16x16_stock_people.png \
+	hicolor_actions_16x16_stock_select-column.png \
+	hicolor_actions_16x16_stock_select-row.png \
+	hicolor_actions_16x16_stock_shared-by-me.png \
+	hicolor_actions_16x16_stock_shared-to-me.png \
+	hicolor_actions_16x16_stock_show-all.png \
+	hicolor_actions_16x16_stock_task-assigned-to.png \
+	hicolor_actions_16x16_stock_task-assigned.png \
+	hicolor_actions_16x16_stock_task-recurring.png \
+	hicolor_actions_16x16_stock_task.png \
+	hicolor_actions_16x16_stock_text-monospaced.png \
+	hicolor_actions_16x16_stock_timezone.png \
+	hicolor_actions_16x16_stock_todo.png \
+	hicolor_actions_16x16_stock_video-conferencing.png \
+	hicolor_actions_16x16_stock_view-details.png \
+	hicolor_actions_24x24_stock_new-24h-appointment.png \
+	hicolor_actions_24x24_stock_contact-list.png \
+	hicolor_actions_24x24_stock_insert-note.png \
+	hicolor_actions_24x24_stock_insert-rule.png \
+	hicolor_actions_24x24_stock_insert-table.png \
+	hicolor_actions_24x24_stock_mail-filters-apply.png \
+	hicolor_actions_24x24_stock_mail-open-multiple.png \
+	hicolor_actions_24x24_stock_mail-unread-multiple.png \
+	hicolor_actions_24x24_stock_new-meeting.png \
+	hicolor_actions_24x24_stock_notes.png \
+	hicolor_actions_24x24_stock_people.png \
+	hicolor_actions_24x24_stock_select-column.png \
+	hicolor_actions_24x24_stock_select-row.png \
+	hicolor_actions_24x24_stock_shared-by-me.png \
+	hicolor_actions_24x24_stock_shared-to-me.png \
+	hicolor_actions_24x24_stock_show-all.png \
+	hicolor_actions_24x24_stock_task-assigned-to.png \
+	hicolor_actions_24x24_stock_task-assigned.png \
+	hicolor_actions_24x24_stock_task-recurring.png \
+	hicolor_actions_24x24_stock_task.png \
+	hicolor_actions_24x24_stock_text-monospaced.png \
+	hicolor_actions_24x24_stock_timezone.png \
+	hicolor_actions_24x24_stock_todo.png \
+	hicolor_actions_24x24_stock_video-conferencing.png \
+	hicolor_actions_48x48_stock_alarm.png \
+	hicolor_actions_48x48_stock_mail-flag-for-followup-done.png \
+	hicolor_actions_48x48_stock_mail-flag-for-followup.png \
+	hicolor_actions_48x48_stock_new-24h-appointment.png \
+	hicolor_actions_48x48_stock_new-meeting.png \
+	hicolor_actions_48x48_stock_notes.png \
+	hicolor_actions_48x48_stock_people.png \
+	hicolor_actions_48x48_stock_timezone.png \
+	hicolor_actions_48x48_stock_todo.png \
+	hicolor_status_16x16_stock_check-filled.png \
+	hicolor_status_16x16_stock_score-high.png \
+	hicolor_status_16x16_stock_score-higher.png \
+	hicolor_status_16x16_stock_score-highest.png \
+	hicolor_status_16x16_stock_score-low.png \
+	hicolor_status_16x16_stock_score-lower.png \
+	hicolor_status_16x16_stock_score-lowest.png \
+	hicolor_status_16x16_stock_score-normal.png \
+	hicolor_status_16x16_stock_signature-bad.png \
+	hicolor_status_16x16_stock_signature-ok.png \
+	hicolor_status_16x16_stock_signature.png \
+	hicolor_status_24x24_stock_signature-bad.png \
+	hicolor_status_24x24_stock_signature-ok.png \
+	hicolor_status_24x24_stock_signature.png \
+	hicolor_status_48x48_stock_signature-bad.png \
+	hicolor_status_48x48_stock_signature-ok.png \
+	hicolor_status_48x48_stock_signature.png \
+	$(NULL)
+
 # hicolor_status_16x16_wrapped.png was copied from Firefox
 # (toolkit/themes/gnomestripe/global/icons/wrap.png), which
 # contained the following notice:
@@ -124,6 +232,7 @@ noinst_DATA = \
 EXTRA_DIST = \
 	$(public_icons)		\
 	$(private_icons)	\
+	$(stock_private_icons)	\
 	$(noinst_DATA)		\
 	$(NULL)
 
@@ -157,6 +266,14 @@ install-icons:
 		mkdir -p $(DESTDIR)$(pkgdatadir)/$(BASE_VERSION)/icons/$$THEME/$$SIZE/$$CONTEXT; \
 		$(INSTALL_DATA) $(srcdir)/$$icon $(DESTDIR)$(pkgdatadir)/$(BASE_VERSION)/icons/$$THEME/$$SIZE/$$CONTEXT/$$ICONFILE; \
 	done
+	for icon in $(stock_private_icons); do \
+		THEME=`echo $$icon | cut -d_ -f1`; \
+		CONTEXT=`echo $$icon | cut -d_ -f2`; \
+		SIZE=`echo $$icon | cut -d_ -f3`; \
+		ICONFILE=`echo $$icon | cut -d_ -f5`; \
+		mkdir -p $(DESTDIR)$(pkgdatadir)/$(BASE_VERSION)/icons/$$THEME/$$SIZE/$$CONTEXT; \
+		$(INSTALL_DATA) $(srcdir)/$$icon $(DESTDIR)$(pkgdatadir)/$(BASE_VERSION)/icons/$$THEME/$$SIZE/$$CONTEXT/stock_$$ICONFILE; \
+	done
 
 uninstall-icons:
 	-for icon in $(public_icons); do \
@@ -172,6 +289,13 @@ uninstall-icons:
 		SIZE=`echo $$icon | cut -d_ -f3`; \
 		ICONFILE=`echo $$icon | cut -d_ -f4`; \
 		rm -f $(DESTDIR)$(pkgdatadir)/$(BASE_VERSION)/icons/$$THEME/$$SIZE/$$CONTEXT/$$ICONFILE; \
+	done
+	for icon in $(stock_private_icons); do \
+		THEME=`echo $$icon | cut -d_ -f1`; \
+		CONTEXT=`echo $$icon | cut -d_ -f2`; \
+		SIZE=`echo $$icon | cut -d_ -f3`; \
+		ICONFILE=`echo $$icon | cut -d_ -f5`; \
+		rm -f $(DESTDIR)$(pkgdatadir)/$(BASE_VERSION)/icons/$$THEME/$$SIZE/$$CONTEXT/stock_$$ICONFILE; \
 	done
 
 install-data-local: install-icons update-icon-cache

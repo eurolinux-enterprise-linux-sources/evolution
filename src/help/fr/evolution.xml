@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
 <!ENTITY appname "Evolution">
-<!ENTITY appversion "2.28">
+<!ENTITY appversion "2.30">
 <!ENTITY z-3rdParty "*">
 <!ENTITY z-SM "(SM)">
 <!ENTITY z-CM "(CM)">
@@ -19,7 +19,7 @@
    <date>2002-2009</date>
    <revhistory>
      <revision>
-       <revnumber>2.28</revnumber>
+       <revnumber>2.30</revnumber>
        <date>Septembre 2009</date>
        <revdescription>
 	 <para role="author">Akhil Laddha</para>
@@ -68,20 +68,20 @@
      </revision>
    </revhistory>
 
-   <releaseinfo>Ce manuel documente la version 2.28 d'Evolution</releaseinfo>
+   <releaseinfo>Ce manuel documente la version 2.30 d'Evolution</releaseinfo>
    <abstract role="description">
      <para>Un manuel d'utilisation d'Evolution expliquant comment utiliser ses fonctionnalités de courriels, de calendrier, de contacts et de gestion des tâches.</para>
    </abstract>
    <productname class="trade">Evolution</productname>
-   <productnumber>2.28</productnumber>
+   <productnumber>2.30</productnumber>
    <invpartnumber>Février 2008</invpartnumber>
-   <title>Manuel d'utilisation d'Evolution 2.28</title>
+   <title>Manuel d'utilisation d'Evolution 2.30</title>
  <copyright><year>2006</year><holder>Marc Lorber (Linux-Lorber@club-internet.fr)</holder></copyright><copyright><year>2007</year><holder>Jonathan Ernst (jonathan@ernstfamily.ch)</holder></copyright><copyright><year>2007-2009</year><holder>Claude Paroz (claude@2xlibre.net)</holder></copyright><copyright><year>2009</year><holder>Alexandre Franke (alexandre.franke@gmail.com)</holder></copyright></bookinfo>
 
 
  <preface id="preface">
   <title>À propos de ce guide</title>
-  <para>Ce guide explique comment utiliser et comment gérer le logiciel client <trademark>Evolution</trademark> 2.28. Ce guide est dédié aux utilisateurs et comporte les chapitres suivants :</para>
+  <para>Ce guide explique comment utiliser et comment gérer le logiciel client <trademark>Evolution</trademark> 2.30. Ce guide est dédié aux utilisateurs et comporte les chapitres suivants :</para>
   <itemizedlist>
    <listitem>
     <para><link linkend="usage-mainwindow">Premiers pas</link></para>
@@ -1078,7 +1078,7 @@
 
   <section id="b17qy921">
    <title>Sauvegarde et restauration d'Evolution</title>
-   <para>Si vous avez activé le greffon de sauvegarde et restauration, vous avez la possibilité de sauvegarder vos données d'Evolution et de les restaurer losrque vous en avez besoin. La sauvegarde enregistre vos paramètres Evolution ainsi que vos courriels, puis crée une archive.</para>
+   <para>Si vous avez activé le greffon de sauvegarde et restauration, vous avez la possibilité de sauvegarder vos données d'Evolution et de les restaurer lorsque vous en avez besoin. La sauvegarde enregistre vos paramètres Evolution ainsi que vos courriels, puis crée une archive.</para>
    <orderedlist>
     <listitem id="b17qydgx">
      <para>Choisissez Fichier &gt; Sauvegarder les paramètres afin de choisir le dossier de destination de la sauvegarde.</para>
@@ -1233,7 +1233,7 @@
 
   <section id="usage-mail-getnsend-read">
    <title>Lectures des courriels</title>
-   <para>Si vous n'êtes pas en train de consulter votre courriel, basculez dans le composant Courriel en cliquant sur le bouton de raccrouci Courriel, ou appuyez sur Ctrl+1. Pour lire un message, sélectionnez-le dans la liste des messages ; si vous préférez le voir dans une fenêtre indépendante, double-cliquez sur le message ou appyuez sur Entrée ou sur Ctrl+O.</para>
+   <para>Si vous n'êtes pas en train de consulter votre courriel, basculez dans le composant Courriel en cliquant sur le bouton de raccourci Courriel, ou appuyez sur Ctrl+1. Pour lire un message, sélectionnez-le dans la liste des messages ; si vous préférez le voir dans une fenêtre indépendante, double-cliquez sur le message ou appuyez sur Entrée ou sur Ctrl+O.</para>
    <tip>
     <para>Pour lire le courriel à l'aide du clavier, vous pouvez appuyer sur la barre espace pour faire défiler vers le bas, et sur la touche Retour arrière pour faire défiler vers le haut. Prenez bien soin d'utiliser ces touches lorsque la liste des messages est active.</para>
     <para>Naviguez dans la liste des messages à l'aide des touches flèches du clavier. Pour afficher le prochain ou le précédent message non lu, appuyez sur les touches point (.) ou virgule (,). Sur certains claviers, ces touches comportent aussi les symboles &gt; et &lt;, ce qui permet de se rappeler facilement qu'elles font avancer ou reculer dans la liste des messages. Vous pouvez aussi utiliser le crochet droit (]) pour le prochain message non lu et le crochet gauche ([) pour le message non lu précédent.</para>
@@ -1357,13 +1357,13 @@
     <para>Evolution permet un affichage vertical en plus de l'affichage classique. En affichage vertical, le panneau d'aperçu des messages est situé à droite de la liste des messages, contrairement à l'affichage classique où il se situe en-dessous de la liste des messages. L'affichage vertical vous permet d'exploiter la largeur supplémentaire des écrans au format écran large.</para>
     <formalpara id="b131nl11">
      <title>Affichage vertical :</title>
-     <para>Pour passer à l'affichage vertical, choisissez Affichage &gt; Aperçu &gt; Affichage vertical</para>
+     <para>Pour passer à l'affichage vertical, choisissez Affichage &gt; Aperçu &gt; Affichage vertical.</para>
     </formalpara>
     <para>En affichage vertical, la liste des messages contient deux lignes réduites des en-têtes, ce qui permet d'exploiter la largeur supplémentaire dans la colonne d'aperçu. Ces lignes réduites comportent le nom et le courriel de l'expéditeur, l'icône de pièces jointes, la date ainsi que le sujet en deuxième ligne.</para>
     <mediaobject id="b159qju3"><imageobject><imagedata format="PNG" fileref="figures/ver_view_a.png"/></imageobject></mediaobject>
     <formalpara id="b131nkqr">
      <title>Affichage classique :</title>
-     <para>Pour passer à l'affichage classique, choisissez Affichage &gt; Aperçu &gt; Affichage classique</para>
+     <para>Pour passer à l'affichage classique, choisissez Affichage &gt; Aperçu &gt; Affichage classique.</para>
     </formalpara>
    </section>
 
@@ -1557,7 +1557,7 @@
 
     <section id="bsfnqkj">
      <title>Utilisation des jeux de caractères</title>
-     <para>Un jeu de caractères est une version infromatisée d'un alphabet. Anciennement, le jeu de caractères ASCII était utilisé de façon quasi universelle. Cependant, il ne contient que 128 caractères, ce qui signifie qu'il est incapable d'afficher des caractères cyrilliques, kanjis ou d'autres alphabets non latins. Pour contourner ces problèmes d'affichage, les programmeurs ont développé diverses méthodes, ce qui a fait que beaucoup de langues ont maintenant leur propre jeu de caractères, et le texte écrit dans d'autres jeux de caractères ne s'affiche pas correctement. Finalement, les organisations de standardisation ont développé le jeu de caractères Unicode* UTF-8 pour fournir un jeu de codes unique et compatible pour tous.</para>
+     <para>Un jeu de caractères est une version informatisée d'un alphabet. Anciennement, le jeu de caractères ASCII était utilisé de façon quasi universelle. Cependant, il ne contient que 128 caractères, ce qui signifie qu'il est incapable d'afficher des caractères cyrilliques, kanjis ou d'autres alphabets non latins. Pour contourner ces problèmes d'affichage, les programmeurs ont développé diverses méthodes, ce qui a fait que beaucoup de langues ont maintenant leur propre jeu de caractères, et le texte écrit dans d'autres jeux de caractères ne s'affiche pas correctement. Finalement, les organisations de standardisation ont développé le jeu de caractères Unicode* UTF-8 pour fournir un jeu de codes unique et compatible pour tous.</para>
      <para>La plupart des courriels déclarent à l'avance le jeu de caractères qu'ils emploient. Evolution sait donc généralement afficher ces messages correctement. Cependant, si vous rencontrez dans des messages des lignes incompréhensibles de caractères, essayez de sélectionner un jeu de caractères différent dans les paramètres du message. Si vos destinataires ne peuvent pas lire vos messages, essayez de sélectionner un jeu de caractères différent dans la boîte de dialogue des options de l'éditeur. Pour certaines langues, telles que le turc ou le coréen, il se peut que la meilleure solution soit de sélectionner le jeu de caractères spécifique à la langue. Toutefois, le meilleur choix dans la plupart des cas, c'est l'UTF-8, car il propose la plus grande gamme de caractères pour le plus grand nombre de langues.</para>
     </section>
    </section>
@@ -1814,7 +1814,7 @@
 
    <section id="usage-mail-getnsend-send-html">
     <title>Amélioration des courriels avec le HTML</title>
-    <para>En principe, il n'est pas possible de définir des styles de texte ou d'insérer des imagaes dans un courriel. Cependant, la pluspart des logiciels de messagerie récents savent afficher les images et les styles de texte en plus de l'alignement de base et du formatage des paragraphes. Ils le font avec le <link linkend="html">HTML</link>, à la manière des pages Web.</para>
+    <para>En principe, il n'est pas possible de définir des styles de texte ou d'insérer des images dans un courriel. Cependant, la plupart des logiciels de messagerie récents savent afficher les images et les styles de texte en plus de l'alignement de base et du formatage des paragraphes. Ils le font avec le <link linkend="html">HTML</link>, à la manière des pages Web.</para>
     <para>Certaines personnes n'ont pas de logiciel de messagerie capable d'afficher le HTML, ou ils préfèrent ne pas recevoir des messages en HTML car c'est plus lent à télécharger et à afficher. C'est pour cette raison que Evolution envoie les messages en texte simple, sauf si vous lui demandez explicitement d'utiliser le HTML.</para>
 
     <section id="bsait28">
@@ -2324,7 +2324,7 @@
       <para>Déplacez votre souris au hasard pour générer les clés.</para>
      </listitem>
     </orderedlist>
-    <para>Lorsque les clés ont été générées, vous pouvez consulter vos informations de clé en saisissant <command>gpg --list-keys</command>. Vous devriez voir apparaître quelque chose comme ceci : <computeroutput> /home/vous/.gnupg/pubring.gpg ----------------------------  pub 1024D/32j38dk2 2001-06-20 vous &lt;vous@exemple.com&gt;  sub 1024g/289sklj3 2001-06-20 [expires: 2002-11-14]  </computeroutput></para>
+    <para>Lorsque les clés ont été générées, vous pouvez consulter vos informations de clé en saisissant <command>gpg --list-keys</command>. Vous devriez voir apparaître quelque chose comme ceci : <computeroutput> /home/vous/.gnupg/pubring.gpg ---------------------------- pub 1024D/32j38dk2 2001-06-20 vous &lt;vous@exemple.com&gt; sub 1024g/289sklj3 2001-06-20 [expires: 2002-11-14]  </computeroutput></para>
     <para>GPG crée une liste (ou trousseau de clés) pour vos clés publiques et une autre pour vos clés privées. Toutes les clés publiques que vous connaissez sont stockées dans le fichier ~/.gnupg/pubring.gpg. Si vous voulez donnez vos clés à d'autres personnes, envoyez-leur ce fichier.</para>
     <para>Si vous le souhaitez, vous pouvez placer vos clés sur un serveur de clés.</para>
     <orderedlist>
@@ -2345,10 +2345,7 @@
     <para>Pour obtenir des clés publiques d'un serveur de clés, saisissez la commande <command>gpg --recv-keys --keyserver wwwkeys.pgp.net <varname>id_clé</varname></command>, en remplaçant <varname>id_clé</varname> par l'identifiant de votre destinataire. Vous devez saisir votre mot de passe, puis l'identifiant est automatiquement ajouté à votre trousseau.</para>
     <note>
      <para>Le domaine <quote><emphasis>wwwkeys.pgp.net</emphasis></quote> est attribué à plusieurs hôtes dans différents réseaux. L'utilitaire gpg essaie de se connecter à l'un d'entre eux dans le réseau où il se trouve ; et si cet hôte est hors service, il échoue après un délai d'expiration.</para>
-     <para>To avoid this, type <command>$ host wwwkeys.pgp.net</command> in a terminal console and get the IP address of the hosts. 
-      You can ping each of them to find the one which is up and running. Now, you can replace wwwkeys.pgp.net in the gpg --recv-keys
-      --keyserver wwwkeys.pgp.net keyid command with that 
-      explicit IP number as returned by the host utility.</para> 
+     <para>Pour éviter cela, saisissez la commande <command>$ host wwwkeys.pgp.net</command> dans un terminal et notez les adresses IP des hôtes. Vous pouvez essayez de les atteindre par la commande « ping » pour savoir lesquels répondent effectivement. Ensuite, vous pouvez remplacer le nom wwwkeys.pgp.net dans la commande « gpg --recv-keys --keyserver wwwkeys.pgp.net keyid » par le numéro IP que vous avez identifié à l'étape précédente.</para> 
     </note>
     <para>Si quelqu'un vous envoie directement une clé publique, enregistrez-la dans un fichier texte et saisissez la commande <command>gpg <varname>--import</varname></command> pour l'ajouter à votre trousseau.</para>
    </section>
@@ -2776,7 +2773,7 @@
     <para>Les marqueurs vous aident à organiser votre travail de plusieurs manières. Par exemple, vous pouvez ajouter une colonne État des marqueurs à votre liste de messages et trier d'après celle-ci. Il est également envisageable de créer un dossier de recherche affichant tous les messages marqués. En effaçant les marqueurs lorsque les tâches correspondantes sont achevées, votre dossier de recherche ne contiendra plus que les messages qui contiennent encore une échéance.</para>
     <formalpara id="b17s9rir">
      <title>Fonctionnalité Marquer comme important :</title>
-     <para>Si vous préférez utiliser une méthode plus simple de vous rappeler de certains messages, vous pouvez les marquer comme importants en faisant un clic droit sur le message, puis en choisissant « Marquer comme important » ou en choississant le menu « Message &gt; Marquer comme important » dans la barre de menus.</para>
+     <para>Si vous préférez utiliser une méthode plus simple de vous rappeler de certains messages, vous pouvez les marquer comme importants en faisant un clic droit sur le message, puis en choisissant « Marquer comme important » ou en choisissant le menu « Message &gt; Marquer comme important » dans la barre de menus.</para>
     </formalpara>
    </section>
   </section>
@@ -3034,7 +3031,7 @@
        <title>En-tête spécifique :</title>
        <para>N'importe quel en-tête, y compris les en-têtes personnalisés.</para>
       </formalpara>
-      <para>Si un message utilise un en-tête plus d'une fois, Evolution ne prend en compte que la première occurrence, même si le message définit l'en-tête différemment la deuxième fois. Par exemple, si un message définit l'en-tête Resent-From: comme « engineering@exemple.com », puis qu'il le redéfinit comme « marketing@example.com », Evolution applique les filtres comme si la deuxième déclaration n'existait pas. Pour filtrer sur les en-têtes redondants des messages, utilisez une expression regulière.</para>
+      <para>Si un message utilise un en-tête plus d'une fois, Evolution ne prend en compte que la première occurrence, même si le message définit l'en-tête différemment la deuxième fois. Par exemple, si un message définit l'en-tête Resent-From: comme « engineering@exemple.com », puis qu'il le redéfinit comme « marketing@example.com », Evolution applique les filtres comme si la deuxième déclaration n'existait pas. Pour filtrer sur les en-têtes redondants des messages, utilisez une expression régulière.</para>
       <formalpara id="bshkazq">
        <title>Corps du message :</title>
        <para>Recherche dans le texte effectif du message.</para>
@@ -3045,7 +3042,7 @@
       </formalpara>
       <formalpara id="bshkbvl">
        <title>Date d'envoi :</title>
-       <para>Filtre les messages selon la date de leur expédition. Choisissez en premier les conditions que le message doit remplir, comme avant ou après une certaine date. Puis, choisissez la date. Le filtre compare l'horodatage du message à l'horloge du système au moment où le filtre est appliqué, ou à une date et heure spécifique choisie dans un calendrier. Vous pouvez aussi lui demander de vérifier qu'un message soit dans un intrervalle de temps relatif au filtre, comme par exemple entre deux et quatre jours.</para>
+       <para>Filtre les messages selon la date de leur expédition. Choisissez en premier les conditions que le message doit remplir, comme avant ou après une certaine date. Puis, choisissez la date. Le filtre compare l'horodatage du message à l'horloge du système au moment où le filtre est appliqué, ou à une date et heure spécifique choisie dans un calendrier. Vous pouvez aussi lui demander de vérifier qu'un message soit dans un intervalle de temps relatif au filtre, comme par exemple entre deux et quatre jours.</para>
       </formalpara>
       <formalpara id="bshkcq6">
        <title>Date de réception :</title>
@@ -3290,7 +3287,7 @@
       </formalpara>
       <formalpara id="bshkzun">
        <title>Date d'envoi :</title>
-       <para>Filtre les messages selon la date de leur expédition. Choisissez en premier les conditions que le message doit remplir, comme avant ou après une certaine date. Puis, choisissez la date. Le filtre compare l'horodatage du message à l'horloge du système au moment où le filtre est appliqué, ou à une date et heure spécifique choisie dans un calendrier. Vous pouvez aussi lui demander de vérifier qu'un message soit dans un intrervalle de temps relatif au filtre, comme par exemple entre deux et quatre jours.</para>
+       <para>Filtre les messages selon la date de leur expédition. Choisissez en premier les conditions que le message doit remplir, comme avant ou après une certaine date. Puis, choisissez la date. Le filtre compare l'horodatage du message à l'horloge du système au moment où le filtre est appliqué, ou à une date et heure spécifique choisie dans un calendrier. Vous pouvez aussi lui demander de vérifier qu'un message soit dans un intervalle de temps relatif au filtre, comme par exemple entre deux et quatre jours.</para>
       </formalpara>
       <formalpara id="bshkzuo">
        <title>Date de réception :</title>
@@ -3822,7 +3819,7 @@
      <para>Pour éviter un trafic réseau trop important, Evolution ne charge en principe pas les données du serveur LDAP au moment de son ouverture.</para>
     </listitem>
     <listitem>
-     <para>Selon les règlages de votre serveur, vous ne pourrez peut-être pas modifier tous les champs d'un contact stocké sur un serveur LDAP. Certains serveurs empêchent tout ou partie des modifications, et d'autres utilisent un nombre de champs plus restreint que ceux d'Evolution. Contactez votre administrateur système si vous avez besoin de réglages différents.</para>
+     <para>Selon les réglages de votre serveur, vous ne pourrez peut-être pas modifier tous les champs d'un contact stocké sur un serveur LDAP. Certains serveurs empêchent tout ou partie des modifications, et d'autres utilisent un nombre de champs plus restreint que ceux d'Evolution. Contactez votre administrateur système si vous avez besoin de réglages différents.</para>
     </listitem>
    </itemizedlist>
 
@@ -4030,7 +4027,7 @@
   </section>
   <section id="usage-calendar-apts">
    <title>Planification dans le calendrier Evolution</title>
-   <para>Il existe deux types d'événements que vous pouvez planifier avec Evolutioin : les rendez-vous et les réunions. Un rendez-vous est un événement que vous planifiez seulement pour vous, alors qu'une réunion est un événement que vous planifiez pour plusieurs personnes. Vous pouvez aussi effectuer une recherche de disponibilité pour les réunions afin de déterminer si les invités sont libres.</para>
+   <para>Il existe deux types d'événements que vous pouvez planifier avec Evolution : les rendez-vous et les réunions. Un rendez-vous est un événement que vous planifiez seulement pour vous, alors qu'une réunion est un événement que vous planifiez pour plusieurs personnes. Vous pouvez aussi effectuer une recherche de disponibilité pour les réunions afin de déterminer si les invités sont libres.</para>
    <itemizedlist>
     <listitem>
      <para><link linkend="usage-calendar-apts-basic">Rendez-vous</link></para>
@@ -4082,7 +4079,7 @@
       <listitem id="bshlods">
        <para>Choisissez Fichier &gt; Nouveau &gt; Rendez-vous.</para>
        <para>ou</para>
-       <para>Click Calendars on the Switcher, then click File, then New &gt; Appointment.</para>
+       <para>Cliquez sur Calendriers dans le sélecteur, puis cliquez sur Fichier puis Nouveau &gt; Rendez-vous.</para>
        <para>ou</para>
        <para>Double-cliquez sur un espace vierge dans un calendrier pour ouvrir la boîte de dialogue Rendez-vous. L'heure de l'endroit sur lequel vous avez cliqué dans le calendrier est suggérée comme heure du nouveau rendez-vous.</para>
        <para>ou</para>
@@ -4120,7 +4117,7 @@
        <para>Choisissez « jusqu'à » pour indiquer l'heure de fin de l'événement.</para>
       </listitem>
       <listitem id="b10fny4e">
-       <para>Saisssez le fuseau horaire dans le champ correspondant.</para>
+       <para>Saisissez le fuseau horaire dans le champ correspondant.</para>
        <para>ou</para>
        <para>Cliquez sur le globe pour personnaliser le fuseau horaire.</para>
        <para>Pour masquer ou afficher le champ du fuseau horaire, choisissez Affichage &gt; Fuseau horaire.</para>
@@ -4190,7 +4187,7 @@
      <para>Pour créer un rappel :</para>
      <orderedlist>
       <listitem id="bxmtait">
-       <para>To create an alarm for this appointment, click Alarms on the toolbar, or click Options, then Alarms.</para>
+       <para>Pour créer une alarme pour ce rendez-vous, cliquez sur Alarmes dans la barre d'outils ou choisissez Options, puis Alarmes.</para>
       </listitem>
       <listitem id="bzz2xh4">
        <para>Sélectionnez Personnaliser pour ajouter ou enlever des alarmes personnalisées pour l'événement.</para>
@@ -4280,7 +4277,7 @@
       <para>Choisissez « jusqu'à » pour indiquer l'heure de fin de l'événement.</para>
      </listitem>
      <listitem id="bzxys1w">
-      <para>Saisssez le fuseau horaire dans le champ correspondant.</para>
+      <para>Saisissez le fuseau horaire dans le champ correspondant.</para>
       <para>ou</para>
       <para>Cliquez sur le globe pour personnaliser le fuseau horaire.</para>
       <para>Pour masquer ou afficher le champ du fuseau horaire, choisissez Affichage &gt; Fuseau horaire.</para>
@@ -4314,7 +4311,7 @@
     </orderedlist>
     <para>Un courriel est envoyé à tous les participants, les invitant à l'événement.</para>
     <note>
-     <para>Dans Evolution, une réunion ne peut avoir qu'un seul organisateur, et c'est lui seul qui peut ajouter des participants à la réunion. Bien qu'il soit possible de changer l'organisateur d'une réunion, ce n'est pas la manière recommandée d'inviter des participants supplémentaires aux réunions. Si vous souhaitez inviter des personnes supplémentaires à une réunion et que vous n'en êtes pas l'organisateur, la meilleure solution est de faire suivre le message d'invitationoriginel de l'organisateur à ces personnes.</para>
+     <para>Dans Evolution, une réunion ne peut avoir qu'un seul organisateur, et c'est lui seul qui peut ajouter des participants à la réunion. Bien qu'il soit possible de changer l'organisateur d'une réunion, ce n'est pas la manière recommandée d'inviter des participants supplémentaires aux réunions. Si vous souhaitez inviter des personnes supplémentaires à une réunion et que vous n'en êtes pas l'organisateur, la meilleure solution est de faire suivre le message d'invitation originel de l'organisateur à ces personnes.</para>
     </note>
    </section>
 
@@ -4362,7 +4359,7 @@
    
      </listitem>
      <listitem id="b10fogwo">
-      <para>Affinez les horaires de la réunion, soit en glissant les bords de la réunion, soit en utilisant les boutons de choix automatique pour choisir automatiquement une période, puis cliquez sur Enregistrer et fermer. Sur un serveur Exchange, le rendez-vous se met automatiquement à jour pour les participants invités ; dans les autres cas, un courriel de notification de mise à jour est envoyé aux particpants.</para>
+      <para>Affinez les horaires de la réunion, soit en glissant les bords de la réunion, soit en utilisant les boutons de choix automatique pour choisir automatiquement une période, puis cliquez sur Enregistrer et fermer. Sur un serveur Exchange, le rendez-vous se met automatiquement à jour pour les participants invités ; dans les autres cas, un courriel de notification de mise à jour est envoyé aux participants.</para>
      </listitem>
     </orderedlist>
     <formalpara id="bsb0cyw">
@@ -4573,7 +4570,7 @@
 
   <section id="bxqatxt">
    <title>Délégation de rendez-vous</title>
-   <para>Seuls les particpants à une réunion peuvent déléguer une réunion.</para>
+   <para>Seuls les participants à une réunion peuvent déléguer une réunion.</para>
    <orderedlist>
     <listitem id="bxqatxu">
      <para>Dans le calendrier, faites un clic droit sur la réunion que vous souhaitez déléguer.</para>
@@ -4593,10 +4590,10 @@
 
   <section id="usage-calendar-multiple">
    <title>Calendriers multiples, calendriers Web et CalDAV</title>
-   <para>Pour créer un nouveau calendrier, choisissez Fichier &gt; Nouveau &gt; Calendrier. Si vous prévoyez de créer un calendrier stocké localement, vous devez uniquement indiquer un nom et une couleur. Si c'est un calendrier distant, indiquez le nom, la coleur, l'URL et une fréquence de rafraîchissement. La fréquence de rafraîchissement détermine la fréquence de vérification des modifications du calendrier par Evolution. Si vous travaillez avec quelqu'un qui publie un calendrier en ligne, vous pouvez envisagez de vérifier les mises à jour toutes les 30 minutes. D'autre part, si vous utilisez le calendrier pour afficher l'agenda d'une équipe sportive, il semble suffisant de le rafraîchir une fois par semaine.</para>
+   <para>Pour créer un nouveau calendrier, choisissez Fichier &gt; Nouveau &gt; Calendrier. Si vous prévoyez de créer un calendrier stocké localement, vous devez uniquement indiquer un nom et une couleur. Si c'est un calendrier distant, indiquez le nom, la couleur, l'URL et une fréquence de rafraîchissement. La fréquence de rafraîchissement détermine la fréquence de vérification des modifications du calendrier par Evolution. Si vous travaillez avec quelqu'un qui publie un calendrier en ligne, vous pouvez envisagez de vérifier les mises à jour toutes les 30 minutes. D'autre part, si vous utilisez le calendrier pour afficher l'agenda d'une équipe sportive, il semble suffisant de le rafraîchir une fois par semaine.</para>
    <para>Le site Web <ulink url="http://icalshare.com">icalshare.com</ulink> possède une liste importante de calendriers partagés, y compris des congés nationaux et religieux, des phases lunaires, des événements sportifs et des événements locaux et régionaux.</para>
    <para>Evolution vous permet de visualiser et de gérer des calendriers sur des serveurs CalDAV distants. La procédure pour créer une source de calendrier CalDAV est identique à celle utilisée pour une source de calendrier Web distante. Vous pouvez afficher et créer des événements de calendrier sur des comptes CalDAV tout comme sur d'autres calendriers Evolution.</para>
-   <para>Vous pouvez afficher et gérer des fichiers locaux iCal ou ics dans l'affichage Calendriers. Sélectionnnez les fichiers locaux iCal ou ics comme source de calendrier pour pouvoir les gérer et les afficher dans Evolution.</para>
+   <para>Vous pouvez afficher et gérer des fichiers locaux iCal ou ics dans l'affichage Calendriers. Sélectionnez les fichiers locaux iCal ou ics comme source de calendrier pour pouvoir les gérer et les afficher dans Evolution.</para>
    <para>Pour accéder à un fichier ics ou iCal dans l'affichage des calendriers :</para>
    <orderedlist>
      <listitem>
@@ -4648,7 +4645,7 @@
     <title>Création d'une nouvelle liste de tâches</title>
     <orderedlist>
      <listitem id="b1047d8t">
-      <para>Choisissez Fichier &gt; Nouveau &gt; Liste de tâches</para>
+      <para>Choisissez Fichier &gt; Nouveau &gt; Liste de tâches.</para>
      </listitem>
      <listitem id="b1047d8u">
       <para>Indiquez le nom et la couleur de la liste de tâches.</para>
@@ -4682,7 +4679,7 @@
       <para>(facultatif) Indiquez une heure de début et une heure de fin pour la tâche.</para>
      </listitem>
      <listitem id="b10fqh6l">
-      <para>Saisssez le fuseau horaire dans le champ correspondant.</para>
+      <para>Saisissez le fuseau horaire dans le champ correspondant.</para>
       <para>ou</para>
       <para>Cliquez sur le globe pour personnaliser le fuseau horaire.</para>
       <para>Pour masquer ou afficher le champ du fuseau horaire, choisissez Affichage &gt; Fuseau horaire.</para>
@@ -4733,7 +4730,7 @@
       <para>(facultatif) Indiquez une date et une heure de début, ainsi qu'une date et une heure d'échéance pour la tâche.</para>
      </listitem>
      <listitem id="b10fqh6n">
-      <para>Saisssez le fuseau horaire dans le champ correspondant.</para>
+      <para>Saisissez le fuseau horaire dans le champ correspondant.</para>
       <para>ou</para>
       <para>Cliquez sur le globe pour personnaliser le fuseau horaire.</para>
       <para>Pour masquer ou afficher le champ du fuseau horaire, choisissez Affichage &gt; Fuseau horaire.</para>
@@ -5160,7 +5157,7 @@
 
  <chapter id="usage-exchange">
   <title>Connexion aux serveurs Exchange</title>
-  <para><trademark>Evolution</trademark> Exchange pour Microsoft Exchange autorise les clients Evolution à accéder aux comptes de serveurs Microsoft Exchange 2000 et 2003. Comme Evolution, c'estégalement du logiciel libre et placé sous licence GPL.</para>
+  <para><trademark>Evolution</trademark> Exchange pour Microsoft Exchange autorise les clients Evolution à accéder aux comptes de serveurs Microsoft Exchange 2000 et 2003. Comme Evolution, c'est également du logiciel libre et placé sous licence GPL.</para>
   <itemizedlist>
    <listitem>
     <para><link linkend="features">Fonctionnalités de Evolution Exchange</link></para>
@@ -5253,7 +5250,7 @@
       <listitem>
        <formalpara id="b10fqjsl">
         <title>Ajout de demandes de réunion iCalendar au calendrier :</title>
-        <para>Vous permet d'ajouter les demandes de réunion iCalendar que vous recevez à votre calendrier Exchange. Remarquez que vous devez indiquer le calendrier auquel vous  voulez ajouter les réunions planifiées à partir de la liste.</para>
+        <para>Vous permet d'ajouter les demandes de réunion iCalendar que vous recevez à votre calendrier Exchange. Remarquez que vous devez indiquer le calendrier auquel vous voulez ajouter les réunions planifiées à partir de la liste.</para>
        </formalpara>
       </listitem>
      </itemizedlist>
@@ -5344,7 +5341,7 @@
              
       </listitem>
       <listitem id="bshnbxz">
-       <para>Créez un compte en suivant la procédure décrite dans <link linkend="usage-mainwindow-starting">Démarrage d'Evolution pour la première fois</link>. Pensez  à sélectionner Microsoft Exchange comme type de serveur dans la section Réception de messages.</para>
+       <para>Créez un compte en suivant la procédure décrite dans <link linkend="usage-mainwindow-starting">Démarrage d'Evolution pour la première fois</link>. Pensez à sélectionner Microsoft Exchange comme type de serveur dans la section Réception de messages.</para>
        <mediaobject id="bs4aw7k"><imageobject><imagedata format="PNG" fileref="figures/exchng-rec-mails.png"/></imageobject></mediaobject>
        
       </listitem>
@@ -5381,7 +5378,7 @@
       </listitem>
       <listitem id="bshnhvg">
        <para>Cliquez sur l'onglet des Options de réception.</para>
-       <para>Indiquez la fréquence de vérification de nouveaux courriels, le nom du serveur de catalogue global, s'il faut appliquer le filtrage de courriels de la boîte de reception, rechercher les pourriels, définir une période d'expiration du mot de passe, et tout autre paramètre que vous souhaitez inclure.</para>
+       <para>Indiquez la fréquence de vérification de nouveaux courriels, le nom du serveur de catalogue global, s'il faut appliquer le filtrage de courriels de la boîte de réception, rechercher les pourriels, définir une période d'expiration du mot de passe, et tout autre paramètre que vous souhaitez inclure.</para>
       </listitem>
       <listitem id="bshnjw0">
        <para>Utilisez l'onglet Valeurs par défaut pour définir des dossiers, envoyer des copies cc ou cci à certaines adresses électroniques, et pour définir les options d'accusés de réception.</para>
@@ -5400,7 +5397,7 @@
 
   <section id="access">
    <title>Accès au serveur Exchange</title>
-   <para>Après l'installation d'Evolution Exchange, vous pouvez accéder aux dossiers  publiques et exécuter certaines actions d'Exchange comme la délégation et la gestion du mot de passe, ainsi que l'abonnement aux dossiers calendriers, tâches et contacts des autres utilisateurs. Vous pouvez aussi exécuter des opérations sur dossiers telles qu'ajouter, supprimer et renommer des dossiers, et choisir les permissions des dossiers calendriers, tâches et contacts. Utilisez le composant habituel Courriel pour la messagerie, le composant Contacts pour les contacts et le composant Calendrier pour planifier votre emploi du temps.</para>
+   <para>Après l'installation d'Evolution Exchange, vous pouvez accéder aux dossiers publiques et exécuter certaines actions d'Exchange comme la délégation et la gestion du mot de passe, ainsi que l'abonnement aux dossiers calendriers, tâches et contacts des autres utilisateurs. Vous pouvez aussi exécuter des opérations sur dossiers telles qu'ajouter, supprimer et renommer des dossiers, et choisir les permissions des dossiers calendriers, tâches et contacts. Utilisez le composant habituel Courriel pour la messagerie, le composant Contacts pour les contacts et le composant Calendrier pour planifier votre emploi du temps.</para>
    <para>Si vous utilisez à la fois un compte Exchange et un compte local de messagerie, vous devez savoir que lorsque vous enregistrez une adresse électronique ou un rendez-vous depuis un courriel, la sauvegarde s'effectue dans votre liste de contacts ou votre calendrier Exchange, et non dans votre compte local. C'est la même chose pour la synchronisation des appareils Palm OS ; les tâches, les rendez-vous et les adresses provenant de votre Palm sont synchronisés dans les dossiers Exchange, plutôt quand dans les dossiers locaux.</para>
    <para>Pour éviter de surcharger le serveur, la liste d'adresses globale est vide tant que vous n'y recherchez pas un élément.</para>
    <para/>
@@ -5435,7 +5432,7 @@
 
    <section id="b15flgn7">
     <title>Options d'envoi</title>
-    <para>Vous pouvez définir la priorité et la sensibilité d'un message envoyé à partir d'un compte Exchange afin que les destinataires perçoivent l'importance du message. La priorité peut prendre trois valeurs différentes (Élevée, Normale, Faible) et la sensibilité peut prendre quatres valeurs (Normal, Personnel, Privé, Confidentiel). Vous pouvez aussi activer l'accusé de réception et l'accusé de lecture pour les messages envoyés.</para>
+    <para>Vous pouvez définir la priorité et la sensibilité d'un message envoyé à partir d'un compte Exchange afin que les destinataires perçoivent l'importance du message. La priorité peut prendre trois valeurs différentes (Élevée, Normale, Faible) et la sensibilité peut prendre quatre valeurs (Normal, Personnel, Privé, Confidentiel). Vous pouvez aussi activer l'accusé de réception et l'accusé de lecture pour les messages envoyés.</para>
 
     <section id="b17reifv">
      <title>Options de suivi</title>
@@ -5649,7 +5646,7 @@
 
   <section id="full-advantage">
    <title>Planification de réunions avec Libre/Occupé</title>
-   <para>Evolution vous aide à planifier des réunions en tenant compte de la disponibilité des participants. La fonctionnalité Libre/Occupé permet de vérifier les calendriers des autres utilisateurs Exchange pour savoir s'ils sont disponibles d'après leur calendrier Exchange. En cas de non disponibilité, vous pouvez réagender la réunion.</para>
+   <para>Evolution vous aide à planifier des réunions en tenant compte de la disponibilité des participants. La fonctionnalité Libre/Occupé permet de vérifier les calendriers des autres utilisateurs Exchange pour savoir s'ils sont disponibles d'après leur calendrier Exchange. En cas de non disponibilité, vous pouvez replanifier la réunion.</para>
    <orderedlist>
     <listitem id="bsbgc5a">
      <para>Ouvrez un nouveau rendez-vous dans le calendrier.</para>
@@ -5984,7 +5981,7 @@
       <para>Choisissez si vous ne souhaitez contrôler le pourriel que dans la boîte de réception.</para>
      </listitem>
      <listitem id="bv7wc2w">
-      <para>Choisisssez si vous voulez synchroniser automatiquement les contacts et le calendrier avec votre système local.</para>
+      <para>Choisissez si vous voulez synchroniser automatiquement les contacts et le calendrier avec votre système local.</para>
       <para>Evolution récupère les informations des contacts et du calendrier distants et les stocke sur votre disque local.</para>
       <note>
        <para>Les contacts et le calendrier distants sont généralement stockés à distance sur les serveurs plutôt que sur les disques durs locaux.</para>
@@ -6016,7 +6013,7 @@
    <para>Pour envoyer une note de rappel :</para>
    <orderedlist>
     <listitem id="b15ijcgi">
-     <para>Click File, then New &gt; Shared Memo.</para>
+     <para>Choisissez Fichier, puis Nouveau &gt; Mémo partagé.</para>
     </listitem>
     <listitem id="b15ijcow">
      <para>Sélectionnez le nom du compte de l'organisateur dans la liste déroulante « Organisateur ».</para>
@@ -6153,7 +6150,7 @@
      <orderedlist>
       <listitem id="b17qt8ih">
        <para>Dans la fenêtre de rédaction d'un message, choisissez Insertion &gt; Options d'envoi.</para>
-       <para>Sélectionnez Suivi de l'état</para>
+       <para>Sélectionnez Suivi de l'état.</para>
        <mediaobject id="b17qsuu3"><imageobject><imagedata format="PNG" fileref="figures/evo_gwstatustrack.png"/></imageobject></mediaobject>
       </listitem>
       <listitem id="b17qt9nx">
@@ -6217,7 +6214,7 @@
        <para>Cochez cette option pour permettre aux destinataires de répondre à leur convenance. Si vous choisissez cette option, le message <emphasis>Réponse requise : Quand cela vous convient</emphasis> apparaît au sommet du message.</para>
       </formalpara>
       <formalpara id="bio3ut9">
-       <title>Within days:</title>
+       <title>Délai :</title>
        <para>Indiquez le délai (en nombre de jours) dans lequel vous attendez une réponse.</para>
       </formalpara>
 
@@ -6274,7 +6271,7 @@
      <orderedlist>
       <listitem id="b17rearj">
        <para>Dans la fenêtre de création de réunion, choisissez Insertion &gt; Options d'envoi.</para>
-       <para>Sélectionnez Suivi de l'état</para>
+       <para>Sélectionnez Suivi de l'état.</para>
        <mediaobject id="b17reckf"><imageobject><imagedata format="PNG" fileref="figures/evo_calstatus_a.png"/></imageobject></mediaobject>
       </listitem>
       <listitem id="b17recrx">
@@ -6620,7 +6617,7 @@
   <section id="config-prefs-mail-identity">
    <title>Utilisation des comptes de messagerie</title>
    <para>Evolution permet de gérer plusieurs comptes, ou identités. Lorsque vous rédigez un message, vous pouvez spécifier le compte à utiliser en le sélectionnant dans la liste déroulante en regard de la zone De dans l'éditeur de messages.</para>
-   <para>Click Send/Receive to update all mail sources that are not disabled. If you don't want to check mail for a given account, select the account in Edit &gt; Preferences, then Mail Accounts page and click the Disable button.</para>
+   <para>Cliquez sur Envoyer/Recevoir pour mettre à jour toutes les sources de courriel qui ne sont pas désactivées. Si vous ne voulez pas relever le courriel d'un compte, sélectionnez ce compte dans Édition &gt; Préférences, puis l'onglet Comptes de messagerie et cliquez sur le bouton Désactiver.</para>
    <para>Pour ajouter un nouveau compte, cliquez sur Ajouter pour ouvrir l'assistant de configuration d'Evolution.</para>
    <para>Pour modifier un compte existant, choisissez-le dans la fenêtre des Préférences.</para>
    <para>Cliquez sur Édition pour ouvrir la fenêtre d'édition du compte.</para>
@@ -7021,7 +7018,7 @@
      <para>Sélectionnez cette option pour afficher les week-ends dans une seule zone au lieu de deux dans la vue mensuelle.</para>
     </formalpara>
     <formalpara id="bsbhw7p">
-     <title>Afficher les numéros de semaine dans le navigateur de dates :</title>
+     <title>Afficher les numéros de semaine :</title>
      <para>Affiche le numéro de chaque semaine dans le calendrier.</para>
     </formalpara>
     <formalpara id="bsbhwdz">
@@ -7368,7 +7365,7 @@ Filter (|(ObjectClass=User)(ObjectClass=groupOfNames)) : récupère les objets 
 
   <section id="bshq58g">
    <title>Activation de la synchronisation</title>
-   <para>Si vous n'avez jamais utilisé un périphérique portable avec votre ordinateur, vous devez exécuter le centre de contrôle GNOME en cliquant sur Système &gt; Paramètres, et vérifier que Pilot Link est correctement configuré. Vérifiez que vous disposez des autorisations de lecture et d'écriture sur le périphérique (dans /dev/pilot normalement). En cas de problème, vérifiez dans /dev/ttyS0 si vous disposez d'une connexion série ou dans /dev/ttyUSB1 si vous disposez d'une connexion USB. Pour ce faire, vous devez passer en mode administrateur et ajouter votre nom d'utilisateur au groupe qui a les droits sur ce noeud de périphérique. Dans le cas d'une synchronisation par USB, deux noeuds sont créés, ttyUSB0 et ttyUSB1. Le second noeud est celui qui sera utilisé pour configurer le périphérique.</para>
+   <para>Si vous n'avez jamais utilisé un périphérique portable avec votre ordinateur, vous devez exécuter le centre de contrôle GNOME en cliquant sur Système &gt; Paramètres, et vérifier que Pilot Link est correctement configuré. Vérifiez que vous disposez des autorisations de lecture et d'écriture sur le périphérique (dans /dev/pilot normalement). En cas de problème, vérifiez dans /dev/ttyS0 si vous disposez d'une connexion série ou dans /dev/ttyUSB1 si vous disposez d'une connexion USB. Pour ce faire, vous devez passer en mode administrateur et ajouter votre nom d'utilisateur au groupe qui a les droits sur ce nœud de périphérique. Dans le cas d'une synchronisation par USB, deux nœuds sont créés, ttyUSB0 et ttyUSB1. Le second nœud est celui qui sera utilisé pour configurer le périphérique.</para>
   </section>
 
   <section id="bshq7hl">
@@ -7721,7 +7718,7 @@ Filter (|(ObjectClass=User)(ObjectClass=groupOfNames)) : récupère les objets 
   <glossentry id="html">
    <glossterm>HTML</glossterm>
    <glossdef>
-    <para>Hypertext Markup Language (HTML) est un langage de description de page dans des documents électroniques comme le pages Web, les fichiers d'aide et les courriers électroniques. HTML peut être utilisé pour inclure des images et appliquer du formatage de texte dans des courriels ou des messages de nouvelles. </para>
+    <para>Hypertext Markup Language (HTML) est un langage de description de page dans des documents électroniques comme le pages Web, les fichiers d'aide et les courriers électroniques. HTML peut être utilisé pour inclure des images et appliquer du formatage de texte dans des courriels ou des messages de nouvelles.</para>
    </glossdef>
   </glossentry>
   <glossentry id="ical">
@@ -7859,7 +7856,7 @@ Filter (|(ObjectClass=User)(ObjectClass=groupOfNames)) : récupère les objets 
     <member>Copyright 2007 Novell, Inc. Tous droits réservés. Permission vous est donnée de copier, distribuer et/ou modifier ce document selon les termes de la Licence GNU Free Documentation License, Version 1.1 ou ultérieure publiée par la Free Software Foundation sans section inaltérable, sans texte de première page de couverture ni texte de dernière page de couverture. Vous trouverez un exemplaire de cette licence sur http://www.fsf.org/licenses/fdl.html.</member>
     <member>LE PRÉSENT DOCUMENT ET SES VERSIONS MODIFIÉES SONT FOURNIS SELON LES TERMES DE LA LICENCE DE DOCUMENTATION LIBRE GNU SACHANT QUE :</member>
     <member>1. LE PRÉSENT DOCUMENT EST FOURNI « TEL QUEL », SANS AUCUNE GARANTIE, EXPRESSE OU IMPLICITE, Y COMPRIS, ET SANS LIMITATION, LES GARANTIES DE BONNE QUALITÉ MARCHANDE OU D'APTITUDE À UN EMPLOI PARTICULIER OU AUTORISÉ DU DOCUMENT OU DE SA VERSION MODIFIÉE. L'UTILISATEUR ASSUME TOUT RISQUE RELATIF À LA QUALITÉ, À LA PERTINENCE ET À LA PERFORMANCE DU DOCUMENT OU DE SA VERSION DE MISE À JOUR. SI LE DOCUMENT OU SA VERSION MODIFIÉE S'AVÉRAIT DÉFECTUEUSE, L'UTILISATEUR (ET NON LE RÉDACTEUR INITIAL, L'AUTEUR, NI TOUT AUTRE PARTICIPANT) ENDOSSERA LES COÛTS DE TOUTE INTERVENTION, RÉPARATION OU CORRECTION NÉCESSAIRE. CETTE DÉNÉGATION DE RESPONSABILITÉ CONSTITUE UNE PARTIE ESSENTIELLE DE CETTE LICENCE. AUCUNE UTILISATION DE CE DOCUMENT OU DE SA VERSION MODIFIÉE N'EST AUTORISÉE AUX TERMES DU PRÉSENT ACCORD, EXCEPTÉ SOUS CETTE DÉNÉGATION DE RESPONSABILITÉ ; </member>
-    <member>2. EN AUCUNE CIRCONSTANCE ET SOUS AUCUNE INTERPRÉTATION DE LA LOI, QU'IL S'AGISSE DE RESPONSABILITÉ CIVILE (Y COMPRIS LA NÉGLIGENCE), CONTRACTUELLE OU AUTRE, L'AUTEUR, LE RÉDACTEUR INITIAL, TOUT PARTICIPANT ET TOUT DISTRIBUTEUR DE CE DOCUMENTOU DE SA VERSION DE MISE À JOUR AINSI QUE TOUT FOURNISSEUR DE QUELQUE PARTIE QUE CE SOIT NE POURRONT ÊTRE TENUS RESPONSABLES À L'ÉGARD DE QUICONQUE POUR TOUT DOMMAGE DIRECT, INDIRECT, PARTICULIER OU ACCIDENTEL DE TOUT TYPE Y COMPRIS, SANS LIMITATION, LES DOMMAGES LIÉS À LA PERTE DE CLIENTÈLE, AUX ARRÊTS DE TRAVAIL, AUX DÉFAILLANCES ET AUX DYSFONCTIONNEMENTS INFORMATIQUES OU TOUT AUTRE DOMMAGE OU PERTE LIÉE À L'UTILISATION DU PRÉSENT DOCUMENT ET DE SES VERSIONS DE MISE À JOUR, ET CE MÊME SI CES PARTIES ONT ÉTÉ INFORMÉES DE LA POSSIBILITÉ DE TELS DOMMAGES.</member>
+    <member>2. EN AUCUNE CIRCONSTANCE ET SOUS AUCUNE INTERPRÉTATION DE LA LOI, QU'IL S'AGISSE DE RESPONSABILITÉ CIVILE (Y COMPRIS LA NÉGLIGENCE), CONTRACTUELLE OU AUTRE, L'AUTEUR, LE RÉDACTEUR INITIAL, TOUT PARTICIPANT ET TOUT DISTRIBUTEUR DE CE DOCUMENT OU DE SA VERSION DE MISE À JOUR AINSI QUE TOUT FOURNISSEUR DE QUELQUE PARTIE QUE CE SOIT NE POURRONT ÊTRE TENUS RESPONSABLES À L'ÉGARD DE QUICONQUE POUR TOUT DOMMAGE DIRECT, INDIRECT, PARTICULIER OU ACCIDENTEL DE TOUT TYPE Y COMPRIS, SANS LIMITATION, LES DOMMAGES LIÉS À LA PERTE DE CLIENTÈLE, AUX ARRÊTS DE TRAVAIL, AUX DÉFAILLANCES ET AUX DYSFONCTIONNEMENTS INFORMATIQUES OU TOUT AUTRE DOMMAGE OU PERTE LIÉE À L'UTILISATION DU PRÉSENT DOCUMENT ET DE SES VERSIONS DE MISE À JOUR, ET CE MÊME SI CES PARTIES ONT ÉTÉ INFORMÉES DE LA POSSIBILITÉ DE TELS DOMMAGES.</member>
    </simplelist>
    <simplelist>
     <member>Novell, Inc.</member>
@@ -7868,7 +7865,7 @@ Filter (|(ObjectClass=User)(ObjectClass=groupOfNames)) : récupère les objets 
     <member>États-Unis</member>
     <member>www.novell.com</member>
    </simplelist>
-   <para id="Bktitle">Manuel d'utilisation d'Evolution 2.28</para>
+   <para id="Bktitle">Manuel d'utilisation d'Evolution 2.30</para>
    <para>Juillet 2007</para>
    <simplelist>
     <member>Pour accéder à la documentation en ligne de ce produit ou d'autres produits Novell, ainsi que pour obtenir des mises à jour, consultez www.novell.com/documentation.</member>

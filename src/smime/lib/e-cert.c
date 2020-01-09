@@ -140,6 +140,11 @@ e_cert_dispose (GObject *object)
 		}
 	}
 
+	if (ec->priv->cert) {
+		CERT_DestroyCertificate (ec->priv->cert);
+		ec->priv->cert = NULL;
+	}
+
 	g_free (ec->priv);
 	ec->priv = NULL;
 
@@ -207,7 +212,8 @@ e_cert_populate (ECert *cert)
 	cert->priv->cn = CERT_GetCommonName (&c->subject);
 	cert->priv->issuer_cn = CERT_GetCommonName (&c->issuer);
 
-	if (SECSuccess == CERT_GetCertTimes (c, &cert->priv->issued_on, &cert->priv->expires_on)) {
+	if (SECSuccess == CERT_GetCertTimes (
+		c, &cert->priv->issued_on, &cert->priv->expires_on)) {
 		PRExplodedTime explodedTime;
 		struct tm exploded_tm;
 		gchar buf[32];
@@ -257,6 +263,7 @@ e_cert_new (CERTCertificate *cert)
 {
 	ECert *ecert = E_CERT (g_object_new (E_TYPE_CERT, NULL));
 
+	/* ECert owns a reference to the 'cert', which will be freed on ECert finalize */
 	ecert->priv->cert = cert;
 
 	e_cert_populate (ecert);
@@ -416,7 +423,7 @@ e_cert_get_usage(ECert *cert)
 		GString *str = g_string_new("");
 		CERTCertificate *icert = e_cert_get_internal_cert (cert);
 
-		for (i=0;i<sizeof(usageinfo)/sizeof(usageinfo[0]);i++) {
+		for (i = 0; i < G_N_ELEMENTS (usageinfo); i++) {
 			if (icert->keyUsage & usageinfo[i].bit) {
 				if (str->len != 0)
 					g_string_append(str, ", ");
@@ -468,6 +475,8 @@ e_cert_get_chain (ECert *ecert)
 		next_cert = CERT_FindCertIssuer (cert, PR_Now(), certUsageSSLClient);
 		if (!next_cert)
 			break;
+
+		/* next_cert has a reference already */
 		ecert = e_cert_new (next_cert);
 	}
 
@@ -477,14 +486,19 @@ e_cert_get_chain (ECert *ecert)
 ECert *
 e_cert_get_ca_cert(ECert *ecert)
 {
-	CERTCertificate *cert, *next = e_cert_get_internal_cert(ecert);
+	CERTCertificate *cert, *next = e_cert_get_internal_cert(ecert), *internal;
 
+	cert = next;
+	internal = cert;
 	do {
+		if (cert != next && cert != internal)
+			CERT_DestroyCertificate (cert);
+
 		cert = next;
 		next = CERT_FindCertIssuer (cert, PR_Now(), certUsageAnyCA);
 	} while (next && next != cert);
 
-	if (cert == e_cert_get_internal_cert(ecert))
+	if (cert == internal)
 		return g_object_ref(ecert);
 	else
 		return e_cert_new(cert);
@@ -621,6 +635,15 @@ get_oid_text (SECItem *oid, gchar **text)
 	case SEC_OID_PKCS1_SHA1_WITH_RSA_ENCRYPTION:
 		*text = g_strdup (_("PKCS #1 SHA-1 With RSA Encryption"));
 		break;
+	case SEC_OID_PKCS1_SHA256_WITH_RSA_ENCRYPTION:
+		*text = g_strdup (_("PKCS #1 SHA-256 With RSA Encryption"));
+		break;
+	case SEC_OID_PKCS1_SHA384_WITH_RSA_ENCRYPTION:
+		*text = g_strdup (_("PKCS #1 SHA-384 With RSA Encryption"));
+		break;
+	case SEC_OID_PKCS1_SHA512_WITH_RSA_ENCRYPTION:
+		*text = g_strdup (_("PKCS #1 SHA-512 With RSA Encryption"));
+		break;
 	case SEC_OID_AVA_COUNTRY_NAME:
 		*text = g_strdup ("C");
 		break;
@@ -710,7 +733,8 @@ process_sec_algorithm_id (SECAlgorithmID  *algID,
 
 	get_oid_text (&algID->algorithm, &text);
 
-	if (!algID->parameters.len || algID->parameters.data[0] == E_ASN1_OBJECT_TYPE_NULL) {
+	if (!algID->parameters.len ||
+		algID->parameters.data[0] == E_ASN1_OBJECT_TYPE_NULL) {
 		e_asn1_object_set_display_value (sequence, text);
 		e_asn1_object_set_valid_container (sequence, FALSE);
 	} else {
@@ -975,8 +999,6 @@ process_name (CERTName *name, gchar **value)
 
 	rdns = name->rdns;
 
-	lastRdn = rdns;
-
 	/* find last RDN */
 	lastRdn = rdns;
 	while (*lastRdn) lastRdn++;
@@ -1014,6 +1036,12 @@ process_name (CERTName *name, gchar **value)
 
 			SECITEM_FreeItem(decodeItem, PR_TRUE);
 
+			/* Translators: This string is used in Certificate details for fields like Issuer
+			   or Subject, which shows the field name on the left and its respective value
+			   on the right, both as stored in the certificate itself. You probably do not
+			   need to change this string, unless changing the order of name and value.
+			   As a result example: "OU = VeriSign Trust Network"
+			*/
 			temp = g_strdup_printf (_("%s = %s"), type, avavalue->str);
 
 			g_string_append (final_string, temp);
@@ -1117,7 +1145,8 @@ create_tbs_certificate_asn1_struct (ECert *cert, EASN1Object **seq)
 	e_asn1_object_append_child (sequence, subitem);
 	g_object_unref (subitem);
 
-	if (!process_subject_public_key_info (&cert->priv->cert->subjectPublicKeyInfo, sequence))
+	if (!process_subject_public_key_info (
+		&cert->priv->cert->subjectPublicKeyInfo, sequence))
 		return FALSE;
 
 	/* Is there an issuerUniqueID? */
@@ -1187,14 +1216,17 @@ create_asn1_struct (ECert *cert)
 	e_asn1_object_append_child (cert->priv->asn1, sequence);
 	g_object_unref (sequence);
 
-	if (!process_sec_algorithm_id (&cert->priv->cert->signatureWrap.signatureAlgorithm, &sequence))
+	if (!process_sec_algorithm_id (
+		&cert->priv->cert->signatureWrap.signatureAlgorithm, &sequence))
 		return FALSE;
-	e_asn1_object_set_display_name (sequence, _("Certificate Signature Algorithm"));
+	e_asn1_object_set_display_name (
+		sequence, _("Certificate Signature Algorithm"));
 	e_asn1_object_append_child (cert->priv->asn1, sequence);
 	g_object_unref (sequence);
 
 	sequence = e_asn1_object_new ();
-	e_asn1_object_set_display_name (sequence, _("Certificate Signature Value"));
+	e_asn1_object_set_display_name (
+		sequence, _("Certificate Signature Value"));
 
 	/* The signatureWrap is encoded as a bit string.
 	   The function ProcessRawBytes expects the

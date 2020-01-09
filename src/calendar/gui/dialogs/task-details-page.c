@@ -31,25 +31,25 @@
 
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
-#include <glade/glade.h>
 #include <misc/e-dateedit.h>
 #include <misc/e-url-entry.h>
-#include "e-util/e-dialog-widgets.h"
-#include "e-util/e-util-private.h"
 #include "../calendar-config.h"
 #include "../e-timezone-entry.h"
 #include "comp-editor-util.h"
 #include "task-details-page.h"
+
+#include "e-util/e-util.h"
+#include "e-util/e-dialog-widgets.h"
+#include "e-util/e-util-private.h"
 
 #define TASK_DETAILS_PAGE_GET_PRIVATE(obj) \
 	(G_TYPE_INSTANCE_GET_PRIVATE \
 	((obj), TYPE_TASK_DETAILS_PAGE, TaskDetailsPagePrivate))
 
 struct _TaskDetailsPagePrivate {
-	/* Glade XML data */
-	GladeXML *xml;
+	GtkBuilder *builder;
 
-	/* Widgets from the Glade file */
+	/* Widgets from the UI file */
 	GtkWidget *main;
 
 	GtkWidget *status_combo;
@@ -88,85 +88,7 @@ static const gint priority_map[] = {
 	-1
 };
 
-static GtkWidget *task_details_page_get_widget (CompEditorPage *page);
-static void task_details_page_focus_main_widget (CompEditorPage *page);
-static gboolean task_details_page_fill_widgets (CompEditorPage *page, ECalComponent *comp);
-static gboolean task_details_page_fill_component (CompEditorPage *page, ECalComponent *comp);
-static gboolean task_details_page_fill_timezones (CompEditorPage *page, GHashTable *timezones);
-
 G_DEFINE_TYPE (TaskDetailsPage, task_details_page, TYPE_COMP_EDITOR_PAGE)
-
-static void
-task_details_page_dispose (GObject *object)
-{
-	TaskDetailsPagePrivate *priv;
-
-	priv = TASK_DETAILS_PAGE_GET_PRIVATE (object);
-
-	if (priv->main != NULL) {
-		g_object_unref (priv->main);
-		priv->main = NULL;
-	}
-
-	if (priv->xml != NULL) {
-		g_object_unref (priv->xml);
-		priv->xml = NULL;
-	}
-
-	/* Chain up to parent's dispose() method. */
-	G_OBJECT_CLASS (task_details_page_parent_class)->dispose (object);
-}
-
-static void
-task_details_page_class_init (TaskDetailsPageClass *class)
-{
-	GObjectClass *object_class;
-	CompEditorPageClass *editor_page_class;
-
-	g_type_class_add_private (class, sizeof (TaskDetailsPagePrivate));
-
-	object_class = G_OBJECT_CLASS (class);
-	object_class->dispose = task_details_page_dispose;
-
-	editor_page_class = COMP_EDITOR_PAGE_CLASS (class);
-	editor_page_class->get_widget = task_details_page_get_widget;
-	editor_page_class->focus_main_widget = task_details_page_focus_main_widget;
-	editor_page_class->fill_widgets = task_details_page_fill_widgets;
-	editor_page_class->fill_component = task_details_page_fill_component;
-	editor_page_class->fill_timezones = task_details_page_fill_timezones;
-}
-
-static void
-task_details_page_init (TaskDetailsPage *tdpage)
-{
-	tdpage->priv = TASK_DETAILS_PAGE_GET_PRIVATE (tdpage);
-}
-
-/* get_widget handler for the task page */
-static GtkWidget *
-task_details_page_get_widget (CompEditorPage *page)
-{
-	TaskDetailsPage *tdpage;
-	TaskDetailsPagePrivate *priv;
-
-	tdpage = TASK_DETAILS_PAGE (page);
-	priv = tdpage->priv;
-
-	return priv->main;
-}
-
-/* focus_main_widget handler for the task page */
-static void
-task_details_page_focus_main_widget (CompEditorPage *page)
-{
-	TaskDetailsPage *tdpage;
-	TaskDetailsPagePrivate *priv;
-
-	tdpage = TASK_DETAILS_PAGE (page);
-	priv = tdpage->priv;
-
-	gtk_widget_grab_focus (priv->status_combo);
-}
 
 static TaskEditorPriority
 priority_value_to_index (gint priority_value)
@@ -231,6 +153,7 @@ sensitize_widgets (TaskDetailsPage *tdpage)
 {
 	TaskDetailsPagePrivate *priv = tdpage->priv;
 	CompEditor *editor;
+	GtkWidget *entry;
 	ECal *client;
 	gboolean read_only;
 
@@ -245,12 +168,59 @@ sensitize_widgets (TaskDetailsPage *tdpage)
 	gtk_widget_set_sensitive (priv->percent_complete, !read_only);
 	gtk_widget_set_sensitive (priv->completed_date, !read_only);
 	gtk_widget_set_sensitive (priv->url_label, !read_only);
-	gtk_editable_set_editable (GTK_EDITABLE (e_url_entry_get_entry (E_URL_ENTRY (priv->url_entry))), !read_only);
+
+	entry = e_url_entry_get_entry (E_URL_ENTRY (priv->url_entry));
+	gtk_editable_set_editable (GTK_EDITABLE (entry), !read_only);
 }
 
-/* fill_widgets handler for the task page */
+static void
+task_details_page_dispose (GObject *object)
+{
+	TaskDetailsPagePrivate *priv;
+
+	priv = TASK_DETAILS_PAGE_GET_PRIVATE (object);
+
+	if (priv->main != NULL) {
+		g_object_unref (priv->main);
+		priv->main = NULL;
+	}
+
+	if (priv->builder != NULL) {
+		g_object_unref (priv->builder);
+		priv->builder = NULL;
+	}
+
+	/* Chain up to parent's dispose() method. */
+	G_OBJECT_CLASS (task_details_page_parent_class)->dispose (object);
+}
+
+static GtkWidget *
+task_details_page_get_widget (CompEditorPage *page)
+{
+	TaskDetailsPage *tdpage;
+	TaskDetailsPagePrivate *priv;
+
+	tdpage = TASK_DETAILS_PAGE (page);
+	priv = tdpage->priv;
+
+	return priv->main;
+}
+
+static void
+task_details_page_focus_main_widget (CompEditorPage *page)
+{
+	TaskDetailsPage *tdpage;
+	TaskDetailsPagePrivate *priv;
+
+	tdpage = TASK_DETAILS_PAGE (page);
+	priv = tdpage->priv;
+
+	gtk_widget_grab_focus (priv->status_combo);
+}
+
 static gboolean
-task_details_page_fill_widgets (CompEditorPage *page, ECalComponent *comp)
+task_details_page_fill_widgets (CompEditorPage *page,
+                                ECalComponent *comp)
 {
 	TaskDetailsPage *tdpage;
 	TaskDetailsPagePrivate *priv;
@@ -269,10 +239,12 @@ task_details_page_fill_widgets (CompEditorPage *page, ECalComponent *comp)
 	/* Percent Complete. */
 	e_cal_component_get_percent (comp, &percent);
 	if (percent) {
-		e_dialog_spin_set (priv->percent_complete, *percent);
+		gtk_spin_button_set_value (
+			GTK_SPIN_BUTTON (priv->percent_complete), *percent);
 	} else {
 		/* FIXME: Could check if task is completed and set 100%. */
-		e_dialog_spin_set (priv->percent_complete, 0);
+		gtk_spin_button_set_value (
+			GTK_SPIN_BUTTON (priv->percent_complete), 0);
 	}
 
 	/* Status. */
@@ -335,9 +307,9 @@ task_details_page_fill_widgets (CompEditorPage *page, ECalComponent *comp)
 	return TRUE;
 }
 
-/* fill_component handler for the task page */
 static gboolean
-task_details_page_fill_component (CompEditorPage *page, ECalComponent *comp)
+task_details_page_fill_component (CompEditorPage *page,
+                                  ECalComponent *comp)
 {
 	TaskDetailsPage *tdpage;
 	TaskDetailsPagePrivate *priv;
@@ -353,7 +325,8 @@ task_details_page_fill_component (CompEditorPage *page, ECalComponent *comp)
 	priv = tdpage->priv;
 
 	/* Percent Complete. */
-	percent = e_dialog_spin_get_int (priv->percent_complete);
+	percent = gtk_spin_button_get_value_as_int (
+		GTK_SPIN_BUTTON (priv->percent_complete));
 	e_cal_component_set_percent (comp, &percent);
 
 	/* Status. */
@@ -373,7 +346,9 @@ task_details_page_fill_component (CompEditorPage *page, ECalComponent *comp)
 	/* Completed Date. */
 	if (!e_date_edit_date_is_valid (E_DATE_EDIT (priv->completed_date)) ||
 	    !e_date_edit_time_is_valid (E_DATE_EDIT (priv->completed_date))) {
-		comp_editor_page_display_validation_error (page, _("Completed date is wrong"), priv->completed_date);
+		comp_editor_page_display_validation_error (
+			page, _("Completed date is wrong"),
+			priv->completed_date);
 		return FALSE;
 	}
 
@@ -393,7 +368,9 @@ task_details_page_fill_component (CompEditorPage *page, ECalComponent *comp)
 				icaltimezone_get_utc_timezone());
 
 		if (icaltime_compare_date_only (icalcomplete, icaltoday) > 0) {
-			comp_editor_page_display_validation_error (page, _("Completed date is wrong"), priv->completed_date);
+			comp_editor_page_display_validation_error (
+				page, _("Completed date is wrong"),
+				priv->completed_date);
 			return FALSE;
 		}
 
@@ -419,9 +396,9 @@ task_details_page_fill_component (CompEditorPage *page, ECalComponent *comp)
 	return TRUE;
 }
 
-/* fill_timezones handler for the event page */
 static gboolean
-task_details_page_fill_timezones (CompEditorPage *page, GHashTable *timezones)
+task_details_page_fill_timezones (CompEditorPage *page,
+                                  GHashTable *timezones)
 {
 	icaltimezone *zone;
 
@@ -435,7 +412,30 @@ task_details_page_fill_timezones (CompEditorPage *page, GHashTable *timezones)
 	return TRUE;
 }
 
-
+static void
+task_details_page_class_init (TaskDetailsPageClass *class)
+{
+	GObjectClass *object_class;
+	CompEditorPageClass *editor_page_class;
+
+	g_type_class_add_private (class, sizeof (TaskDetailsPagePrivate));
+
+	object_class = G_OBJECT_CLASS (class);
+	object_class->dispose = task_details_page_dispose;
+
+	editor_page_class = COMP_EDITOR_PAGE_CLASS (class);
+	editor_page_class->get_widget = task_details_page_get_widget;
+	editor_page_class->focus_main_widget = task_details_page_focus_main_widget;
+	editor_page_class->fill_widgets = task_details_page_fill_widgets;
+	editor_page_class->fill_component = task_details_page_fill_component;
+	editor_page_class->fill_timezones = task_details_page_fill_timezones;
+}
+
+static void
+task_details_page_init (TaskDetailsPage *tdpage)
+{
+	tdpage->priv = TASK_DETAILS_PAGE_GET_PRIVATE (tdpage);
+}
 
 /* Gets the widgets from the XML file and returns if they are all available. */
 static gboolean
@@ -445,10 +445,11 @@ get_widgets (TaskDetailsPage *tdpage)
 	TaskDetailsPagePrivate *priv;
 	GSList *accel_groups;
 	GtkWidget *toplevel;
+	GtkWidget *parent;
 
 	priv = tdpage->priv;
 
-#define GW(name) glade_xml_get_widget (priv->xml, name)
+#define GW(name) e_builder_get_widget (priv->builder, name)
 
 	priv->main = GW ("task-details-page");
 	if (!priv->main)
@@ -462,7 +463,8 @@ get_widgets (TaskDetailsPage *tdpage)
 		page->accel_group = g_object_ref (accel_groups->data);
 
 	g_object_ref (priv->main);
-	gtk_container_remove (GTK_CONTAINER (priv->main->parent), priv->main);
+	parent = gtk_widget_get_parent (priv->main);
+	gtk_container_remove (GTK_CONTAINER (parent), priv->main);
 
 	priv->status_combo = GW ("status-combobox");
 	priv->priority_combo = GW ("priority-combobox");
@@ -515,17 +517,14 @@ complete_date_changed (TaskDetailsPage *tdpage, time_t ctime, gboolean complete)
 }
 
 static void
-date_changed_cb (EDateEdit *dedit, gpointer data)
+date_changed_cb (EDateEdit *dedit,
+                 TaskDetailsPage *tdpage)
 {
-	TaskDetailsPage *tdpage;
-	TaskDetailsPagePrivate *priv;
+	TaskDetailsPagePrivate *priv = tdpage->priv;
 	CompEditorPageDates dates = {NULL, NULL, NULL, NULL};
 	struct icaltimetype completed_tt = icaltime_null_time ();
 	icalproperty_status status;
 	gboolean date_set;
-
-	tdpage = TASK_DETAILS_PAGE (data);
-	priv = tdpage->priv;
 
 	if (comp_editor_page_get_updating (COMP_EDITOR_PAGE (tdpage)))
 		return;
@@ -548,7 +547,8 @@ date_changed_cb (EDateEdit *dedit, gpointer data)
 			e_dialog_combo_box_set (priv->status_combo,
 						  ICAL_STATUS_NONE,
 						  status_map);
-			e_dialog_spin_set (priv->percent_complete, 0);
+			gtk_spin_button_set_value (
+				GTK_SPIN_BUTTON (priv->percent_complete), 0);
 		}
 	} else {
 		if (status != ICAL_STATUS_COMPLETED) {
@@ -556,7 +556,8 @@ date_changed_cb (EDateEdit *dedit, gpointer data)
 						  ICAL_STATUS_COMPLETED,
 						  status_map);
 		}
-		e_dialog_spin_set (priv->percent_complete, 100);
+		gtk_spin_button_set_value (
+			GTK_SPIN_BUTTON (priv->percent_complete), 100);
 	}
 
 	comp_editor_page_set_updating (COMP_EDITOR_PAGE (tdpage), FALSE);
@@ -585,18 +586,22 @@ status_changed (GtkWidget *combo, TaskDetailsPage *tdpage)
 
 	status = e_dialog_combo_box_get (priv->status_combo, status_map);
 	if (status == ICAL_STATUS_NONE) {
-		e_dialog_spin_set (priv->percent_complete, 0);
+		gtk_spin_button_set_value (
+			GTK_SPIN_BUTTON (priv->percent_complete), 0);
 		e_date_edit_set_time (E_DATE_EDIT (priv->completed_date), ctime);
 		complete_date_changed (tdpage, 0, FALSE);
 	} else if (status == ICAL_STATUS_INPROCESS) {
-		gint percent_complete = e_dialog_spin_get_int (priv->percent_complete);
+		gint percent_complete = gtk_spin_button_get_value_as_int (
+			GTK_SPIN_BUTTON (priv->percent_complete));
 		if (percent_complete <= 0 || percent_complete >= 100)
-			e_dialog_spin_set (priv->percent_complete, 50);
+			gtk_spin_button_set_value (
+				GTK_SPIN_BUTTON (priv->percent_complete), 50);
 
 		e_date_edit_set_time (E_DATE_EDIT (priv->completed_date), ctime);
 		complete_date_changed (tdpage, 0, FALSE);
 	} else if (status == ICAL_STATUS_COMPLETED) {
-		e_dialog_spin_set (priv->percent_complete, 100);
+		gtk_spin_button_set_value (
+			GTK_SPIN_BUTTON (priv->percent_complete), 100);
 		ctime = time (NULL);
 		e_date_edit_set_time (E_DATE_EDIT (priv->completed_date), ctime);
 		complete_date_changed (tdpage, ctime, TRUE);
@@ -626,7 +631,8 @@ percent_complete_changed (GtkAdjustment	*adj, TaskDetailsPage *tdpage)
 
 	comp_editor_page_set_updating (COMP_EDITOR_PAGE (tdpage), TRUE);
 
-	percent = e_dialog_spin_get_int (priv->percent_complete);
+	percent = gtk_spin_button_get_value_as_int (
+		GTK_SPIN_BUTTON (priv->percent_complete));
 	if (percent == 100) {
 		complete = TRUE;
 		ctime = time (NULL);
@@ -654,6 +660,7 @@ static void
 init_widgets (TaskDetailsPage *tdpage)
 {
 	TaskDetailsPagePrivate *priv;
+	GtkAdjustment *adjustment;
 
 	priv = tdpage->priv;
 
@@ -664,19 +671,25 @@ init_widgets (TaskDetailsPage *tdpage)
 					   tdpage, NULL);
 
 	/* These are created by hand, so hook the mnemonics manually */
-	gtk_label_set_mnemonic_widget (GTK_LABEL (priv->date_completed_label), priv->completed_date);
-	gtk_label_set_mnemonic_widget (GTK_LABEL (priv->url_label), priv->url_entry);
+	gtk_label_set_mnemonic_widget (
+		GTK_LABEL (priv->date_completed_label),
+		priv->completed_date);
+	gtk_label_set_mnemonic_widget (
+		GTK_LABEL (priv->url_label),
+		priv->url_entry);
 
 	/* Connect signals. The Status, Percent Complete & Date Completed
 	   properties are closely related so whenever one changes we may need
 	   to update the other 2. */
-	g_signal_connect (GTK_COMBO_BOX (priv->status_combo),
-			    "changed",
-			    G_CALLBACK (status_changed), tdpage);
+	g_signal_connect (
+		GTK_COMBO_BOX (priv->status_combo), "changed",
+		G_CALLBACK (status_changed), tdpage);
 
-	g_signal_connect((GTK_SPIN_BUTTON (priv->percent_complete)->adjustment),
-			    "value_changed",
-			    G_CALLBACK (percent_complete_changed), tdpage);
+	adjustment = gtk_spin_button_get_adjustment (
+		GTK_SPIN_BUTTON (priv->percent_complete));
+	g_signal_connect (
+		adjustment, "value_changed",
+		G_CALLBACK (percent_complete_changed), tdpage);
 
 	/* Priority */
 	g_signal_connect_swapped (
@@ -711,21 +724,11 @@ task_details_page_construct (TaskDetailsPage *tdpage)
 {
 	TaskDetailsPagePrivate *priv = tdpage->priv;
 	CompEditor *editor;
-	gchar *gladefile;
 
 	editor = comp_editor_page_get_editor (COMP_EDITOR_PAGE (tdpage));
 
-	gladefile = g_build_filename (EVOLUTION_GLADEDIR,
-				      "task-details-page.glade",
-				      NULL);
-	priv->xml = glade_xml_new (gladefile, NULL, NULL);
-	g_free (gladefile);
-
-	if (!priv->xml) {
-		g_message ("task_details_page_construct(): "
-			   "Could not load the Glade XML file!");
-		return NULL;
-	}
+	priv->builder = gtk_builder_new ();
+	e_load_ui_builder_definition (priv->builder, "task-details-page.ui");
 
 	if (!get_widgets (tdpage)) {
 		g_message ("task_details_page_construct(): "
@@ -763,17 +766,3 @@ task_details_page_new (CompEditor *editor)
 
 	return tdpage;
 }
-
-GtkWidget *task_details_page_create_date_edit (void);
-
-GtkWidget *
-task_details_page_create_date_edit (void)
-{
-	GtkWidget *dedit;
-
-	dedit = comp_editor_new_date_edit (TRUE, TRUE, FALSE);
-	e_date_edit_set_allow_no_date_set (E_DATE_EDIT (dedit), TRUE);
-
-	return dedit;
-}
-

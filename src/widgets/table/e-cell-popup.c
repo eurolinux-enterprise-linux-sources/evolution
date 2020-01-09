@@ -33,8 +33,8 @@
 
 #include <gdk/gdkkeysyms.h>
 
-#include "a11y/e-table/gal-a11y-e-cell-popup.h"
-#include "a11y/e-table/gal-a11y-e-cell-registry.h"
+#include "gal-a11y-e-cell-popup.h"
+#include "gal-a11y-e-cell-registry.h"
 #include "e-util/e-util.h"
 
 #include "e-cell-popup.h"
@@ -88,23 +88,17 @@ static void	ecp_print		(ECellView	*ecv,
 					 gint		 model_col,
 					 gint		 view_col,
 					 gint		 row,
-					 double		 width,
-					 double		 height);
+					 gdouble		 width,
+					 gdouble		 height);
 static gdouble	ecp_print_height	(ECellView	*ecv,
 					 GtkPrintContext *context,
 					 gint		 model_col,
 					 gint		 view_col,
 					 gint		 row,
-					 double		 width);
+					 gdouble		 width);
 static gint	ecp_max_width		(ECellView	*ecv,
 					 gint		 model_col,
 					 gint		 view_col);
-static void	ecp_show_tooltip	(ECellView	*ecv,
-					 gint		 model_col,
-					 gint		 view_col,
-					 gint		 row,
-					 gint		 col_width,
-					 ETableTooltip	*tooltip);
 static gchar *ecp_get_bg_color (ECellView *ecell_view, gint row);
 
 static gint e_cell_popup_do_popup	(ECellPopupView	*ecp_view,
@@ -133,7 +127,6 @@ e_cell_popup_class_init		(ECellPopupClass	*klass)
 	ecc->print        = ecp_print;
 	ecc->print_height = ecp_print_height;
 	ecc->max_width	  = ecp_max_width;
-	ecc->show_tooltip = ecp_show_tooltip;
 	ecc->get_bg_color = ecp_get_bg_color;
 
 	gal_a11y_e_cell_registry_add_cell_type (NULL,
@@ -163,9 +156,6 @@ e_cell_popup_new		(void)
 	return (ECell*) ecp;
 }
 
-/*
- * GtkObject::destroy method
- */
 static void
 e_cell_popup_dispose (GObject *object)
 {
@@ -212,14 +202,16 @@ ecp_kill_view (ECellView *ecv)
 {
 	ECellPopupView *ecp_view = (ECellPopupView *) ecv;
 
-        if (ecp_view->cell_view.kill_view_cb)
-            (ecp_view->cell_view.kill_view_cb)(ecv, ecp_view->cell_view.kill_view_cb_data);
+	if (ecp_view->cell_view.kill_view_cb)
+		ecp_view->cell_view.kill_view_cb (
+			ecv, ecp_view->cell_view.kill_view_cb_data);
 
-        if (ecp_view->cell_view.kill_view_cb_data)
-            g_list_free(ecp_view->cell_view.kill_view_cb_data);
+	if (ecp_view->cell_view.kill_view_cb_data)
+		g_list_free (ecp_view->cell_view.kill_view_cb_data);
 
 	if (ecp_view->child_view)
 		e_cell_kill_view (ecp_view->child_view);
+
 	g_free (ecp_view);
 }
 
@@ -261,14 +253,18 @@ ecp_draw (ECellView *ecv, GdkDrawable *drawable,
 {
 	ECellPopup *ecp = E_CELL_POPUP (ecv->ecell);
 	ECellPopupView *ecp_view = (ECellPopupView *) ecv;
-	GtkWidget *canvas = GTK_WIDGET (GNOME_CANVAS_ITEM (ecv->e_table_item_view)->canvas);
+	GtkWidget *canvas;
 	GtkShadowType shadow;
 	GdkRectangle rect;
 	gboolean show_popup_arrow;
 
+	canvas = GTK_WIDGET (GNOME_CANVAS_ITEM (ecv->e_table_item_view)->canvas);
+
 	/* Display the popup arrow if we are the cursor cell, or the popup
 	   is shown for this cell. */
-	show_popup_arrow = e_table_model_is_cell_editable (ecv->e_table_model, model_col, row) &&
+	show_popup_arrow =
+		e_table_model_is_cell_editable (
+			ecv->e_table_model, model_col, row) &&
 		(flags & E_CELL_CURSOR ||
 		 (ecp->popup_shown && ecp->popup_view_col == view_col
 		  && ecp->popup_row == row
@@ -278,6 +274,8 @@ ecp_draw (ECellView *ecv, GdkDrawable *drawable,
 		ecp->popup_arrow_shown = show_popup_arrow;
 
 	if (show_popup_arrow) {
+		GtkStyle *style;
+
 		e_cell_draw (ecp_view->child_view, drawable, model_col,
 			     view_col, row, flags,
 			     x1, y1, x2 - E_CELL_POPUP_ARROW_WIDTH, y2);
@@ -292,11 +290,13 @@ ecp_draw (ECellView *ecv, GdkDrawable *drawable,
 		else
 			shadow = GTK_SHADOW_OUT;
 
-		gtk_paint_box (canvas->style, drawable,
+		style = gtk_widget_get_style (canvas);
+
+		gtk_paint_box (style, drawable,
 			       GTK_STATE_NORMAL, shadow,
 			       &rect, canvas, "ecellpopup",
 			       rect.x, rect.y, rect.width, rect.height);
-		gtk_paint_arrow (canvas->style, drawable,
+		gtk_paint_arrow (style, drawable,
 				 GTK_STATE_NORMAL, GTK_SHADOW_NONE,
 				 &rect, canvas, NULL,
 				 GTK_ARROW_DOWN, TRUE,
@@ -389,7 +389,7 @@ ecp_leave_edit (ECellView *ecv, gint model_col, gint view_col, gint row,
 
 static void
 ecp_print (ECellView *ecv, GtkPrintContext *context,
-	   gint model_col, gint view_col, gint row, double width, double height)
+	   gint model_col, gint view_col, gint row, gdouble width, gdouble height)
 {
 	ECellPopupView *ecp_view = (ECellPopupView *) ecv;
 
@@ -400,7 +400,7 @@ ecp_print (ECellView *ecv, GtkPrintContext *context,
 static gdouble
 ecp_print_height (ECellView *ecv, GtkPrintContext *context,
 		  gint model_col, gint view_col, gint row,
-		  double width)
+		  gdouble width)
 {
 	ECellPopupView *ecp_view = (ECellPopupView *) ecv;
 
@@ -416,20 +416,6 @@ ecp_max_width (ECellView *ecv,
 	ECellPopupView *ecp_view = (ECellPopupView *) ecv;
 
 	return e_cell_max_width (ecp_view->child_view, model_col, view_col);
-}
-
-static void
-ecp_show_tooltip (ECellView *ecv,
-		  gint model_col,
-		  gint view_col,
-		  gint row,
-		  gint col_width,
-		  ETableTooltip *tooltip)
-{
-	ECellPopupView *ecp_view = (ECellPopupView *) ecv;
-
-	e_cell_show_tooltip (ecp_view->child_view, model_col, view_col, row,
-			     col_width, tooltip);
 }
 
 static gchar *
@@ -486,10 +472,13 @@ e_cell_popup_do_popup			(ECellPopupView	*ecp_view,
 void
 e_cell_popup_queue_cell_redraw (ECellPopup *ecp)
 {
-       ETableItem *eti = E_TABLE_ITEM (ecp->popup_cell_view->cell_view.e_table_item_view);
+	ETableItem *eti;
 
-       e_table_item_redraw_range (eti, ecp->popup_view_col, ecp->popup_row,
-                                  ecp->popup_view_col, ecp->popup_row);
+	eti = E_TABLE_ITEM (ecp->popup_cell_view->cell_view.e_table_item_view);
+
+	e_table_item_redraw_range (
+		eti, ecp->popup_view_col, ecp->popup_row,
+		ecp->popup_view_col, ecp->popup_row);
 }
 
 void

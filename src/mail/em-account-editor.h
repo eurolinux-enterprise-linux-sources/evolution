@@ -25,8 +25,26 @@
 #define EM_ACCOUNT_EDITOR_H
 
 #include <gtk/gtk.h>
-
 #include <mail/em-config.h>
+
+/* Standard GObject macros */
+#define EM_TYPE_ACCOUNT_EDITOR \
+	(em_account_editor_get_type ())
+#define EM_ACCOUNT_EDITOR(obj) \
+	(G_TYPE_CHECK_INSTANCE_CAST \
+	((obj), EM_TYPE_ACCOUNT_EDITOR, EMAccountEditor))
+#define EM_ACCOUNT_EDITOR_CLASS(cls) \
+	(G_TYPE_CHECK_CLASS_CAST \
+	((cls), EM_TYPE_ACCOUNT_EDITOR, EMAccountEditorClass))
+#define EM_IS_ACCOUNT_EDITOR(obj) \
+	(G_TYPE_CHECK_INSTANCE_TYPE \
+	((obj), EM_TYPE_ACCOUNT_EDITOR))
+#define EM_IS_ACCOUNT_EDITOR_CLASS(cls) \
+	(G_TYPE_CHECK_CLASS_TYPE \
+	((cls), EM_TYPE_ACCOUNT_EDITOR))
+#define EM_ACCOUNT_EDITOR_GET_CLASS(obj) \
+	(G_TYPE_INSTANCE_GET_CLASS \
+	((obj), EM_TYPE_ACCOUNT_EDITOR, EMAccountEditorClass))
 
 G_BEGIN_DECLS
 
@@ -34,52 +52,67 @@ typedef struct _EMAccountEditor EMAccountEditor;
 typedef struct _EMAccountEditorClass EMAccountEditorClass;
 typedef struct _EMAccountEditorPrivate EMAccountEditorPrivate;
 
+typedef struct _server_data ServerData;
+struct _server_data {
+	const gchar *key;
+	const gchar *recv;
+	const gchar *send;
+	const gchar *proto;
+	const gchar *ssl;
+	const gchar *send_user;
+	const gchar *recv_user;
+	const gchar *send_port;
+	const gchar *recv_port;
+	const gchar *send_sock;
+	const gchar *recv_sock;
+	const gchar *send_auth;
+	const gchar *recv_auth;
+};
+
 typedef enum {
 	EMAE_NOTEBOOK,
-	EMAE_DRUID,
+	EMAE_ASSISTANT,
 	EMAE_PAGES
-} em_account_editor_t;
+} EMAccountEditorType;
 
 struct _EMAccountEditor {
-	GObject gobject;
+	GObject parent;
 
 	EMAccountEditorPrivate *priv;
 
-	em_account_editor_t type;
-	GtkWidget *editor; /* gtknotebook or druid, depending on type */
+	EMAccountEditorType type;
 
 	EMConfig *config; /* driver object */
-
-	EAccount *account; /* working account, must instant apply to this */
-	EAccount *original; /* original account, not changed unless commit is invoked */
 
 	GtkWidget **pages; /* Pages for Anjal's page type editor */
 
 	guint do_signature:1;	/* allow editing signature */
+	ServerData * (*emae_check_servers) (const gchar *email);
 };
 
 struct _EMAccountEditorClass {
-	GObjectClass gobject_class;
+	GObjectClass parent_class;
 };
 
-GType em_account_editor_get_type(void);
-
-EMAccountEditor *em_account_editor_new(EAccount *account, em_account_editor_t type, const gchar *id);
-EMAccountEditor *em_account_editor_new_for_pages(EAccount *account, em_account_editor_t type, gchar *id, GtkWidget **pages);
-void em_account_editor_commit (EMAccountEditor *emae);
-gboolean em_account_editor_check (EMAccountEditor *emae, const gchar *page);
-
-gboolean em_account_editor_save (EMAccountEditor *gui);
-void em_account_editor_destroy (EMAccountEditor *gui);
-
-gboolean em_account_editor_identity_complete (EMAccountEditor *gui, GtkWidget **incomplete);
-gboolean em_account_editor_source_complete (EMAccountEditor *gui, GtkWidget **incomplete);
-gboolean em_account_editor_transport_complete (EMAccountEditor *gui, GtkWidget **incomplete);
-gboolean em_account_editor_management_complete (EMAccountEditor *gui, GtkWidget **incomplete);
-
-void em_account_editor_build_extra_conf (EMAccountEditor *gui, const gchar *url);
-
-void em_account_editor_auto_detect_extra_conf (EMAccountEditor *gui);
+GType		em_account_editor_get_type	(void);
+EMAccountEditor *
+		em_account_editor_new		(EAccount *account,
+						 EMAccountEditorType type,
+						 const gchar *id);
+EMAccountEditor *
+		em_account_editor_new_for_pages	(EAccount *account,
+						 EMAccountEditorType type,
+						 const gchar *id,
+						 GtkWidget **pages);
+EAccount *	em_account_editor_get_modified_account
+						(EMAccountEditor *emae);
+EAccount *	em_account_editor_get_original_account
+						(EMAccountEditor *emae);
+void		em_account_editor_commit	(EMAccountEditor *emae);
+gboolean	em_account_editor_check		(EMAccountEditor *emae,
+						 const gchar *page);
+GtkWidget *	em_account_editor_get_widget    (EMAccountEditor *emae,
+						 const gchar *name);
 
 G_END_DECLS
 

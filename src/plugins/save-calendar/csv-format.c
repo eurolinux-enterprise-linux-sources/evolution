@@ -32,10 +32,7 @@
 #include <libedataserverui/e-source-selector.h>
 #include <libecal/e-cal.h>
 #include "calendar/common/authentication.h"
-#include <calendar/gui/e-cal-popup.h>
 #include <string.h>
-
-#include "e-util/e-error.h"
 
 #include "format-handler.h"
 
@@ -60,8 +57,10 @@ display_error_message (GtkWidget *parent, GError *error)
 {
 	GtkWidget *dialog;
 
-	dialog = gtk_message_dialog_new (GTK_WINDOW (parent), 0, GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE,
-					 "%s", error->message);
+	dialog = gtk_message_dialog_new (
+		GTK_WINDOW (parent), 0,
+		GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE,
+		"%s", error->message);
 	gtk_dialog_run (GTK_DIALOG (dialog));
 	gtk_widget_destroy (dialog);
 }
@@ -138,10 +137,12 @@ add_nummeric_to_csv (GString *line, gint *nummeric, CsvConfig *config)
 	 */
 
 	if (nummeric)
-		g_string_append_printf  (line, "%s%d", (*nummeric<10 && *nummeric>-1)?"0":"", *nummeric);
+		g_string_append_printf (
+			line, "%s%d",
+			(*nummeric < 10 && *nummeric > -1) ? "0" : "",
+			*nummeric);
 
-	line = g_string_append (line, config->delimiter);
-	return line;
+	return g_string_append (line, config->delimiter);
 }
 
 static GString *
@@ -298,7 +299,10 @@ userstring_to_systemstring (const gchar *userstring)
 }
 
 static void
-do_save_calendar_csv (FormatHandler *handler, EPlugin *ep, ECalPopupTargetSource *target, ECalSourceType type, gchar *dest_uri)
+do_save_calendar_csv (FormatHandler *handler,
+                      ESourceSelector *selector,
+                      ECalSourceType type,
+                      gchar *dest_uri)
 {
 
 	/*
@@ -323,12 +327,12 @@ do_save_calendar_csv (FormatHandler *handler, EPlugin *ep, ECalPopupTargetSource
 	if (!dest_uri)
 		return;
 
-	primary_source = e_source_selector_peek_primary_selection (target->selector);
+	primary_source = e_source_selector_peek_primary_selection (selector);
 
 	/* open source client */
-	source_client = auth_new_cal_from_source (primary_source, type);
+	source_client = e_auth_new_cal_from_source (primary_source, type);
 	if (!e_cal_open (source_client, TRUE, &error)) {
-		display_error_message (gtk_widget_get_toplevel (GTK_WIDGET (target->selector)), error);
+		display_error_message (gtk_widget_get_toplevel (GTK_WIDGET (selector)), error);
 		g_object_unref (source_client);
 		g_error_free (error);
 		return;
@@ -344,7 +348,9 @@ do_save_calendar_csv (FormatHandler *handler, EPlugin *ep, ECalPopupTargetSource
 	config->quote = userstring_to_systemstring (tmp?tmp:"\"");
 	config->header = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (d->header_check));
 
-	stream = open_for_writing (GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (target->selector))), dest_uri, &error);
+	stream = open_for_writing (
+		GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (selector))),
+		dest_uri, &error);
 
 	if (stream && e_cal_get_object_list_as_comp (source_client, "#t", &objects, NULL)) {
 
@@ -509,7 +515,7 @@ do_save_calendar_csv (FormatHandler *handler, EPlugin *ep, ECalPopupTargetSource
 	g_free (config);
 
 	if (error) {
-		display_error_message (gtk_widget_get_toplevel (GTK_WIDGET (target->selector)), error);
+		display_error_message (gtk_widget_get_toplevel (GTK_WIDGET (selector)), error);
 		g_error_free (error);
 	}
 
@@ -520,7 +526,8 @@ static GtkWidget *
 create_options_widget (FormatHandler *handler)
 {
 	GtkWidget *table = gtk_table_new (4, 2, FALSE), *label = NULL,
-		  *csv_options = gtk_expander_new_with_mnemonic (_("A_dvanced options for the CSV format")),
+		  *csv_options = gtk_expander_new_with_mnemonic (
+			_("A_dvanced options for the CSV format")),
 		  *vbox = gtk_vbox_new (FALSE, 0);
 	CsvPluginData *d = handler->data;
 

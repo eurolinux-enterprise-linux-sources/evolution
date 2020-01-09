@@ -25,34 +25,46 @@
 #endif
 
 #include "eab-contact-display.h"
-#include "eab-popup.h"
 
 #include "eab-gui-util.h"
 #include "e-util/e-util.h"
 #include "e-util/e-html-utils.h"
 #include "e-util/e-icon-factory.h"
+#include "e-util/e-plugin-ui.h"
 
 #include <string.h>
 #include <glib/gi18n.h>
 #include <gtkhtml/gtkhtml.h>
 #include <gtkhtml/gtkhtml-stream.h>
 
-#define HANDLE_MAILTO_INTERNALLY 1
+#define EAB_CONTACT_DISPLAY_GET_PRIVATE(obj) \
+	(G_TYPE_INSTANCE_GET_PRIVATE \
+	((obj), EAB_TYPE_CONTACT_DISPLAY, EABContactDisplayPrivate))
 
-#define PARENT_TYPE (GTK_TYPE_HTML)
+#define TEXT_IS_RIGHT_TO_LEFT \
+	(gtk_widget_get_default_direction () == GTK_TEXT_DIR_RTL)
 
 struct _EABContactDisplayPrivate {
 	EContact *contact;
+	EABContactDisplayMode mode;
+};
 
-        GtkWidget *invisible;
-	gchar *selection_uri;
+enum {
+	PROP_0,
+	PROP_CONTACT,
+	PROP_MODE
+};
+
+enum {
+	SEND_MESSAGE,
+	LAST_SIGNAL
 };
 
 static struct {
 	const gchar *name;
 	const gchar *pretty_name;
 }
-common_location [] =
+common_location[] =
 {
 	{ "WORK",  N_ ("Work")  },
 	{ "HOME",  N_ ("Home")  },
@@ -77,294 +89,180 @@ common_location [] =
 
 #define MAX_COMPACT_IMAGE_DIMENSION 48
 
-static void
-eab_uri_popup_link_open(EPopup *ep, EPopupItem *item, gpointer data)
-{
-	EABPopupTargetURI *t = (EABPopupTargetURI *)ep->target;
+static const gchar *ui =
+"<ui>"
+"  <popup name='context'>"
+"    <placeholder name='custom-actions-1'>"
+"      <menuitem action='contact-send-message'/>"
+"    </placeholder>"
+"    <placeholder name='custom-actions-2'>"
+"      <menuitem action='contact-mailto-copy'/>"
+"    </placeholder>"
+"  </popup>"
+"</ui>";
 
-	/* FIXME Pass a parent window. */
-	e_show_uri (NULL, t->uri);
+static gpointer parent_class;
+static guint signals[LAST_SIGNAL];
+
+static void
+contact_display_emit_send_message (EABContactDisplay *display,
+                                   gint email_num)
+{
+	EDestination *destination;
+	EContact *contact;
+
+	g_return_if_fail (email_num >= 0);
+
+	destination = e_destination_new ();
+	contact = eab_contact_display_get_contact (display);
+	e_destination_set_contact (destination, contact, email_num);
+	g_signal_emit (display, signals[SEND_MESSAGE], 0, destination);
+	g_object_unref (destination);
 }
 
 static void
-eab_uri_popup_email_address_copy(EPopup *ep, EPopupItem *item, gpointer data)
+action_contact_mailto_copy_cb (GtkAction *action,
+                               EABContactDisplay *display)
 {
-	EABContactDisplay *display = data;
-	struct _EABContactDisplayPrivate *p = display->priv;
-        EABPopupTargetURI *t = (EABPopupTargetURI *)ep->target;
-        const gchar *url = t->uri;
-        gchar *html=NULL;
-        gint i=0;
-        GList *email_list, *l;
-        gint email_num = atoi (url + strlen ("internal-mailto:"));
+	GtkClipboard *clipboard;
+	EWebView *web_view;
+	EContact *contact;
+	GList *list;
+	const gchar *text;
+	const gchar *uri;
+	gint index;
 
-	email_list = e_contact_get (p->contact, E_CONTACT_EMAIL);
-	for (l = email_list; l; l=l->next) {
-		if (i==email_num)
-			html = e_text_to_html (l->data, 0);
-	i++;
-        }
+	web_view = E_WEB_VIEW (display);
+	uri = e_web_view_get_selected_uri (web_view);
+	g_return_if_fail (uri != NULL);
 
-	g_free(p->selection_uri);
-	p->selection_uri = g_strdup(html);
-	g_free (html);
+	index = atoi (uri + strlen ("internal-mailto:"));
+	g_return_if_fail (index >= 0);
 
-	gtk_selection_owner_set(p->invisible, GDK_SELECTION_PRIMARY, gtk_get_current_event_time());
-	gtk_selection_owner_set(p->invisible, GDK_SELECTION_CLIPBOARD, gtk_get_current_event_time());
+	contact = eab_contact_display_get_contact (display);
+	list = e_contact_get (contact, E_CONTACT_EMAIL);
+	text = g_list_nth_data (list, index);
+
+	clipboard = gtk_clipboard_get (GDK_SELECTION_CLIPBOARD);
+	gtk_clipboard_set_text (clipboard, text, -1);
+	gtk_clipboard_store (clipboard);
+
+	g_list_foreach (list, (GFunc) g_free, NULL);
+	g_list_free (list);
 }
 
 static void
-eab_uri_popup_link_copy(EPopup *ep, EPopupItem *pitem, gpointer data)
+action_contact_send_message_cb (GtkAction *action,
+                                EABContactDisplay *display)
 {
-	EABContactDisplay *display = data;
-	struct _EABContactDisplayPrivate *p = display->priv;
+	EWebView *web_view;
+	const gchar *uri;
+	gint index;
 
-	g_free(p->selection_uri);
-	p->selection_uri = g_strdup(pitem->user_data);
+	web_view = E_WEB_VIEW (display);
+	uri = e_web_view_get_selected_uri (web_view);
+	g_return_if_fail (uri != NULL);
 
-	gtk_selection_owner_set(p->invisible, GDK_SELECTION_PRIMARY, gtk_get_current_event_time());
-	gtk_selection_owner_set(p->invisible, GDK_SELECTION_CLIPBOARD, gtk_get_current_event_time());
+	index = atoi (uri + strlen ("internal-mailto:"));
+	contact_display_emit_send_message (display, index);
 }
+
+static GtkActionEntry internal_mailto_entries[] = {
+
+	{ "contact-mailto-copy",
+	  GTK_STOCK_COPY,
+	  N_("Copy _Email Address"),
+	  NULL,
+	  N_("Copy the email address to the clipboard"),
+	  G_CALLBACK (action_contact_mailto_copy_cb) },
+
+	{ "contact-send-message",
+	  "mail-message-new",
+	  N_("_Send New Message To..."),
+	  NULL,
+	  N_("Send a mail message to this address"),
+	  G_CALLBACK (action_contact_send_message_cb) }
+};
 
 static void
-eab_uri_popup_address_send(EPopup *ep, EPopupItem *item, gpointer data)
-{
-         EABPopupTargetURI *t = (EABPopupTargetURI *)ep->target;
-         const gchar *url = t->uri;
-         EABContactDisplay *display = data;
-	 struct _EABContactDisplayPrivate *p = display->priv;
-
-	 gint mail_num = atoi (url + strlen ("internal-mailto:"));
-
-         if (mail_num == -1)
-         return;
-
-         eab_send_contact (p->contact, mail_num, EAB_DISPOSITION_AS_TO);
-
-}
-
-static void
-eab_selection_get(GtkWidget *widget, GtkSelectionData *data, guint info, guint time_stamp, EABContactDisplay *display)
-{
-	struct _EABContactDisplayPrivate *p = display->priv;
-
-	if (p->selection_uri == NULL)
-		return;
-
-	gtk_selection_data_set(data, data->target, 8, (guchar *)p->selection_uri, strlen(p->selection_uri));
-}
-
-static void
-eab_selection_clear_event(GtkWidget *widget, GdkEventSelection *event, EABContactDisplay *display)
-{
-#if 0
-	struct _EABContactDisplayPrivate *p = display->priv;
-
-	g_free(p->selection_uri);
-	p->selection_uri = NULL;
-#endif
-}
-
-static EPopupItem eab_uri_popups[] = {
-	{ E_POPUP_ITEM, (gchar *) "05.open", (gchar *) N_("_Open Link in Browser"), eab_uri_popup_link_open, NULL, NULL, EAB_POPUP_URI_NOT_MAILTO },
-        { E_POPUP_ITEM, (gchar *) "10.copy", (gchar *) N_("_Copy Link Location"), eab_uri_popup_link_copy, NULL, (gchar *) "edit-copy", EAB_POPUP_URI_NOT_MAILTO },
-        { E_POPUP_ITEM, (gchar *) "15.send", (gchar *) N_("_Send New Message To..."), eab_uri_popup_address_send, NULL, (gchar *) "mail-message-new", EAB_POPUP_URI_MAILTO},
-	{ E_POPUP_ITEM, (gchar *) "20.copy", (gchar *) N_("Copy _Email Address"), eab_uri_popup_email_address_copy, NULL, (gchar *) "edit-copy", EAB_POPUP_URI_MAILTO},
-        };
-
-static void
-eab_uri_popup_free(EPopup *ep, GSList *list, gpointer data)
-{
-	while (list) {
-		GSList *n = list->next;
-		struct _EPopupItem *item = list->data;
-
-		g_free(item->user_data);
-		item->user_data = NULL;
-		g_slist_free_1(list);
-
-		list = n;
-		}
-}
-
-static gint
-eab_uri_popup_event(EABContactDisplay *display, GdkEvent *event, const gchar *uri)
-{
-	EABPopup *emp;
-	EABPopupTargetURI *t;
-	GtkMenu *menu;
-	GSList *menus = NULL;
-	gint i;
-
-	emp = eab_popup_new("org.gnome.evolution.addressbook.contactdisplay.popup");
-
-	t = eab_popup_target_new_uri(emp, uri);
-	t->target.widget = (GtkWidget *)display;
-
-	for (i=0;i<sizeof(eab_uri_popups)/sizeof(eab_uri_popups[0]);i++) {
-		eab_uri_popups[i].user_data = g_strdup(t->uri);
-		menus = g_slist_prepend(menus, &eab_uri_popups[i]);
-	}
-	e_popup_add_items((EPopup *)emp, menus, NULL, eab_uri_popup_free, display);
-
-        menu = e_popup_create_menu_once((EPopup *)emp,(EPopupTarget*)t, 0);
-
-        if (event == NULL) {
-		gtk_menu_popup(menu, NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time());
-	} else {
-		gtk_menu_popup(menu, NULL, NULL, NULL, NULL, event->button.button, event->button.time);
-	}
-
-	return TRUE;
-}
-
-static void
-on_url_requested (GtkHTML *html, const gchar *url, GtkHTMLStream *handle,
-		  EABContactDisplay *display)
-{
-	if (!strcmp (url, "internal-contact-photo:")) {
-		EContactPhoto *photo;
-
-		photo = e_contact_get (display->priv->contact, E_CONTACT_PHOTO);
-		if (!photo)
-			photo = e_contact_get (display->priv->contact, E_CONTACT_LOGO);
-
-		gtk_html_stream_write (handle, (gchar *)photo->data.inlined.data, photo->data.inlined.length);
-
-		gtk_html_end (html, handle, GTK_HTML_STREAM_OK);
-
-		e_contact_photo_free (photo);
-	}
-	else if (!strncmp (url, "evo-icon:", strlen ("evo-icon:"))) {
-		gchar *data;
-		gsize data_length;
-		gchar *filename;
-
-		filename = e_icon_factory_get_icon_filename (url + strlen ("evo-icon:"), GTK_ICON_SIZE_MENU);
-		if (g_file_get_contents (filename, &data, &data_length, NULL)) {
-			gtk_html_stream_write (handle, data, data_length);
-			g_free (data);
-		}
-
-		gtk_html_stream_close (handle, GTK_HTML_STREAM_OK);
-
-		g_free (filename);
-	}
-}
-
-static void
-on_link_clicked (GtkHTML *html, const gchar *uri, EABContactDisplay *display)
-{
-#ifdef HANDLE_MAILTO_INTERNALLY
-	if (!strncmp (uri, "internal-mailto:", strlen ("internal-mailto:"))) {
-		gint mail_num = atoi (uri + strlen ("internal-mailto:"));
-
-		if (mail_num == -1)
-			return;
-
-		eab_send_contact (display->priv->contact, mail_num, EAB_DISPOSITION_AS_TO);
-
-		return;
-	}
-#endif
-
-	/* FIXME Pass a parent window. */
-	e_show_uri (NULL, uri);
-}
-
-#if 0
-static void
-render_address (GtkHTMLStream *html_stream, EContact *contact, const gchar *html_label, EContactField adr_field, EContactField label_field)
-{
-	EContactAddress *adr;
-	const gchar *label;
-
-	label = e_contact_get_const (contact, label_field);
-	if (label) {
-		gchar *html = e_text_to_html (label, E_TEXT_TO_HTML_CONVERT_NL);
-
-		gtk_html_stream_printf (html_stream, "<tr><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\"></td><td valign=\"top\" width=\"100\"><font color=" HEADER_COLOR ">%s:</font><br><a href=\"http://www.mapquest.com/\">%s</a></td><td valign=\"top\">%s</td></tr>", html_label, _("(map)"), html);
-
-This shoul		g_free (html);
-		return;
-	}
-
-	adr = e_contact_get (contact, adr_field);
-	if (adr &&
-	    (adr->po || adr->ext || adr->street || adr->locality || adr->region || adr->code || adr->country)) {
-
-		gtk_html_stream_printf (html_stream, "<tr><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\"></td><td valign=\"top\" width=\"100\"><font color=" HEADER_COLOR ">%s:</font><br><a href=\"http://www.mapquest.com/\">%s</a></td><td valign=\"top\">", html_label, _("map"));
-
-		if (adr->po && *adr->po) gtk_html_stream_printf (html_stream, "%s<br>", adr->po);
-		if (adr->ext && *adr->ext) gtk_html_stream_printf (html_stream, "%s<br>", adr->ext);
-		if (adr->street && *adr->street) gtk_html_stream_printf (html_stream, "%s<br>", adr->street);
-		if (adr->locality && *adr->locality) gtk_html_stream_printf (html_stream, "%s<br>", adr->locality);
-		if (adr->region && *adr->region) gtk_html_stream_printf (html_stream, "%s<br>", adr->region);
-		if (adr->code && *adr->code) gtk_html_stream_printf (html_stream, "%s<br>", adr->code);
-		if (adr->country && *adr->country) gtk_html_stream_printf (html_stream, "%s<br>", adr->country);
-
-		gtk_html_stream_printf (html_stream, "</td></tr>");
-	}
-	if (adr)
-		e_contact_address_free (adr);
-}
-#endif
-
-static void
-render_name_value (GtkHTMLStream *html_stream, const gchar *label, const gchar *str, const gchar *icon, guint html_flags)
+render_name_value (GString *buffer,
+                   const gchar *label,
+                   const gchar *str,
+                   const gchar *icon,
+                   guint html_flags)
 {
 	gchar *value = e_text_to_html (str, html_flags);
 
-	if (gtk_widget_get_default_direction () == GTK_TEXT_DIR_RTL) {
-		gtk_html_stream_printf (html_stream, "<tr><td align=\"right\" valign=\"top\">%s</td> <td align=\"right\" valign=\"top\" width=\"100\" nowrap><font color=" HEADER_COLOR ">%s:</font></td>", value, label);
-		gtk_html_stream_printf (html_stream, "<td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\">");
-		if (icon)
-			gtk_html_stream_printf (html_stream, "<img width=\"16\" height=\"16\" src=\"evo-icon:%s\"></td></tr>", icon);
-		else
-			gtk_html_stream_printf (html_stream, "</td></tr>");
+	if (TEXT_IS_RIGHT_TO_LEFT) {
+		g_string_append_printf (
+			buffer, "<tr>"
+			"<td align=\"right\" valign=\"top\">%s</td> "
+			"<td align=\"right\" valign=\"top\" width=\"100\" nowrap>"
+			"<font color=" HEADER_COLOR ">%s:</font></td>",
+			value, label);
+		g_string_append (
+			buffer, "<td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\">");
+		if (icon != NULL)
+			g_string_append_printf (
+				buffer, "<img width=\"16\" height=\"16\" "
+				"src=\"evo-icon:%s\">", icon);
+		g_string_append (buffer, "</td></tr>");
 	} else {
-		gtk_html_stream_printf (html_stream, "<tr><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\">");
-		if (icon)
-			gtk_html_stream_printf (html_stream, "<img width=\"16\" height=\"16\" src=\"evo-icon:%s\">", icon);
-		gtk_html_stream_printf (html_stream, "</td><td valign=\"top\" width=\"100\" nowrap><font color=" HEADER_COLOR ">%s:</font></td> <td valign=\"top\">%s</td></tr>", label, value);
+		g_string_append (
+			buffer, "<tr><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\">");
+		if (icon != NULL)
+			g_string_append_printf (
+				buffer, "<img width=\"16\" height=\"16\" "
+				"src=\"evo-icon:%s\">", icon);
+		g_string_append_printf (
+			buffer, "</td><td valign=\"top\" width=\"100\" nowrap>"
+			"<font color=" HEADER_COLOR ">%s:</font></td> "
+			"<td valign=\"top\">%s</td></tr>", label, value);
 	}
 
 	g_free (value);
 }
 
 static void
-render_attribute (GtkHTMLStream *html_stream, EContact *contact, const gchar *html_label, EContactField field, const gchar *icon, guint html_flags)
+render_attribute (GString *buffer,
+                  EContact *contact,
+                  const gchar *html_label,
+                  EContactField field,
+                  const gchar *icon,
+                  guint html_flags)
 {
 	const gchar *str;
 
 	str = e_contact_get_const (contact, field);
 
-	if (str && *str) {
-		render_name_value (html_stream, html_label, str, icon, html_flags);
-	}
+	if (str != NULL && *str != '\0')
+		render_name_value (buffer, html_label, str, icon, html_flags);
 }
 
 static void
-accum_address (GString *gstr, EContact *contact, const gchar *html_label, EContactField adr_field, EContactField label_field)
+accum_address (GString *buffer,
+               EContact *contact,
+               const gchar *html_label,
+               EContactField adr_field,
+               EContactField label_field)
 {
 	EContactAddress *adr;
 	const gchar *label;
-	gboolean is_rtl = (gtk_widget_get_default_direction () == GTK_TEXT_DIR_RTL);
 
 	label = e_contact_get_const (contact, label_field);
 	if (label) {
 		gchar *html = e_text_to_html (label, E_TEXT_TO_HTML_CONVERT_NL);
 
 #ifdef mapping_works
-		if (is_rtl)
-			g_string_append_printf (gstr, "<tr><td align=\"right\" valign=\"top\">%s</td><td valign=\"top\" width=\"100\" align=\"right\"><font color=" HEADER_COLOR ">%s:</font><br><a href=\"http://www.mapquest.com/\">%s</a></td><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\"></td></tr>", html, html_label, _("(map)"));
+		if (TEXT_IS_RIGHT_TO_LEFT)
+			g_string_append_printf (buffer, "<tr><td align=\"right\" valign=\"top\">%s</td><td valign=\"top\" width=\"100\" align=\"right\"><font color=" HEADER_COLOR ">%s:</font><br><a href=\"http://www.mapquest.com/\">%s</a></td><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\"></td></tr>", html, html_label, _("(map)"));
 		else
-			g_string_append_printf (gstr, "<tr><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\"></td><td valign=\"top\" width=\"100\"><font color=" HEADER_COLOR ">%s:</font><br><a href=\"http://www.mapquest.com/\">%s</a></td><td valign=\"top\">%s</td></tr>", html_label, _("(map)"), html);
+			g_string_append_printf (buffer, "<tr><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\"></td><td valign=\"top\" width=\"100\"><font color=" HEADER_COLOR ">%s:</font><br><a href=\"http://www.mapquest.com/\">%s</a></td><td valign=\"top\">%s</td></tr>", html_label, _("(map)"), html);
 #else
-		if (is_rtl)
-			g_string_append_printf (gstr, "<tr><td align=\"right\" valign=\"top\">%s</td><td valign=\"top\" width=\"100\" align=\"right\"><font color=" HEADER_COLOR ">%s:</font></td><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\"></td></tr>", html, html_label);
+		if (TEXT_IS_RIGHT_TO_LEFT)
+			g_string_append_printf (buffer, "<tr><td align=\"right\" valign=\"top\">%s</td><td valign=\"top\" width=\"100\" align=\"right\"><font color=" HEADER_COLOR ">%s:</font></td><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\"></td></tr>", html, html_label);
 		else
-			g_string_append_printf (gstr, "<tr><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\"></td><td valign=\"top\" width=\"100\"><font color=" HEADER_COLOR ">%s:</font></td><td valign=\"top\">%s</td></tr>", html_label, html);
+			g_string_append_printf (buffer, "<tr><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\"></td><td valign=\"top\" width=\"100\"><font color=" HEADER_COLOR ">%s:</font></td><td valign=\"top\">%s</td></tr>", html_label, html);
 #endif
 
 		g_free (html);
@@ -374,64 +272,92 @@ accum_address (GString *gstr, EContact *contact, const gchar *html_label, EConta
 	adr = e_contact_get (contact, adr_field);
 	if (adr &&
 	    (adr->po || adr->ext || adr->street || adr->locality || adr->region || adr->code || adr->country)) {
-		if (is_rtl)
-			g_string_append_printf (gstr, "<tr><td align=\"right\" valign=\"top\">");
+		if (TEXT_IS_RIGHT_TO_LEFT)
+			g_string_append_printf (buffer, "<tr><td align=\"right\" valign=\"top\">");
 		else
-			g_string_append_printf (gstr, "<tr><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\"></td><td valign=\"top\" width=\"100\"><font color=" HEADER_COLOR ">%s:</font><br><a href=\"http://www.mapquest.com/\">%s</a></td><td valign=\"top\">", html_label, _("map"));
+			g_string_append_printf (buffer, "<tr><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\"></td><td valign=\"top\" width=\"100\"><font color=" HEADER_COLOR ">%s:</font><br><a href=\"http://www.mapquest.com/\">%s</a></td><td valign=\"top\">", html_label, _("map"));
 
-		if (adr->po && *adr->po) g_string_append_printf (gstr, "%s<br>", adr->po);
-		if (adr->ext && *adr->ext) g_string_append_printf (gstr, "%s<br>", adr->ext);
-		if (adr->street && *adr->street) g_string_append_printf (gstr, "%s<br>", adr->street);
-		if (adr->locality && *adr->locality) g_string_append_printf (gstr, "%s<br>", adr->locality);
-		if (adr->region && *adr->region) g_string_append_printf (gstr, "%s<br>", adr->region);
-		if (adr->code && *adr->code) g_string_append_printf (gstr, "%s<br>", adr->code);
-		if (adr->country && *adr->country) g_string_append_printf (gstr, "%s<br>", adr->country);
+		if (adr->po && *adr->po) g_string_append_printf (buffer, "%s<br>", adr->po);
+		if (adr->ext && *adr->ext) g_string_append_printf (buffer, "%s<br>", adr->ext);
+		if (adr->street && *adr->street) g_string_append_printf (buffer, "%s<br>", adr->street);
+		if (adr->locality && *adr->locality) g_string_append_printf (buffer, "%s<br>", adr->locality);
+		if (adr->region && *adr->region) g_string_append_printf (buffer, "%s<br>", adr->region);
+		if (adr->code && *adr->code) g_string_append_printf (buffer, "%s<br>", adr->code);
+		if (adr->country && *adr->country) g_string_append_printf (buffer, "%s<br>", adr->country);
 
-		if (is_rtl)
-			g_string_append_printf (gstr, "</td><td valign=\"top\" width=\"100\" align=\"right\"><font color=" HEADER_COLOR ">%s:</font><br><a href=\"http://www.mapquest.com/\">%s</a></td><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\"></td></tr>", html_label, _("map"));
+		if (TEXT_IS_RIGHT_TO_LEFT)
+			g_string_append_printf (buffer, "</td><td valign=\"top\" width=\"100\" align=\"right\"><font color=" HEADER_COLOR ">%s:</font><br><a href=\"http://www.mapquest.com/\">%s</a></td><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\"></td></tr>", html_label, _("map"));
 		else
-			g_string_append_printf (gstr, "</td></tr>");
+			g_string_append_printf (buffer, "</td></tr>");
 	}
 	if (adr)
 		e_contact_address_free (adr);
 }
 
 static void
-accum_name_value (GString *gstr, const gchar *label, const gchar *str, const gchar *icon, guint html_flags)
+accum_name_value (GString *buffer,
+                  const gchar *label,
+                  const gchar *str,
+                  const gchar *icon,
+                  guint html_flags)
 {
 	gchar *value = e_text_to_html (str, html_flags);
 
-	if (gtk_widget_get_default_direction () == GTK_TEXT_DIR_RTL) {
-		g_string_append_printf (gstr, "<tr><td valign=\"top\" align=\"right\">%s</td> <td align=\"right\" valign=\"top\" width=\"100\" nowrap><font color=" HEADER_COLOR ">%s:</font></td>", value, label);
-		g_string_append_printf (gstr, "<td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\">");
-		if (icon)
-			g_string_append_printf (gstr, "<img width=\"16\" height=\"16\" src=\"evo-icon:%s\"></td></tr>", icon);
+	if (TEXT_IS_RIGHT_TO_LEFT) {
+		g_string_append_printf (
+			buffer, "<tr>"
+			"<td valign=\"top\" align=\"right\">%s</td> "
+			"<td align=\"right\" valign=\"top\" width=\"100\" nowrap>"
+			"<font color=" HEADER_COLOR ">%s:</font></td>",
+			value, label);
+		g_string_append_printf (
+			buffer, "<td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\">");
+		if (icon != NULL)
+			g_string_append_printf (
+				buffer, "<img width=\"16\" height=\"16\" "
+				"src=\"evo-icon:%s\"></td></tr>", icon);
 		else
-			g_string_append_printf (gstr, "</td></tr>");
+			g_string_append_printf (buffer, "</td></tr>");
 	} else {
-		g_string_append_printf (gstr, "<tr><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\">");
-		if (icon)
-			g_string_append_printf (gstr, "<img width=\"16\" height=\"16\" src=\"evo-icon:%s\">", icon);
-		g_string_append_printf (gstr, "</td><td valign=\"top\" width=\"100\" nowrap><font color=" HEADER_COLOR ">%s:</font></td> <td valign=\"top\">%s</td></tr>", label, value);
+		g_string_append_printf (
+			buffer, "<tr><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\">");
+		if (icon != NULL)
+			g_string_append_printf (
+				buffer, "<img width=\"16\" height=\"16\" "
+				"src=\"evo-icon:%s\">", icon);
+		g_string_append_printf (
+			buffer, "</td><td valign=\"top\" width=\"100\" nowrap>"
+			"<font color=" HEADER_COLOR ">%s:</font>"
+			"</td> <td valign=\"top\">%s</td></tr>",
+			label, value);
 	}
 
 	g_free (value);
 }
 
 static void
-accum_attribute (GString *gstr, EContact *contact, const gchar *html_label, EContactField field, const gchar *icon, guint html_flags)
+accum_attribute (GString *buffer,
+                 EContact *contact,
+                 const gchar *html_label,
+                 EContactField field,
+                 const gchar *icon,
+                 guint html_flags)
 {
 	const gchar *str;
 
 	str = e_contact_get_const (contact, field);
 
-	if (str && *str) {
-		accum_name_value (gstr, html_label, str, icon, html_flags);
-	}
+	if (str != NULL && *str != '\0')
+		accum_name_value (buffer, html_label, str, icon, html_flags);
 }
 
 static void
-accum_time_attribute (GString *gstr, EContact *contact, const gchar *html_label, EContactField field, const gchar *icon, guint html_flags)
+accum_time_attribute (GString *buffer,
+                      EContact *contact,
+                      const gchar *html_label,
+                      EContactField field,
+                      const gchar *icon,
+                      guint html_flags)
 {
 	EContactDate *date;
 	GDate *gdate = NULL;
@@ -444,35 +370,49 @@ accum_time_attribute (GString *gstr, EContact *contact, const gchar *html_label,
 					 date->year );
 		g_date_strftime (sdate, 100, "%x", gdate);
 		g_date_free (gdate);
-		accum_name_value (gstr, html_label, sdate, icon, html_flags);
+		accum_name_value (buffer, html_label, sdate, icon, html_flags);
 		e_contact_date_free (date);
 	}
 }
 
 static void
-accum_multival_attribute (GString *gstr, EContact *contact, const gchar *html_label, EContactField field, const gchar *icon, guint html_flags)
+accum_multival_attribute (GString *buffer,
+                          EContact *contact,
+                          const gchar *html_label,
+                          EContactField field,
+                          const gchar *icon,
+                          guint html_flags)
 {
 	GList *val_list, *l;
 
 	val_list = e_contact_get (contact, field);
 	for (l = val_list; l; l = l->next) {
 		const gchar *str = (const gchar *) l->data;
-		accum_name_value (gstr, html_label, str, icon, html_flags);
+		accum_name_value (buffer, html_label, str, icon, html_flags);
 	}
 	g_list_foreach (val_list, (GFunc) g_free, NULL);
 	g_list_free (val_list);
 }
 
 static void
-render_contact_list (GtkHTMLStream *html_stream, EContact *contact)
+render_contact_list (GString *buffer,
+                     EContact *contact)
 {
 	GList *email_list;
 	GList *l;
 
-	gtk_html_stream_printf (html_stream, "<table border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tr>");
-	gtk_html_stream_printf (html_stream, "<td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\">");
-	gtk_html_stream_printf (html_stream, "<img width=\"16\" height=\"16\" src=\"evo-icon:" CONTACT_LIST_ICON "\">");
-	gtk_html_stream_printf (html_stream, "</td><td valign=\"top\" width=\"100\" nowrap><font color=" HEADER_COLOR ">%s:</font></td> <td valign=\"top\">", _("List Members"));
+	g_string_append (
+		buffer, "<table border=\"0\" cellspacing=\"0\" "
+		"cellpadding=\"0\"><tr>");
+	g_string_append (
+		buffer, "<td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\">");
+	g_string_append (
+		buffer, "<img width=\"16\" height=\"16\" "
+		"src=\"evo-icon:" CONTACT_LIST_ICON "\">");
+	g_string_append_printf (
+		buffer, "</td><td valign=\"top\" width=\"100\" nowrap>"
+		"<font color=" HEADER_COLOR ">%s:</font></td> "
+		"<td valign=\"top\">", _("List Members"));
 
 	email_list = e_contact_get (contact, E_CONTACT_EMAIL);
 	for (l = email_list; l; l = l->next) {
@@ -483,24 +423,28 @@ render_contact_list (GtkHTMLStream *html_stream, EContact *contact)
 		if (!value)
 			value = e_text_to_html (l->data, E_TEXT_TO_HTML_CONVERT_ADDRESSES);
 
-		gtk_html_stream_printf (html_stream, "%s<br>", value);
+		g_string_append_printf (buffer, "%s<br>", value);
 
 		g_free (value);
 	}
 
-	gtk_html_stream_printf (html_stream, "</td></tr></table>");
+	g_string_append (buffer, "</td></tr></table>");
 }
 
 static void
-start_block (GtkHTMLStream *html_stream, const gchar *label)
+start_block (GString *buffer,
+             const gchar *label)
 {
-	gtk_html_stream_printf (html_stream, "<tr><td height=\"20\" colspan=\"3\"><font color=" HEADER_COLOR "><b>%s</b></font></td></tr>", label);
+	g_string_append_printf (
+		buffer, "<tr><td height=\"20\" colspan=\"3\">"
+		"<font color=" HEADER_COLOR "><b>%s</b>"
+		"</font></td></tr>", label);
 }
 
 static void
-end_block (GtkHTMLStream *html_stream)
+end_block (GString *buffer)
 {
-	gtk_html_stream_printf (html_stream, "<tr><td height=\"20\">&nbsp;</td></tr>");
+	g_string_append (buffer, "<tr><td height=\"20\">&nbsp;</td></tr>");
 }
 
 static const gchar *
@@ -509,31 +453,29 @@ get_email_location (EVCardAttribute *attr)
 	gint i;
 
 	for (i = 0; i < G_N_ELEMENTS (common_location); i++) {
-		if (e_vcard_attribute_has_type (attr, common_location [i].name))
-			return _(common_location [i].pretty_name);
+		if (e_vcard_attribute_has_type (attr, common_location[i].name))
+			return _(common_location[i].pretty_name);
 	}
 
 	return _("Other");
 }
 
 static void
-render_contact (GtkHTMLStream *html_stream, EContact *contact)
+render_contact (GString *buffer,
+                EContact *contact)
 {
 	GString *accum;
 	GList *email_list, *l, *email_attr_list, *al;
-	gboolean is_rtl = (gtk_widget_get_default_direction () == GTK_TEXT_DIR_RTL);
-#ifdef HANDLE_MAILTO_INTERNALLY
 	gint email_num = 0;
-#endif
 	const gchar *nl;
 	gchar *nick=NULL;
 
-	gtk_html_stream_printf (html_stream, "<table border=\"0\">");
+	g_string_append (buffer, "<table border=\"0\">");
 
 	accum = g_string_new ("");
 	nl = "";
 
-	start_block (html_stream, "");
+	start_block (buffer, "");
 
 	email_list = e_contact_get (contact, E_CONTACT_EMAIL);
 	email_attr_list = e_contact_get_attributes (contact, E_CONTACT_EMAIL);
@@ -542,7 +484,6 @@ render_contact (GtkHTMLStream *html_stream, EContact *contact)
 		gchar *html = NULL, *name = NULL, *mail = NULL;
 		gchar *attr_str = (gchar *)get_email_location ((EVCardAttribute *) al->data);
 
-#ifdef HANDLE_MAILTO_INTERNALLY
 		if (!eab_parse_qp_email (l->data, &name, &mail))
 			mail = e_text_to_html (l->data, 0);
 
@@ -554,15 +495,7 @@ render_contact (GtkHTMLStream *html_stream, EContact *contact)
 						mail,
 						name ? "&gt;" : "",
 						attr_str ? attr_str : "");
-		email_num ++;
-#else
-		html = eab_parse_qp_email_to_html (l->data);
-
-		if (!html)
-			html = e_text_to_html (l->data, E_TEXT_TO_HTML_CONVERT_ADDRESSES);
-
-		g_string_append_printf (accum, "%s%s <font color=" HEADER_COLOR ">(%s)</font>", nl, html, attr_str ? attr_str : "");
-#endif
+		email_num++;
 		nl = "<br>";
 
 		g_free (html);
@@ -574,21 +507,23 @@ render_contact (GtkHTMLStream *html_stream, EContact *contact)
 
 	if (accum->len) {
 
-#ifdef HANDLE_MAILTO_INTERNALLY
-		if (is_rtl) {
-			gtk_html_stream_printf (html_stream,
-					"<tr><td valign=\"top\" align=\"right\">%s</td> <td valign=\"top\" align=\"right\" width=\"100\" nowrap><font color=" HEADER_COLOR ">%s:</font></td><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\"></td></tr>",
-					accum->str, _("Email"));
+		if (TEXT_IS_RIGHT_TO_LEFT) {
+			g_string_append_printf (
+				buffer, "<tr>"
+				"<td valign=\"top\" align=\"right\">%s</td> "
+				"<td valign=\"top\" align=\"right\" width=\"100\" nowrap>"
+				"<font color=" HEADER_COLOR ">%s:</font>"
+				"</td><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\">"
+				"</td></tr>", accum->str, _("Email"));
 		} else {
-			gtk_html_stream_printf (html_stream, "<tr><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\">");
-			gtk_html_stream_printf (html_stream,
-					"</td><td valign=\"top\" width=\"100\" nowrap><font color=" HEADER_COLOR ">%s:</font></td> <td valign=\"top\">%s</td></tr>",
-					_("Email"), accum->str);
+			g_string_append (
+				buffer, "<tr><td valign=\"top\" width=\"" IMAGE_COL_WIDTH "\">");
+			g_string_append_printf (
+				buffer, "</td><td valign=\"top\" width=\"100\" nowrap>"
+				"<font color=" HEADER_COLOR ">%s:</font></td> "
+				"<td valign=\"top\">%s</td></tr>",
+				_("Email"), accum->str);
 		}
-#else
-		render_name_value (html_stream, _("Email"), accum->str, NULL,
-				   E_TEXT_TO_HTML_CONVERT_ADDRESSES | E_TEXT_TO_HTML_CONVERT_NL);
-#endif
 	}
 
 	g_string_assign (accum, "");
@@ -596,7 +531,8 @@ render_contact (GtkHTMLStream *html_stream, EContact *contact)
 	if (nick && *nick) {
 		accum_name_value (accum, _("Nickname"), nick, NULL, 0);
 		if (accum->len > 0)
-			gtk_html_stream_printf (html_stream, "%s", accum->str);
+			g_string_append_printf (
+				buffer, "%s", accum->str);
 	}
 
 	g_string_assign (accum, "");
@@ -610,9 +546,9 @@ render_contact (GtkHTMLStream *html_stream, EContact *contact)
 	accum_multival_attribute (accum, contact, _("Skype"), E_CONTACT_IM_SKYPE, SKYPE_ICON, 0);
 
 	if (accum->len > 0)
-		gtk_html_stream_printf (html_stream, "%s", accum->str);
+		g_string_append_printf (buffer, "%s", accum->str);
 
-	end_block (html_stream);
+	end_block (buffer);
 
 	g_string_assign (accum, "");
 
@@ -630,9 +566,9 @@ render_contact (GtkHTMLStream *html_stream, EContact *contact)
 	accum_address   (accum, contact, _("Address"), E_CONTACT_ADDRESS_WORK, E_CONTACT_ADDRESS_LABEL_WORK);
 
 	if (accum->len > 0) {
-		start_block (html_stream, _("Work"));
-		gtk_html_stream_printf (html_stream, "%s", accum->str);
-		end_block (html_stream);
+		start_block (buffer, _("Work"));
+		g_string_append_printf (buffer, "%s", accum->str);
+		end_block (buffer);
 	}
 
 	g_string_assign (accum, "");
@@ -647,52 +583,58 @@ render_contact (GtkHTMLStream *html_stream, EContact *contact)
 	accum_time_attribute (accum, contact, _("Anniversary"), E_CONTACT_ANNIVERSARY, NULL, 0);
 	accum_attribute (accum, contact, _("Spouse"), E_CONTACT_SPOUSE, NULL, 0);
 	if (accum->len > 0) {
-		start_block (html_stream, _("Personal"));
-		gtk_html_stream_printf (html_stream, "%s", accum->str);
-		end_block (html_stream);
+		start_block (buffer, _("Personal"));
+		g_string_append_printf (buffer, "%s", accum->str);
+		end_block (buffer);
 	}
 
-	start_block (html_stream, "");
+	start_block (buffer, "");
 
-	render_attribute (html_stream, contact, _("Note"), E_CONTACT_NOTE, NULL,
-			  E_TEXT_TO_HTML_CONVERT_ADDRESSES | E_TEXT_TO_HTML_CONVERT_URLS | E_TEXT_TO_HTML_CONVERT_NL);
-	end_block (html_stream);
+	render_attribute (
+		buffer, contact, _("Note"), E_CONTACT_NOTE, NULL,
+		E_TEXT_TO_HTML_CONVERT_ADDRESSES |
+		E_TEXT_TO_HTML_CONVERT_URLS |
+		E_TEXT_TO_HTML_CONVERT_NL);
+	end_block (buffer);
 
-	gtk_html_stream_printf (html_stream, "</table>");
+	g_string_append (buffer, "</table>");
 }
 
 static void
-eab_contact_display_render_normal (EABContactDisplay *display, EContact *contact)
+eab_contact_display_render_normal (EABContactDisplay *display,
+                                   EContact *contact)
 {
-	GtkHTMLStream *html_stream;
-	gboolean is_rtl = (gtk_widget_get_default_direction () == GTK_TEXT_DIR_RTL);
+	GString *buffer;
 
-	if (display->priv->contact)
-		g_object_unref (display->priv->contact);
-	display->priv->contact = contact;
-	if (display->priv->contact)
-		g_object_ref (display->priv->contact);
+	/* XXX The initial buffer size is arbitrary.  Tune it. */
 
-	html_stream = gtk_html_begin (GTK_HTML (display));
-	gtk_html_stream_write (html_stream, HTML_HEADER, sizeof (HTML_HEADER) - 1);
-	gtk_html_stream_printf (html_stream, "<body><table width=\"100%%\"><tr><td %s>\n", is_rtl ? " align=\"right\" " : "");
+	buffer = g_string_sized_new (4096);
+	g_string_append (buffer, HTML_HEADER);
+	g_string_append_printf (
+		buffer, "<body><table width=\"100%%\"><tr>"
+		"<td %s>\n", TEXT_IS_RIGHT_TO_LEFT ? "align=\"right\"" : "");
 
 	if (contact) {
 		const gchar *str;
 		gchar *html;
 		EContactPhoto *photo;
 
-		gtk_html_stream_printf (html_stream, "<table cellspacing=\"20\" border=\"0\"><td %s valign=\"top\">", is_rtl ? " align=\"right\" " : "");
+		g_string_append_printf (
+			buffer, "<table cellspacing=\"20\" border=\"0\">"
+			"<td %s valign=\"top\">", TEXT_IS_RIGHT_TO_LEFT ?
+			"align=\"right\"" : "");
 		photo = e_contact_get (contact, E_CONTACT_PHOTO);
 		if (!photo)
 			photo = e_contact_get (contact, E_CONTACT_LOGO);
 		/* Only handle inlined photos for now */
 		if (photo && photo->type == E_CONTACT_PHOTO_TYPE_INLINED) {
-			gtk_html_stream_printf (html_stream, "<img border=\"1\" src=\"internal-contact-photo:\">");
+			g_string_append (buffer, "<img border=\"1\" src=\"internal-contact-photo:\">");
 			e_contact_photo_free (photo);
 		}
 
-		gtk_html_stream_printf (html_stream, "</td><td %s valign=\"top\">\n", is_rtl ? " align=\"right\" " : "");
+		g_string_append_printf (
+			buffer, "</td><td %s valign=\"top\">\n",
+			TEXT_IS_RIGHT_TO_LEFT ? "align=\"right\"" : "");
 
 		str = e_contact_get_const (contact, E_CONTACT_FILE_AS);
 		if (!str)
@@ -700,41 +642,39 @@ eab_contact_display_render_normal (EABContactDisplay *display, EContact *contact
 
 		if (str) {
 			html = e_text_to_html (str, 0);
-#ifdef HANDLE_MAILTO_INTERNALLY
 			if (e_contact_get (contact, E_CONTACT_IS_LIST))
-				gtk_html_stream_printf (html_stream, "<h2><a href=\"internal-mailto:0\">%s</a></h2>", html);
+				g_string_append_printf (buffer, "<h2><a href=\"internal-mailto:0\">%s</a></h2>", html);
 			else
-#endif
-			gtk_html_stream_printf (html_stream, "<h2>%s</h2>", html);
+				g_string_append_printf (buffer, "<h2>%s</h2>", html);
 			g_free (html);
 		}
 
 		if (e_contact_get (contact, E_CONTACT_IS_LIST))
-			render_contact_list (html_stream, contact);
+			render_contact_list (buffer, contact);
 		else
-			render_contact (html_stream, contact);
+			render_contact (buffer, contact);
 
-		gtk_html_stream_printf (html_stream, "</td></tr></table>\n");
+		g_string_append (buffer, "</td></tr></table>\n");
 	}
 
-	gtk_html_stream_printf (html_stream, "</td></tr></table></body></html>\n");
-	gtk_html_end (GTK_HTML (display), html_stream, GTK_HTML_STREAM_OK);
+	g_string_append (buffer, "</td></tr></table></body></html>\n");
+
+	e_web_view_load_string (E_WEB_VIEW (display), buffer->str);
+
+	g_string_free (buffer, TRUE);
 }
 
 static void
-eab_contact_display_render_compact (EABContactDisplay *display, EContact *contact)
+eab_contact_display_render_compact (EABContactDisplay *display,
+                                    EContact *contact)
 {
-	GtkHTMLStream *html_stream;
+	GString *buffer;
 
-	if (display->priv->contact)
-		g_object_unref (display->priv->contact);
-	display->priv->contact = contact;
-	if (display->priv->contact)
-		g_object_ref (display->priv->contact);
+	/* XXX The initial buffer size is arbitrary.  Tune it. */
 
-	html_stream = gtk_html_begin (GTK_HTML (display));
-	gtk_html_stream_write (html_stream, HTML_HEADER, sizeof (HTML_HEADER) - 1);
-	gtk_html_stream_write (html_stream, "<body>\n", 7);
+	buffer = g_string_sized_new (4096);
+	g_string_append (buffer, HTML_HEADER);
+	g_string_append (buffer, "<body>\n");
 
 	if (contact) {
 		const gchar *str;
@@ -760,13 +700,14 @@ eab_contact_display_render_compact (EABContactDisplay *display, EContact *contac
 			#undef DARKER
 		}
 
-		gtk_html_stream_printf (html_stream,
-					"<table width=\"100%%\" cellpadding=1 cellspacing=0 bgcolor=\"#%06X\">"
-					"<tr><td valign=\"top\">"
-					"<table width=\"100%%\" cellpadding=0 cellspacing=0 bgcolor=\"#%06X\">"
-					"<tr><td valign=\"top\">"
-					"<table>"
-					"<tr><td valign=\"top\">", bg_frame, bg_body);
+		g_string_append_printf (
+			buffer,
+			"<table width=\"100%%\" cellpadding=1 cellspacing=0 bgcolor=\"#%06X\">"
+			"<tr><td valign=\"top\">"
+			"<table width=\"100%%\" cellpadding=0 cellspacing=0 bgcolor=\"#%06X\">"
+			"<tr><td valign=\"top\">"
+			"<table>"
+			"<tr><td valign=\"top\">", bg_frame, bg_body);
 
 		photo = e_contact_get (contact, E_CONTACT_PHOTO);
 		if (!photo)
@@ -803,54 +744,56 @@ eab_contact_display_render_compact (EABContactDisplay *display, EContact *contac
 			}
 
 			g_object_unref (pixbuf);
-			gtk_html_stream_printf (html_stream, "<img width=\"%d\" height=\"%d\" src=\"internal-contact-photo:\">",
-						calced_width, calced_height);
+			g_string_append_printf (
+				buffer,
+				"<img width=\"%d\" height=\"%d\" src=\"internal-contact-photo:\">",
+				calced_width, calced_height);
 			e_contact_photo_free (photo);
 		}
 
-		gtk_html_stream_printf (html_stream, "</td><td valign=\"top\">\n");
+		g_string_append (buffer, "</td><td valign=\"top\">\n");
 
 		str = e_contact_get_const (contact, E_CONTACT_FILE_AS);
 		if (str) {
 			html = e_text_to_html (str, 0);
-			gtk_html_stream_printf (html_stream, "<b>%s</b>", html);
+			g_string_append_printf (buffer, "<b>%s</b>", html);
 			g_free (html);
 		}
 		else {
 			str = e_contact_get_const (contact, E_CONTACT_FULL_NAME);
 			if (str) {
 				html = e_text_to_html (str, 0);
-				gtk_html_stream_printf (html_stream, "<b>%s</b>", html);
+				g_string_append_printf (buffer, "<b>%s</b>", html);
 				g_free (html);
 			}
 		}
 
-		gtk_html_stream_write (html_stream, "<hr>", 4);
+		g_string_append (buffer, "<hr>");
 
 		if (e_contact_get (contact, E_CONTACT_IS_LIST)) {
 			GList *email_list;
 			GList *l;
 
-			gtk_html_stream_printf (html_stream, "<table border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tr><td valign=\"top\">");
-			gtk_html_stream_printf (html_stream, "<b>%s:</b>&nbsp;<td>", _("List Members"));
+			g_string_append (buffer, "<table border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tr><td valign=\"top\">");
+			g_string_append_printf (buffer, "<b>%s:</b>&nbsp;<td>", _("List Members"));
 
 			email_list = e_contact_get (contact, E_CONTACT_EMAIL);
 
 			for (l = email_list; l; l = l->next) {
 				if (l->data) {
 					html = e_text_to_html (l->data, 0);
-					gtk_html_stream_printf (html_stream, "%s, ", html);
+					g_string_append_printf (buffer, "%s, ", html);
 					g_free (html);
 				}
 			}
-			gtk_html_stream_printf (html_stream, "</td></tr></table>");
+			g_string_append (buffer, "</td></tr></table>");
 		}
 		else {
 			gboolean comma = FALSE;
 			str = e_contact_get_const (contact, E_CONTACT_TITLE);
 			if (str) {
 				html = e_text_to_html (str, 0);
-				gtk_html_stream_printf (html_stream, "<b>%s:</b> %s<br>", _("Job Title"), str);
+				g_string_append_printf (buffer, "<b>%s:</b> %s<br>", _("Job Title"), str);
 				g_free (html);
 			}
 
@@ -860,12 +803,12 @@ eab_contact_display_render_compact (EABContactDisplay *display, EContact *contac
 				if (!html)								\
 					html = e_text_to_html (str, 0);				\
 													\
-				gtk_html_stream_printf (html_stream, "%s%s", comma ? ", " : "", html);	\
+				g_string_append_printf (buffer, "%s%s", comma ? ", " : "", html);	\
 				g_free (html);								\
 				comma = TRUE;								\
 			}
 
-			gtk_html_stream_printf (html_stream, "<b>%s:</b> ", _("Email"));
+			g_string_append_printf (buffer, "<b>%s:</b> ", _("Email"));
 			str = e_contact_get_const (contact, E_CONTACT_EMAIL_1);
 			if (str)
 				print_email ();
@@ -878,124 +821,344 @@ eab_contact_display_render_compact (EABContactDisplay *display, EContact *contac
 			if (str)
 				print_email ();
 
-			gtk_html_stream_write (html_stream, "<br>", 4);
+			g_string_append (buffer, "<br>");
 
 			#undef print_email
 
 			str = e_contact_get_const (contact, E_CONTACT_HOMEPAGE_URL);
 			if (str) {
 				html = e_text_to_html (str, E_TEXT_TO_HTML_CONVERT_URLS);
-				gtk_html_stream_printf (html_stream, "<b>%s:</b> %s<br>",
-							_("Home page"), html);
+				g_string_append_printf (
+					buffer, "<b>%s:</b> %s<br>",
+					_("Home page"), html);
 				g_free (html);
 			}
 
 			str = e_contact_get_const (contact, E_CONTACT_BLOG_URL);
 			if (str) {
 				html = e_text_to_html (str, E_TEXT_TO_HTML_CONVERT_URLS);
-				gtk_html_stream_printf (html_stream, "<b>%s:</b> %s<br>",
-							_("Blog"), html);
+				g_string_append_printf (
+					buffer, "<b>%s:</b> %s<br>",
+					_("Blog"), html);
 			}
 		}
 
-		gtk_html_stream_printf (html_stream, "</td></tr></table></td></tr></table></td></tr></table>\n");
+		g_string_append (buffer, "</td></tr></table></td></tr></table></td></tr></table>\n");
 	}
 
-	gtk_html_stream_write (html_stream, "</body></html>\n", 15);
-	gtk_html_end (GTK_HTML (display), html_stream, GTK_HTML_STREAM_OK);
+	g_string_append (buffer, "</body></html>\n");
+
+	e_web_view_load_string (E_WEB_VIEW (display), buffer->str);
+
+	g_string_free (buffer, TRUE);
 }
 
-void
-eab_contact_display_render (EABContactDisplay *display, EContact *contact,
-			    EABContactDisplayRenderMode mode)
+static void
+contact_display_set_property (GObject *object,
+                              guint property_id,
+                              const GValue *value,
+                              GParamSpec *pspec)
 {
-	switch (mode) {
-	case EAB_CONTACT_DISPLAY_RENDER_NORMAL:
-		eab_contact_display_render_normal (display, contact);
-		break;
-	case EAB_CONTACT_DISPLAY_RENDER_COMPACT:
-		eab_contact_display_render_compact (display, contact);
-		break;
+	switch (property_id) {
+		case PROP_CONTACT:
+			eab_contact_display_set_contact (
+				EAB_CONTACT_DISPLAY (object),
+				g_value_get_object (value));
+			return;
+
+		case PROP_MODE:
+			eab_contact_display_set_mode (
+				EAB_CONTACT_DISPLAY (object),
+				g_value_get_int (value));
+			return;
 	}
+
+	G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
 }
 
-static gint
-eab_html_press_event (GtkWidget *widget, GdkEvent *event,EABContactDisplay *display)
+static void
+contact_display_get_property (GObject *object,
+                              guint property_id,
+                              GValue *value,
+                              GParamSpec *pspec)
 {
-	gchar *uri;
-	gboolean res = FALSE;
+	switch (property_id) {
+		case PROP_CONTACT:
+			g_value_set_object (
+				value, eab_contact_display_get_contact (
+				EAB_CONTACT_DISPLAY (object)));
+			return;
 
-	if (event->button.button!= 3 )
-		return FALSE;
+		case PROP_MODE:
+			g_value_set_int (
+				value, eab_contact_display_get_mode (
+				EAB_CONTACT_DISPLAY (object)));
+			return;
+	}
 
-	uri = gtk_html_get_url_at (GTK_HTML (widget), event->button.x, event->button.y);
-	if (uri) {
-		eab_uri_popup_event(display,event,uri);
-		}
-
-         g_free(uri);
-
-	return res;
+	G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
 }
 
-GtkWidget*
-eab_contact_display_new (void)
+static void
+contact_display_dispose (GObject *object)
+{
+	EABContactDisplayPrivate *priv;
+
+	priv = EAB_CONTACT_DISPLAY_GET_PRIVATE (object);
+
+	if (priv->contact != NULL) {
+		g_object_unref (priv->contact);
+		priv->contact = NULL;
+	}
+
+	/* Chain up to parent's dispose() method. */
+	G_OBJECT_CLASS (parent_class)->dispose (object);
+}
+
+static void
+contact_display_url_requested (GtkHTML *html,
+                               const gchar *uri,
+                               GtkHTMLStream *handle)
 {
 	EABContactDisplay *display;
+	GtkHTMLClass *class;
+	gsize length;
 
-	struct _EABContactDisplayPrivate *p;
+	display = EAB_CONTACT_DISPLAY (html);
+	class = GTK_HTML_CLASS (parent_class);
 
-	display = g_object_new (EAB_TYPE_CONTACT_DISPLAY, NULL);
-	p=display->priv = g_new0 (EABContactDisplayPrivate, 1);
+	/* internal-contact-photo: */
+	if (strcmp (uri, "internal-contact-photo:") == 0) {
+		EContactPhoto *photo;
+		EContact *contact;
 
-	gtk_html_set_default_content_type (GTK_HTML (display), "text/html; charset=utf-8");
+		contact = eab_contact_display_get_contact (display);
+		photo = e_contact_get (contact, E_CONTACT_PHOTO);
+		if (photo == NULL)
+			photo = e_contact_get (contact, E_CONTACT_LOGO);
 
-	gtk_html_set_editable (GTK_HTML (display), FALSE);
+		gtk_html_stream_write (
+			handle, (gchar *) photo->data.inlined.data,
+			photo->data.inlined.length);
 
-	g_signal_connect (display, "url_requested",
-			  G_CALLBACK (on_url_requested),
-			  display);
-	g_signal_connect (display, "link_clicked",
-			  G_CALLBACK (on_link_clicked),
-			  display);
-        g_signal_connect(display, "button_press_event",
-                          G_CALLBACK(eab_html_press_event),
-                           display);
-        p->invisible = gtk_invisible_new();
-	g_signal_connect(p->invisible, "selection_get", G_CALLBACK(eab_selection_get), display);
-	g_signal_connect(p->invisible, "selection_clear_event", G_CALLBACK(eab_selection_clear_event), display);
-	gtk_selection_add_target(p->invisible, GDK_SELECTION_PRIMARY, GDK_SELECTION_TYPE_STRING, 0);
-	gtk_selection_add_target(p->invisible, GDK_SELECTION_CLIPBOARD, GDK_SELECTION_TYPE_STRING, 1);
+		gtk_html_end (html, handle, GTK_HTML_STREAM_OK);
 
-#if 0
-	g_signal_connect (display, "object_requested",
-			  G_CALLBACK (on_object_requested),
-			  mail_display);
-	g_signal_connect (display, "button_press_event",
-			  G_CALLBACK (html_button_press_event), mail_display);
-	g_signal_connect (display, "motion_notify_event",
-			  G_CALLBACK (html_motion_notify_event), mail_display);
-	g_signal_connect (display, "enter_notify_event",
-			  G_CALLBACK (html_enter_notify_event), mail_display);
-	g_signal_connect (display, "iframe_created",
-			  G_CALLBACK (html_iframe_created), mail_display);
-	g_signal_connect (display, "on_url",
-			  G_CALLBACK (html_on_url), mail_display);
-#endif
+		e_contact_photo_free (photo);
 
-	return GTK_WIDGET (display);
+		return;
+	}
+
+	/* evo-icon:<<themed-icon-name>> */
+	length = strlen ("evo-icon:");
+	if (g_ascii_strncasecmp (uri, "evo-icon:", length) == 0) {
+		GtkIconTheme *icon_theme;
+		GtkIconInfo *icon_info;
+		const gchar *filename;
+		gchar *icon_uri;
+		GError *error = NULL;
+
+		icon_theme = gtk_icon_theme_get_default ();
+		icon_info = gtk_icon_theme_lookup_icon (
+			icon_theme, uri + length, GTK_ICON_SIZE_MENU, 0);
+		g_return_if_fail (icon_info != NULL);
+
+		filename = gtk_icon_info_get_filename (icon_info);
+		icon_uri = g_filename_to_uri (filename, NULL, &error);
+
+		if (error != NULL) {
+			g_warning ("%s", error->message);
+			g_error_free (error);
+		}
+
+		/* Chain up with the URI for the icon file. */
+		class->url_requested (html, icon_uri, handle);
+
+		gtk_icon_info_free (icon_info);
+		g_free (icon_uri);
+
+		return;
+	}
+
+	/* Chain up to parent's uri_requested() method. */
+	class->url_requested (html, uri, handle);
 }
 
 static void
-eab_contact_display_init (GObject *object)
+contact_display_hovering_over_link (EWebView *web_view,
+                                    const gchar *title,
+                                    const gchar *uri)
 {
-	gtk_html_construct ((GtkHTML *)object);
+	EWebViewClass *web_view_class;
+	EABContactDisplay *display;
+	EContact *contact;
+	const gchar *name;
+	gchar *message;
+
+	if (uri == NULL || *uri == '\0')
+		goto chainup;
+
+	if (!g_str_has_prefix (uri, "internal-mailto:"))
+		goto chainup;
+
+	display = EAB_CONTACT_DISPLAY (web_view);
+	contact = eab_contact_display_get_contact (display);
+
+	name = e_contact_get_const (contact, E_CONTACT_FILE_AS);
+	if (name == NULL)
+		e_contact_get_const (contact, E_CONTACT_FULL_NAME);
+	g_return_if_fail (name != NULL);
+
+	message = g_strdup_printf (_("Click to mail %s"), name);
+	e_web_view_status_message (web_view, message);
+	g_free (message);
+
+	return;
+
+chainup:
+	/* Chain up to parent's hovering_over_link() method. */
+	web_view_class = E_WEB_VIEW_CLASS (parent_class);
+	web_view_class->hovering_over_link (web_view, title, uri);
 }
 
 static void
-eab_contact_display_class_init (GtkObjectClass *object_class)
+contact_display_link_clicked (EWebView *web_view,
+                              const gchar *uri)
 {
-	/*	object_class->destroy = mail_display_destroy;*/
+	EABContactDisplay *display;
+	gsize length;
+
+	display = EAB_CONTACT_DISPLAY (web_view);
+
+	length = strlen ("internal-mailto:");
+	if (g_ascii_strncasecmp (uri, "internal-mailto:", length) == 0) {
+		gint index;
+
+		index = atoi (uri + length);
+		contact_display_emit_send_message (display, index);
+		return;
+	}
+
+	/* Chain up to parent's link_clicked() method. */
+	E_WEB_VIEW_CLASS (parent_class)->link_clicked (web_view, uri);
+}
+
+static void
+contact_display_update_actions (EWebView *web_view)
+{
+	GtkActionGroup *action_group;
+	gboolean scheme_is_internal_mailto;
+	gboolean visible;
+	const gchar *group_name;
+	const gchar *uri;
+
+	/* Chain up to parent's update_actions() method. */
+	E_WEB_VIEW_CLASS (parent_class)->update_actions (web_view);
+
+	uri = e_web_view_get_selected_uri (web_view);
+
+	scheme_is_internal_mailto = (uri == NULL) ? FALSE :
+		(g_ascii_strncasecmp (uri, "internal-mailto:", 16) == 0);
+
+	/* Override how EWebView treats internal-mailto URIs. */
+	group_name = "uri";
+	action_group = e_web_view_get_action_group (web_view, group_name);
+	visible = gtk_action_group_get_visible (action_group);
+	visible &= !scheme_is_internal_mailto;
+	gtk_action_group_set_visible (action_group, visible);
+
+	group_name = "internal-mailto";
+	visible = scheme_is_internal_mailto;
+	action_group = e_web_view_get_action_group (web_view, group_name);
+	gtk_action_group_set_visible (action_group, visible);
+}
+
+static void
+eab_contact_display_class_init (EABContactDisplayClass *class)
+{
+	GObjectClass *object_class;
+	GtkHTMLClass *html_class;
+	EWebViewClass *web_view_class;
+
+	parent_class = g_type_class_peek_parent (class);
+	g_type_class_add_private (class, sizeof (EABContactDisplayPrivate));
+
+	object_class = G_OBJECT_CLASS (class);
+	object_class->set_property = contact_display_set_property;
+	object_class->get_property = contact_display_get_property;
+	object_class->dispose = contact_display_dispose;
+
+	html_class = GTK_HTML_CLASS (class);
+	html_class->url_requested = contact_display_url_requested;
+
+	web_view_class = E_WEB_VIEW_CLASS (class);
+	web_view_class->hovering_over_link = contact_display_hovering_over_link;
+	web_view_class->link_clicked = contact_display_link_clicked;
+	web_view_class->update_actions = contact_display_update_actions;
+
+	g_object_class_install_property (
+		object_class,
+		PROP_CONTACT,
+		g_param_spec_object (
+			"contact",
+			NULL,
+			NULL,
+			E_TYPE_CONTACT,
+			G_PARAM_READWRITE));
+
+	/* XXX Make this a real enum property. */
+	g_object_class_install_property (
+		object_class,
+		PROP_MODE,
+		g_param_spec_int (
+			"mode",
+			NULL,
+			NULL,
+			EAB_CONTACT_DISPLAY_RENDER_NORMAL,
+			EAB_CONTACT_DISPLAY_RENDER_COMPACT,
+			EAB_CONTACT_DISPLAY_RENDER_NORMAL,
+			G_PARAM_READWRITE));
+
+	signals[SEND_MESSAGE] = g_signal_new (
+		"send-message",
+		G_OBJECT_CLASS_TYPE (class),
+		G_SIGNAL_RUN_FIRST,
+		G_STRUCT_OFFSET (EABContactDisplayClass, send_message),
+		NULL, NULL,
+		g_cclosure_marshal_VOID__OBJECT,
+		G_TYPE_NONE, 1,
+		E_TYPE_DESTINATION);
+}
+
+static void
+eab_contact_display_init (EABContactDisplay *display)
+{
+	EWebView *web_view;
+	GtkUIManager *ui_manager;
+	GtkActionGroup *action_group;
+	const gchar *domain = GETTEXT_PACKAGE;
+	GError *error = NULL;
+
+	display->priv = EAB_CONTACT_DISPLAY_GET_PRIVATE (display);
+	display->priv->mode = EAB_CONTACT_DISPLAY_RENDER_NORMAL;
+
+	web_view = E_WEB_VIEW (display);
+	ui_manager = e_web_view_get_ui_manager (web_view);
+
+	action_group = gtk_action_group_new ("internal-mailto");
+	gtk_action_group_set_translation_domain (action_group, domain);
+	gtk_ui_manager_insert_action_group (ui_manager, action_group, 0);
+	g_object_unref (action_group);
+
+	gtk_action_group_add_actions (
+		action_group, internal_mailto_entries,
+		G_N_ELEMENTS (internal_mailto_entries), display);
+
+	/* Because we are loading from a hard-coded string, there is
+	 * no chance of I/O errors.  Failure here implies a malformed
+	 * UI definition.  Full stop. */
+	gtk_ui_manager_add_ui_from_string (ui_manager, ui, -1, &error);
+	if (error != NULL)
+		g_error ("%s", error->message);
 }
 
 GType
@@ -1003,21 +1166,98 @@ eab_contact_display_get_type (void)
 {
 	static GType type = 0;
 
-	if (!type) {
-		static const GTypeInfo info =  {
+	if (G_UNLIKELY (type == 0)) {
+		static const GTypeInfo type_info =  {
 			sizeof (EABContactDisplayClass),
-			NULL,           /* base_init */
-			NULL,           /* base_finalize */
+			(GBaseInitFunc) NULL,
+			(GBaseFinalizeFunc) NULL,
 			(GClassInitFunc) eab_contact_display_class_init,
-			NULL,           /* class_finalize */
-			NULL,           /* class_data */
+			(GClassFinalizeFunc) NULL,
+			NULL,  /* class_data */
 			sizeof (EABContactDisplay),
-			0,             /* n_preallocs */
+			0,     /* n_preallocs */
 			(GInstanceInitFunc) eab_contact_display_init,
+			NULL   /* value_table */
 		};
 
-		type = g_type_register_static (PARENT_TYPE, "EABContactDisplay", &info, 0);
+		type = g_type_register_static (
+			E_TYPE_WEB_VIEW, "EABContactDisplay", &type_info, 0);
 	}
 
 	return type;
+}
+
+GtkWidget *
+eab_contact_display_new (void)
+{
+	return g_object_new (EAB_TYPE_CONTACT_DISPLAY, NULL);
+}
+
+EContact *
+eab_contact_display_get_contact (EABContactDisplay *display)
+{
+	g_return_val_if_fail (EAB_IS_CONTACT_DISPLAY (display), NULL);
+
+	return display->priv->contact;
+}
+
+void
+eab_contact_display_set_contact (EABContactDisplay *display,
+                                 EContact *contact)
+{
+	EABContactDisplayMode mode;
+
+	g_return_if_fail (EAB_IS_CONTACT_DISPLAY (display));
+
+	mode = eab_contact_display_get_mode (display);
+
+	if (contact != NULL)
+		g_object_ref (contact);
+	if (display->priv->contact != NULL)
+		g_object_unref (display->priv->contact);
+	display->priv->contact = contact;
+
+	switch (mode) {
+		case EAB_CONTACT_DISPLAY_RENDER_NORMAL:
+			eab_contact_display_render_normal (display, contact);
+			break;
+
+		case EAB_CONTACT_DISPLAY_RENDER_COMPACT:
+			eab_contact_display_render_compact (display, contact);
+			break;
+	}
+
+	g_object_notify (G_OBJECT (display), "contact");
+}
+
+EABContactDisplayMode
+eab_contact_display_get_mode (EABContactDisplay *display)
+{
+	g_return_val_if_fail (EAB_IS_CONTACT_DISPLAY (display), 0);
+
+	return display->priv->mode;
+}
+
+void
+eab_contact_display_set_mode (EABContactDisplay *display,
+                              EABContactDisplayMode mode)
+{
+	EContact *contact;
+
+	g_return_if_fail (EAB_IS_CONTACT_DISPLAY (display));
+
+	display->priv->mode = mode;
+	contact = eab_contact_display_get_contact (display);
+
+	switch (mode) {
+		case EAB_CONTACT_DISPLAY_RENDER_NORMAL:
+			eab_contact_display_render_normal (display, contact);
+			break;
+
+		case EAB_CONTACT_DISPLAY_RENDER_COMPACT:
+			eab_contact_display_render_compact (display, contact);
+			break;
+	}
+
+	g_object_notify (G_OBJECT (display), "mode");
 }

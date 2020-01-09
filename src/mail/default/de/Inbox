@@ -62,7 +62,7 @@ Weitere Informationen
 	unter http://mail.gnome.org/mailman/listinfo/evolution-list.
 
 	Informationen über das Projekt Evolution erhalten Sie unter
-	http://www.gnome.org/projects/evolution.
+	http://projects.gnome.org/evolution.
 
 
 Mit freundlichen Grüßen,
@@ -79,7 +79,7 @@ Content-Type: text/html; charset=utf-8
   <META HTTP-EQUIV="Content-Type" CONTENT="text/html; CHARSET=UTF-8">
   <META NAME="GENERATOR" CONTENT="GtkHTML/0.13.99">
 </HEAD>
-<BODY BGCOLOR="#f8fcf8">
+<BODY BGCOLOR="#f8fcf8" TEXT="#000000">
 <TABLE BACKGROUND="cid:1001417869.27019.4.camel@spectrolite" CELLSPACING="0" CELLPADDING="0" WIDTH="100%">
 <TR>
 <TD ALIGN="left" VALIGN="top">
@@ -158,15 +158,15 @@ Content-Type: text/html; charset=utf-8
 
 <blockquote>
 	Die Mailingliste für Anwender von Evolution können Sie abonnieren unter
-	<a href="http://lists.gnome.org/mailman/listinfo/evolution"
-	>http://lists.gnome.org/mailman/listinfo/evolution</a>.
+	<a href="http://lists.gnome.org/mailman/listinfo/evolution-list"
+	>http://lists.gnome.org/mailman/listinfo/evolution-list</a>.
 
 	Informationen über das Projekt Evolution erhalten Sie unter
-	<a href="http://www.gnome.org/projects/evolution"
-	>http://www.gnome.org/projects/evolution</a>.
+	<a href="http://projects.gnome.org/evolution"
+	>http://projects.gnome.org/evolution</a>.
 	<!--
 	Eine Liste von häufig gestellten Fragen (FAQ) ist verfügbar unter
-	<a href="http://go-evolution.org/FAQ">http://go-evolution.org/FAQ</a>.
+	<a href="http://live.gnome.org/Evolution/FAQ">http://live.gnome.org/Evolution/FAQ</a>.
 	-->
 <br><br>	
 </blockquote>

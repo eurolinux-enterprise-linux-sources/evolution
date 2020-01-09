@@ -1,0 +1,57 @@
+diff -up evolution-2.32.3/calendar/gui/ea-cal-view.c.crash-in-et-get-n-children evolution-2.32.3/calendar/gui/ea-cal-view.c
+--- evolution-2.32.3/calendar/gui/ea-cal-view.c.crash-in-et-get-n-children	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/ea-cal-view.c	2013-06-13 14:41:46.031994415 +0200
+@@ -173,7 +173,6 @@ static AtkObject*
+ ea_cal_view_get_parent (AtkObject *accessible)
+ {
+ 	ECalendarView *cal_view;
+-	GnomeCalendar *gnomeCalendar;
+ 	GtkWidget *widget;
+ 
+ 	g_return_val_if_fail (EA_IS_CAL_VIEW (accessible), NULL);
+@@ -183,9 +182,8 @@ ea_cal_view_get_parent (AtkObject *acces
+ 		return NULL;
+ 
+ 	cal_view = E_CALENDAR_VIEW (widget);
+-	gnomeCalendar = e_calendar_view_get_calendar (cal_view);
+ 
+-	return gtk_widget_get_accessible (GTK_WIDGET(gnomeCalendar));
++	return gtk_widget_get_accessible (gtk_widget_get_parent (GTK_WIDGET (cal_view)));
+ }
+ 
+ static void
+diff -up evolution-2.32.3/widgets/table/gal-a11y-e-table.c.crash-in-et-get-n-children evolution-2.32.3/widgets/table/gal-a11y-e-table.c
+--- evolution-2.32.3/widgets/table/gal-a11y-e-table.c.crash-in-et-get-n-children	2013-06-13 14:41:46.026994415 +0200
++++ evolution-2.32.3/widgets/table/gal-a11y-e-table.c	2013-06-13 14:41:46.030994415 +0200
+@@ -155,6 +155,8 @@ et_ref_child (AtkObject *accessible,
+ 	gint child_no;
+ 
+ 	et = E_TABLE (gtk_accessible_get_widget (GTK_ACCESSIBLE (a11y)));
++	if (!et)
++		return NULL;
+ 
+ 	child_no = et_get_n_children (accessible);
+ 	if (i == 0 || i < child_no - 1) {
+@@ -283,8 +285,7 @@ gal_a11y_e_table_new (GObject *widget)
+ 
+ 	a11y = g_object_new (gal_a11y_e_table_get_type (), NULL);
+ 
+-	/* FIXME No way to do this in GTK 3. */
+-	/*GTK_ACCESSIBLE (a11y)->widget = GTK_WIDGET (widget);*/
++	GTK_ACCESSIBLE (a11y)->widget = GTK_WIDGET (widget);
+ 
+ 	/* we need to init all the children for multiple table items */
+ 	if (table && gtk_widget_get_mapped (GTK_WIDGET (table)) && table->group && E_IS_TABLE_GROUP_CONTAINER (table->group)) {
+diff -up evolution-2.32.3/widgets/table/gal-a11y-e-tree.c.crash-in-et-get-n-children evolution-2.32.3/widgets/table/gal-a11y-e-tree.c
+--- evolution-2.32.3/widgets/table/gal-a11y-e-tree.c.crash-in-et-get-n-children	2011-03-29 20:38:58.000000000 +0200
++++ evolution-2.32.3/widgets/table/gal-a11y-e-tree.c	2013-06-13 14:41:46.029994415 +0200
+@@ -178,8 +178,7 @@ gal_a11y_e_tree_new (GObject *widget)
+ 
+ 	a11y = g_object_new (gal_a11y_e_tree_get_type (), NULL);
+ 
+-	/* FIXME No way to do this in GTK 3. */
+-	/*GTK_ACCESSIBLE (a11y)->widget = GTK_WIDGET (widget);*/
++	GTK_ACCESSIBLE (a11y)->widget = GTK_WIDGET (widget);
+ 
+ 	return ATK_OBJECT (a11y);
+ }

@@ -27,7 +27,7 @@
 #endif
 
 #include <glib/gi18n-lib.h>
-#include "e-util/e-error.h"
+#include "e-util/e-alert-dialog.h"
 #include "send-comp.h"
 
 
@@ -108,6 +108,7 @@ send_component_dialog (GtkWindow *parent, ECal *client, ECalComponent *comp, gbo
 	ECalComponentVType vtype;
 	const gchar *id;
 	GtkWidget *dialog, *sa_checkbox = NULL, *ona_checkbox = NULL;
+	GtkWidget *content_area;
 	gboolean res;
 
 	if (strip_alarms)
@@ -154,12 +155,13 @@ send_component_dialog (GtkWindow *parent, ECal *client, ECalComponent *comp, gbo
 		strip_alarms = NULL;
 	}
 
-	dialog = e_error_new (parent, id, NULL);
+	dialog = e_alert_dialog_new_for_args (parent, id, NULL);
+	content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
 
 	if (strip_alarms)
-		sa_checkbox = add_checkbox (GTK_BOX (GTK_DIALOG (dialog)->vbox), _("Send my alarms with this event"));
+		sa_checkbox = add_checkbox (GTK_BOX (content_area), _("Send my alarms with this event"));
 	if (only_new_attendees)
-		ona_checkbox = add_checkbox (GTK_BOX (GTK_DIALOG (dialog)->vbox), _("Notify new attendees _only"));
+		ona_checkbox = add_checkbox (GTK_BOX (content_area), _("Notify new attendees _only"));
 
 	res = gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_YES;
 
@@ -183,11 +185,11 @@ send_component_prompt_subject (GtkWindow *parent, ECal *client, ECalComponent *c
 
 	switch (vtype) {
 	case E_CAL_COMPONENT_EVENT:
-			id = "calendar:prompt-send-no-subject-calendar";
+			id = "calendar:prompt-save-no-subject-calendar";
 		break;
 
 	case E_CAL_COMPONENT_TODO:
-			id = "calendar:prompt-send-no-subject-task";
+			id = "calendar:prompt-save-no-subject-task";
 		break;
 	case E_CAL_COMPONENT_JOURNAL:
 			id = "calendar:prompt-send-no-subject-memo";
@@ -199,7 +201,7 @@ send_component_prompt_subject (GtkWindow *parent, ECal *client, ECalComponent *c
 		return FALSE;
 	}
 
-	if (e_error_run (parent, id, NULL) == GTK_RESPONSE_YES)
+	if (e_alert_run_dialog_for_args (parent, id, NULL) == GTK_RESPONSE_YES)
 		return TRUE;
 	else
 		return FALSE;

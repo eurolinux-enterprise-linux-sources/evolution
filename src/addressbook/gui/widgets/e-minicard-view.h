@@ -26,7 +26,7 @@
 
 #include "e-minicard.h"
 
-#include <misc/e-reflow.h>
+#include <text/e-reflow.h>
 #include <misc/e-selection-model-simple.h>
 #include <libebook/e-book.h>
 #include "e-addressbook-reflow-adapter.h"
@@ -85,11 +85,13 @@ struct _EMinicardViewClass
 
 GType    e_minicard_view_get_type          (void);
 void     e_minicard_view_remove_selection  (EMinicardView *view,
-					    EBookCallback  cb,
+					    EBookAsyncCallback  cb,
 					    gpointer       closure);
 void     e_minicard_view_jump_to_letter    (EMinicardView *view,
 					    gunichar       letter);
 GList   *e_minicard_view_get_card_list     (EMinicardView *view);
+void     e_minicard_view_create_contact    (EMinicardView *view);
+void     e_minicard_view_create_contact_list (EMinicardView *view);
 
 G_END_DECLS
 

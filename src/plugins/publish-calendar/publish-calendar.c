@@ -20,23 +20,33 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <string.h>
 #include <gtk/gtk.h>
-#include <glade/glade.h>
 #include <gconf/gconf-client.h>
 #include <glib/gi18n.h>
 #include <gio/gio.h>
 #include <libedataserver/e-url.h>
 #include <libedataserverui/e-passwords.h>
-#include <calendar/gui/e-cal-popup.h>
 #include <calendar/gui/e-cal-config.h>
-#include <calendar/gui/e-cal-menu.h>
 #include <shell/es-event.h>
+#include <e-util/e-util.h>
 #include <e-util/e-util-private.h>
 #include <e-util/e-dialog-utils.h>
+
+#include <shell/e-shell.h>
+#include <shell/e-shell-view.h>
+
 #include "url-editor-dialog.h"
 #include "publish-format-fb.h"
 #include "publish-format-ical.h"
+
+#ifdef HAVE_LIBNOTIFY
+#include <libnotify/notify.h>
+#endif
 
 static GtkListStore *store = NULL;
 static GHashTable *uri_timeouts = NULL;
@@ -50,12 +60,115 @@ static guint error_queue_show_idle_id = 0;
 static void  error_queue_add (gchar *descriptions, GError *error);
 
 gint          e_plugin_lib_enable (EPlugin *ep, gint enable);
-void         action_publish (EPlugin *ep, ECalMenuTargetSelect *t);
-void         online_state_changed (EPlugin *ep, ESEventTargetState *target);
-void         publish_calendar_context_activate (EPlugin *ep, ECalPopupTargetSource *target);
 GtkWidget   *publish_calendar_locations (EPlugin *epl, EConfigHookItemFactoryData *data);
 static void  update_timestamp (EPublishUri *uri);
 static void publish (EPublishUri *uri, gboolean can_report_success);
+
+static GtkStatusIcon *status_icon = NULL;
+static guint status_icon_timeout_id = 0;
+#ifdef HAVE_LIBNOTIFY
+static NotifyNotification *notify = NULL;
+
+static gboolean
+show_notify_cb (gpointer data)
+{
+	return notify && !notify_notification_show (notify, NULL);
+}
+#endif
+
+static gboolean
+remove_notification (gpointer data)
+{
+	if (status_icon_timeout_id)
+		g_source_remove (status_icon_timeout_id);
+	status_icon_timeout_id = 0;
+
+#ifdef HAVE_LIBNOTIFY
+	if (notify)
+		notify_notification_close (notify, NULL);
+	notify = NULL;
+#endif
+
+	gtk_status_icon_set_visible (status_icon, FALSE);
+	g_object_unref (status_icon);
+	status_icon = NULL;
+
+	return FALSE;
+}
+
+static void
+update_publish_notification (GtkMessageType msg_type, const gchar *msg_text)
+{
+	static GString *actual_msg = NULL;
+	#ifdef HAVE_LIBNOTIFY
+	static gboolean can_notify = TRUE;
+	#endif
+	gboolean new_icon = !status_icon;
+	const gchar *stock_name;
+
+	g_return_if_fail (msg_text != NULL);
+
+	if (new_icon) {
+		status_icon = gtk_status_icon_new ();
+		if (actual_msg) {
+			g_string_free (actual_msg, TRUE);
+			actual_msg = NULL;
+		}
+	} else if (status_icon_timeout_id) {
+		g_source_remove (status_icon_timeout_id);
+	}
+
+	switch (msg_type) {
+	case GTK_MESSAGE_WARNING:
+		stock_name = GTK_STOCK_DIALOG_WARNING;
+		break;
+	case GTK_MESSAGE_ERROR:
+		stock_name = GTK_STOCK_DIALOG_ERROR;
+		break;
+	default:
+		stock_name = GTK_STOCK_DIALOG_INFO;
+		break;
+	}
+
+	if (!actual_msg) {
+		actual_msg = g_string_new (msg_text);
+	} else {
+		g_string_append (actual_msg, "\n");
+		g_string_append (actual_msg, msg_text);
+	}
+
+	gtk_status_icon_set_from_stock (status_icon, stock_name);
+	gtk_status_icon_set_tooltip_text (status_icon, actual_msg->str);
+
+	#ifdef HAVE_LIBNOTIFY
+	if (can_notify) {
+		if (notify) {
+			notify_notification_update (notify, _("Calendar Publishing"), actual_msg->str, stock_name);
+		} else {
+			if (!notify_init ("evolution-publish-calendar")) {
+				can_notify = FALSE;
+				return;
+			}
+
+			notify  = notify_notification_new (_("Calendar Publishing"), actual_msg->str, stock_name, NULL);
+			notify_notification_attach_to_status_icon (notify, status_icon);
+			notify_notification_set_urgency (notify, NOTIFY_URGENCY_NORMAL);
+			notify_notification_set_timeout (notify, NOTIFY_EXPIRES_DEFAULT);
+			g_timeout_add (500, show_notify_cb, NULL);
+
+			g_signal_connect (notify, "closed", G_CALLBACK (remove_notification), NULL);
+		}
+	}
+	#endif
+
+	status_icon_timeout_id = g_timeout_add_seconds (15, remove_notification, NULL);
+
+	if (new_icon) {
+		g_signal_connect (
+			status_icon, "activate",
+			G_CALLBACK (remove_notification), NULL);
+	}
+}
 
 static void
 publish_no_succ_info (EPublishUri *uri)
@@ -160,7 +273,6 @@ mount_ready_cb (GObject *source_object, GAsyncResult *res, gpointer user_data)
 	g_file_mount_enclosing_volume_finish (G_FILE (source_object), res, &error);
 
 	if (error) {
-
 		error_queue_add (g_strdup_printf (_("Mount of %s failed:"), ms->uri->location), error);
 
 		if (ms)
@@ -476,11 +588,19 @@ url_list_changed (PublishUIData *ui)
 }
 
 static void
+update_url_enable_button (EPublishUri *url, GtkWidget *url_enable)
+{
+	g_return_if_fail (url_enable != NULL);
+	g_return_if_fail (GTK_IS_BUTTON (url_enable));
+
+	gtk_button_set_label (GTK_BUTTON (url_enable), url && url->enabled ? _("_Disable") : _("E_nable"));
+}
+
+static void
 url_list_enable_toggled (GtkCellRendererToggle *renderer,
                          const gchar            *path_string,
 			 PublishUIData         *ui)
 {
-	GtkTreeSelection *selection;
 	EPublishUri *url = NULL;
 	GtkTreeModel *model;
 	GtkTreePath *path;
@@ -488,19 +608,17 @@ url_list_enable_toggled (GtkCellRendererToggle *renderer,
 
 	path = gtk_tree_path_new_from_string (path_string);
 	model = gtk_tree_view_get_model (GTK_TREE_VIEW (ui->treeview));
-	selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (ui->treeview));
 
 	if (gtk_tree_model_get_iter (model, &iter, path)) {
 		gtk_tree_model_get (model, &iter, URL_LIST_URL_COLUMN, &url, -1);
 
 		url->enabled = !url->enabled;
 
-		if (url->enabled)
-			gtk_widget_set_sensitive (ui->url_enable, FALSE);
-		else
-			gtk_widget_set_sensitive (ui->url_enable, TRUE);
+		update_url_enable_button (url, ui->url_enable);
 
 		gtk_list_store_set (GTK_LIST_STORE (model), &iter, URL_LIST_ENABLED_COLUMN, url->enabled, -1);
+
+		url_list_changed (ui);
 	}
 
 	gtk_tree_path_free (path);
@@ -517,17 +635,14 @@ selection_changed (GtkTreeSelection *selection, PublishUIData *ui)
 		gtk_tree_model_get (model, &iter, URL_LIST_URL_COLUMN, &url, -1);
 		gtk_widget_set_sensitive (ui->url_edit, TRUE);
 		gtk_widget_set_sensitive (ui->url_remove, TRUE);
-
-		if (url->enabled)
-			gtk_widget_set_sensitive (ui->url_enable, FALSE);
-		else
-			gtk_widget_set_sensitive (ui->url_enable, TRUE);
-
+		gtk_widget_set_sensitive (ui->url_enable, TRUE);
 	} else {
 		gtk_widget_set_sensitive (ui->url_edit, FALSE);
 		gtk_widget_set_sensitive (ui->url_remove, FALSE);
 		gtk_widget_set_sensitive (ui->url_enable, FALSE);
 	}
+
+	update_url_enable_button (url, ui->url_enable);
 }
 
 static void
@@ -641,6 +756,8 @@ url_remove_clicked (GtkButton *button, PublishUIData *ui)
 			gtk_widget_set_sensitive (ui->url_edit, FALSE);
 			gtk_widget_set_sensitive (ui->url_remove, FALSE);
 			gtk_widget_set_sensitive (ui->url_enable, FALSE);
+
+			update_url_enable_button (NULL, ui->url_enable);
 		}
 
 		publish_uris = g_slist_remove (publish_uris, url);
@@ -666,10 +783,7 @@ url_enable_clicked (GtkButton *button, PublishUIData *ui)
 		gtk_tree_model_get (model, &iter, URL_LIST_URL_COLUMN, &url, -1);
 		url->enabled = !url->enabled;
 
-		if (url->enabled)
-			gtk_widget_set_sensitive (ui->url_enable, FALSE);
-		else
-			gtk_widget_set_sensitive (ui->url_enable, TRUE);
+		update_url_enable_button (url, ui->url_enable);
 
 		gtk_list_store_set (GTK_LIST_STORE (model), &iter, URL_LIST_ENABLED_COLUMN, url->enabled, -1);
 		gtk_tree_selection_select_iter (selection, &iter);
@@ -677,10 +791,10 @@ url_enable_clicked (GtkButton *button, PublishUIData *ui)
 	}
 }
 
-void
-online_state_changed (EPlugin *ep, ESEventTargetState *target)
+static void
+online_state_changed (EShell *shell)
 {
-	online = target->state;
+	online = e_shell_get_online (shell);
 	if (online)
 		while (queued_publishes)
 			publish (queued_publishes->data, FALSE);
@@ -689,23 +803,18 @@ online_state_changed (EPlugin *ep, ESEventTargetState *target)
 GtkWidget *
 publish_calendar_locations (EPlugin *epl, EConfigHookItemFactoryData *data)
 {
-	GladeXML *xml;
+	GtkBuilder *builder;
 	GtkCellRenderer *renderer;
 	GtkTreeSelection *selection;
 	GtkWidget *toplevel;
 	PublishUIData *ui = g_new0 (PublishUIData, 1);
 	GSList *l;
 	GtkTreeIter iter;
-	GConfClient *client;
-	gchar *gladefile;
 
-	gladefile = g_build_filename (EVOLUTION_GLADEDIR,
-				      "publish-calendar.glade",
-				      NULL);
-	xml = glade_xml_new (gladefile, "toplevel", NULL);
-	g_free (gladefile);
+	builder = gtk_builder_new ();
+	e_load_ui_builder_definition (builder, "publish-calendar.ui");
 
-	ui->treeview = glade_xml_get_widget (xml, "url list");
+	ui->treeview = e_builder_get_widget (builder, "url list");
 	if (store == NULL)
 		store = gtk_list_store_new (URL_LIST_N_COLUMNS, G_TYPE_BOOLEAN, G_TYPE_STRING, G_TYPE_POINTER);
 	else
@@ -727,10 +836,11 @@ publish_calendar_locations (EPlugin *epl, EConfigHookItemFactoryData *data)
 	gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (ui->treeview), TRUE);
 	g_signal_connect (G_OBJECT (ui->treeview), "row-activated", G_CALLBACK (url_list_double_click), ui);
 
-	ui->url_add = glade_xml_get_widget (xml, "url add");
-	ui->url_edit = glade_xml_get_widget (xml, "url edit");
-	ui->url_remove = glade_xml_get_widget (xml, "url remove");
-	ui->url_enable = glade_xml_get_widget (xml, "url enable");
+	ui->url_add = e_builder_get_widget (builder, "url add");
+	ui->url_edit = e_builder_get_widget (builder, "url edit");
+	ui->url_remove = e_builder_get_widget (builder, "url remove");
+	ui->url_enable = e_builder_get_widget (builder, "url enable");
+	update_url_enable_button (NULL, ui->url_enable);
 	g_signal_connect (G_OBJECT (ui->url_add), "clicked", G_CALLBACK (url_add_clicked), ui);
 	g_signal_connect (G_OBJECT (ui->url_edit), "clicked", G_CALLBACK (url_edit_clicked), ui);
 	g_signal_connect (G_OBJECT (ui->url_remove), "clicked", G_CALLBACK (url_remove_clicked), ui);
@@ -739,7 +849,9 @@ publish_calendar_locations (EPlugin *epl, EConfigHookItemFactoryData *data)
 	gtk_widget_set_sensitive (GTK_WIDGET (ui->url_remove), FALSE);
 	gtk_widget_set_sensitive (GTK_WIDGET (ui->url_enable), FALSE);
 
-	client = gconf_client_get_default ();
+	gtk_button_set_image (GTK_BUTTON (ui->url_enable), gtk_image_new_from_stock (GTK_STOCK_APPLY, GTK_ICON_SIZE_BUTTON));
+	gtk_button_set_use_underline (GTK_BUTTON (ui->url_enable), TRUE);
+
 	l = publish_uris;
 	while (l) {
 		EPublishUri *url = (EPublishUri *) l->data;
@@ -755,11 +867,11 @@ publish_calendar_locations (EPlugin *epl, EConfigHookItemFactoryData *data)
 	if (gtk_tree_model_get_iter_first (GTK_TREE_MODEL (store), &iter))
 		gtk_tree_selection_select_iter (selection, &iter);
 
-	toplevel = glade_xml_get_widget (xml, "toplevel");
+	toplevel = e_builder_get_widget (builder, "toplevel");
 	gtk_widget_show_all (toplevel);
 	gtk_box_pack_start (GTK_BOX (data->parent), toplevel, FALSE, TRUE, 0);
 
-	g_object_unref (xml);
+	g_object_unref (builder);
 
 	return toplevel;
 }
@@ -775,17 +887,6 @@ publish_urls (gpointer data)
 	}
 
 	return GINT_TO_POINTER (0);
-}
-
-void
-action_publish (EPlugin *ep, ECalMenuTargetSelect *t)
-{
-	GThread *thread = NULL;
-	GError *error = NULL;
-
-	thread = g_thread_create ((GThreadFunc) publish_urls, NULL, FALSE, &error);
-	if (!thread)
-		error_queue_add (g_strdup (_("Could not create publish thread.")), error);
 }
 
 static gpointer
@@ -825,6 +926,13 @@ e_plugin_lib_enable (EPlugin *ep, gint enable)
 {
 	GSList *uris;
 	GConfClient *client;
+	EShell *shell = e_shell_get_default ();
+
+	if (shell) {
+		g_signal_handlers_disconnect_by_func (shell, G_CALLBACK (online_state_changed), NULL);
+		if (enable)
+			g_signal_connect (shell, "notify::online", G_CALLBACK (online_state_changed), NULL);
+	}
 
 	if (enable) {
 		GThread *thread = NULL;
@@ -901,9 +1009,7 @@ error_queue_show_idle (gpointer user_data)
 	g_static_mutex_unlock (&error_queue_lock);
 
 	if (info) {
-		e_notice (NULL,
-			  has_error && has_info ? GTK_MESSAGE_WARNING : has_error ? GTK_MESSAGE_ERROR : GTK_MESSAGE_INFO,
-			  "%s", info->str, NULL);
+		update_publish_notification (has_error && has_info ? GTK_MESSAGE_WARNING : has_error ? GTK_MESSAGE_ERROR : GTK_MESSAGE_INFO, info->str);
 
 		g_string_free (info, TRUE);
 	}
@@ -928,4 +1034,49 @@ error_queue_add (gchar *description, GError *error)
 	if (error_queue_show_idle_id == 0)
 		error_queue_show_idle_id = g_idle_add (error_queue_show_idle, NULL);
 	g_static_mutex_unlock (&error_queue_lock);
+}
+
+static void
+action_calendar_publish_cb (GtkAction *action,
+                            EShellView *shell_view)
+{
+	GThread *thread = NULL;
+	GError *error = NULL;
+
+	thread = g_thread_create ((GThreadFunc) publish_urls, NULL, FALSE, &error);
+	if (!thread) {
+		/* To Translators: This is shown to a user when creation of a new thread,
+		   where the publishing should be done, fails. Basically, this shouldn't
+		   ever happen, and if so, then something is really wrong. */
+		error_queue_add (g_strdup (_("Could not create publish thread.")), error);
+	}
+}
+
+static GtkActionEntry entries[] = {
+
+	{ "calendar-publish",
+	  NULL,
+	  N_("_Publish Calendar Information"),
+	  NULL,
+	  NULL,  /* XXX Add a tooltip! */
+	  G_CALLBACK (action_calendar_publish_cb) }
+};
+
+gboolean e_plugin_ui_init (GtkUIManager *ui_manager, EShellView *shell_view);
+
+gboolean
+e_plugin_ui_init (GtkUIManager *ui_manager,
+                  EShellView *shell_view)
+{
+	EShellWindow *shell_window;
+	GtkActionGroup *action_group;
+
+	shell_window = e_shell_view_get_shell_window (shell_view);
+	action_group = e_shell_window_get_action_group (shell_window, "calendar");
+
+	gtk_action_group_add_actions (
+		action_group, entries,
+		G_N_ELEMENTS (entries), shell_view);
+
+	return TRUE;
 }

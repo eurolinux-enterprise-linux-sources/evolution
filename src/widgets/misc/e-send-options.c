@@ -28,7 +28,6 @@
 
 #include <string.h>
 #include <glib/gi18n.h>
-#include <glade/glade.h>
 #include <time.h>
 
 #include "e-util/e-util.h"
@@ -38,8 +37,7 @@
 #include "e-send-options.h"
 
 struct _ESendOptionsDialogPrivate {
-	/* Glade XML data */
-	GladeXML *xml;
+	GtkBuilder *builder;
 
 	gboolean gopts_needed;
 	gboolean global;
@@ -99,19 +97,20 @@ struct _ESendOptionsDialogPrivate {
         gchar *help_section;
 };
 
-static void e_sendoptions_dialog_class_init (GObjectClass *object_class);
-static void e_sendoptions_dialog_finalize (GObject *object);
-static void e_sendoptions_dialog_init (GObject *object);
-static void e_sendoptions_dialog_dispose (GObject *object);
+static void e_send_options_dialog_finalize (GObject *object);
 static void e_send_options_cb (GtkDialog *dialog, gint state, gpointer func_data);
 
-static GObjectClass *parent_class = NULL;
 enum {
 	SOD_RESPONSE,
 	LAST_SIGNAL
 };
 
 static guint signals[LAST_SIGNAL] = {0};
+
+G_DEFINE_TYPE (
+	ESendOptionsDialog,
+	e_send_options_dialog,
+	G_TYPE_OBJECT)
 
 static void
 e_send_options_get_widgets_data (ESendOptionsDialog *sod)
@@ -136,7 +135,7 @@ e_send_options_get_widgets_data (ESendOptionsDialog *sod)
 	gopts->delay_enabled = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (priv->delay_delivery));
 
 	if (e_date_edit_date_is_valid (E_DATE_EDIT (priv->delay_until)) &&
-								e_date_edit_time_is_valid (E_DATE_EDIT(priv->delay_until)))
+								e_date_edit_time_is_valid (E_DATE_EDIT (priv->delay_until)))
 		gopts->delay_until = e_date_edit_get_time (E_DATE_EDIT (priv->delay_until));
 
 	sopts->tracking_enabled = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (priv->create_sent));
@@ -262,7 +261,7 @@ sensitize_widgets (ESendOptionsDialog *sod)
 }
 
 static void
-expiration_toggled_cb (GtkWidget *toggle, gpointer data)
+expiration_toggled_cb (GtkToggleButton *toggle, gpointer data)
 {
 	gboolean active;
 	ESendOptionsDialog *sod;
@@ -271,13 +270,13 @@ expiration_toggled_cb (GtkWidget *toggle, gpointer data)
 	sod = data;
 	priv = sod->priv;
 
-	active = GTK_TOGGLE_BUTTON (toggle)->active;
+	active = gtk_toggle_button_get_active (toggle);
 
 	gtk_widget_set_sensitive (priv->expire_after, active);
 }
 
 static void
-reply_request_toggled_cb (GtkWidget *toggle, gpointer data)
+reply_request_toggled_cb (GtkToggleButton *toggle, gpointer data)
 {
 	gboolean active;
 	ESendOptionsDialog *sod;
@@ -285,7 +284,7 @@ reply_request_toggled_cb (GtkWidget *toggle, gpointer data)
 
 	sod = data;
 	priv = sod->priv;
-	active = GTK_TOGGLE_BUTTON (toggle)->active;
+	active = gtk_toggle_button_get_active (toggle);
 
 	gtk_widget_set_sensitive (priv->reply_convenient, active);
 	gtk_widget_set_sensitive (priv->reply_within, active);
@@ -294,7 +293,7 @@ reply_request_toggled_cb (GtkWidget *toggle, gpointer data)
 }
 
 static void
-delay_delivery_toggled_cb (GtkWidget *toggle, gpointer data)
+delay_delivery_toggled_cb (GtkToggleButton *toggle, gpointer data)
 {
 	gboolean active;
 	ESendOptionsDialog *sod;
@@ -302,13 +301,13 @@ delay_delivery_toggled_cb (GtkWidget *toggle, gpointer data)
 
 	sod = data;
 	priv = sod->priv;
-	active = GTK_TOGGLE_BUTTON (toggle)->active;
+	active = gtk_toggle_button_get_active (toggle);
 
 	gtk_widget_set_sensitive (priv->delay_until, active);
 }
 
 static void
-sent_item_toggled_cb (GtkWidget *toggle, gpointer data)
+sent_item_toggled_cb (GtkToggleButton *toggle, gpointer data)
 {
 	gboolean active;
 	ESendOptionsDialog *sod;
@@ -316,7 +315,7 @@ sent_item_toggled_cb (GtkWidget *toggle, gpointer data)
 
 	sod = data;
 	priv = sod->priv;
-	active = GTK_TOGGLE_BUTTON (toggle)->active;
+	active = gtk_toggle_button_get_active (toggle);
 
 	gtk_widget_set_sensitive (priv->delivered, active);
 	gtk_widget_set_sensitive (priv->delivered_opened, active);
@@ -344,7 +343,7 @@ delay_until_date_changed_cb (GtkWidget *dedit, gpointer data)
 
 }
 static void
-page_changed_cb (GtkNotebook *notebook, GtkNotebookPage *page, gint num, gpointer data)
+page_changed_cb (GtkNotebook *notebook, GtkWidget *page, gint num, gpointer data)
 {
 	ESendOptionsDialog *sod = data;
 	ESendOptionsDialogPrivate *priv = sod->priv;
@@ -403,48 +402,46 @@ static gboolean
 get_widgets (ESendOptionsDialog *sod)
 {
 	ESendOptionsDialogPrivate *priv;
+	GtkBuilder *builder;
 
 	priv = sod->priv;
+	builder = sod->priv->builder;
 
-#define GW(name) glade_xml_get_widget (priv->xml, name)
-
-	priv->main = GW ("send-options-dialog");
+	priv->main = e_builder_get_widget (builder, "send-options-dialog");
 	if (!priv->main)
 		return FALSE;
 
-	priv->priority = GW ("combo-priority");
-	priv->status = GW ("status-tracking");
-	priv->security = GW ("security-combo");
-	priv->notebook = (GtkNotebook *)GW ("notebook");
-	priv->reply_request = GW ("reply-request-button");
-	priv->reply_convenient = GW ("reply-convinient");
-	priv->reply_within = GW ("reply-within");
-	priv->within_days = GW ("within-days");
-	priv->delay_delivery = GW ("delay-delivery-button");
-	priv->delay_until = GW ("until-date");
+	priv->priority = e_builder_get_widget (builder, "combo-priority");
+	priv->status = e_builder_get_widget (builder, "status-tracking");
+	priv->security = e_builder_get_widget (builder, "security-combo");
+	priv->notebook = (GtkNotebook *)e_builder_get_widget (builder, "notebook");
+	priv->reply_request = e_builder_get_widget (builder, "reply-request-button");
+	priv->reply_convenient = e_builder_get_widget (builder, "reply-convinient");
+	priv->reply_within = e_builder_get_widget (builder, "reply-within");
+	priv->within_days = e_builder_get_widget (builder, "within-days");
+	priv->delay_delivery = e_builder_get_widget (builder, "delay-delivery-button");
+	priv->delay_until = e_builder_get_widget (builder, "until-date");
 	gtk_widget_show (priv->delay_until);
-	priv->expiration = GW ("expiration-button");
-	priv->expire_after = GW ("expire-after");
-	priv->create_sent = GW ("create-sent-button");
-	priv->delivered = GW ("delivered");
-	priv->delivered_opened = GW ("delivered-opened");
-	priv->all_info = GW ("all-info");
-	priv->autodelete = GW ("autodelete");
-	priv->when_opened = GW ("open-combo");
-	priv->when_declined = GW ("delete-combo");
-	priv->when_accepted = GW ("accept-combo");
-	priv->when_completed = GW ("complete-combo");
-	priv->security_label = GW ("security-label");
-	priv->gopts_label = GW ("gopts-label");
-	priv->sopts_label = GW ("slabel");
-	priv->priority_label = GW ("priority-label");
-	priv->until_label = GW ("until-label");
-	priv->opened_label = GW ("opened-label");
-	priv->declined_label = GW ("declined-label");
-	priv->accepted_label = GW ("accepted-label");
-	priv->completed_label = GW ("completed-label");
-
-#undef GW
+	priv->expiration = e_builder_get_widget (builder, "expiration-button");
+	priv->expire_after = e_builder_get_widget (builder, "expire-after");
+	priv->create_sent = e_builder_get_widget (builder, "create-sent-button");
+	priv->delivered = e_builder_get_widget (builder, "delivered");
+	priv->delivered_opened = e_builder_get_widget (builder, "delivered-opened");
+	priv->all_info = e_builder_get_widget (builder, "all-info");
+	priv->autodelete = e_builder_get_widget (builder, "autodelete");
+	priv->when_opened = e_builder_get_widget (builder, "open-combo");
+	priv->when_declined = e_builder_get_widget (builder, "delete-combo");
+	priv->when_accepted = e_builder_get_widget (builder, "accept-combo");
+	priv->when_completed = e_builder_get_widget (builder, "complete-combo");
+	priv->security_label = e_builder_get_widget (builder, "security-label");
+	priv->gopts_label = e_builder_get_widget (builder, "gopts-label");
+	priv->sopts_label = e_builder_get_widget (builder, "slabel");
+	priv->priority_label = e_builder_get_widget (builder, "priority-label");
+	priv->until_label = e_builder_get_widget (builder, "until-label");
+	priv->opened_label = e_builder_get_widget (builder, "opened-label");
+	priv->declined_label = e_builder_get_widget (builder, "declined-label");
+	priv->accepted_label = e_builder_get_widget (builder, "accepted-label");
+	priv->completed_label = e_builder_get_widget (builder, "completed-label");
 
 	return (priv->priority
 		&& priv->security
@@ -499,11 +496,11 @@ setup_widgets (ESendOptionsDialog *sod, Item_type type)
 	gtk_label_set_mnemonic_widget (GTK_LABEL (priv->until_label), priv->delay_until);
 
 	if (priv->global) {
-		GtkWidget *widget = gtk_label_new ("Calendar");
-		gtk_label_set_text (GTK_LABEL (priv->sopts_label), "Mail");
+		GtkWidget *widget = gtk_label_new (_("Calendar"));
+		gtk_label_set_text (GTK_LABEL (priv->sopts_label), _("Mail"));
 		gtk_notebook_append_page (priv->notebook, priv->status, widget);
 		gtk_widget_show (widget);
-		widget = gtk_label_new ("Task");
+		widget = gtk_label_new (_("Task"));
 		gtk_widget_show (widget);
 		gtk_notebook_append_page (priv->notebook, priv->status,widget);
 		gtk_notebook_set_show_tabs (priv->notebook, TRUE);
@@ -534,7 +531,7 @@ setup_widgets (ESendOptionsDialog *sod, Item_type type)
 }
 
 ESendOptionsDialog *
-e_sendoptions_dialog_new (void) {
+e_send_options_dialog_new (void) {
 	ESendOptionsDialog *sod;
 
 	sod = g_object_new (E_TYPE_SENDOPTIONS_DIALOG, NULL);
@@ -543,7 +540,7 @@ e_sendoptions_dialog_new (void) {
 }
 
 void
-e_sendoptions_set_need_general_options (ESendOptionsDialog *sod, gboolean needed)
+e_send_options_set_need_general_options (ESendOptionsDialog *sod, gboolean needed)
 {
 	g_return_if_fail (E_IS_SENDOPTIONS_DIALOG (sod));
 
@@ -551,30 +548,15 @@ e_sendoptions_set_need_general_options (ESendOptionsDialog *sod, gboolean needed
 }
 
 gboolean
-e_sendoptions_get_need_general_options (ESendOptionsDialog *sod)
+e_send_options_get_need_general_options (ESendOptionsDialog *sod)
 {
 	g_return_val_if_fail (E_IS_SENDOPTIONS_DIALOG (sod), FALSE);
 
 	return sod->priv->gopts_needed;
 }
 
-GtkWidget * send_options_make_dateedit (void);
-
-GtkWidget *
-send_options_make_dateedit (void)
-{
-	EDateEdit *dedit;
-
-	dedit = E_DATE_EDIT (e_date_edit_new ());
-
-	e_date_edit_set_show_date (dedit, TRUE);
-	e_date_edit_set_show_time (dedit, TRUE);
-
-	return GTK_WIDGET (dedit);
-}
-
 gboolean
-e_sendoptions_set_global (ESendOptionsDialog *sod, gboolean set)
+e_send_options_set_global (ESendOptionsDialog *sod, gboolean set)
 {
 	g_return_val_if_fail (E_IS_SENDOPTIONS_DIALOG (sod), FALSE);
 
@@ -597,7 +579,7 @@ static void e_send_options_cb (GtkDialog *dialog, gint state, gpointer func_data
 		case GTK_RESPONSE_CANCEL:
 			gtk_widget_hide (priv->main);
 			gtk_widget_destroy (priv->main);
-			g_object_unref (priv->xml);
+			g_object_unref (priv->builder);
 			break;
 		case GTK_RESPONSE_HELP:
 			e_display_help (
@@ -610,29 +592,24 @@ static void e_send_options_cb (GtkDialog *dialog, gint state, gpointer func_data
 }
 
 gboolean
-e_sendoptions_dialog_run (ESendOptionsDialog *sod, GtkWidget *parent, Item_type type)
+e_send_options_dialog_run (ESendOptionsDialog *sod, GtkWidget *parent, Item_type type)
 {
 	ESendOptionsDialogPrivate *priv;
 	GtkWidget *toplevel;
-	gchar *filename;
 
 	g_return_val_if_fail (sod != NULL || E_IS_SENDOPTIONS_DIALOG (sod), FALSE);
 
 	priv = sod->priv;
 
-	filename = g_build_filename (EVOLUTION_GLADEDIR,
-				     "e-send-options.glade",
-				     NULL);
-	priv->xml = glade_xml_new (filename, NULL, NULL);
-	g_free (filename);
+	/* Make sure our custom widget classes are registered with
+	 * GType before we load the GtkBuilder definition file. */
+	E_TYPE_DATE_EDIT;
 
-	if (!priv->xml) {
-		g_message ( G_STRLOC ": Could not load the Glade XML file ");
-		return FALSE;
-	}
+	priv->builder = gtk_builder_new ();
+	e_load_ui_builder_definition (priv->builder, "e-send-options.ui");
 
-	if (!get_widgets(sod)) {
-		g_object_unref (priv->xml);
+	if (!get_widgets (sod)) {
+		g_object_unref (priv->builder);
 		g_message (G_STRLOC ": Could not get the Widgets \n");
 		return FALSE;
 	}
@@ -660,7 +637,7 @@ e_sendoptions_dialog_run (ESendOptionsDialog *sod, GtkWidget *parent, Item_type 
 }
 
 static void
-e_sendoptions_dialog_finalize (GObject *object)
+e_send_options_dialog_finalize (GObject *object)
 {
 	ESendOptionsDialog *sod = (ESendOptionsDialog *) object;
 	ESendOptionsDialogPrivate *priv;
@@ -705,32 +682,18 @@ e_sendoptions_dialog_finalize (GObject *object)
 		sod->priv = NULL;
 	}
 
-	if (parent_class->finalize)
-		(* parent_class->finalize) (object);
-
-}
-
-static void
-e_sendoptions_dialog_dispose (GObject *object)
-{
-	ESendOptionsDialog *sod = (ESendOptionsDialog *) object;
-
-	g_return_if_fail (E_IS_SENDOPTIONS_DIALOG (sod));
-
-	if (parent_class->dispose)
-		(* parent_class->dispose) (object);
+	/* Chain up to parent's finalize() method. */
+	G_OBJECT_CLASS (e_send_options_dialog_parent_class)->finalize (object);
 
 }
 
 /* Object initialization function for the task page */
 static void
-e_sendoptions_dialog_init (GObject *object)
+e_send_options_dialog_init (ESendOptionsDialog *sod)
 {
-	ESendOptionsDialog *sod;
 	ESendOptionsDialogPrivate *priv;
 	ESendOptionsData *new;
 
-	sod = E_SENDOPTIONS_DIALOG (object);
 	new = g_new0 (ESendOptionsData, 1);
 	new->gopts = g_new0 (ESendOptionsGeneral, 1);
 	new->sopts = g_new0 (ESendOptionsStatusTracking, 1);
@@ -745,7 +708,7 @@ e_sendoptions_dialog_init (GObject *object)
 	sod->data->gopts->security = 0;
 
 	priv->gopts_needed = TRUE;
-	priv->xml = NULL;
+	priv->builder = NULL;
 
 	priv->main = NULL;
 	priv->notebook = NULL;
@@ -781,19 +744,15 @@ e_sendoptions_dialog_init (GObject *object)
 
 /* Class initialization function for the Send Options */
 static void
-e_sendoptions_dialog_class_init (GObjectClass *object)
+e_send_options_dialog_class_init (ESendOptionsDialogClass *class)
 {
-	ESendOptionsDialogClass *klass;
 	GObjectClass *object_class;
 
-	klass = E_SENDOPTIONS_DIALOG_CLASS (object);
-	parent_class = g_type_class_peek_parent (klass);
-	object_class = G_OBJECT_CLASS (klass);
+	object_class = G_OBJECT_CLASS (class);
+	object_class->finalize = e_send_options_dialog_finalize;
 
-	object_class->finalize = e_sendoptions_dialog_finalize;
-	object_class->dispose = e_sendoptions_dialog_dispose;
 	signals[SOD_RESPONSE] = g_signal_new ("sod_response",
-			G_TYPE_FROM_CLASS (klass),
+			G_TYPE_FROM_CLASS (class),
 			G_SIGNAL_RUN_FIRST,
 			G_STRUCT_OFFSET (ESendOptionsDialogClass, sod_response),
 			NULL, NULL,
@@ -801,27 +760,4 @@ e_sendoptions_dialog_class_init (GObjectClass *object)
 			G_TYPE_NONE, 1,
 			G_TYPE_INT);
 
-}
-
-GType e_sendoptions_dialog_get_type (void)
-{
-  static GType type = 0;
-  if (type == 0) {
-    static const GTypeInfo info = {
-      sizeof (ESendOptionsDialogClass),
-      NULL,   /* base_init */
-      NULL,   /* base_finalize */
-      (GClassInitFunc) e_sendoptions_dialog_class_init,   /* class_init */
-      NULL,   /* class_finalize */
-      NULL,   /* class_data */
-      sizeof (ESendOptionsDialog),
-     0,      /* n_preallocs */
-     (GInstanceInitFunc) e_sendoptions_dialog_init,
-	NULL    /* instance_init */
-    };
-    type = g_type_register_static (G_TYPE_OBJECT,
-                                   "ESendOptionsDialogType",
-                                   &info, 0);
-  }
-  return type;
 }

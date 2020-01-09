@@ -20,6 +20,11 @@
  *
  */
 
+/**
+ * SECTION: e-util
+ * @include: e-util/e-util.h
+ **/
+
 #include <config.h>
 
 #include <stdlib.h>
@@ -38,36 +43,43 @@
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
 #include <glib/gstdio.h>
-#include <libgnome/gnome-init.h>
-
-#include <camel/camel-url.h>
 
 #ifdef G_OS_WIN32
 #include <windows.h>
 #endif
 
+#include <camel/camel.h>
 #include <libedataserver/e-data-server-util.h>
 #include <libedataserver/e-categories.h>
-#include "filter/filter-option.h"
+#include <libedataserver/e-source-list.h>
+
+#include "filter/e-filter-option.h"
+
 #include "e-util.h"
 #include "e-util-private.h"
 
 /**
- * e_get_user_data_dir:
+ * e_get_gnome2_user_dir:
  *
- * Returns the base directory for Evolution-specific user data.
- * The string is owned by Evolution and must not be modified or freed.
+ * Returns the base directory for user data, according to libgnome.
+ * The directory can be overridden by setting the GNOME22_USER_DIR
+ * environment variable.  The string is owned by Evolution and must
+ * not be modified or freed.
  *
- * Returns: base directory for user data
+ * Returns: base directory for GNOME user data
  **/
 const gchar *
-e_get_user_data_dir (void)
+e_get_gnome2_user_dir (void)
 {
 	static gchar *dirname = NULL;
 
+#ifndef G_OS_WIN32
 	if (G_UNLIKELY (dirname == NULL))
+		dirname = g_strdup (g_getenv ("GNOME22_USER_DIR"));
+#endif
+    if (dirname == NULL)
 		dirname = g_build_filename (
-			g_get_home_dir (), ".evolution", NULL);
+			g_get_home_dir (), ".gnome2", NULL);
 
 	return dirname;
 }
@@ -85,9 +97,14 @@ e_get_accels_filename (void)
 {
 	static gchar *filename = NULL;
 
+	/* XXX The directory corresponds to gnome_user_accels_dir_get()
+	 *     from libgnome.  Continue using this location until GNOME
+	 *     decides on an XDG-compliant location.  Perhaps something
+	 *     like $(XDG_CONFIG_DIR)/accels. */
+
 	if (G_UNLIKELY (filename == NULL))
 		filename = g_build_filename (
-			gnome_user_dir_get (),
+			e_get_gnome2_user_dir (),
 			"accels", PACKAGE, NULL);
 
 	return filename;
@@ -110,7 +127,6 @@ e_show_uri (GtkWindow *parent,
 	GtkWidget *dialog;
 	GdkScreen *screen = NULL;
 	GError *error = NULL;
-	gchar *decoded_uri;
 	guint32 timestamp;
 
 	g_return_if_fail (uri != NULL);
@@ -120,11 +136,8 @@ e_show_uri (GtkWindow *parent,
 	if (parent != NULL)
 		screen = gtk_widget_get_screen (GTK_WIDGET (parent));
 
-	decoded_uri = g_strdup (uri);
-	camel_url_decode (decoded_uri);
-
-	if (gtk_show_uri (screen, decoded_uri, timestamp, &error))
-		goto exit;
+	if (gtk_show_uri (screen, uri, timestamp, &error))
+		return;
 
 	dialog = gtk_message_dialog_new_with_markup (
 		parent, GTK_DIALOG_DESTROY_WITH_PARENT,
@@ -139,9 +152,6 @@ e_show_uri (GtkWindow *parent,
 
 	gtk_widget_destroy (dialog);
 	g_error_free (error);
-
-exit:
-	g_free (decoded_uri);
 }
 
 /**
@@ -230,7 +240,7 @@ e_lookup_action (GtkUIManager *ui_manager,
 		iter = g_list_next (iter);
 	}
 
-	g_critical ("%s: action `%s' not found", G_STRFUNC, action_name);
+	g_critical ("%s: action '%s' not found", G_STRFUNC, action_name);
 
 	return NULL;
 }
@@ -269,45 +279,38 @@ e_lookup_action_group (GtkUIManager *ui_manager,
 		iter = g_list_next (iter);
 	}
 
-	g_critical ("%s: action group `%s' not found", G_STRFUNC, group_name);
+	g_critical ("%s: action group '%s' not found", G_STRFUNC, group_name);
 
 	return NULL;
 }
 
 /**
- * e_load_ui_definition:
- * @ui_manager: a #GtkUIManager
+ * e_load_ui_builder_definition:
+ * @builder: a #GtkBuilder
  * @basename: basename of the UI definition file
  *
- * Loads a UI definition into @ui_manager from Evolution's UI directory.
+ * Loads a UI definition into @builder from Evolution's UI directory.
  * Failure here is fatal, since the application can't function without
  * its UI definitions.
- *
- * Returns: The merge ID for the merged UI.  The merge ID can be used to
- *          unmerge the UI with gtk_ui_manager_remove_ui().
  **/
-guint
-e_load_ui_definition (GtkUIManager *ui_manager,
-                      const gchar *basename)
+void
+e_load_ui_builder_definition (GtkBuilder *builder,
+                              const gchar *basename)
 {
 	gchar *filename;
-	guint merge_id;
 	GError *error = NULL;
 
-	g_return_val_if_fail (GTK_IS_UI_MANAGER (ui_manager), 0);
-	g_return_val_if_fail (basename != NULL, 0);
+	g_return_if_fail (GTK_IS_BUILDER (builder));
+	g_return_if_fail (basename != NULL);
 
 	filename = g_build_filename (EVOLUTION_UIDIR, basename, NULL);
-	merge_id = gtk_ui_manager_add_ui_from_file (
-		ui_manager, filename, &error);
+	gtk_builder_add_from_file (builder, filename, &error);
 	g_free (filename);
 
 	if (error != NULL) {
 		g_error ("%s: %s", basename, error->message);
 		g_assert_not_reached ();
 	}
-
-	return merge_id;
 }
 
 /**
@@ -357,11 +360,11 @@ e_action_group_remove_all_actions (GtkActionGroup *action_group)
 	GList *list, *iter;
 
 	/* XXX I've proposed this function for inclusion in GTK+.
-         *     GtkActionGroup stores actions in an internal hash
-         *     table and can do this more efficiently by calling
-         *     g_hash_table_remove_all().
-         *
-         *     http://bugzilla.gnome.org/show_bug.cgi?id=550485 */
+	 *     GtkActionGroup stores actions in an internal hash
+	 *     table and can do this more efficiently by calling
+	 *     g_hash_table_remove_all().
+	 *
+	 *     http://bugzilla.gnome.org/show_bug.cgi?id=550485 */
 
 	g_return_if_fail (GTK_IS_ACTION_GROUP (action_group));
 
@@ -372,31 +375,180 @@ e_action_group_remove_all_actions (GtkActionGroup *action_group)
 }
 
 /**
- * e_str_without_underscores:
- * @s: the string to strip underscores from.
+ * e_radio_action_get_current_action:
+ * @radio_action: a #GtkRadioAction
  *
- * Strips underscores from a string in the same way @gtk_label_new_with_mnemonis does.
- * The returned string should be freed.
+ * Returns the currently active member of the group to which @radio_action
+ * belongs.
+ *
+ * Returns: the currently active group member
+ **/
+GtkRadioAction *
+e_radio_action_get_current_action (GtkRadioAction *radio_action)
+{
+	GSList *group;
+	gint current_value;
+
+	g_return_val_if_fail (GTK_IS_RADIO_ACTION (radio_action), NULL);
+
+	group = gtk_radio_action_get_group (radio_action);
+	current_value = gtk_radio_action_get_current_value (radio_action);
+
+	while (group != NULL) {
+		gint value;
+
+		radio_action = GTK_RADIO_ACTION (group->data);
+		g_object_get (radio_action, "value", &value, NULL);
+
+		if (value == current_value)
+			return radio_action;
+
+		group = g_slist_next (group);
+	}
+
+	return NULL;
+}
+
+/* Helper for e_categories_add_change_hook() */
+static void
+categories_changed_cb (GObject *useless_opaque_object,
+                       GHookList *hook_list)
+{
+	/* e_categories_register_change_listener() is broken because
+	 * it requires callbacks to allow for some opaque GObject as
+	 * the first argument (not does it document this). */
+	g_hook_list_invoke (hook_list, FALSE);
+}
+
+/* Helper for e_categories_add_change_hook() */
+static void
+categories_weak_notify_cb (GHookList *hook_list,
+                           gpointer where_the_object_was)
+{
+	GHook *hook;
+
+	/* This should not happen, but if we fail to find the hook for
+	 * some reason, g_hook_destroy_link() will warn about the NULL
+	 * pointer, which is all we would do anyway so no need to test
+	 * for it ourselves. */
+	hook = g_hook_find_data (hook_list, TRUE, where_the_object_was);
+	g_hook_destroy_link (hook_list, hook);
+}
+
+/**
+ * e_categories_add_change_hook:
+ * @func: a hook function
+ * @object: a #GObject to be passed to @func, or %NULL
+ *
+ * A saner alternative to e_categories_register_change_listener().
+ *
+ * Adds a hook function to be called when a category is added, removed or
+ * modified.  If @object is not %NULL, the hook function is automatically
+ * removed when @object is finalized.
+ **/
+void
+e_categories_add_change_hook (GHookFunc func,
+                              gpointer object)
+{
+	static gboolean initialized = FALSE;
+	static GHookList hook_list;
+	GHook *hook;
+
+	g_return_if_fail (func != NULL);
+
+	if (object != NULL)
+		g_return_if_fail (G_IS_OBJECT (object));
+
+	if (!initialized) {
+		g_hook_list_init (&hook_list, sizeof (GHook));
+		e_categories_register_change_listener (
+			G_CALLBACK (categories_changed_cb), &hook_list);
+		initialized = TRUE;
+	}
+
+	hook = g_hook_alloc (&hook_list);
+
+	hook->func = func;
+	hook->data = object;
+
+	if (object != NULL)
+		g_object_weak_ref (
+			G_OBJECT (object), (GWeakNotify)
+			categories_weak_notify_cb, &hook_list);
+
+	g_hook_append (&hook_list, hook);
+}
+
+/**
+ * e_type_traverse:
+ * @parent_type: the root #GType to traverse from
+ * @func: the function to call for each visited #GType
+ * @user_data: user data to pass to the function
+ *
+ * Calls @func for all instantiable subtypes of @parent_type.
+ *
+ * This is often useful for extending functionality by way of #EModule.
+ * A module may register a subtype of @parent_type in its e_module_load()
+ * function.  Then later on the application will call e_type_traverse()
+ * to instantiate all registered subtypes of @parent_type.
+ **/
+void
+e_type_traverse (GType parent_type,
+                 ETypeFunc func,
+                 gpointer user_data)
+{
+	GType *children;
+	guint n_children, ii;
+
+	g_return_if_fail (func != NULL);
+
+	children = g_type_children (parent_type, &n_children);
+
+	for (ii = 0; ii < n_children; ii++) {
+		GType type = children[ii];
+
+		/* Recurse over the child's children. */
+		e_type_traverse (type, func, user_data);
+
+		/* Skip abstract types. */
+		if (G_TYPE_IS_ABSTRACT (type))
+			continue;
+
+		func (type, user_data);
+	}
+
+	g_free (children);
+}
+
+/**
+ * e_str_without_underscores:
+ * @string: the string to strip underscores from
+ *
+ * Strips underscores from a string in the same way
+ * @gtk_label_new_with_mnemonics does.  The returned string should be freed
+ * using g_free().
+ *
+ * Returns: a newly-allocated string without underscores
  */
 gchar *
-e_str_without_underscores (const gchar *s)
+e_str_without_underscores (const gchar *string)
 {
 	gchar *new_string;
 	const gchar *sp;
 	gchar *dp;
 
-	new_string = g_malloc (strlen (s) + 1);
+	new_string = g_malloc (strlen (string) + 1);
 
 	dp = new_string;
-	for (sp = s; *sp != '\0'; sp ++) {
+	for (sp = string; *sp != '\0'; sp++) {
 		if (*sp != '_') {
 			*dp = *sp;
-			dp ++;
+			dp++;
 		} else if (sp[1] == '_') {
 			/* Translate "__" in "_".  */
 			*dp = '_';
-			dp ++;
-			sp ++;
+			dp++;
+			sp++;
 		}
 	}
 	*dp = 0;
@@ -463,62 +615,28 @@ e_int_compare (gconstpointer x, gconstpointer y)
 	return (nx == ny) ? 0 : (nx < ny) ? -1 : 1;
 }
 
-gboolean
-e_write_file_uri (const gchar *filename, const gchar *data)
+/**
+ * e_color_to_value:
+ * @color: a #GdkColor
+ *
+ * Converts a #GdkColor to a 24-bit RGB color value.
+ *
+ * Returns: a 24-bit color value
+ **/
+guint32
+e_color_to_value (GdkColor *color)
 {
-	gboolean res;
-	gsize length;
-	GFile *file;
-	GOutputStream *stream;
-	GError *error = NULL;
+	guint16 red;
+	guint16 green;
+	guint16 blue;
 
-	g_return_val_if_fail (filename != NULL, FALSE);
-	g_return_val_if_fail (data != NULL, FALSE);
+	g_return_val_if_fail (color != NULL, 0);
 
-	length = strlen (data);
+	red = color->red >> 8;
+	green = color->green >> 8;
+	blue = color->blue >> 8;
 
-	/* if it is uri, then create file for uri, otherwise for path */
-	if (strstr (filename, "://"))
-		file = g_file_new_for_uri (filename);
-	else
-		file = g_file_new_for_path (filename);
-
-	if (!file) {
-		g_warning ("Couldn't save item");
-		return FALSE;
-	}
-
-	stream = G_OUTPUT_STREAM (g_file_replace (file, NULL, FALSE, G_FILE_CREATE_NONE, NULL, &error));
-	g_object_unref (file);
-
-	if (!stream || error) {
-		g_warning ("Couldn't save item%s%s", error ? ": " : "", error ? error->message : "");
-
-		if (stream)
-			g_object_unref (stream);
-
-		if (error)
-			g_error_free (error);
-
-		return FALSE;
-	}
-
-	res = g_output_stream_write_all (stream, data, length, NULL, NULL, &error);
-
-	if (error) {
-		g_warning ("Couldn't save item: %s", error->message);
-		g_clear_error (&error);
-	}
-
-	g_output_stream_close (stream, NULL, &error);
-	g_object_unref (stream);
-
-	if (error) {
-		g_warning ("Couldn't close output stream: %s", error->message);
-		g_error_free (error);
-	}
-
-	return res;
+	return (guint32) (((red << 16) | (green << 8) | blue) & 0xffffff);
 }
 
 static gint
@@ -545,7 +663,7 @@ e_format_number (gint number)
 	gchar *value;
 	gchar *value_iterator;
 
-	locality = localeconv();
+	locality = localeconv ();
 	grouping = locality->grouping;
 	while (number) {
 		gchar *group;
@@ -554,7 +672,7 @@ e_format_number (gint number)
 			last_count = *grouping;
 			grouping++;
 		case 0:
-			divider = epow10(last_count);
+			divider = epow10 (last_count);
 			if (number >= divider) {
 				group = g_strdup_printf("%0*d", last_count, number % divider);
 			} else {
@@ -567,25 +685,27 @@ e_format_number (gint number)
 			number = 0;
 			break;
 		}
-		char_length += strlen(group);
-		list = g_list_prepend(list, group);
-		group_count ++;
+		char_length += strlen (group);
+		list = g_list_prepend (list, group);
+		group_count++;
 	}
 
 	if (list) {
-		value = g_new(gchar, 1 + char_length + (group_count - 1) * strlen(locality->thousands_sep));
+		value = g_new (
+			gchar, 1 + char_length + (group_count - 1) *
+			strlen (locality->thousands_sep));
 
 		iterator = list;
 		value_iterator = value;
 
-		strcpy(value_iterator, iterator->data);
-		value_iterator += strlen(iterator->data);
+		strcpy (value_iterator, iterator->data);
+		value_iterator += strlen (iterator->data);
 		for (iterator = iterator->next; iterator; iterator = iterator->next) {
-			strcpy(value_iterator, locality->thousands_sep);
-			value_iterator += strlen(locality->thousands_sep);
+			strcpy (value_iterator, locality->thousands_sep);
+			value_iterator += strlen (locality->thousands_sep);
 
-			strcpy(value_iterator, iterator->data);
-			value_iterator += strlen(iterator->data);
+			strcpy (value_iterator, iterator->data);
+			value_iterator += strlen (iterator->data);
 		}
 		g_list_foreach (list, (GFunc) g_free, NULL);
 		g_list_free (list);
@@ -664,8 +784,7 @@ e_bsearch (gconstpointer key,
 		*end = l;
 }
 
-/**
- * Function to do a last minute fixup of the AM/PM stuff if the locale
+/* Function to do a last minute fixup of the AM/PM stuff if the locale
  * and gettext haven't done it right. Most English speaking countries
  * except the USA use the 24 hour clock (UK, Australia etc). However
  * since they are English nobody bothers to write a language
@@ -680,7 +799,7 @@ e_bsearch (gconstpointer key,
  *
  * TODO: Actually remove the '%p' from the fixed up string so that
  * there isn't a stray space.
- **/
+ */
 
 gsize
 e_strftime_fix_am_pm (gchar *str, gsize max, const gchar *fmt,
@@ -693,39 +812,33 @@ e_strftime_fix_am_pm (gchar *str, gsize max, const gchar *fmt,
 
 	if (strstr(fmt, "%p")==NULL && strstr(fmt, "%P")==NULL) {
 		/* No AM/PM involved - can use the fmt string directly */
-		ret=e_strftime(str, max, fmt, tm);
+		ret=e_strftime (str, max, fmt, tm);
 	} else {
 		/* Get the AM/PM symbol from the locale */
 		e_strftime (buf, 10, "%p", tm);
 
 		if (buf[0]) {
-			/**
-			 * AM/PM have been defined in the locale
-			 * so we can use the fmt string directly
-			 **/
-			ret=e_strftime(str, max, fmt, tm);
+			/* AM/PM have been defined in the locale
+			 * so we can use the fmt string directly. */
+			ret=e_strftime (str, max, fmt, tm);
 		} else {
-			/**
-			 * No AM/PM defined by locale
-			 * must change to 24 hour clock
-			 **/
-			ffmt=g_strdup(fmt);
+			/* No AM/PM defined by locale
+			 * must change to 24 hour clock. */
+			ffmt=g_strdup (fmt);
 			for (sp=ffmt; (sp=strstr(sp, "%l")); sp++) {
-				/**
-				 * Maybe this should be 'k', but I have never
-				 * seen a 24 clock actually use that format
-				 **/
+				/* Maybe this should be 'k', but I have never
+				 * seen a 24 clock actually use that format. */
 				sp[1]='H';
 			}
 			for (sp=ffmt; (sp=strstr(sp, "%I")); sp++) {
 				sp[1]='H';
 			}
-			ret=e_strftime(str, max, ffmt, tm);
-			g_free(ffmt);
+			ret=e_strftime (str, max, ffmt, tm);
+			g_free (ffmt);
 		}
 	}
 
-	return(ret);
+	return (ret);
 }
 
 gsize
@@ -735,17 +848,17 @@ e_utf8_strftime_fix_am_pm (gchar *str, gsize max, const gchar *fmt,
 	gsize sz, ret;
 	gchar *locale_fmt, *buf;
 
-	locale_fmt = g_locale_from_utf8(fmt, -1, NULL, &sz, NULL);
+	locale_fmt = g_locale_from_utf8 (fmt, -1, NULL, &sz, NULL);
 	if (!locale_fmt)
 		return 0;
 
-	ret = e_strftime_fix_am_pm(str, max, locale_fmt, tm);
+	ret = e_strftime_fix_am_pm (str, max, locale_fmt, tm);
 	if (!ret) {
 		g_free (locale_fmt);
 		return 0;
 	}
 
-	buf = g_locale_to_utf8(str, ret, NULL, &sz, NULL);
+	buf = g_locale_to_utf8 (str, ret, NULL, &sz, NULL);
 	if (!buf) {
 		g_free (locale_fmt);
 		return 0;
@@ -753,16 +866,16 @@ e_utf8_strftime_fix_am_pm (gchar *str, gsize max, const gchar *fmt,
 
 	if (sz >= max) {
 		gchar *tmp = buf + max - 1;
-		tmp = g_utf8_find_prev_char(buf, tmp);
+		tmp = g_utf8_find_prev_char (buf, tmp);
 		if (tmp)
 			sz = tmp - buf;
 		else
 			sz = 0;
 	}
-	memcpy(str, buf, sz);
+	memcpy (str, buf, sz);
 	str[sz] = '\0';
-	g_free(locale_fmt);
-	g_free(buf);
+	g_free (locale_fmt);
+	g_free (buf);
 	return sz;
 }
 
@@ -877,7 +990,7 @@ e_get_weekday_name (GDateWeekday weekday,
  * To convert from a double to a string in a locale-insensitive way, use
  * @g_ascii_dtostr.
  *
- * Return value: the gdouble value.
+ * Returns: the gdouble value
  **/
 gdouble
 e_flexible_strtod (const gchar *nptr, gchar **endptr)
@@ -1014,7 +1127,7 @@ e_flexible_strtod (const gchar *nptr, gchar **endptr)
  * of the resulting string will never be larger than
  * @G_ASCII_DTOSTR_BUF_SIZE bytes.
  *
- * Return value: The pointer to the buffer with the converted string.
+ * Returns: the pointer to the buffer with the converted string
  **/
 gchar *
 e_ascii_dtostr (gchar *buffer, gint buf_len, const gchar *format, gdouble d)
@@ -1080,77 +1193,35 @@ e_ascii_dtostr (gchar *buffer, gint buf_len, const gchar *format, gdouble d)
 	return buffer;
 }
 
-gchar *
-e_strdup_append_strings (gchar *first_string, ...)
-{
-	gchar *buffer;
-	gchar *current;
-	gint length;
-	va_list args1;
-	va_list args2;
-	gchar *v_string;
-	gint v_int;
-
-	va_start (args1, first_string);
-	G_VA_COPY (args2, args1);
-
-	length = 0;
-
-	v_string = first_string;
-	while (v_string) {
-		v_int = va_arg (args1, gint);
-		if (v_int >= 0)
-			length += v_int;
-		else
-			length += strlen (v_string);
-		v_string = va_arg (args1, gchar *);
-	}
-
-	buffer  = g_new (gchar, length + 1);
-	current = buffer;
-
-	v_string = first_string;
-	while (v_string) {
-		v_int = va_arg (args2, gint);
-		if (v_int < 0) {
-			gint i;
-			for (i = 0; v_string[i]; i++) {
-				*(current++) = v_string[i];
-			}
-		} else {
-			gint i;
-			for (i = 0; v_string[i] && i < v_int; i++) {
-				*(current++) = v_string[i];
-			}
-		}
-		v_string = va_arg (args2, gchar *);
-	}
-	*(current++) = 0;
-
-	va_end (args1);
-	va_end (args2);
-
-	return buffer;
-}
-
 /* font options cache */
-static gchar *fo_antialiasing = NULL, *fo_hinting = NULL, *fo_subpixel_order = NULL;
+static gchar *fo_antialiasing = NULL;
+static gchar *fo_hinting = NULL;
+static gchar *fo_subpixel_order = NULL;
 static GStaticMutex fo_lock = G_STATIC_MUTEX_INIT;
 
 static void
-fo_option_changed (GConfClient *client, guint cnxn_id, GConfEntry *entry, gpointer user_data)
+fo_option_changed (GConfClient *client,
+                   guint cnxn_id,
+                   GConfEntry *entry,
+                   gpointer user_data)
 {
-	#define update_value(key,variable)	\
-		g_free (variable);		\
-		variable = gconf_client_get_string (client, "/desktop/gnome/font_rendering/" key, NULL);
+	const gchar *key;
 
 	g_static_mutex_lock (&fo_lock);
-	update_value ("antialiasing", fo_antialiasing);
-	update_value ("hinting", fo_hinting);
-	update_value ("rgba_order", fo_subpixel_order);
-	g_static_mutex_unlock (&fo_lock);
 
-	#undef update_value
+	g_free (fo_antialiasing);
+	key = "/desktop/gnome/font_rendering/antialiasing";
+	fo_antialiasing = gconf_client_get_string (client, key, NULL);
+
+	g_free (fo_hinting);
+	key = "/desktop/gnome/font_rendering/hinting";
+	fo_hinting = gconf_client_get_string (client, key, NULL);
+
+	g_free (fo_subpixel_order);
+	key = "/desktop/gnome/font_rendering/rgba_order";
+	fo_subpixel_order = gconf_client_get_string (client, key, NULL);
+
+	g_static_mutex_unlock (&fo_lock);
 }
 
 cairo_font_options_t *
@@ -1160,12 +1231,25 @@ get_font_options (void)
 	cairo_font_options_t *font_options = cairo_font_options_create ();
 
 	if (fo_gconf == NULL) {
+		const gchar *key;
+
 		fo_gconf = gconf_client_get_default ();
 
-		gconf_client_add_dir (fo_gconf, "/desktop/gnome/font_rendering", GCONF_CLIENT_PRELOAD_ONELEVEL, NULL);
-		gconf_client_notify_add (fo_gconf, "/desktop/gnome/font_rendering/antialiasing", fo_option_changed, NULL, NULL, NULL);
-		gconf_client_notify_add (fo_gconf, "/desktop/gnome/font_rendering/hinting", fo_option_changed, NULL, NULL, NULL);
-		gconf_client_notify_add (fo_gconf, "/desktop/gnome/font_rendering/rgba_order", fo_option_changed, NULL, NULL, NULL);
+		key = "/desktop/gnome/font_rendering";
+		gconf_client_add_dir (
+			fo_gconf, key, GCONF_CLIENT_PRELOAD_ONELEVEL, NULL);
+
+		key = "/desktop/gnome/font_rendering/antialiasing";
+		gconf_client_notify_add (
+			fo_gconf, key, fo_option_changed, NULL, NULL, NULL);
+
+		key = "/desktop/gnome/font_rendering/hinting";
+		gconf_client_notify_add (
+			fo_gconf, key, fo_option_changed, NULL, NULL, NULL);
+
+		key = "/desktop/gnome/font_rendering/rgba_order";
+		gconf_client_notify_add (
+			fo_gconf, key, fo_option_changed, NULL, NULL, NULL);
 
 		fo_option_changed (fo_gconf, 0, NULL, NULL);
 	}
@@ -1215,69 +1299,7 @@ get_font_options (void)
 	return font_options;
 }
 
-/**
- * e_file_update_save_path:
- * @uri: URI to store
- * @free: If TRUE, free uri
- *
- * Save the save_dir path for evolution.  If free is TRUE, uri gets freed when
- * done.  Genearally, this should be called with the output of
- * gtk_file_chooser_get_current_folder_uri()  The URI must be a path URI, not a
- * file URI.
- **/
-void
-e_file_update_save_path (gchar *uri, gboolean free)
-{
-	GConfClient *gconf = gconf_client_get_default();
-	GError *error = NULL;
-
-	gconf_client_set_string(gconf, "/apps/evolution/mail/save_dir", uri, &error);
-	if (error != NULL) {
-		g_warning("%s (%s) %s", G_STRLOC, G_STRFUNC, error->message);
-		g_clear_error(&error);
-	}
-	g_object_unref(gconf);
-	if (free)
-		g_free(uri);
-}
-
-/**
- * e_file_get_save_path:
- *
- * Return the save_dir path for evolution.  If there isn't a save_dir, returns
- * the users home directory.  Returns an allocated URI that should be freed by
- * the caller.
- **/
-gchar *
-e_file_get_save_path (void)
-{
-	GConfClient *gconf = gconf_client_get_default();
-	GError *error = NULL;
-	gchar *uri;
-
-	uri = gconf_client_get_string(gconf, "/apps/evolution/mail/save_dir", &error);
-	if (error != NULL) {
-		g_warning("%s (%s) %s", G_STRLOC, G_STRFUNC, error->message);
-		g_clear_error(&error);
-	}
-	g_object_unref(gconf);
-
-	if (uri == NULL) {
-		GFile *file;
-
-		file = g_file_new_for_path (g_get_home_dir ());
-		if (file) {
-			uri = g_file_get_uri (file);
-			g_object_unref (file);
-		}
-	}
-
-	return (uri);
-}
-
 /* Evolution Locks for crash recovery */
-
-#define LOCK_FILE ".running"
 
 static const gchar *
 get_lock_filename (void)
@@ -1285,53 +1307,64 @@ get_lock_filename (void)
 	static gchar *filename = NULL;
 
 	if (G_UNLIKELY (filename == NULL))
-		filename = g_build_filename (e_get_user_data_dir (), LOCK_FILE, NULL);
+		filename = g_build_filename (
+			e_get_user_config_dir (), ".running", NULL);
 
 	return filename;
 }
 
 gboolean
-e_file_lock_create ()
+e_file_lock_create (void)
 {
-	const gchar *fname = get_lock_filename ();
+	const gchar *filename = get_lock_filename ();
 	gboolean status = FALSE;
+	FILE *file;
 
-	gint fd = g_creat (fname, S_IRUSR|S_IWUSR);
-	if (fd == -1) {
-		g_warning ("Lock file '%s' creation failed, error %d\n", fname, errno);
-	} else {
+	file = g_fopen (filename, "w");
+	if (file != NULL) {
+		/* The lock file also serves as a PID file. */
+		g_fprintf (
+			file, "%" G_GINT64_FORMAT "\n",
+			(gint64) getpid ());
+		fclose (file);
 		status = TRUE;
-		close (fd);
+	} else {
+		const gchar *errmsg = g_strerror (errno);
+		g_warning ("Lock file creation failed: %s", errmsg);
 	}
 
 	return status;
 }
 
 void
-e_file_lock_destroy ()
+e_file_lock_destroy (void)
 {
-	const gchar *fname = get_lock_filename ();
+	const gchar *filename = get_lock_filename ();
 
-	if (g_unlink (fname) == -1) {
-		g_warning ("Lock destroy: failed to unlink file '%s'!",fname);
+	if (g_unlink (filename) == -1) {
+		const gchar *errmsg = g_strerror (errno);
+		g_warning ("Lock file deletion failed: %s", errmsg);
 	}
 }
 
 gboolean
-e_file_lock_exists ()
+e_file_lock_exists (void)
 {
-	const gchar *fname = get_lock_filename ();
+	const gchar *filename = get_lock_filename ();
 
-	return g_file_test (fname, G_FILE_TEST_EXISTS);
+	return g_file_test (filename, G_FILE_TEST_EXISTS);
 }
 
 /**
  * e_util_guess_mime_type:
- * @filename: it's a local file name, or URI.
- * @localfile: set to TRUE if can check the local file content, FALSE to check only based on the filename itself.
- * Returns: NULL or newly allocated string with a mime_type of the given file. Free with g_free.
+ * @filename: a local file name, or URI
+ * @localfile: %TRUE to check the file content, FALSE to check only the name
  *
- * Guesses mime_type for the given filename.
+ * Tries to determine the MIME type for @filename.  Free the returned
+ * string with g_free().
+ *
+ * Returns: the MIME type of @filename, or %NULL if the the MIME type could
+ *          not be determined
  **/
 gchar *
 e_util_guess_mime_type (const gchar *filename, gboolean localfile)
@@ -1342,24 +1375,23 @@ e_util_guess_mime_type (const gchar *filename, gboolean localfile)
 
 	if (localfile) {
 		GFile *file;
+		GFileInfo *fi;
 
 		if (strstr (filename, "://"))
 			file = g_file_new_for_uri (filename);
 		else
 			file = g_file_new_for_path (filename);
 
-		if (file) {
-			GFileInfo *fi;
-
-			fi = g_file_query_info (file, G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE, G_FILE_QUERY_INFO_NONE, NULL, NULL);
-			if (fi) {
-				mime_type = g_content_type_get_mime_type (g_file_info_get_content_type (fi));
-
-				g_object_unref (fi);
-			}
-
-			g_object_unref (file);
+		fi = g_file_query_info (
+			file, G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
+			G_FILE_QUERY_INFO_NONE, NULL, NULL);
+		if (fi) {
+			mime_type = g_content_type_get_mime_type (
+				g_file_info_get_content_type (fi));
+			g_object_unref (fi);
 		}
+
+		g_object_unref (file);
 	}
 
 	if (!mime_type) {
@@ -1377,136 +1409,7 @@ e_util_guess_mime_type (const gchar *filename, gboolean localfile)
 	return mime_type;
 }
 
-/**
- * e_util_filename_to_uri:
- * @filename: local file name.
- * Returns: either newly allocated string or NULL. Free with g_free.
- *
- * Converts local file name to URI.
- **/
-gchar *
-e_util_filename_to_uri (const gchar *filename)
-{
-	GFile *file;
-	gchar *uri = NULL;
-
-	g_return_val_if_fail (filename != NULL, NULL);
-
-	file = g_file_new_for_path (filename);
-
-	if (file) {
-		uri = g_file_get_uri (file);
-		g_object_unref (file);
-	}
-
-	return uri;
-}
-
-/**
- * e_util_uri_to_filename:
- * @uri: uri.
- * Returns: either newly allocated string or NULL. Free with g_free.
- *
- * Converts URI to local file name. NULL indicates no such local file name exists.
- **/
-gchar *
-e_util_uri_to_filename (const gchar *uri)
-{
-	GFile *file;
-	gchar *filename = NULL;
-
-	g_return_val_if_fail (uri != NULL, NULL);
-
-	file = g_file_new_for_uri (uri);
-
-	if (file) {
-		filename = g_file_get_path (file);
-		g_object_unref (file);
-	}
-
-	return filename;
-}
-
-/**
- * e_util_read_file:
- * @filename: File name to read.
- * @filename_is_uri: Whether the file name is URI, if not, then it's a local path.
- * @buffer: Read content or the file. Should not be NULL. Returned value should be freed with g_free.
- * @read: Number of actually read bytes. Should not be NULL.
- * @error: Here will be returned an error from reading operations. Can be NULL. Not every time is set when returned FALSE.
- * Returns: Whether was reading successful or not.
- *
- * Reads synchronously content of the file, to which is pointed either by path or by URI.
- * Mount point should be already mounted when calling this function.
- **/
-gboolean
-e_util_read_file (const gchar *filename, gboolean filename_is_uri, gchar **buffer, gsize *read, GError **error)
-{
-	GFile *file;
-	GFileInfo *info;
-	GError *err = NULL;
-	gboolean res = FALSE;
-
-	g_return_val_if_fail (filename != NULL, FALSE);
-	g_return_val_if_fail (buffer != NULL, FALSE);
-	g_return_val_if_fail (read != NULL, FALSE);
-
-	*buffer = NULL;
-	*read = 0;
-
-	if (filename_is_uri)
-		file = g_file_new_for_uri (filename);
-	else
-		file = g_file_new_for_path (filename);
-
-	g_return_val_if_fail (file != NULL, FALSE);
-
-	info = g_file_query_info (file, G_FILE_ATTRIBUTE_STANDARD_SIZE, G_FILE_QUERY_INFO_NONE, NULL, &err);
-
-	if (!err && info) {
-		guint64 sz;
-		gchar *buff;
-
-		sz = g_file_info_get_attribute_uint64 (info, G_FILE_ATTRIBUTE_STANDARD_SIZE);
-		buff = g_malloc (sizeof (gchar) * sz);
-
-		if (buff) {
-			GInputStream *stream;
-
-			stream = G_INPUT_STREAM (g_file_read (file, NULL, &err));
-
-			if (!err && stream) {
-				res = g_input_stream_read_all (stream, buff, sz, read, NULL, &err);
-
-				if (err)
-					res = FALSE;
-
-				if (res)
-					*buffer = buff;
-				else
-					g_free (buff);
-			}
-
-			if (stream)
-				g_object_unref (stream);
-		}
-	}
-
-	if (info)
-		g_object_unref (info);
-
-	g_object_unref (file);
-
-	if (err) {
-		if (error)
-			*error = err;
-		else
-			g_error_free (err);
-	}
-
-	return res;
-}
-
+/* XXX: Should e-util/ really depend on filter/ ?? */
 GSList *
 e_util_get_category_filter_options (void)
 {
@@ -1516,7 +1419,12 @@ e_util_get_category_filter_options (void)
 	clist = e_categories_get_list ();
 	for (l = clist; l; l = l->next) {
 		const gchar *cname = l->data;
-		struct _filter_option *fo = g_new0 (struct _filter_option, 1);
+		struct _filter_option *fo;
+
+		if (!e_categories_is_searchable (cname))
+			continue;
+
+		fo = g_new0 (struct _filter_option, 1);
 
 		fo->title = g_strdup (cname);
 		fo->value = g_strdup (cname);
@@ -1528,32 +1436,55 @@ e_util_get_category_filter_options (void)
 	return g_slist_reverse (res);
 }
 
-static gpointer
-e_camel_object_copy (gpointer camel_object)
+/**
+ * e_util_get_searchable_categories:
+ *
+ * Returns list of searchable categories only. The list should
+ * be freed with g_list_free() when done with it, but the items
+ * are internal strings, names of categories, which should not
+ * be touched in other than read-only way, in other words the same
+ * restrictions as for e_categories_get_list() applies here too.
+ **/
+GList *
+e_util_get_searchable_categories (void)
 {
-	if (CAMEL_IS_OBJECT (camel_object))
-		camel_object_ref (camel_object);
+	GList *res = NULL, *all_categories, *l;
 
-	return camel_object;
+	all_categories = e_categories_get_list ();
+	for (l = all_categories; l; l = l->next) {
+		const gchar *cname = l->data;
+
+		if (e_categories_is_searchable (cname))
+			res = g_list_prepend (res, (gpointer) cname);
+	}
+
+	g_list_free (all_categories);
+
+	return g_list_reverse (res);
 }
 
-static void
-e_camel_object_free (gpointer camel_object)
+/**
+ * e_util_set_source_combo_box_list:
+ * @source_combo_box: an #ESourceComboBox
+ * @source_gconf_path: GConf path with sources to use in an #ESourceList
+ *
+ * Sets an #ESourceList of a given GConf path to an #ESourceComboBox.
+ **/
+void
+e_util_set_source_combo_box_list (GtkWidget *source_combo_box,
+                                  const gchar *source_gconf_path)
 {
-	if (CAMEL_IS_OBJECT (camel_object))
-		camel_object_unref (camel_object);
+	ESourceList *source_list;
+	GConfClient *gconf_client;
+
+	g_return_if_fail (source_combo_box != NULL);
+	g_return_if_fail (source_gconf_path != NULL);
+
+	gconf_client = gconf_client_get_default ();
+	source_list = e_source_list_new_for_gconf (
+		gconf_client, source_gconf_path);
+	g_object_set (source_combo_box, "source-list", source_list, NULL);
+	g_object_unref (source_list);
+	g_object_unref (gconf_client);
 }
 
-GType
-e_camel_object_get_type (void)
-{
-	static GType type = 0;
-
-	if (G_UNLIKELY (type == 0))
-		type = g_boxed_type_register_static (
-			"ECamelObject",
-			(GBoxedCopyFunc) e_camel_object_copy,
-			(GBoxedFreeFunc) e_camel_object_free);
-
-	return type;
-}

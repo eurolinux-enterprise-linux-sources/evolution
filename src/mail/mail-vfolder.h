@@ -22,35 +22,26 @@
 #ifndef _MAIL_VFOLDER_H
 #define _MAIL_VFOLDER_H
 
-#include <camel/camel-internet-address.h>
-#include <camel/camel-mime-message.h>
+#include <camel/camel.h>
 
-#include <filter/filter-part.h>
-#include <filter/filter-rule.h>
+#include <filter/e-filter-part.h>
+#include <filter/e-filter-rule.h>
 #include <mail/em-vfolder-rule.h>
+#include <shell/e-shell-view.h>
 
 void vfolder_load_storage(void);
 void vfolder_revert(void);
 
-void vfolder_edit (void);
+void vfolder_edit (EShellView *shell_view);
 void vfolder_edit_rule(const gchar *name);
-FilterPart *vfolder_create_part (const gchar *name);
-FilterRule *vfolder_clone_rule (FilterRule *in);
+EFilterPart *vfolder_create_part (const gchar *name);
+EFilterRule *vfolder_clone_rule (EFilterRule *in);
 void vfolder_gui_add_rule (EMVFolderRule *rule);
 void vfolder_gui_add_from_message (CamelMimeMessage *msg, gint flags, const gchar *source);
 void vfolder_gui_add_from_address (CamelInternetAddress *addr, gint flags, const gchar *source);
 
 GList * mail_vfolder_get_sources_local (void);
 GList * mail_vfolder_get_sources_remote (void);
-
-/* add a uri that is now (un)available to vfolders in a transient manner */
-void mail_vfolder_add_uri(CamelStore *store, const gchar *uri, gint remove);
-
-/* note that a folder has changed name (uri) */
-void mail_vfolder_rename_uri(CamelStore *store, const gchar *from, const gchar *to);
-
-/* remove a uri that should be removed from vfolders permanently */
-void mail_vfolder_delete_uri(CamelStore *store, const gchar *uri);
 
 /* close up, clean up */
 void mail_vfolder_shutdown (void);

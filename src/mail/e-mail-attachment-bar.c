@@ -57,6 +57,7 @@ struct _EMailAttachmentBarPrivate {
 enum {
 	PROP_0,
 	PROP_ACTIVE_VIEW,
+	PROP_DRAGGING,
 	PROP_EDITABLE,
 	PROP_EXPANDED
 };
@@ -64,42 +65,11 @@ enum {
 static gpointer parent_class;
 
 static void
-mail_attachment_bar_sync_icon_view (EMailAttachmentBar *bar)
-{
-	EAttachmentView *source;
-	EAttachmentView *target;
-
-	source = E_ATTACHMENT_VIEW (bar->priv->tree_view);
-	target = E_ATTACHMENT_VIEW (bar->priv->icon_view);
-
-	/* Only sync if the tree view is active.  This prevents the
-	 * two views from endlessly trying to sync with each other. */
-	if (e_mail_attachment_bar_get_active_view (bar) == 1)
-		e_attachment_view_sync_selection (source, target);
-}
-
-static void
-mail_attachment_bar_sync_tree_view (EMailAttachmentBar *bar)
-{
-	EAttachmentView *source;
-	EAttachmentView *target;
-
-	source = E_ATTACHMENT_VIEW (bar->priv->icon_view);
-	target = E_ATTACHMENT_VIEW (bar->priv->tree_view);
-
-	/* Only sync if the icon view is active.  This prevents the
-	 * two views from endlessly trying to sync with each other. */
-	if (e_mail_attachment_bar_get_active_view (bar) == 0)
-		e_attachment_view_sync_selection (source, target);
-}
-
-static void
 mail_attachment_bar_update_status (EMailAttachmentBar *bar)
 {
 	EAttachmentView *view;
 	EAttachmentStore *store;
 	GtkActivatable *activatable;
-	GtkExpander *expander;
 	GtkAction *action;
 	GtkLabel *label;
 	gint num_attachments;
@@ -109,17 +79,21 @@ mail_attachment_bar_update_status (EMailAttachmentBar *bar)
 
 	view = E_ATTACHMENT_VIEW (bar);
 	store = e_attachment_view_get_store (view);
-	expander = GTK_EXPANDER (bar->priv->expander);
 	label = GTK_LABEL (bar->priv->status_label);
 
 	num_attachments = e_attachment_store_get_num_attachments (store);
 	total_size = e_attachment_store_get_total_size (store);
 	display_size = g_format_size_for_display (total_size);
 
-	markup = g_strdup_printf (
-		"<b>%d</b> %s (%s)", num_attachments, ngettext (
-		"Attachment", "Attachments", num_attachments),
-		display_size);
+	if (total_size > 0)
+		markup = g_strdup_printf (
+			"<b>%d</b> %s (%s)", num_attachments, ngettext (
+			"Attachment", "Attachments", num_attachments),
+			display_size);
+	else
+		markup = g_strdup_printf (
+			"<b>%d</b> %s", num_attachments, ngettext (
+			"Attachment", "Attachments", num_attachments));
 	gtk_label_set_markup (label, markup);
 	g_free (markup);
 
@@ -145,6 +119,12 @@ mail_attachment_bar_set_property (GObject *object,
 			e_mail_attachment_bar_set_active_view (
 				E_MAIL_ATTACHMENT_BAR (object),
 				g_value_get_int (value));
+			return;
+
+		case PROP_DRAGGING:
+			e_attachment_view_set_dragging (
+				E_ATTACHMENT_VIEW (object),
+				g_value_get_boolean (value));
 			return;
 
 		case PROP_EDITABLE:
@@ -175,6 +155,13 @@ mail_attachment_bar_get_property (GObject *object,
 				value,
 				e_mail_attachment_bar_get_active_view (
 				E_MAIL_ATTACHMENT_BAR (object)));
+			return;
+
+		case PROP_DRAGGING:
+			g_value_set_boolean (
+				value,
+				e_attachment_view_get_dragging (
+				E_ATTACHMENT_VIEW (object)));
 			return;
 
 		case PROP_EDITABLE:
@@ -280,28 +267,36 @@ mail_attachment_bar_constructed (GObject *object)
 	/* Set up property-to-property bindings. */
 
 	e_mutual_binding_new (
-		G_OBJECT (object), "active-view",
-		G_OBJECT (priv->combo_box), "active");
+		object, "active-view",
+		priv->combo_box, "active");
 
 	e_mutual_binding_new (
-		G_OBJECT (object), "editable",
-		G_OBJECT (priv->icon_view), "editable");
+		object, "dragging",
+		priv->icon_view, "dragging");
 
 	e_mutual_binding_new (
-		G_OBJECT (object), "editable",
-		G_OBJECT (priv->tree_view), "editable");
+		object, "dragging",
+		priv->tree_view, "dragging");
 
 	e_mutual_binding_new (
-		G_OBJECT (object), "expanded",
-		G_OBJECT (priv->expander), "expanded");
+		object, "editable",
+		priv->icon_view, "editable");
 
 	e_mutual_binding_new (
-		G_OBJECT (object), "expanded",
-		G_OBJECT (priv->combo_box), "visible");
+		object, "editable",
+		priv->tree_view, "editable");
 
 	e_mutual_binding_new (
-		G_OBJECT (object), "expanded",
-		G_OBJECT (priv->vbox), "visible");
+		object, "expanded",
+		priv->expander, "expanded");
+
+	e_mutual_binding_new (
+		object, "expanded",
+		priv->combo_box, "visible");
+
+	e_mutual_binding_new (
+		object, "expanded",
+		priv->vbox, "visible");
 
 	/* Set up property-to-GConf bindings. */
 
@@ -319,7 +314,7 @@ mail_attachment_bar_size_request (GtkWidget *widget,
 	 *     get a sizable gap between the headers and body when this
 	 *     widget is invisible.  Once we finally move to WebKit,
 	 *     remove this. */
-	if (!GTK_WIDGET_VISIBLE (widget)) {
+	if (!gtk_widget_get_visible (widget)) {
 		requisition->width = 0;
 		requisition->height = 0;
 		return;
@@ -487,29 +482,31 @@ mail_attachment_bar_class_init (EMailAttachmentBarClass *class)
 			G_PARAM_CONSTRUCT));
 
 	g_object_class_override_property (
+		object_class, PROP_DRAGGING, "dragging");
+
+	g_object_class_override_property (
 		object_class, PROP_EDITABLE, "editable");
 }
 
 static void
-mail_attachment_bar_iface_init (EAttachmentViewIface *iface)
+mail_attachment_bar_interface_init (EAttachmentViewInterface *interface)
 {
-	iface->get_private = mail_attachment_bar_get_private;
-	iface->get_store = mail_attachment_bar_get_store;
-	iface->get_path_at_pos = mail_attachment_bar_get_path_at_pos;
-	iface->get_selected_paths = mail_attachment_bar_get_selected_paths;
-	iface->path_is_selected = mail_attachment_bar_path_is_selected;
-	iface->select_path = mail_attachment_bar_select_path;
-	iface->unselect_path = mail_attachment_bar_unselect_path;
-	iface->select_all = mail_attachment_bar_select_all;
-	iface->unselect_all = mail_attachment_bar_unselect_all;
-	iface->update_actions = mail_attachment_bar_update_actions;
+	interface->get_private = mail_attachment_bar_get_private;
+	interface->get_store = mail_attachment_bar_get_store;
+	interface->get_path_at_pos = mail_attachment_bar_get_path_at_pos;
+	interface->get_selected_paths = mail_attachment_bar_get_selected_paths;
+	interface->path_is_selected = mail_attachment_bar_path_is_selected;
+	interface->select_path = mail_attachment_bar_select_path;
+	interface->unselect_path = mail_attachment_bar_unselect_path;
+	interface->select_all = mail_attachment_bar_select_all;
+	interface->unselect_all = mail_attachment_bar_unselect_all;
+	interface->update_actions = mail_attachment_bar_update_actions;
 }
 
 static void
 mail_attachment_bar_init (EMailAttachmentBar *bar)
 {
 	EAttachmentView *view;
-	GtkTreeSelection *selection;
 	GtkSizeGroup *size_group;
 	GtkWidget *container;
 	GtkWidget *widget;
@@ -543,7 +540,7 @@ mail_attachment_bar_init (EMailAttachmentBar *bar)
 	container = widget;
 
 	widget = e_attachment_icon_view_new ();
-	GTK_WIDGET_SET_FLAGS (widget, GTK_CAN_FOCUS);
+	gtk_widget_set_can_focus (widget, TRUE);
 	gtk_icon_view_set_model (GTK_ICON_VIEW (widget), bar->priv->model);
 	gtk_container_add (GTK_CONTAINER (container), widget);
 	bar->priv->icon_view = g_object_ref (widget);
@@ -555,12 +552,12 @@ mail_attachment_bar_init (EMailAttachmentBar *bar)
 	gtk_frame_set_shadow_type (GTK_FRAME (widget), GTK_SHADOW_IN);
 	gtk_box_pack_start (GTK_BOX (container), widget, TRUE, TRUE, 0);
 	bar->priv->tree_frame = g_object_ref (widget);
-	gtk_widget_show (widget);
+	gtk_widget_hide (widget);
 
 	container = widget;
 
 	widget = e_attachment_tree_view_new ();
-	GTK_WIDGET_SET_FLAGS (widget, GTK_CAN_FOCUS);
+	gtk_widget_set_can_focus (widget, TRUE);
 	gtk_tree_view_set_model (GTK_TREE_VIEW (widget), bar->priv->model);
 	gtk_container_add (GTK_CONTAINER (container), widget);
 	bar->priv->tree_view = g_object_ref (widget);
@@ -638,17 +635,6 @@ mail_attachment_bar_init (EMailAttachmentBar *bar)
 	bar->priv->status_label = g_object_ref (widget);
 	gtk_widget_show (widget);
 
-	selection = gtk_tree_view_get_selection (
-		GTK_TREE_VIEW (bar->priv->tree_view));
-
-	g_signal_connect_swapped (
-		selection, "changed",
-		G_CALLBACK (mail_attachment_bar_sync_icon_view), bar);
-
-	g_signal_connect_swapped (
-		bar->priv->icon_view, "selection-changed",
-		G_CALLBACK (mail_attachment_bar_sync_tree_view), bar);
-
 	g_signal_connect_swapped (
 		bar->priv->model, "notify::num-attachments",
 		G_CALLBACK (mail_attachment_bar_update_status), bar);
@@ -679,8 +665,8 @@ e_mail_attachment_bar_get_type (void)
 			NULL   /* value_table */
 		};
 
-		static const GInterfaceInfo iface_info = {
-			(GInterfaceInitFunc) mail_attachment_bar_iface_init,
+		static const GInterfaceInfo interface_info = {
+			(GInterfaceInitFunc) mail_attachment_bar_interface_init,
 			(GInterfaceFinalizeFunc) NULL,
 			NULL   /* interface_data */
 		};
@@ -689,7 +675,7 @@ e_mail_attachment_bar_get_type (void)
 			GTK_TYPE_VBOX, "EMailAttachmentBar", &type_info, 0);
 
 		g_type_add_interface_static (
-			type, E_TYPE_ATTACHMENT_VIEW, &iface_info);
+			type, E_TYPE_ATTACHMENT_VIEW, &interface_info);
 	}
 
 	return type;
@@ -715,8 +701,14 @@ void
 e_mail_attachment_bar_set_active_view (EMailAttachmentBar *bar,
                                        gint active_view)
 {
+	EAttachmentView *source;
+	EAttachmentView *target;
+
 	g_return_if_fail (E_IS_MAIL_ATTACHMENT_BAR (bar));
 	g_return_if_fail (active_view >= 0 && active_view < NUM_VIEWS);
+
+	if (active_view == bar->priv->active_view)
+		return;
 
 	bar->priv->active_view = active_view;
 
@@ -727,6 +719,20 @@ e_mail_attachment_bar_set_active_view (EMailAttachmentBar *bar,
 		gtk_widget_hide (bar->priv->icon_frame);
 		gtk_widget_show (bar->priv->tree_frame);
 	}
+
+	/* Synchronize the item selection of the view we're
+	 * switching TO with the view we're switching FROM. */
+	if (active_view == 0) {
+		/* from tree view to icon view */
+		source = E_ATTACHMENT_VIEW (bar->priv->tree_view);
+		target = E_ATTACHMENT_VIEW (bar->priv->icon_view);
+	} else {
+		/* from icon view to tree view */
+		source = E_ATTACHMENT_VIEW (bar->priv->icon_view);
+		target = E_ATTACHMENT_VIEW (bar->priv->tree_view);
+	}
+
+	e_attachment_view_sync_selection (source, target);
 
 	g_object_notify (G_OBJECT (bar), "active-view");
 }

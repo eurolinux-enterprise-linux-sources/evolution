@@ -30,20 +30,8 @@
 #include <gtk/gtk.h>
 
 #include "em-config.h"
-#include "libedataserver/e-msgport.h"
 #include "em-utils.h"
 #include "em-composer-utils.h"
-
-#include <camel/camel-store.h>
-#include <camel/camel-folder.h>
-#include <camel/camel-mime-message.h>
-#include <camel/camel-string-utils.h>
-#include <camel/camel-mime-utils.h>
-#include <camel/camel-mime-part.h>
-#include <camel/camel-url.h>
-
-#include <camel/camel-vee-folder.h>
-#include <camel/camel-vtrash-folder.h>
 
 #include <gconf/gconf.h>
 #include <gconf/gconf-client.h>
@@ -105,7 +93,7 @@ emp_target_free(EConfig *ep, EConfigTarget *t)
 		EMConfigTargetFolder *s = (EMConfigTargetFolder *)t;
 
 		g_free(s->uri);
-		camel_object_unref(s->folder);
+		g_object_unref (s->folder);
 		break; }
 	case EM_CONFIG_TARGET_PREFS: {
 		EMConfigTargetPrefs *s = (EMConfigTargetPrefs *)t;
@@ -196,7 +184,7 @@ em_config_target_new_folder(EMConfig *emp, CamelFolder *folder, const gchar *uri
 
 	t->uri = g_strdup(uri);
 	t->folder = folder;
-	camel_object_ref(folder);
+	g_object_ref (folder);
 
 	return t;
 }
@@ -222,86 +210,4 @@ em_config_target_new_account(EMConfig *emp, struct _EAccount *account)
 	g_object_ref(account);
 
 	return t;
-}
-
-/* ********************************************************************** */
-
-/* Popup menu plugin handler */
-
-/*
-<e-plugin
-  class="org.gnome.mail.plugin.popup:1.0"
-  id="org.gnome.mail.plugin.popup.item:1.0"
-  type="shlib"
-  location="/opt/gnome2/lib/camel/1.0/libcamelimap.so"
-  name="imap"
-  description="IMAP4 and IMAP4v1 mail store">
-  <hook class="org.gnome.mail.popupMenu:1.0"
-        handler="HandlePopup">
-  <menu id="any" target="select">
-   <item
-    type="item|toggle|radio|image|submenu|bar"
-    active
-    path="foo/bar"
-    label="label"
-    icon="foo"
-    mask="select_one"
-    activate="emp_view_emacs"/>
-  </menu>
-  </extension>
-
-*/
-
-static gpointer emph_parent_class;
-#define emph ((EMConfigHook *)eph)
-
-static const EConfigHookTargetMask emph_no_masks[] = {
-	{ NULL }
-};
-
-static const EConfigHookTargetMap emph_targets[] = {
-	{ "folder", EM_CONFIG_TARGET_FOLDER, emph_no_masks },
-	{ "prefs", EM_CONFIG_TARGET_PREFS, emph_no_masks },
-	{ "account", EM_CONFIG_TARGET_ACCOUNT, emph_no_masks },
-	{ NULL }
-};
-
-static void
-emph_finalise(GObject *o)
-{
-	/*EPluginHook *eph = (EPluginHook *)o;*/
-
-	((GObjectClass *)emph_parent_class)->finalize(o);
-}
-
-static void
-emph_class_init(EPluginHookClass *klass)
-{
-	gint i;
-
-	((GObjectClass *)klass)->finalize = emph_finalise;
-	((EPluginHookClass *)klass)->id = "org.gnome.evolution.mail.config:1.0";
-
-	for (i=0;emph_targets[i].type;i++)
-		e_config_hook_class_add_target_map((EConfigHookClass *)klass, &emph_targets[i]);
-
-	((EConfigHookClass *)klass)->config_class = g_type_class_ref(em_config_get_type());
-}
-
-GType
-em_config_hook_get_type(void)
-{
-	static GType type = 0;
-
-	if (!type) {
-		static const GTypeInfo info = {
-			sizeof(EMConfigHookClass), NULL, NULL, (GClassInitFunc) emph_class_init, NULL, NULL,
-			sizeof(EMConfigHook), 0, (GInstanceInitFunc) NULL,
-		};
-
-		emph_parent_class = g_type_class_ref(e_config_hook_get_type());
-		type = g_type_register_static(e_config_hook_get_type(), "EMConfigHook", &info, 0);
-	}
-
-	return type;
 }

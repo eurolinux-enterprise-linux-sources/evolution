@@ -1,4 +1,6 @@
 /*
+ * e-shell.c
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -13,1411 +15,2004 @@
  * License along with the program; if not, see <http://www.gnu.org/licenses/>
  *
  *
- * Authors:
- *		Ettore Perazzoli <ettore@ximian.com>
- *
  * Copyright (C) 1999-2008 Novell, Inc. (www.novell.com)
  *
  */
 
-#include <config.h>
+/**
+ * SECTION: e-shell
+ * @short_description: the backbone of Evolution
+ * @include: shell/e-shell.h
+ **/
 
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-
-#include <gtk/gtk.h>
-#include <glib/gstdio.h>
-
-#ifdef GDK_WINDOWING_X11
-#include <gdk/gdkprivate.h>
-#include <gdk/gdkx.h>
-#include <X11/Xatom.h>
-#include <X11/Xlib.h>
-#elif defined (GDK_WINDOWING_WIN32)
-/* gdkwin32.h includes <windows.h> which stomps over the namespace */
-#undef DATADIR
-#define interface windows_interface
-#include <gdk/gdkwin32.h>
-#undef interface
-#endif
+#include "e-shell.h"
 
 #include <glib/gi18n.h>
-
-#include <gconf/gconf-client.h>
-
-#include <bonobo-activation/bonobo-activation.h>
-#include <bonobo/bonobo-exception.h>
-#include <bonobo/bonobo-moniker-util.h>
-
-#include <libedataserver/e-xml-utils.h>
 #include <libedataserverui/e-passwords.h>
 
-#include "e-util/e-bconf-map.h"
-#include "e-util/e-dialog-utils.h"
-#include "e-util/e-error.h"
-#include "e-util/e-fsutils.h"
+#include "e-util/e-module.h"
+#include "e-util/e-extensible.h"
+#include "e-util/e-util-private.h"
 #include "e-util/e-util.h"
+#include "smclient/eggsmclient.h"
+#include "widgets/misc/e-preferences-window.h"
 
-#include "Evolution.h"
-#include "e-shell-constants.h"
-#include "e-shell-settings-dialog.h"
-#include "e-shell.h"
-#include "e-shell-view.h"
-#include "es-event.h"
-#include "evolution-listener.h"
-#include "evolution-shell-component-utils.h"
+#include "e-shell-backend.h"
+#include "e-shell-enumtypes.h"
+#include "e-shell-window.h"
+#include "e-shell-utils.h"
 
-static void set_line_status_complete(EvolutionListener *el, gpointer data);
-
-#define PARENT_TYPE bonobo_object_get_type ()
-static BonoboObjectClass *parent_class = NULL;
-static gboolean session_started = FALSE;
+#define E_SHELL_GET_PRIVATE(obj) \
+	(G_TYPE_INSTANCE_GET_PRIVATE \
+	((obj), E_TYPE_SHELL, EShellPrivate))
 
 struct _EShellPrivate {
-	/* IID for registering the object on OAF.  */
-	gchar *iid;
+	GList *watched_windows;
+	EShellSettings *settings;
+	GConfClient *gconf_client;
+	GtkWidget *preferences_window;
 
-	GList *windows;
+	/* Shell Backends */
+	GList *loaded_backends;              /* not referenced */
+	GHashTable *backends_by_name;
+	GHashTable *backends_by_scheme;
 
-	/* EUriSchemaRegistry *uri_schema_registry; FIXME */
-	EComponentRegistry *component_registry;
+	gpointer preparing_for_line_change;  /* weak pointer */
+	gpointer preparing_for_quit;         /* weak pointer */
 
-	/* Names for the types of the folders that have maybe crashed.  */
-	/* FIXME TODO */
-	GList *crash_type_names; /* gchar * */
+	gchar *geometry;
+	gchar *module_directory;
 
-	/* Line status and controllers  */
-	EShellLineStatus line_status;
-	gint line_status_pending;
-	EShellLineStatus line_status_working;
-	EvolutionListener *line_status_listener;
+	gchar *startup_view;
 
-	/* Settings Dialog */
-	union {
-		GtkWidget *widget;
-		gpointer pointer;
-	} settings_dialog;
-
-	/* If we're quitting and things are still busy, a timeout handler */
-	guint quit_timeout;
-
-	/* Whether the shell is succesfully initialized.  This is needed during
-	   the start-up sequence, to avoid CORBA calls to do make wrong things
-	   to happen while the shell is initializing.  */
-	guint is_initialized : 1;
-
-	/* Wether the shell is working in "interactive" mode or not.
-	   (Currently, it's interactive IIF there is at least one active
-	   view.)  */
-	guint is_interactive : 1;
-
-	/* Whether quit has been requested, and the shell is now waiting for
-	   permissions from all the components to quit.  */
-	guint preparing_to_quit : 1;
-
-	/* Whether we are recovering from a crash in the previous session. */
-	guint crash_recovery : 1;
+	guint auto_reconnect	: 1;
+	guint modules_loaded	: 1;
+	guint network_available	: 1;
+	guint online		: 1;
+	guint quit_cancelled	: 1;
+	guint safe_mode		: 1;
+	guint express_mode	: 1;
+	guint meego_mode	: 1;
+	guint small_screen_mode	: 1;
 };
 
-/* Signals.  */
+enum {
+	PROP_0,
+	PROP_EXPRESS_MODE,
+	PROP_MEEGO_MODE,
+	PROP_SMALL_SCREEN_MODE,
+	PROP_GEOMETRY,
+	PROP_MODULE_DIRECTORY,
+	PROP_NETWORK_AVAILABLE,
+	PROP_ONLINE,
+	PROP_SHELL_SETTINGS
+};
 
 enum {
-	NO_WINDOWS_LEFT,
-	LINE_STATUS_CHANGED,
-	NEW_WINDOW_CREATED,
+	EVENT,
+	HANDLE_URI,
+	PREPARE_FOR_OFFLINE,
+	PREPARE_FOR_ONLINE,
+	PREPARE_FOR_QUIT,
+	QUIT_REQUESTED,
+	SEND_RECEIVE,
+	WINDOW_CREATED,
+	WINDOW_DESTROYED,
 	LAST_SIGNAL
 };
 
-static guint signals[LAST_SIGNAL] = { 0 };
+enum {
+	DEBUG_KEY_SETTINGS = 1 << 0
+};
 
-/* Utility functions.  */
+static GDebugKey debug_keys[] = {
+	{ "settings",	DEBUG_KEY_SETTINGS }
+};
 
-static gboolean
-get_config_start_offline (void)
-{
-	GConfClient *client;
-	gboolean value;
+static gpointer default_shell;
+static guint signals[LAST_SIGNAL];
 
-	client = gconf_client_get_default ();
-
-	value = gconf_client_get_bool (client, "/apps/evolution/shell/start_offline", NULL);
-
-	g_object_unref (client);
-
-	return value;
-}
-
-/* Interactivity handling.  */
+G_DEFINE_TYPE_WITH_CODE (
+	EShell,
+	e_shell,
+	UNIQUE_TYPE_APP,
+	G_IMPLEMENT_INTERFACE (
+		E_TYPE_EXTENSIBLE, NULL))
 
 static void
-set_interactive (EShell *shell,
-		 gboolean interactive)
+shell_parse_debug_string (EShell *shell)
 {
-	GSList *component_list;
-	GSList *p;
-	GList *first_element;
-	gint num_windows;
-	GtkWidget *view;
+	guint flags;
 
-	g_return_if_fail (E_IS_SHELL (shell));
+	flags = g_parse_debug_string (
+		g_getenv ("EVOLUTION_DEBUG"),
+		debug_keys, G_N_ELEMENTS (debug_keys));
 
-	shell->priv->is_interactive = interactive;
-
-	num_windows = g_list_length (shell->priv->windows);
-
-	/* We want to send the "interactive" message only when the first
-	window is created */
-	if (num_windows != 1)
-		return;
-
-	first_element = g_list_first (shell->priv->windows);
-	view = GTK_WIDGET (first_element->data);
-
-	component_list = e_component_registry_peek_list (shell->priv->component_registry);
-
-	for (p = component_list; p != NULL; p = p->next) {
-		EComponentInfo *info = p->data;
-		CORBA_Environment ev;
-
-		CORBA_exception_init (&ev);
-
-#ifdef GDK_WINDOWING_X11
-		GNOME_Evolution_Component_interactive (info->iface, interactive,GPOINTER_TO_INT (GDK_WINDOW_XWINDOW (view->window)), &ev);
-#elif defined (GDK_WINDOWING_WIN32)
-		GNOME_Evolution_Component_interactive (info->iface, interactive,GPOINTER_TO_INT (GDK_WINDOW_HWND (view->window)), &ev);
-#else
-#error Port this to your windowing system
-#endif
-
-		/* Ignore errors, the components can decide to not implement
-		   this interface. */
-
-		CORBA_exception_free (&ev);
-	}
+	if (flags & DEBUG_KEY_SETTINGS)
+		e_shell_settings_enable_debug (shell->priv->settings);
 }
 
-/* CORBA interface implementation.  */
+static void
+shell_notify_online_cb (EShell *shell)
+{
+	gboolean online;
+
+	online = e_shell_get_online (shell);
+	e_passwords_set_online (online);
+}
 
 static gboolean
-raise_exception_if_not_ready (PortableServer_Servant servant,
-			      CORBA_Environment *ev)
+shell_window_delete_event_cb (EShell *shell,
+                              GtkWindow *window)
 {
-	EShell *shell;
+	/* If other windows are open we can safely close this one. */
+	if (g_list_length (shell->priv->watched_windows) > 1)
+		return FALSE;
 
-	shell = E_SHELL (bonobo_object_from_servant (servant));
+	/* Otherwise we initiate application quit. */
+	e_shell_quit (shell, E_SHELL_QUIT_LAST_WINDOW);
 
-	if (! shell->priv->is_initialized) {
-		CORBA_exception_set (ev, CORBA_USER_EXCEPTION,
-				     ex_GNOME_Evolution_Shell_NotReady, NULL);
+	return TRUE;
+}
+
+static gboolean
+shell_window_focus_in_event_cb (EShell *shell,
+                                GdkEventFocus *event,
+                                GtkWindow *window)
+{
+	GList *list, *link;
+
+	/* Keep the watched windows list sorted by most recently focused,
+	 * so the first item in the list should always be the currently
+	 * focused window. */
+
+	list = shell->priv->watched_windows;
+	link = g_list_find (list, window);
+	g_return_val_if_fail (link != NULL, FALSE);
+
+	if (link != list) {
+		list = g_list_remove_link (list, link);
+		list = g_list_concat (link, list);
+	}
+
+	shell->priv->watched_windows = list;
+
+	return FALSE;
+}
+
+static gboolean
+shell_emit_window_destroyed_cb (EShell *shell)
+{
+	g_signal_emit (shell, signals[WINDOW_DESTROYED], 0);
+
+	g_object_unref (shell);
+
+	return FALSE;
+}
+
+static void
+shell_window_weak_notify_cb (EShell *shell,
+                             GObject *where_the_object_was)
+{
+	GList *list;
+
+	list = shell->priv->watched_windows;
+	list = g_list_remove (list, where_the_object_was);
+	shell->priv->watched_windows = list;
+
+	/* Let the watched window finish finalizing itself before we
+	 * emit the "window-destroyed" signal, which may trigger the
+	 * application to initiate shutdown. */
+	g_idle_add (
+		(GSourceFunc) shell_emit_window_destroyed_cb,
+		g_object_ref (shell));
+}
+
+static void
+shell_ready_for_offline (EShell *shell,
+                         EActivity *activity,
+                         gboolean is_last_ref)
+{
+	if (!is_last_ref)
+		return;
+
+	/* Increment the reference count so we can safely emit
+	 * a signal without triggering the toggle reference. */
+	g_object_ref (activity);
+
+	e_activity_complete (activity);
+
+	g_object_remove_toggle_ref (
+		G_OBJECT (activity), (GToggleNotify)
+		shell_ready_for_offline, shell);
+
+	/* Finalize the activity. */
+	g_object_unref (activity);
+
+	shell->priv->online = FALSE;
+	g_object_notify (G_OBJECT (shell), "online");
+}
+
+static void
+shell_prepare_for_offline (EShell *shell)
+{
+	/* Are preparations already in progress? */
+	if (shell->priv->preparing_for_line_change != NULL)
+		return;
+
+	shell->priv->preparing_for_line_change =
+		e_activity_new (_("Preparing to go offline..."));
+
+	g_object_add_toggle_ref (
+		G_OBJECT (shell->priv->preparing_for_line_change),
+		(GToggleNotify) shell_ready_for_offline, shell);
+
+	g_object_add_weak_pointer (
+		G_OBJECT (shell->priv->preparing_for_line_change),
+		&shell->priv->preparing_for_line_change);
+
+	g_signal_emit (
+		shell, signals[PREPARE_FOR_OFFLINE], 0,
+		shell->priv->preparing_for_line_change);
+
+	g_object_unref (shell->priv->preparing_for_line_change);
+}
+
+static void
+shell_ready_for_online (EShell *shell,
+                        EActivity *activity,
+                        gboolean is_last_ref)
+{
+	if (!is_last_ref)
+		return;
+
+	/* Increment the reference count so we can safely emit
+	 * a signal without triggering the toggle reference. */
+	g_object_ref (activity);
+
+	e_activity_complete (activity);
+
+	g_object_remove_toggle_ref (
+		G_OBJECT (activity), (GToggleNotify)
+		shell_ready_for_online, shell);
+
+	/* Finalize the activity. */
+	g_object_unref (activity);
+
+	shell->priv->online = TRUE;
+	g_object_notify (G_OBJECT (shell), "online");
+}
+
+static void
+shell_prepare_for_online (EShell *shell)
+{
+	/* Are preparations already in progress? */
+	if (shell->priv->preparing_for_line_change != NULL)
+		return;
+
+	shell->priv->preparing_for_line_change =
+		e_activity_new (_("Preparing to go online..."));
+
+	g_object_add_toggle_ref (
+		G_OBJECT (shell->priv->preparing_for_line_change),
+		(GToggleNotify) shell_ready_for_online, shell);
+
+	g_object_add_weak_pointer (
+		G_OBJECT (shell->priv->preparing_for_line_change),
+		&shell->priv->preparing_for_line_change);
+
+	g_signal_emit (
+		shell, signals[PREPARE_FOR_ONLINE], 0,
+		shell->priv->preparing_for_line_change);
+
+	g_object_unref (shell->priv->preparing_for_line_change);
+}
+
+static void
+shell_ready_for_quit (EShell *shell,
+                      EActivity *activity,
+                      gboolean is_last_ref)
+{
+	GList *list;
+
+	if (!is_last_ref)
+		return;
+
+	/* Increment the reference count so we can safely emit
+	 * a signal without triggering the toggle reference. */
+	g_object_ref (activity);
+
+	e_activity_complete (activity);
+
+	g_object_remove_toggle_ref (
+		G_OBJECT (activity), (GToggleNotify)
+		shell_ready_for_quit, shell);
+
+	/* Finalize the activity. */
+	g_object_unref (activity);
+
+	/* Destroy all watched windows.  Note, we iterate over a -copy-
+	 * of the watched windows list because the act of destroying a
+	 * watched window will modify the watched windows list, which
+	 * would derail the iteration. */
+	list = g_list_copy (e_shell_get_watched_windows (shell));
+	g_list_foreach (list, (GFunc) gtk_widget_destroy, NULL);
+	g_list_free (list);
+}
+
+static void
+shell_prepare_for_quit (EShell *shell)
+{
+	GList *list, *iter;
+
+	/* Are preparations already in progress? */
+	if (shell->priv->preparing_for_quit != NULL)
+		return;
+
+	shell->priv->preparing_for_quit =
+		e_activity_new (_("Preparing to quit..."));
+
+	g_object_add_toggle_ref (
+		G_OBJECT (shell->priv->preparing_for_quit),
+		(GToggleNotify) shell_ready_for_quit, shell);
+
+	g_object_add_weak_pointer (
+		G_OBJECT (shell->priv->preparing_for_quit),
+		&shell->priv->preparing_for_quit);
+
+	g_signal_emit (
+		shell, signals[PREPARE_FOR_QUIT], 0,
+		shell->priv->preparing_for_quit);
+
+	g_object_unref (shell->priv->preparing_for_quit);
+
+	/* Desensitize all watched windows to prevent user action. */
+	list = e_shell_get_watched_windows (shell);
+	for (iter = list; iter != NULL; iter = iter->next)
+		gtk_widget_set_sensitive (GTK_WIDGET (iter->data), FALSE);
+}
+
+static gboolean
+shell_request_quit (EShell *shell,
+                    EShellQuitReason reason)
+{
+	/* Are preparations already in progress? */
+	if (shell->priv->preparing_for_quit != NULL)
 		return TRUE;
-	}
 
-	return FALSE;
+	/* Give the application a chance to cancel quit. */
+	shell->priv->quit_cancelled = FALSE;
+	g_signal_emit (shell, signals[QUIT_REQUESTED], 0, reason);
+
+	return !shell->priv->quit_cancelled;
 }
 
-static GNOME_Evolution_ShellView
-impl_Shell_createNewWindow (PortableServer_Servant servant,
-			    const CORBA_char *component_id,
-			    CORBA_Environment *ev)
+/* Helper for shell_add_backend() */
+static void
+shell_split_and_insert_items (GHashTable *hash_table,
+                              const gchar *items,
+                              EShellBackend *shell_backend)
 {
-	BonoboObject *bonobo_object;
-	EShell *shell;
-	EShellWindow *shell_window;
-	EShellView *shell_view;
+	gpointer key;
+	gchar **strv;
+	gint ii;
 
-	if (raise_exception_if_not_ready (servant, ev))
-		return CORBA_OBJECT_NIL;
+	strv = g_strsplit_set (items, ":", -1);
 
-	bonobo_object = bonobo_object_from_servant (servant);
-	shell = E_SHELL (bonobo_object);
-
-	if (component_id[0] == '\0')
-		component_id = NULL;
-
-	shell_window = e_shell_create_window (shell, component_id, NULL);
-	if (shell_window == NULL) {
-		CORBA_exception_set (ev, CORBA_USER_EXCEPTION,
-				     ex_GNOME_Evolution_Shell_ComponentNotFound, NULL);
-		return CORBA_OBJECT_NIL;
+	for (ii = 0; strv[ii] != NULL; ii++) {
+		key = (gpointer) g_intern_string (strv[ii]);
+		g_hash_table_insert (hash_table, key, shell_backend);
 	}
 
-	/* refs?? */
-	shell_view = e_shell_view_new(shell_window);
-
-	return BONOBO_OBJREF(shell_view);
-
+	g_strfreev (strv);
 }
 
 static void
-impl_Shell_handleURI (PortableServer_Servant servant,
-		      const CORBA_char *uri,
-		      CORBA_Environment *ev)
+shell_process_backend (EShellBackend *shell_backend,
+                       EShell *shell)
 {
-	EShell *shell = E_SHELL (bonobo_object_from_servant (servant));
-	EComponentInfo *component_info;
-	gchar *schema, *p;
-	gint show = FALSE;
+	EShellBackendClass *class;
+	GHashTable *backends_by_name;
+	GHashTable *backends_by_scheme;
+	const gchar *string;
 
-	schema = g_alloca(strlen(uri)+1);
-	strcpy(schema, uri);
-	p = strchr(schema, ':');
-	if (p)
-		*p = 0;
+	class = E_SHELL_BACKEND_GET_CLASS (shell_backend);
+	backends_by_name = shell->priv->backends_by_name;
+	backends_by_scheme = shell->priv->backends_by_scheme;
 
-	component_info = e_component_registry_peek_info(shell->priv->component_registry, ECR_FIELD_SCHEMA, schema);
-	if (component_info == NULL) {
-		show = TRUE;
-		component_info = e_component_registry_peek_info(shell->priv->component_registry, ECR_FIELD_ALIAS, schema);
-	}
+	if ((string = class->name) != NULL)
+		g_hash_table_insert (
+			backends_by_name, (gpointer)
+			g_intern_string (string), shell_backend);
 
-	if (component_info == NULL) {
-		CORBA_exception_set (ev, CORBA_USER_EXCEPTION, ex_GNOME_Evolution_Shell_UnsupportedSchema, NULL);
-		return;
-	}
+	if ((string = class->aliases) != NULL)
+		shell_split_and_insert_items (
+			backends_by_name, string, shell_backend);
 
-	if (show) {
-		GtkWidget *shell_window;
-
-		shell_window = (GtkWidget *)e_shell_create_window (shell, component_info->id, NULL);
-		if (shell_window == NULL) {
-			CORBA_exception_set (ev, CORBA_USER_EXCEPTION, ex_GNOME_Evolution_Shell_ComponentNotFound, NULL);
-			return;
-		}
-	}
-
-	GNOME_Evolution_Component_handleURI (component_info->iface, uri, ev);
-	/* not an error not to implement it */
-	if (ev->_id != NULL && strcmp(ev->_id, ex_CORBA_NO_IMPLEMENT) == 0)
-		memset(ev, 0, sizeof(*ev));
+	if ((string = class->schemes) != NULL)
+		shell_split_and_insert_items (
+			backends_by_scheme, string, shell_backend);
 }
 
 static void
-impl_Shell_setLineStatus (PortableServer_Servant servant,
-			  CORBA_boolean online,
-			  CORBA_Environment *ev)
+shell_sm_quit_requested_cb (EShell *shell,
+                            EggSMClient *sm_client)
 {
-	BonoboObject *bonobo_object;
-	EShell *shell;
+	EShellQuitReason reason = E_SHELL_QUIT_SESSION_REQUEST;
+	gboolean will_quit;
 
-	if (raise_exception_if_not_ready (servant, ev))
-		return;
-
-	bonobo_object = bonobo_object_from_servant (servant);
-	shell = E_SHELL (bonobo_object);
-
-	/* let the password manager know out online status */
-	e_passwords_set_online(online);
-
-	if (online)
-		e_shell_set_line_status (shell, GNOME_Evolution_USER_ONLINE);
+	/* If preparations are already in progress then we have already
+	 * committed ourselves to quitting, and can answer 'yes'. */
+	if (shell->priv->preparing_for_quit == NULL)
+		will_quit = shell_request_quit (shell, reason);
 	else
-		e_shell_set_line_status (shell, GNOME_Evolution_USER_OFFLINE);
+		will_quit = TRUE;
+
+	egg_sm_client_will_quit (sm_client, will_quit);
 }
-/*
-static GNOME_Evolution_Component
-impl_Shell_findComponent(PortableServer_Servant servant,
-			 const CORBA_char *id,
-			 CORBA_Environment *ev)
+
+static void
+shell_sm_quit_cancelled_cb (EShell *shell,
+                            EggSMClient *sm_client)
 {
-	EShell *shell;
-	EComponentInfo *ci;
+	/* Nothing to do.  This is just to aid debugging. */
+}
 
-	if (raise_exception_if_not_ready (servant, ev))
-		return CORBA_OBJECT_NIL;
+static void
+shell_sm_quit_cb (EShell *shell,
+                  EggSMClient *sm_client)
+{
+	shell_prepare_for_quit (shell);
+}
 
-	shell = (EShell *)bonobo_object_from_servant (servant);
-	ci = e_component_registry_peek_info(shell->priv->component_registry, ECR_FIELD_ALIAS, id);
-	if (ci == NULL) {
-		CORBA_exception_set (ev, CORBA_USER_EXCEPTION, ex_GNOME_Evolution_Shell_ComponentNotFound, NULL);
-		return CORBA_OBJECT_NIL;
-	} else if (ci->iface == NULL) {
-		CORBA_exception_set (ev, CORBA_USER_EXCEPTION, ex_GNOME_Evolution_Shell_NotReady, NULL);
-		return CORBA_OBJECT_NIL;
+static void
+shell_set_express_mode (EShell *shell,
+                        gboolean express_mode)
+{
+	shell->priv->express_mode = express_mode;
+}
+
+static void
+shell_set_meego_mode (EShell *shell,
+                      gboolean is_meego)
+{
+	shell->priv->meego_mode = is_meego;
+}
+
+static void
+shell_set_small_screen_mode (EShell *shell,
+                             gboolean small_screen)
+{
+	shell->priv->small_screen_mode = small_screen;
+}
+
+static void
+shell_set_geometry (EShell *shell,
+                    const gchar *geometry)
+{
+	g_return_if_fail (shell->priv->geometry == NULL);
+
+	shell->priv->geometry = g_strdup (geometry);
+}
+
+static void
+shell_set_module_directory (EShell *shell,
+                            const gchar *module_directory)
+{
+	g_return_if_fail (shell->priv->module_directory == NULL);
+
+	shell->priv->module_directory = g_strdup (module_directory);
+}
+
+static void
+shell_set_property (GObject *object,
+                    guint property_id,
+                    const GValue *value,
+                    GParamSpec *pspec)
+{
+	switch (property_id) {
+		case PROP_EXPRESS_MODE:
+			shell_set_express_mode (
+				E_SHELL (object),
+				g_value_get_boolean (value));
+			return;
+
+		case PROP_MEEGO_MODE:
+			shell_set_meego_mode (
+				E_SHELL (object),
+				g_value_get_boolean (value));
+			return;
+
+		case PROP_SMALL_SCREEN_MODE:
+			shell_set_small_screen_mode (
+				E_SHELL (object),
+				g_value_get_boolean (value));
+			return;
+
+		case PROP_GEOMETRY:
+			shell_set_geometry (
+				E_SHELL (object),
+				g_value_get_string (value));
+			return;
+
+		case PROP_MODULE_DIRECTORY:
+			shell_set_module_directory (
+				E_SHELL (object),
+				g_value_get_string (value));
+			return;
+
+		case PROP_NETWORK_AVAILABLE:
+			e_shell_set_network_available (
+				E_SHELL (object),
+				g_value_get_boolean (value));
+			return;
+
+		case PROP_ONLINE:
+			e_shell_set_online (
+				E_SHELL (object),
+				g_value_get_boolean (value));
+			return;
+	}
+
+	G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+}
+
+static void
+shell_get_property (GObject *object,
+                    guint property_id,
+                    GValue *value,
+                    GParamSpec *pspec)
+{
+	switch (property_id) {
+		case PROP_EXPRESS_MODE:
+			g_value_set_boolean (
+				value, e_shell_get_express_mode (
+				E_SHELL (object)));
+			return;
+
+		case PROP_MEEGO_MODE:
+			g_value_set_boolean (
+				value, e_shell_get_meego_mode (
+				E_SHELL (object)));
+			return;
+
+		case PROP_SMALL_SCREEN_MODE:
+			g_value_set_boolean (
+				value, e_shell_get_small_screen_mode (
+				E_SHELL (object)));
+			return;
+
+		case PROP_MODULE_DIRECTORY:
+			g_value_set_string (
+				value, e_shell_get_module_directory (
+				E_SHELL (object)));
+			return;
+
+		case PROP_NETWORK_AVAILABLE:
+			g_value_set_boolean (
+				value, e_shell_get_network_available (
+				E_SHELL (object)));
+			return;
+
+		case PROP_ONLINE:
+			g_value_set_boolean (
+				value, e_shell_get_online (
+				E_SHELL (object)));
+			return;
+
+		case PROP_SHELL_SETTINGS:
+			g_value_set_object (
+				value, e_shell_get_shell_settings (
+				E_SHELL (object)));
+			return;
+	}
+
+	G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+}
+
+static void
+shell_dispose (GObject *object)
+{
+	EShellPrivate *priv;
+
+	priv = E_SHELL_GET_PRIVATE (object);
+
+	if (priv->startup_view != NULL) {
+		g_free (priv->startup_view);
+		priv->startup_view = NULL;
+	}
+
+	if (priv->settings != NULL) {
+		g_object_unref (priv->settings);
+		priv->settings = NULL;
+	}
+
+	if (priv->gconf_client != NULL) {
+		g_object_unref (priv->gconf_client);
+		priv->gconf_client = NULL;
+	}
+
+	if (priv->preferences_window != NULL) {
+		g_object_unref (priv->preferences_window);
+		priv->preferences_window = NULL;
+	}
+
+	if (priv->preparing_for_line_change != NULL) {
+		g_object_remove_weak_pointer (
+			G_OBJECT (priv->preparing_for_line_change),
+			&priv->preparing_for_line_change);
+	}
+
+	/* Chain up to parent's dispose() method. */
+	G_OBJECT_CLASS (e_shell_parent_class)->dispose (object);
+}
+
+static void
+shell_finalize (GObject *object)
+{
+	EShellPrivate *priv;
+
+	priv = E_SHELL_GET_PRIVATE (object);
+
+	g_hash_table_destroy (priv->backends_by_name);
+	g_hash_table_destroy (priv->backends_by_scheme);
+
+	/* Indicates a clean shut down to the next session. */
+	if (!unique_app_is_running (UNIQUE_APP (object)))
+		e_file_lock_destroy ();
+
+	g_list_foreach (priv->loaded_backends, (GFunc) g_object_unref, NULL);
+	g_list_free (priv->loaded_backends);
+
+	g_free (priv->geometry);
+	g_free (priv->module_directory);
+
+	/* Chain up to parent's finalize() method. */
+	G_OBJECT_CLASS (e_shell_parent_class)->finalize (object);
+}
+
+static void
+shell_constructed (GObject *object)
+{
+	/* The first EShell instance is the default. */
+	if (default_shell == NULL) {
+		default_shell = object;
+		g_object_add_weak_pointer (object, &default_shell);
+	}
+
+	if (!unique_app_is_running (UNIQUE_APP (object)))
+		e_file_lock_create ();
+}
+
+static UniqueResponse
+shell_message_handle_activate (EShell *shell,
+                               UniqueMessageData *data)
+{
+	GList *watched_windows;
+	GdkScreen *screen;
+
+	screen = unique_message_data_get_screen (data);
+	watched_windows = e_shell_get_watched_windows (shell);
+
+	/* Present the first EShellWindow, if found. */
+	while (watched_windows != NULL) {
+		GtkWindow *window = GTK_WINDOW (watched_windows->data);
+
+		if (E_IS_SHELL_WINDOW (window)) {
+			gtk_window_set_screen (window, screen);
+			gtk_window_present (window);
+			return UNIQUE_RESPONSE_OK;
+		}
+
+		watched_windows = g_list_next (watched_windows);
+	}
+
+	/* No EShellWindow found, so create one. */
+	e_shell_create_shell_window (shell, NULL);
+
+	return UNIQUE_RESPONSE_OK;
+}
+
+static UniqueResponse
+shell_message_handle_new (EShell *shell,
+                          UniqueMessageData *data)
+{
+	gchar *view_name;
+
+	view_name = unique_message_data_get_text (data);
+	e_shell_create_shell_window (shell, view_name);
+	g_free (view_name);
+
+	return UNIQUE_RESPONSE_OK;
+}
+
+static UniqueResponse
+shell_message_handle_open (EShell *shell,
+                           UniqueMessageData *data)
+{
+	gchar **uris;
+
+	uris = unique_message_data_get_uris (data);
+	if (uris && uris[0] && g_str_equal (uris[0], "--import")) {
+		gint ii;
+		GPtrArray *arr = g_ptr_array_new ();
+
+		/* skip the first argument */
+		for (ii = 1; uris[ii] != NULL; ii++) {
+			g_ptr_array_add (arr, uris[ii]);
+		}
+
+		g_ptr_array_add (arr, NULL);
+
+		e_shell_handle_uris (shell, (gchar **)arr->pdata, TRUE);
+
+		g_ptr_array_free (arr, TRUE);
 	} else {
-		return ci->iface;
+		e_shell_handle_uris (shell, uris, FALSE);
 	}
-}
-*/
+	g_strfreev (uris);
 
-/* EShellWindow handling and bookkeeping.  */
-
-static gint
-window_delete_event_cb (GtkWidget *widget,
-		      GdkEventAny *ev,
-		      gpointer data)
-{
-	EShell *shell;
-
-	g_return_val_if_fail (E_IS_SHELL_WINDOW (widget), TRUE);
-	shell = E_SHELL (data);
-
-	return ! e_shell_request_close_window (shell, E_SHELL_WINDOW (widget));
+	return UNIQUE_RESPONSE_OK;
 }
 
-static gboolean
-notify_no_windows_left_idle_cb (gpointer data)
+static UniqueResponse
+shell_message_handle_close (EShell *shell,
+                            UniqueMessageData *data)
 {
-	EShell *shell;
-	EShellPrivate *priv;
+	UniqueResponse response;
 
-	shell = E_SHELL (data);
-	priv = shell->priv;
+	if (e_shell_quit (shell, E_SHELL_QUIT_REMOTE_REQUEST))
+		response = UNIQUE_RESPONSE_OK;
+	else
+		response = UNIQUE_RESPONSE_CANCEL;
 
-	set_interactive (shell, FALSE);
+	return response;
+}
 
-	g_signal_emit (shell, signals [NO_WINDOWS_LEFT], 0);
+static UniqueResponse
+shell_message_received (UniqueApp *app,
+                        gint command,
+                        UniqueMessageData *data,
+                        guint time_)
+{
+	EShell *shell = E_SHELL (app);
 
-	if (priv->iid != NULL)
-		bonobo_activation_active_server_unregister (priv->iid,
-							    bonobo_object_corba_objref (BONOBO_OBJECT (shell)));
-	bonobo_object_unref (BONOBO_OBJECT (shell));
+	switch (command) {
+		case UNIQUE_ACTIVATE:
+			return shell_message_handle_activate (shell, data);
 
-	return FALSE;
+		case UNIQUE_NEW:
+			return shell_message_handle_new (shell, data);
+
+		case UNIQUE_OPEN:
+			return shell_message_handle_open (shell, data);
+
+		case UNIQUE_CLOSE:
+			return shell_message_handle_close (shell, data);
+
+		default:
+			break;
+	}
+
+	/* Chain up to parent's message_received() method. */
+	return UNIQUE_APP_CLASS (e_shell_parent_class)->
+		message_received (app, command, data, time_);
 }
 
 static void
-window_weak_notify (gpointer data,
-		    GObject *where_the_object_was)
+shell_window_destroyed (EShell *shell)
 {
-	EShell *shell;
-	gint num_windows;
-
-	shell = E_SHELL (data);
-
-	num_windows = g_list_length (shell->priv->windows);
-
-	/* If this is our last window, save settings now because in the callback
-	   for no_windows_left shell->priv->windows will be NULL and settings won't
-	   be saved because of that.  */
-	if (num_windows == 1)
-		e_shell_save_settings (shell);
-
-	shell->priv->windows = g_list_remove (shell->priv->windows, where_the_object_was);
-
-	if (shell->priv->windows == NULL) {
-		bonobo_object_ref (BONOBO_OBJECT (shell));
-		g_idle_add (notify_no_windows_left_idle_cb, shell);
-	}
-}
-
-/* GObject methods.  */
-
-static void
-impl_dispose (GObject *object)
-{
-	EShell *shell;
-	EShellPrivate *priv;
-	GList *p;
-
-	shell = E_SHELL (object);
-	priv = shell->priv;
-
-	priv->is_initialized = FALSE;
-
-#if 0				/* FIXME */
-	if (priv->uri_schema_registry != NULL) {
-		g_object_unref (priv->uri_schema_registry);
-		priv->uri_schema_registry = NULL;
-	}
-#endif
-
-	if (priv->component_registry != NULL) {
-		g_object_unref (priv->component_registry);
-		priv->component_registry = NULL;
-	}
-
-	if (priv->quit_timeout) {
-		g_source_remove(priv->quit_timeout);
-		priv->quit_timeout = 0;
-	}
-
-	for (p = priv->windows; p != NULL; p = p->next) {
-		EShellWindow *window;
-
-		window = E_SHELL_WINDOW (p->data);
-
-		g_signal_handlers_disconnect_by_func (window, G_CALLBACK (window_delete_event_cb), shell);
-		g_object_weak_unref (G_OBJECT (window), window_weak_notify, shell);
-
-		gtk_object_destroy (GTK_OBJECT (window));
-	}
-
-	g_list_free (priv->windows);
-	priv->windows = NULL;
-
-	/* No unreffing for these as they are aggregate.  */
-	/* bonobo_object_unref (BONOBO_OBJECT (priv->corba_storage_registry)); */
-
-	if (priv->settings_dialog.widget != NULL) {
-		gtk_widget_destroy (priv->settings_dialog.widget);
-		priv->settings_dialog.widget = NULL;
-	}
-
-	if (priv->line_status_listener) {
-		priv->line_status_listener->complete = NULL;
-		bonobo_object_unref(BONOBO_OBJECT(priv->line_status_listener));
-		priv->line_status_listener = NULL;
-	}
-
-	g_free (priv->iid);
-	(* G_OBJECT_CLASS (parent_class)->dispose) (object);
+	if (e_shell_get_watched_windows (shell) == NULL)
+		gtk_main_quit ();
 }
 
 static void
-impl_finalize (GObject *object)
-{
-	EShell *shell;
-	EShellPrivate *priv;
-
-	shell = E_SHELL (object);
-	priv = shell->priv;
-
-	g_list_foreach (priv->crash_type_names, (GFunc) g_free, NULL);
-	g_list_free (priv->crash_type_names);
-
-	g_free (priv);
-
-	(* G_OBJECT_CLASS (parent_class)->finalize) (object);
-}
-
-/* Initialization.  */
-
-static void
-e_shell_class_init (EShellClass *klass)
+e_shell_class_init (EShellClass *class)
 {
 	GObjectClass *object_class;
-	POA_GNOME_Evolution_Shell__epv *epv;
+	UniqueAppClass *unique_app_class;
 
-	parent_class = g_type_class_ref(PARENT_TYPE);
+	g_type_class_add_private (class, sizeof (EShellPrivate));
 
-	object_class = G_OBJECT_CLASS (klass);
-	object_class->dispose  = impl_dispose;
-	object_class->finalize = impl_finalize;
+	object_class = G_OBJECT_CLASS (class);
+	object_class->set_property = shell_set_property;
+	object_class->get_property = shell_get_property;
+	object_class->dispose = shell_dispose;
+	object_class->finalize = shell_finalize;
+	object_class->constructed = shell_constructed;
 
-	signals[NO_WINDOWS_LEFT] =
-		g_signal_new ("no_windows_left",
-			      G_OBJECT_CLASS_TYPE (object_class),
-			      G_SIGNAL_RUN_LAST,
-			      G_STRUCT_OFFSET (EShellClass, no_windows_left),
-			      NULL, NULL,
-			      g_cclosure_marshal_VOID__VOID,
-			      G_TYPE_NONE, 0);
+	unique_app_class = UNIQUE_APP_CLASS (class);
+	unique_app_class->message_received = shell_message_received;
 
-	signals[LINE_STATUS_CHANGED] =
-		g_signal_new ("line_status_changed",
-			      G_OBJECT_CLASS_TYPE (object_class),
-			      G_SIGNAL_RUN_LAST,
-			      G_STRUCT_OFFSET (EShellClass, line_status_changed),
-			      NULL, NULL,
-			      g_cclosure_marshal_VOID__INT,
-			      G_TYPE_NONE, 1,
-			      G_TYPE_INT);
+	class->window_destroyed = shell_window_destroyed;
 
-	signals[NEW_WINDOW_CREATED] =
-		g_signal_new ("new_window_created",
-			      G_OBJECT_CLASS_TYPE (object_class),
-			      G_SIGNAL_RUN_LAST,
-			      G_STRUCT_OFFSET (EShellClass, new_window_created),
-			      NULL, NULL,
-			      g_cclosure_marshal_VOID__POINTER,
-			      G_TYPE_NONE, 1,
-			      G_TYPE_POINTER);
+	/**
+	 * EShell:express-mode
+	 *
+	 * Express mode alters Evolution's user interface to be more
+	 * usable on devices with small screens.
+	 **/
+	g_object_class_install_property (
+		object_class,
+		PROP_EXPRESS_MODE,
+		g_param_spec_boolean (
+			"express-mode",
+			"Express Mode",
+			"Whether express mode is enabled",
+			FALSE,
+			G_PARAM_READWRITE |
+			G_PARAM_CONSTRUCT_ONLY));
 
-	epv = & klass->epv;
-	epv->createNewWindow = impl_Shell_createNewWindow;
-	epv->handleURI       = impl_Shell_handleURI;
-	epv->setLineStatus   = impl_Shell_setLineStatus;
-/*	epv->findComponent   = impl_Shell_findComponent;*/
+	/**
+	 * EShell:meego
+	 *
+	 * Are we running under meego - if so, adapt ourselves
+	 * to fit in well with their theming.
+	 **/
+	g_object_class_install_property (
+		object_class,
+		PROP_MEEGO_MODE,
+		g_param_spec_boolean (
+			"meego-mode",
+			"Meego Mode",
+			"Whether meego mode is enabled",
+			FALSE,
+			G_PARAM_READWRITE |
+			G_PARAM_CONSTRUCT_ONLY));
+
+	/**
+	 * EShell:small-screen
+	 *
+	 * Are we running with a small (1024x600) screen - if so, start
+	 * throwing the babies overboard to fit onto that screen size.
+	 **/
+	g_object_class_install_property (
+		object_class,
+		PROP_SMALL_SCREEN_MODE,
+		g_param_spec_boolean (
+			"small-screen-mode",
+			"Small Screen Mode",
+			"Whether we run on a rather small screen",
+			FALSE,
+			G_PARAM_READWRITE |
+			G_PARAM_CONSTRUCT_ONLY));
+
+	/**
+	 * EShell:geometry
+	 *
+	 * User-specified initial window geometry string to apply
+	 * to the first #EShellWindow created.
+	 **/
+	g_object_class_install_property (
+		object_class,
+		PROP_GEOMETRY,
+		g_param_spec_string (
+			"geometry",
+			"Geometry",
+			"Initial window geometry string",
+			NULL,
+			G_PARAM_WRITABLE |
+			G_PARAM_CONSTRUCT_ONLY));
+
+	/**
+	 * EShell:module-directory
+	 *
+	 * The directory from which to load #EModule<!-- -->s.
+	 **/
+	g_object_class_install_property (
+		object_class,
+		PROP_MODULE_DIRECTORY,
+		g_param_spec_string (
+			"module-directory",
+			"Module Directory",
+			"The directory from which to load EModules",
+			NULL,
+			G_PARAM_READWRITE |
+			G_PARAM_CONSTRUCT_ONLY));
+
+	/**
+	 * EShell:network-available
+	 *
+	 * Whether the network is available.
+	 **/
+	g_object_class_install_property (
+		object_class,
+		PROP_NETWORK_AVAILABLE,
+		g_param_spec_boolean (
+			"network-available",
+			"Network Available",
+			"Whether the network is available",
+			TRUE,
+			G_PARAM_READWRITE |
+			G_PARAM_CONSTRUCT));
+
+	/**
+	 * EShell:online
+	 *
+	 * Whether the shell is online.
+	 **/
+	g_object_class_install_property (
+		object_class,
+		PROP_ONLINE,
+		g_param_spec_boolean (
+			"online",
+			"Online",
+			"Whether the shell is online",
+			FALSE,
+			G_PARAM_READWRITE |
+			G_PARAM_CONSTRUCT));
+
+	/**
+	 * EShell:settings
+	 *
+	 * The #EShellSettings object stores application settings.
+	 **/
+	g_object_class_install_property (
+		object_class,
+		PROP_SHELL_SETTINGS,
+		g_param_spec_object (
+			"shell-settings",
+			"Shell Settings",
+			"Application-wide settings",
+			E_TYPE_SHELL_SETTINGS,
+			G_PARAM_READABLE));
+
+	/**
+	 * EShell::event
+	 * @shell: the #EShell which emitted the signal
+	 * @event_data: data associated with the event
+	 *
+	 * This signal is used to broadcast custom events to the entire
+	 * application.  The nature of @event_data depends on the event
+	 * being broadcast.  The signal's detail denotes the event.
+	 **/
+	signals[EVENT] = g_signal_new (
+		"event",
+		G_OBJECT_CLASS_TYPE (object_class),
+		G_SIGNAL_RUN_FIRST | G_SIGNAL_DETAILED | G_SIGNAL_ACTION,
+		0, NULL, NULL,
+		g_cclosure_marshal_VOID__POINTER,
+		G_TYPE_NONE, 1,
+		G_TYPE_POINTER);
+
+	/**
+	 * EShell::handle-uri
+	 * @shell: the #EShell which emitted the signal
+	 * @uri: the URI to be handled
+	 *
+	 * Emitted when @shell receives a URI to be handled, usually by
+	 * way of a command-line argument.  An #EShellBackend should listen
+	 * for this signal and try to handle the URI, usually by opening an
+	 * editor window for the identified resource.
+	 *
+	 * Returns: %TRUE if the URI could be handled, %FALSE otherwise
+	 **/
+	signals[HANDLE_URI] = g_signal_new (
+		"handle-uri",
+		G_OBJECT_CLASS_TYPE (object_class),
+		G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+		G_STRUCT_OFFSET (EShellClass, handle_uri),
+		g_signal_accumulator_true_handled, NULL,
+		e_marshal_BOOLEAN__STRING,
+		G_TYPE_BOOLEAN, 1,
+		G_TYPE_STRING);
+
+	/**
+	 * EShell::prepare-for-offline
+	 * @shell: the #EShell which emitted the signal
+	 * @activity: the #EActivity for offline preparations
+	 *
+	 * Emitted when the user elects to work offline.  An #EShellBackend
+	 * should listen for this signal and make preparations for working
+	 * in offline mode.
+	 *
+	 * If preparations for working offline cannot immediately be
+	 * completed (such as when synchronizing with a remote server),
+	 * the #EShellBackend should reference the @activity until
+	 * preparations are complete, and then unreference the @activity.
+	 * This will delay Evolution from actually going to offline mode
+	 * until all backends have unreferenced @activity.
+	 **/
+	signals[PREPARE_FOR_OFFLINE] = g_signal_new (
+		"prepare-for-offline",
+		G_OBJECT_CLASS_TYPE (object_class),
+		G_SIGNAL_RUN_FIRST,
+		G_STRUCT_OFFSET (EShellClass, prepare_for_offline),
+		NULL, NULL,
+		g_cclosure_marshal_VOID__OBJECT,
+		G_TYPE_NONE, 1,
+		E_TYPE_ACTIVITY);
+
+	/**
+	 * EShell::prepare-for-online
+	 * @shell: the #EShell which emitted the signal
+	 * @activity: the #EActivity for offline preparations
+	 *
+	 * Emitted when the user elects to work online.  An #EShellBackend
+	 * should listen for this signal and make preparations for working
+	 * in online mode.
+	 *
+	 * If preparations for working online cannot immediately be
+	 * completed (such as when re-connecting to a remote server), the
+	 * #EShellBackend should reference the @activity until preparations
+	 * are complete, and then unreference the @activity.  This will
+	 * delay Evolution from actually going to online mode until all
+	 * backends have unreferenced @activity.
+	 **/
+	signals[PREPARE_FOR_ONLINE] = g_signal_new (
+		"prepare-for-online",
+		G_OBJECT_CLASS_TYPE (object_class),
+		G_SIGNAL_RUN_FIRST,
+		G_STRUCT_OFFSET (EShellClass, prepare_for_online),
+		NULL, NULL,
+		g_cclosure_marshal_VOID__OBJECT,
+		G_TYPE_NONE, 1,
+		E_TYPE_ACTIVITY);
+
+	/**
+	 * EShell::prepare-for-quit
+	 * @shell: the #EShell which emitted the signal
+	 * @activity: the #EActivity for quit preparations
+	 *
+	 * Emitted when the user elects to quit the application, after
+	 * #EShell::quit-requested.  An #EShellBackend should listen for
+	 * this signal and make preparations for shutting down.
+	 *
+	 * If preparations for shutting down cannot immediately be completed
+	 * (such as when there are uncompleted network operations), the
+	 * #EShellBackend should reference the @activity until preparations
+	 * are complete, and then unreference the @activity.  This will
+	 * delay Evolution from actually shutting down until all backends
+	 * have unreferenced @activity.
+	 **/
+	signals[PREPARE_FOR_QUIT] = g_signal_new (
+		"prepare-for-quit",
+		G_OBJECT_CLASS_TYPE (object_class),
+		G_SIGNAL_RUN_FIRST,
+		G_STRUCT_OFFSET (EShellClass, prepare_for_quit),
+		NULL, NULL,
+		g_cclosure_marshal_VOID__OBJECT,
+		G_TYPE_NONE, 1,
+		E_TYPE_ACTIVITY);
+
+	/**
+	 * EShell::quit-requested
+	 * @shell: the #EShell which emitted the signal
+	 * @reason: the reason for quitting
+	 *
+	 * Emitted when the user elects to quit the application, before
+	 * #EShell::prepare-for-quit.
+	 *
+	 * #EShellBackend<!-- -->s and editor windows can listen for
+	 * this signal to prompt the user to save changes or finish
+	 * scheduled operations immediately (such as sending mail in
+	 * Outbox).  If the user elects to cancel, the signal handler
+	 * should call e_shell_cancel_quit() to abort the quit.
+	 **/
+	signals[QUIT_REQUESTED] = g_signal_new (
+		"quit-requested",
+		G_OBJECT_CLASS_TYPE (object_class),
+		G_SIGNAL_RUN_FIRST,
+		G_STRUCT_OFFSET (EShellClass, quit_requested),
+		NULL, NULL,
+		g_cclosure_marshal_VOID__ENUM,
+		G_TYPE_NONE, 1,
+		E_TYPE_SHELL_QUIT_REASON);
+
+	/**
+	 * EShell::send-receive
+	 * @shell: the #EShell which emitted the signal
+	 * @parent: a parent #GtkWindow
+	 *
+	 * Emitted when the user chooses the "Send / Receive" action.
+	 * The parent window can be used for showing transient windows.
+	 **/
+	signals[SEND_RECEIVE] = g_signal_new (
+		"send-receive",
+		G_OBJECT_CLASS_TYPE (object_class),
+		G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+		G_STRUCT_OFFSET (EShellClass, send_receive),
+		NULL, NULL,
+		g_cclosure_marshal_VOID__OBJECT,
+		G_TYPE_NONE, 1,
+		GTK_TYPE_WINDOW);
+
+	/**
+	 * EShell::window-created
+	 * @shell: the #EShell which emitted the signal
+	 * @window: the newly created #GtkWindow
+	 *
+	 * Emitted when @shell begins watching a newly created window.
+	 **/
+	signals[WINDOW_CREATED] = g_signal_new (
+		"window-created",
+		G_OBJECT_CLASS_TYPE (object_class),
+		G_SIGNAL_RUN_LAST,
+		G_STRUCT_OFFSET (EShellClass, window_created),
+		NULL, NULL,
+		g_cclosure_marshal_VOID__OBJECT,
+		G_TYPE_NONE, 1,
+		GTK_TYPE_WINDOW);
+
+	/**
+	 * EShell::window-destroyed
+	 * @shell: the #EShell which emitted the signal
+	 *
+	 * Emitted when a watched is destroyed.
+	 **/
+	signals[WINDOW_DESTROYED] = g_signal_new (
+		"window-destroyed",
+		G_OBJECT_CLASS_TYPE (object_class),
+		G_SIGNAL_RUN_LAST,
+		G_STRUCT_OFFSET (EShellClass, window_destroyed),
+		NULL, NULL,
+		g_cclosure_marshal_VOID__VOID,
+		G_TYPE_NONE, 0);
 }
 
 static void
 e_shell_init (EShell *shell)
 {
-	EShellPrivate *priv;
+	GHashTable *backends_by_name;
+	GHashTable *backends_by_scheme;
+	GtkIconTheme *icon_theme;
+	EggSMClient *sm_client;
 
-	priv = g_new0 (EShellPrivate, 1);
-	priv->line_status                  = E_SHELL_LINE_STATUS_OFFLINE;
-	priv->component_registry           = e_component_registry_new ();
+	shell->priv = E_SHELL_GET_PRIVATE (shell);
 
-	shell->priv = priv;
+	backends_by_name = g_hash_table_new (g_str_hash, g_str_equal);
+	backends_by_scheme = g_hash_table_new (g_str_hash, g_str_equal);
 
-	priv->line_status_listener = evolution_listener_new(set_line_status_complete, shell);
-}
+	shell->priv->settings = g_object_new (E_TYPE_SHELL_SETTINGS, NULL);
+	shell->priv->gconf_client = gconf_client_get_default ();
+	shell->priv->preferences_window = e_preferences_window_new (shell);
+	shell->priv->backends_by_name = backends_by_name;
+	shell->priv->backends_by_scheme = backends_by_scheme;
+	shell->priv->safe_mode = e_file_lock_exists ();
 
-static void
-detect_version (GConfClient *gconf, gint *major, gint *minor, gint *revision)
-{
-	gchar *val, *evolution_dir;
-	struct stat st;
+	shell->priv->startup_view = NULL;
 
-	evolution_dir = g_build_filename (g_get_home_dir (), "evolution", NULL);
+	g_object_ref_sink (shell->priv->preferences_window);
 
-	val = gconf_client_get_string(gconf, "/apps/evolution/version", NULL);
-	if (val) {
-		/* Since 1.4.0 We've been keeping the version key in gconf */
-		sscanf(val, "%d.%d.%d", major, minor, revision);
-		g_free(val);
-	} else if (g_lstat (evolution_dir, &st) != 0 || !S_ISDIR (st.st_mode)) {
-		/* If ~/evolution does not exit or is not a directory it must be a new installation */
-		*major = 0;
-		*minor = 0;
-		*revision = 0;
-	} else {
-		xmlDocPtr config_doc;
-		xmlNodePtr source;
-		gchar *tmp;
+	/* Add our icon directory to the theme's search path
+	 * here instead of in main() so Anjal picks it up. */
+	icon_theme = gtk_icon_theme_get_default ();
+	gtk_icon_theme_append_search_path (icon_theme, EVOLUTION_ICONDIR);
 
-		tmp = g_build_filename (evolution_dir, "config.xmldb", NULL);
-		config_doc = e_xml_parse_file (tmp);
-		g_free (tmp);
-		tmp = NULL;
+	shell_parse_debug_string (shell);
 
-		if (config_doc
-		    && (source = e_bconf_get_path (config_doc, "/Shell"))
-		    && (tmp = e_bconf_get_value (source, "upgrade_from_1_0_to_1_2_performed"))
-		    && tmp[0] == '1' ) {
-			*major = 1;
-			*minor = 2;
-			*revision = 0;
-		} else {
-			*major = 1;
-			*minor = 0;
-			*revision = 0;
-		}
-		g_free (tmp);
-		if (config_doc)
-			xmlFreeDoc (config_doc);
-	}
+	g_signal_connect (
+		shell, "notify::online",
+		G_CALLBACK (shell_notify_online_cb), NULL);
 
-	g_free (evolution_dir);
-}
+	/* XXX Do this after creating the EShellSettings instance,
+	 *     otherwise the GConf bindings will not get set up. */
 
-/* calls components to perform upgrade */
-static gboolean
-attempt_upgrade (EShell *shell, gint major, gint minor, gint revision)
-{
-	GSList *component_infos, *p;
-	gboolean success;
-	gint res;
+	e_shell_settings_install_property_for_key (
+		"file-chooser-folder",
+		"/apps/evolution/shell/file_chooser_folder");
 
-	success = TRUE;
+	e_shell_settings_install_property_for_key (
+		"start-offline",
+		"/apps/evolution/shell/start_offline");
 
-	component_infos = e_component_registry_peek_list (shell->priv->component_registry);
-	for (p = component_infos; success && p != NULL; p = p->next) {
-		const EComponentInfo *info = p->data;
-		CORBA_Environment ev;
+#ifndef G_OS_WIN32
+	e_shell_settings_install_property_for_key (
+		"disable-application-handlers",
+		"/desktop/gnome/lockdown/disable_application_handlers");
 
-		CORBA_exception_init (&ev);
+	e_shell_settings_install_property_for_key (
+		"disable-command-line",
+		"/desktop/gnome/lockdown/disable_command_line");
 
-		GNOME_Evolution_Component_upgradeFromVersion (info->iface, major, minor, revision, &ev);
+	e_shell_settings_install_property_for_key (
+		"disable-printing",
+		"/desktop/gnome/lockdown/disable_printing");
 
-		if (BONOBO_EX (&ev)) {
-			gchar *exception_text;
-			CORBA_char *id = CORBA_exception_id(&ev);
+	e_shell_settings_install_property_for_key (
+		"disable-print-setup",
+		"/desktop/gnome/lockdown/disable_print_setup");
 
-			if (strcmp (id, ex_CORBA_NO_IMPLEMENT) == 0) {
-				/* Ignore components that do not implement this version, it
-				   might just mean that they don't need an upgrade path. */
-			} else if (strcmp (id,  ex_GNOME_Evolution_Component_UpgradeFailed) == 0) {
-				GNOME_Evolution_Component_UpgradeFailed *ex = CORBA_exception_value(&ev);
+	e_shell_settings_install_property_for_key (
+		"disable-save-to-disk",
+		"/desktop/gnome/lockdown/disable_save_to_disk");
+#endif /* G_OS_WIN32 */
 
-				res = e_error_run(NULL, "shell:upgrade-failed", ex->what, ex->why, NULL);
-				if (res == GTK_RESPONSE_CANCEL)
-					success = FALSE;
-			} else if (strcmp (id,  ex_GNOME_Evolution_Component_UnsupportedVersion) == 0) {
-				/* This is non-fatal */
-				/* DO WE CARE??? */
-				printf("Upgrade of component failed, unsupported prior version\n");
-			} else {
-				exception_text = bonobo_exception_get_text (&ev);
-				res = e_error_run(NULL, "shell:upgrade-failed", exception_text, _("Unknown system error."), NULL);
-				g_free (exception_text);
-				if (res == GTK_RESPONSE_CANCEL)
-					success = FALSE;
-			}
-		}
-		CORBA_exception_free (&ev);
-	}
+	/*** Session Management ***/
 
-	return success;
+	sm_client = egg_sm_client_get ();
+
+	/* Not participating in session saving yet. */
+	egg_sm_client_set_mode (EGG_SM_CLIENT_MODE_NO_RESTART);
+
+	g_signal_connect_swapped (
+		sm_client, "quit-requested",
+		G_CALLBACK (shell_sm_quit_requested_cb), shell);
+
+	g_signal_connect_swapped (
+		sm_client, "quit-cancelled",
+		G_CALLBACK (shell_sm_quit_cancelled_cb), shell);
+
+	g_signal_connect_swapped (
+		sm_client, "quit",
+		G_CALLBACK (shell_sm_quit_cb), shell);
 }
 
 /**
- * e_shell_construct:
- * @shell: An EShell object to construct
- * @iid: OAFIID for registering the shell into the name server
- * @startup_line_mode: How to set up the line mode (online or offline) initally.
+ * e_shell_get_default:
  *
- * Construct @shell so that it uses the specified @corba_object.
+ * Returns the #EShell created by <function>main()</function>.
  *
- * Return value: The result of the operation.
- **/
-EShellConstructResult
-e_shell_construct (EShell *shell,
-		   const gchar *iid,
-		   EShellStartupLineMode startup_line_mode)
-{
-	EShellPrivate *priv;
-	CORBA_Object corba_object;
-	gboolean start_online;
-	GSList *component;
-
-	g_return_val_if_fail (E_IS_SHELL (shell), E_SHELL_CONSTRUCT_RESULT_INVALIDARG);
-	g_return_val_if_fail (startup_line_mode == E_SHELL_STARTUP_LINE_MODE_CONFIG
-			      || startup_line_mode == E_SHELL_STARTUP_LINE_MODE_ONLINE
-			      || startup_line_mode == E_SHELL_STARTUP_LINE_MODE_OFFLINE,
-			      E_SHELL_CONSTRUCT_RESULT_INVALIDARG);
-
-	priv = shell->priv;
-	priv->iid = g_strdup (iid);
-
-	/* Now we can register into OAF.  Notice that we shouldn't be
-	   registering into OAF until we are sure we can complete.  */
-
-	/* FIXME: Multi-display stuff.  */
-	corba_object = bonobo_object_corba_objref (BONOBO_OBJECT (shell));
-	if (bonobo_activation_active_server_register (iid, corba_object) != Bonobo_ACTIVATION_REG_SUCCESS)
-		return E_SHELL_CONSTRUCT_RESULT_CANNOTREGISTER;
-
-	while (gtk_events_pending ())
-		gtk_main_iteration ();
-
-	/* activate all the components (peek list does this implictly) */
-	/* Do we really need to assign the result of this to the list? */
-	component = e_component_registry_peek_list (shell->priv->component_registry);
-
-	e_shell_attempt_upgrade(shell);
-
-	priv->is_initialized = TRUE;
-
-	switch (startup_line_mode) {
-	case E_SHELL_STARTUP_LINE_MODE_CONFIG:
-		start_online = ! get_config_start_offline ();
-		break;
-	case E_SHELL_STARTUP_LINE_MODE_ONLINE:
-		start_online = TRUE;
-		break;
-	case E_SHELL_STARTUP_LINE_MODE_OFFLINE:
-		start_online = FALSE;
-		break;
-	default:
-		start_online = FALSE; /* Make compiler happy.  */
-		g_return_val_if_reached(E_SHELL_CONSTRUCT_RESULT_OK);
-	}
-
-	e_passwords_set_online(start_online);
-
-	if (start_online)
-		e_shell_set_line_status (shell, GNOME_Evolution_USER_ONLINE);
-	else
-		e_shell_set_line_status (shell, GNOME_Evolution_USER_OFFLINE);
-
-	return E_SHELL_CONSTRUCT_RESULT_OK;
-}
-
-/**
- * e_shell_new:
- * @start_online: Whether to start in on-line mode or not.
- * @construct_result_return: A pointer to an EShellConstructResult variable into
- * which the result of the operation will be stored.
+ * Try to obtain the #EShell from elsewhere if you can.  This function
+ * is intended as a temporary workaround for when that proves difficult.
  *
- * Create a new EShell.
- *
- * Return value:
+ * Returns: the #EShell singleton
  **/
 EShell *
-e_shell_new (EShellStartupLineMode startup_line_mode,
-	     EShellConstructResult *construct_result_return)
+e_shell_get_default (void)
 {
-	EShell *new;
-	EShellConstructResult construct_result;
+	return default_shell;
+}
 
-	new = g_object_new (e_shell_get_type (), NULL);
+/**
+ * e_shell_load_modules:
+ * @shell: an #EShell
+ *
+ * Loads all installed modules and performs some internal bookkeeping.
+ * This function should be called after creating the #EShell instance
+ * but before initiating migration or starting the main loop.
+ **/
+void
+e_shell_load_modules (EShell *shell)
+{
+	const gchar *module_directory;
+	GList *list;
 
-	construct_result = e_shell_construct (new, E_SHELL_OAFIID, startup_line_mode);
+	g_return_if_fail (E_IS_SHELL (shell));
 
-	if (construct_result != E_SHELL_CONSTRUCT_RESULT_OK) {
-		*construct_result_return = construct_result;
-		bonobo_object_unref (BONOBO_OBJECT (new));
+	if (shell->priv->modules_loaded)
+		return;
+
+	/* Load all shared library modules. */
+
+	module_directory = e_shell_get_module_directory (shell);
+	g_return_if_fail (module_directory != NULL);
+
+	list = e_module_load_all_in_directory (module_directory);
+	g_list_foreach (list, (GFunc) g_type_module_unuse, NULL);
+	g_list_free (list);
+
+	/* Process shell backends. */
+
+	list = g_list_sort (
+		e_extensible_list_extensions (
+		E_EXTENSIBLE (shell), E_TYPE_SHELL_BACKEND),
+		(GCompareFunc) e_shell_backend_compare);
+	g_list_foreach (list, (GFunc) shell_process_backend, shell);
+	shell->priv->loaded_backends = list;
+
+	shell->priv->modules_loaded = TRUE;
+}
+
+/**
+ * e_shell_get_shell_backends:
+ * @shell: an #EShell
+ *
+ * Returns a list of loaded #EShellBackend instances.  The list is
+ * owned by @shell and should not be modified or freed.
+ *
+ * Returns: a list of loaded #EShellBackend instances
+ **/
+GList *
+e_shell_get_shell_backends (EShell *shell)
+{
+	g_return_val_if_fail (E_IS_SHELL (shell), NULL);
+
+	return shell->priv->loaded_backends;
+}
+
+/**
+ * e_shell_get_canonical_name:
+ * @shell: an #EShell
+ * @name: the name or alias of an #EShellBackend
+ *
+ * Returns the canonical name for the #EShellBackend whose name or alias
+ * is @name.
+ *
+ * Returns: the canonical #EShellBackend name
+ **/
+const gchar *
+e_shell_get_canonical_name (EShell *shell,
+                            const gchar *name)
+{
+	EShellBackend *shell_backend;
+
+	g_return_val_if_fail (E_IS_SHELL (shell), NULL);
+
+	/* Handle NULL name arguments silently. */
+	if (name == NULL)
 		return NULL;
-	}
 
-	*construct_result_return = E_SHELL_CONSTRUCT_RESULT_OK;
-	return new;
-}
+	shell_backend = e_shell_get_backend_by_name (shell, name);
 
-static gint
-remove_dir(const gchar *root, const gchar *path)
-{
-	GDir *dir;
-	const gchar *dname;
-	gint res = -1;
-	gchar *new = NULL;
-	struct stat st;
+	if (shell_backend == NULL)
+		return NULL;
 
-	dir = g_dir_open(path, 0, NULL);
-	if (dir == NULL)
-		return -1;
-
-	while ( (dname = g_dir_read_name(dir)) ) {
-		new = g_build_filename(path, dname, NULL);
-		if (g_stat(new, &st) == -1)
-			goto fail;
-
-		/* make sure we're really removing something from evolution dir */
-		g_return_val_if_fail (strlen(path) >= strlen(root)
-			 && strncmp(root, path, strlen(root)) == 0, -1);
-
-		if (S_ISDIR(st.st_mode)) {
-			if (remove_dir(root, new) == -1)
-				goto fail;
-		} else {
-			if (g_unlink(new) == -1)
-				goto fail;
-		}
-		g_free(new);
-		new = NULL;
-	}
-
-	res = g_rmdir(path);
-fail:
-	g_free(new);
-	g_dir_close(dir);
-	return res;
+	return E_SHELL_BACKEND_GET_CLASS (shell_backend)->name;
 }
 
 /**
- * e_shell_attempt_upgrade:
- * @shell:
+ * e_shell_get_backend_by_name:
+ * @shell: an #EShell
+ * @name: the name or alias of an #EShellBackend
  *
- * Upgrade config and components from the currently installed version.
+ * Returns the corresponding #EShellBackend for the given name or alias,
+ * or %NULL if @name is not recognized.
  *
- * Return value: %TRUE If it works.  If it fails the application will exit.
+ * Returns: the #EShellBackend named @name, or %NULL
  **/
-gboolean
-e_shell_attempt_upgrade (EShell *shell)
+EShellBackend *
+e_shell_get_backend_by_name (EShell *shell,
+                             const gchar *name)
 {
-	GConfClient *gconf_client;
-	gint major = 0, minor = 0, revision = 0;
-	gint lmajor, lminor, lrevision;
-	gint cmajor, cminor, crevision;
-	gchar *version_string, *last_version = NULL;
-	gint done_upgrade = FALSE;
-	gchar *oldpath;
-	struct stat st;
-	ESEvent *ese;
+	GHashTable *hash_table;
 
-	gconf_client = gconf_client_get_default();
-
-	oldpath = g_build_filename(g_get_home_dir(), "evolution", NULL);
-
-	g_return_val_if_fail (sscanf(BASE_VERSION, "%u.%u", &cmajor, &cminor) == 2, TRUE);
-	crevision = atoi(UPGRADE_REVISION);
-
-	detect_version (gconf_client, &major, &minor, &revision);
-
-	if (!(cmajor > major
-	      || (cmajor == major && cminor > minor)
-	      || (cminor == minor && crevision > revision)))
-		goto check_old;
-
-	/* if upgrading from < 1.5, we need to copy most data from ~/evolution to ~/.evolution */
-	if (major == 1 && minor < 5) {
-		long size, space;
-
-		size = e_fsutils_usage(oldpath);
-		space = e_fsutils_avail(g_get_home_dir());
-		if (size != -1 && space != -1 && space < size) {
-			gchar *required = g_strdup_printf(_("%ld KB"), size);
-			gchar *have = g_strdup_printf(_("%ld KB"), space);
-
-			e_error_run(NULL, "shell:upgrade-nospace", required, have, NULL);
-			g_free(required);
-			g_free(have);
-			_exit(0);
-		}
-	}
-
-	if (!attempt_upgrade (shell, major, minor, revision))
-		_exit(0);
-
-	/* mark as upgraded */
-	version_string = g_strdup_printf ("%s.%s", BASE_VERSION, UPGRADE_REVISION);
-	gconf_client_set_string (gconf_client, "/apps/evolution/version", version_string, NULL);
-	done_upgrade = TRUE;
-
-check_old:
-	/* if the last upgraded version was old, check for stuff to remove */
-	if (done_upgrade
-	    ||	(last_version = gconf_client_get_string (gconf_client, "/apps/evolution/last_version", NULL)) == NULL
-	    ||  sscanf(last_version, "%d.%d.%d", &lmajor, &lminor, &lrevision) != 3) {
-		lmajor = major;
-		lminor = minor;
-		lrevision = revision;
-	}
-	g_free(last_version);
-
-	if (lmajor == 1 && lminor < 5
-	    && g_stat(oldpath, &st) == 0
-	    && S_ISDIR(st.st_mode)) {
-		gint res;
-
-		last_version = g_strdup_printf("%d.%d.%d", lmajor, lminor, lrevision);
-		res = e_error_run(NULL, "shell:upgrade-remove-1-4", last_version, NULL);
-		g_free(last_version);
-
-		switch (res) {
-		case GTK_RESPONSE_OK: /* 'delete' */
-			if (e_error_run(NULL, "shell:upgrade-remove-1-4-confirm", NULL) == GTK_RESPONSE_OK)
-				remove_dir(oldpath, oldpath);
-			else
-				break;
-			/* falls through */
-		case GTK_RESPONSE_ACCEPT: /* 'keep' */
-			lmajor = cmajor;
-			lminor = cminor;
-			lrevision = crevision;
-			break;
-		default:
-			/* cancel - noop */
-			break;
-		}
-	} else {
-		/* otherwise 'last version' is now the same as current */
-		lmajor = cmajor;
-		lminor = cminor;
-		lrevision = crevision;
-	}
-
-	last_version = g_strdup_printf("%d.%d.%d", lmajor, lminor, lrevision);
-	gconf_client_set_string (gconf_client, "/apps/evolution/last_version", last_version, NULL);
-	g_free(last_version);
-
-	g_free(oldpath);
-	g_object_unref (gconf_client);
-
-	/** @Event: Shell attempted upgrade
-	 * @Id: upgrade.done
-	 * @Target: ESMenuTargetState
-	 *
-	 * This event is emitted whenever the shell successfully attempts an upgrade.
-	 *
-	 */
-	ese = es_event_peek();
-	e_event_emit((EEvent *)ese, "upgrade.done", (EEventTarget *)es_event_target_new_upgrade(ese, cmajor, cminor, crevision));
-
-	return TRUE;
-}
-
-/**
- * e_shell_create_window:
- * @shell: The shell for which to create a new window.
- * @component_id: Id or alias of the component to display in the new window.
- * @template_window: Window from which to copy the window settings (can be %NULL).
- *
- * Create a new window for @uri.
- *
- * Return value: The new window.
- **/
-EShellWindow *
-e_shell_create_window (EShell *shell,
-		       const gchar *component_id,
-		       EShellWindow *template_window)
-{
-	EShellWindow *window;
-
-	/* FIXME need to actually copy settings from template_window.  */
-
-	g_return_val_if_fail (shell != NULL, NULL);
 	g_return_val_if_fail (E_IS_SHELL (shell), NULL);
+	g_return_val_if_fail (name != NULL, NULL);
 
-	window = E_SHELL_WINDOW (e_shell_window_new (shell, component_id));
+	hash_table = shell->priv->backends_by_name;
 
-	g_signal_connect (window, "delete_event", G_CALLBACK (window_delete_event_cb), shell);
-	g_object_weak_ref (G_OBJECT (window), window_weak_notify, shell);
-	shell->priv->windows = g_list_prepend (shell->priv->windows, window);
-
-	g_signal_emit (shell, signals[NEW_WINDOW_CREATED], 0, window);
-
-	gtk_widget_show (GTK_WIDGET (window));
-
-	e_error_default_parent((GtkWindow *)window);
-
-	set_interactive (shell, TRUE);
-
-	if (!session_started) {
-		ESEvent *ese;
-
-		session_started = TRUE;
-		ese = es_event_peek();
-		e_event_emit((EEvent *)ese, "started.done", (EEventTarget *)es_event_target_new_shell(ese, shell));
-	}
-	return window;
+	return g_hash_table_lookup (hash_table, name);
 }
 
-gboolean
-e_shell_request_close_window (EShell *shell,
-			      EShellWindow *shell_window)
-{
-	g_return_val_if_fail (E_IS_SHELL (shell), FALSE);
-	g_return_val_if_fail (E_IS_SHELL_WINDOW (shell_window), FALSE);
-
-	e_shell_save_settings (shell);
-
-	if (g_list_length (shell->priv->windows) != 1) {
-		/* Not the last window.  */
-		return TRUE;
-	}
-
-	return e_shell_quit(shell);
-}
-
-#if 0				/* FIXME */
 /**
- * e_shell_peek_uri_schema_registry:
- * @shell: An EShell object.
+ * e_shell_get_backend_by_scheme:
+ * @shell: an #EShell
+ * @scheme: a URI scheme
  *
- * Get the schema registry associated to @shell.
+ * Returns the #EShellBackend that implements the given URI scheme,
+ * or %NULL if @scheme is not recognized.
  *
- * Return value: A pointer to the EUriSchemaRegistry associated to @shell.
+ * Returns: the #EShellBackend that implements @scheme, or %NULL
  **/
-EUriSchemaRegistry  *
-e_shell_peek_uri_schema_registry (EShell *shell)
+EShellBackend *
+e_shell_get_backend_by_scheme (EShell *shell,
+                               const gchar *scheme)
+{
+	GHashTable *hash_table;
+
+	g_return_val_if_fail (E_IS_SHELL (shell), NULL);
+	g_return_val_if_fail (scheme != NULL, NULL);
+
+	hash_table = shell->priv->backends_by_scheme;
+
+	return g_hash_table_lookup (hash_table, scheme);
+}
+/**
+ * e_shell_get_shell_settings:
+ * @shell: an #EShell
+ *
+ * Returns the #EShellSettings instance for @shell.
+ *
+ * Returns: the #EShellSettings instance for @shell
+ **/
+EShellSettings *
+e_shell_get_shell_settings (EShell *shell)
 {
 	g_return_val_if_fail (E_IS_SHELL (shell), NULL);
 
-	return shell->priv->uri_schema_registry;
+	return shell->priv->settings;
 }
-#endif
 
 /**
- * e_shell_peek_component_registry:
- * @shell:
+ * e_shell_get_gconf_client:
+ * @shell: an #EShell
  *
- * Get the component registry associated to @shell.
+ * Returns the default #GConfClient.  This function is purely for
+ * convenience.  The @shell owns the reference so you don't have to.
  *
- * Return value:
+ * Returns: the default #GConfClient
  **/
-EComponentRegistry *
-e_shell_peek_component_registry (EShell *shell)
+GConfClient *
+e_shell_get_gconf_client (EShell *shell)
 {
 	g_return_val_if_fail (E_IS_SHELL (shell), NULL);
 
-	return shell->priv->component_registry;
+	return shell->priv->gconf_client;
 }
 
 /**
- * e_shell_save_settings:
- * @shell:
+ * e_shell_create_shell_window:
+ * @shell: an #EShell
+ * @view_name: name of the initial shell view, or %NULL
  *
- * Save the settings for this shell.
+ * Creates a new #EShellWindow and emits the #EShell::window-created
+ * signal.  Use this function instead of e_shell_window_new() so that
+ * @shell can track the window.
  *
- * Return value: %TRUE if it worked, %FALSE otherwise.  Even if %FALSE is
- * returned, it is possible that at least part of the settings for the windows
- * have been saved.
+ * Returns: a new #EShellWindow
  **/
-gboolean
-e_shell_save_settings (EShell *shell)
+GtkWidget *
+e_shell_create_shell_window (EShell *shell,
+                             const gchar *view_name)
 {
-	GConfClient *client;
-	gboolean is_offline;
+	GtkWidget *shell_window;
+	UniqueMessageData *data;
+	UniqueApp *app;
 
-	is_offline = ( e_shell_get_line_status (shell) == E_SHELL_LINE_STATUS_OFFLINE );
+	g_return_val_if_fail (E_IS_SHELL (shell), NULL);
 
-	client = gconf_client_get_default ();
-	gconf_client_set_bool (client, "/apps/evolution/shell/start_offline", is_offline, NULL);
-	g_object_unref (client);
+	app = UNIQUE_APP (shell);
 
-	return TRUE;
-}
+	if (unique_app_is_running (app))
+		goto unique;
 
-/**
- * e_shell_close_all_windows:
- * @shell:
- *
- * Destroy all the windows in @shell.
- **/
-void
-e_shell_close_all_windows (EShell *shell)
-{
-	EShellPrivate *priv;
-	GList *p, *pnext;
+	view_name = e_shell_get_canonical_name (shell, view_name);
 
-	g_return_if_fail (shell != NULL);
-	g_return_if_fail (E_IS_SHELL (shell));
+	/* EShellWindow initializes its active view from a GConf key,
+	 * so set the key ahead of time to control the intial view. */
+	if (view_name != NULL) {
+		GConfClient *client;
+		const gchar *key;
+		GError *error = NULL;
 
-	if (shell->priv->windows)
-		e_shell_save_settings (shell);
+		client = e_shell_get_gconf_client (shell);
+		key = "/apps/evolution/shell/view_defaults/component_id";
+		gconf_client_set_string (client, key, view_name, &error);
 
-	priv = shell->priv;
-	for (p = priv->windows; p != NULL; p = pnext) {
-		pnext = p->next;
-
-		/* Note that this will also remove the window from the list... Hence the
-		   need for the pnext variable.  */
-		gtk_widget_destroy (GTK_WIDGET (p->data));
+		if (error != NULL) {
+			g_warning ("%s", error->message);
+			g_error_free (error);
+		}
 	}
-}
 
-/**
- * e_shell_get_line_status:
- * @shell: A pointer to an EShell object.
- *
- * Get the line status for @shell.
- *
- * Return value: The current line status for @shell.
- **/
-EShellLineStatus
-e_shell_get_line_status (EShell *shell)
-{
-	g_return_val_if_fail (shell != NULL, E_SHELL_LINE_STATUS_OFFLINE);
-	g_return_val_if_fail (E_IS_SHELL (shell), E_SHELL_LINE_STATUS_OFFLINE);
+	shell_window = e_shell_window_new (
+		shell,
+		shell->priv->safe_mode,
+		shell->priv->geometry);
 
-	return shell->priv->line_status;
-}
+	/* Clear the first-time-only options. */
+	shell->priv->safe_mode = FALSE;
+	g_free (shell->priv->geometry);
+	shell->priv->geometry = NULL;
 
-/* Offline/online handling.  */
+	gtk_widget_show (shell_window);
 
-static void
-set_line_status_finished(EShell *shell)
-{
-	EShellPrivate *priv = shell->priv;
-	ESEvent *ese;
+	return shell_window;
 
-	priv->line_status = priv->line_status_working;
+unique:  /* Send a message to the other Evolution process. */
 
-	e_passwords_set_online (priv->line_status == E_SHELL_LINE_STATUS_ONLINE);
-	g_signal_emit (shell, signals[LINE_STATUS_CHANGED], 0, priv->line_status);
+	/* XXX Do something with UniqueResponse? */
 
-	/** @Event: Shell online state changed
-	 * @Id: state.changed
-	 * @Target: ESMenuTargetState
-	 *
-	 * This event is emitted whenever the shell online state changes.
-	 *
-	 * Only the online and offline states are emitted.
-	 */
-	ese = es_event_peek();
-	e_event_emit((EEvent *)ese, "state.changed", (EEventTarget *)es_event_target_new_state(ese, priv->line_status == E_SHELL_LINE_STATUS_ONLINE));
-}
-
-static void
-set_line_status_complete(EvolutionListener *el, gpointer data)
-{
-	EShell *shell = data;
-	EShellPrivate *priv = shell->priv;
-
-	if (priv->line_status_pending > 0) {
-		priv->line_status_pending--;
-		if (priv->line_status_pending == 0)
-			set_line_status_finished(shell);
-	}
-}
-
-void
-e_shell_set_line_status (EShell *shell,
-                         GNOME_Evolution_ShellState shell_state)
-{
-	EShellPrivate *priv;
-	GSList *component_infos;
-	GSList *p;
-	CORBA_Environment ev;
-	GConfClient *client;
-	gboolean is_online;
-	gboolean forced = FALSE;
-
-	priv = shell->priv;
-
-	if (shell_state == GNOME_Evolution_FORCED_OFFLINE || shell_state == GNOME_Evolution_USER_OFFLINE) {
-		is_online = FALSE;
-		if (shell_state == GNOME_Evolution_FORCED_OFFLINE)
-			forced = TRUE;
+	if (view_name != NULL) {
+		data = unique_message_data_new ();
+		unique_message_data_set_text (data, view_name, -1);
+		unique_app_send_message (app, UNIQUE_NEW, data);
+		unique_message_data_free (data);
 	} else
-		is_online = TRUE;
+		unique_app_send_message (app, UNIQUE_ACTIVATE, NULL);
 
-	if ((is_online && priv->line_status == E_SHELL_LINE_STATUS_ONLINE)
-	    || (!is_online && priv->line_status == E_SHELL_LINE_STATUS_OFFLINE && !forced))
-		return;
-
-	/* we use 'going offline' to mean 'changing status' now */
-	priv->line_status = E_SHELL_LINE_STATUS_GOING_OFFLINE;
-	g_signal_emit (shell, signals[LINE_STATUS_CHANGED], 0, priv->line_status);
-
-	client = gconf_client_get_default ();
-	if (!forced)
-		gconf_client_set_bool (client, "/apps/evolution/shell/start_offline", !is_online, NULL);
-	g_object_unref (client);
-
-	priv->line_status_working = is_online ? E_SHELL_LINE_STATUS_ONLINE: forced?E_SHELL_LINE_STATUS_FORCED_OFFLINE:E_SHELL_LINE_STATUS_OFFLINE;
-	/* we start at 2: setLineStatus could recursively call back, we therefore
-	   `need to not complete till we're really complete */
-	priv->line_status_pending += 2;
-
-	component_infos = e_component_registry_peek_list (priv->component_registry);
-	for (p = component_infos; p != NULL; p = p->next) {
-		EComponentInfo *info = p->data;
-
-		CORBA_exception_init (&ev);
-
-		GNOME_Evolution_Component_setLineStatus(info->iface, shell_state, bonobo_object_corba_objref((BonoboObject *)priv->line_status_listener), &ev);
-		if (ev._major == CORBA_NO_EXCEPTION)
-			priv->line_status_pending++;
-
-		CORBA_exception_free (&ev);
-	}
-
-	priv->line_status_pending -= 2;
-	if (priv->line_status_pending == 0)
-		set_line_status_finished(shell);
+	return NULL;
 }
 
+/**
+ * e_shell_handle_uris:
+ * @shell: an #EShell
+ * @uris: %NULL-terminated list of URIs
+ * @do_import: request an import of the URIs
+ *
+ * Emits the #EShell::handle-uri signal for each URI.
+ *
+ * Returns: the number of URIs successfully handled
+ **/
+guint
+e_shell_handle_uris (EShell *shell,
+                     gchar **uris,
+                     gboolean do_import)
+{
+	UniqueApp *app;
+	UniqueMessageData *data;
+	guint n_handled = 0;
+	gint ii;
+
+	g_return_val_if_fail (E_IS_SHELL (shell), FALSE);
+	g_return_val_if_fail (uris != NULL, FALSE);
+
+	app = UNIQUE_APP (shell);
+
+	if (unique_app_is_running (app))
+		goto unique;
+
+	if (do_import) {
+		n_handled = e_shell_utils_import_uris (shell, uris);
+	} else {
+		for (ii = 0; uris[ii] != NULL; ii++) {
+			gboolean handled;
+
+			g_signal_emit (
+				shell, signals[HANDLE_URI],
+				0, uris[ii], &handled);
+			n_handled += handled ? 1 : 0;
+		}
+
+		if (n_handled == 0)
+			n_handled = e_shell_utils_import_uris (shell, uris);
+	}
+
+	return n_handled;
+
+unique:  /* Send a message to the other Evolution process. */
+
+	/* XXX Do something with UniqueResponse? */
+
+	data = unique_message_data_new ();
+	if (do_import) {
+		GPtrArray *arr = g_ptr_array_new ();
+
+		g_ptr_array_add (arr, (gpointer)"--import");
+
+		for (ii = 0; uris[ii] != NULL; ii++) {
+			g_ptr_array_add (arr, uris[ii]);
+		}
+
+		g_ptr_array_add (arr, NULL);
+
+		unique_message_data_set_uris (data, (gchar **)arr->pdata);
+
+		g_ptr_array_free (arr, TRUE);
+	} else {
+		unique_message_data_set_uris (data, uris);
+	}
+	unique_app_send_message (app, UNIQUE_OPEN, data);
+	unique_message_data_free (data);
+
+	/* As far as we're concerned, all URIs have been handled. */
+
+	return g_strv_length (uris);
+}
+
+/**
+ * e_shell_watch_window:
+ * @shell: an #EShell
+ * @window: a #GtkWindow
+ *
+ * Makes @shell "watch" a newly created toplevel window, and emits the
+ * #EShell::window-created signal.  All #EShellWindow<!-- -->s should be
+ * watched, along with any editor or viewer windows that may be shown in
+ * response to e_shell_handle_uris().  When the last watched window is
+ * closed, Evolution terminates.
+ **/
+void
+e_shell_watch_window (EShell *shell,
+                      GtkWindow *window)
+{
+	GList *list;
+	gchar *role;
+
+	g_return_if_fail (E_IS_SHELL (shell));
+	g_return_if_fail (GTK_IS_WINDOW (window));
+
+	list = shell->priv->watched_windows;
+
+	/* Ignore duplicates. */
+	if (g_list_find (list, window) != NULL)
+		return;
+
+	list = g_list_prepend (list, window);
+	shell->priv->watched_windows = list;
+
+	unique_app_watch_window (UNIQUE_APP (shell), window);
+
+	/* We use the window's own type name and memory
+	 * address to form a unique window role for X11. */
+	role = g_strdup_printf (
+		"%s-%" G_GINTPTR_FORMAT,
+		G_OBJECT_TYPE_NAME (window),
+		(gintptr) window);
+	gtk_window_set_role (window, role);
+	g_free (role);
+
+	g_signal_connect_swapped (
+		window, "delete-event",
+		G_CALLBACK (shell_window_delete_event_cb), shell);
+
+	g_signal_connect_swapped (
+		window, "focus-in-event",
+		G_CALLBACK (shell_window_focus_in_event_cb), shell);
+
+	g_object_weak_ref (
+		G_OBJECT (window), (GWeakNotify)
+		shell_window_weak_notify_cb, shell);
+
+	g_signal_emit (shell, signals[WINDOW_CREATED], 0, window);
+}
+
+/**
+ * e_shell_get_watched_windows:
+ * @shell: an #EShell
+ *
+ * Returns a list of windows being watched by @shell.  The list is sorted
+ * by the most recently focused window, such that the first instance is the
+ * currently focused window.  (Useful for choosing a parent for a transient
+ * window.)  The list is owned by @shell and should not be modified or freed.
+ *
+ * Returns: a list of watched windows
+ **/
+GList *
+e_shell_get_watched_windows (EShell *shell)
+{
+	g_return_val_if_fail (E_IS_SHELL (shell), NULL);
+
+	return shell->priv->watched_windows;
+}
+
+/**
+ * e_shell_get_active_window:
+ * @shell: an #EShell or %NULL to use the default shell
+ *
+ * Returns the most recently focused watched window, according to
+ * e_shell_get_watched_windows().  Convenient for finding a parent
+ * for a transient window.
+ *
+ * Note the returned window is not necessarily an #EShellWindow.
+ *
+ * Returns: the most recently focused watched window
+ **/
+GtkWindow *
+e_shell_get_active_window (EShell *shell)
+{
+	GList *watched_windows;
+
+	if (shell == NULL)
+		shell = e_shell_get_default ();
+
+	g_return_val_if_fail (E_IS_SHELL (shell), NULL);
+
+	watched_windows = e_shell_get_watched_windows (shell);
+
+	if (!watched_windows)
+		return NULL;
+
+	/* Sanity check */
+	g_return_val_if_fail (GTK_IS_WINDOW (watched_windows->data), NULL);
+
+	return GTK_WINDOW (watched_windows->data);
+}
+
+/**
+ * e_shell_send_receive:
+ * @shell: an #EShell
+ * @parent: the parent #GtkWindow
+ *
+ * Emits the #EShell::send-receive signal.
+ **/
+void
+e_shell_send_receive (EShell *shell,
+                      GtkWindow *parent)
+{
+	g_return_if_fail (E_IS_SHELL (shell));
+	g_return_if_fail (GTK_IS_WINDOW (parent));
+
+	g_signal_emit (shell, signals[SEND_RECEIVE], 0, parent);
+}
+
+/**
+ * e_shell_get_express_mode:
+ * @shell: an #EShell
+ *
+ * Returns %TRUE if Evolution is in express mode.
+ *
+ * Returns: %TRUE if Evolution is in express mode
+ **/
 gboolean
-e_shell_get_crash_recovery (EShell *shell)
+e_shell_get_express_mode (EShell *shell)
 {
 	g_return_val_if_fail (E_IS_SHELL (shell), FALSE);
 
-	return shell->priv->crash_recovery;
+	return shell->priv->express_mode;
 }
 
+/**
+ * e_shell_get_meego_mode:
+ * @shell: an #EShell
+ *
+ * Returns %TRUE if Evolution is in MeeGo mode.
+ *
+ * Returns: %TRUE if Evolution is in MeeGo mode
+ **/
+gboolean
+e_shell_get_meego_mode (EShell *shell)
+{
+	g_return_val_if_fail (E_IS_SHELL (shell), FALSE);
+
+	return shell->priv->meego_mode;
+}
+
+/**
+ * e_shell_get_small_screen_mode:
+ * @shell: an #EShell
+ *
+ * Returns %TRUE if Evolution is in small (netbook) screen mode.
+ *
+ * Returns: %TRUE if Evolution is in small screen mode
+ **/
+gboolean
+e_shell_get_small_screen_mode (EShell *shell)
+{
+	g_return_val_if_fail (E_IS_SHELL (shell), FALSE);
+
+	return shell->priv->small_screen_mode;
+}
+
+/**
+ * e_shell_get_module_directory:
+ * @shell: an #EShell
+ *
+ * Returns the directory from which #EModule<!-- -->s were loaded.
+ *
+ * Returns: the #EModule directory
+ **/
+const gchar *
+e_shell_get_module_directory (EShell *shell)
+{
+	g_return_val_if_fail (E_IS_SHELL (shell), NULL);
+
+	return shell->priv->module_directory;
+}
+
+/**
+ * e_shell_get_network_available:
+ * @shell: an #EShell
+ *
+ * Returns %TRUE if a network is available.
+ *
+ * Returns: %TRUE if a network is available
+ **/
+gboolean
+e_shell_get_network_available (EShell *shell)
+{
+	g_return_val_if_fail (E_IS_SHELL (shell), FALSE);
+
+	return shell->priv->network_available;
+}
+
+/**
+ * e_shell_set_network_available:
+ * @shell: an #EShell
+ * @network_available: whether a network is available
+ *
+ * Sets whether a network is available.  This is usually called in
+ * response to a status change signal from NetworkManager.  If the
+ * network becomes unavailable while #EShell:online is %TRUE, the
+ * @shell will force #EShell:online to %FALSE until the network
+ * becomes available again.
+ **/
 void
-e_shell_set_crash_recovery (EShell *shell,
-                            gboolean crash_recovery)
+e_shell_set_network_available (EShell *shell,
+                               gboolean network_available)
 {
 	g_return_if_fail (E_IS_SHELL (shell));
 
-	shell->priv->crash_recovery = crash_recovery;
-}
-
-void
-e_shell_send_receive (EShell *shell)
-{
-	GSList *component_list;
-	GSList *p;
-
-	g_return_if_fail (E_IS_SHELL (shell));
-
-	component_list = e_component_registry_peek_list (shell->priv->component_registry);
-
-	for (p = component_list; p != NULL; p = p->next) {
-		EComponentInfo *info = p->data;
-		CORBA_Environment ev;
-
-		CORBA_exception_init (&ev);
-
-		GNOME_Evolution_Component_sendAndReceive (info->iface, &ev);
-
-		/* Ignore errors, the components can decide to not implement
-		   this interface. */
-
-		CORBA_exception_free (&ev);
-	}
-}
-
-void
-e_shell_show_settings (EShell *shell,
-		       const gchar *type,
-		       EShellWindow *shell_window)
-{
-	EShellPrivate *priv;
-
-	g_return_if_fail (shell != NULL);
-	g_return_if_fail (E_IS_SHELL (shell));
-
-	priv = shell->priv;
-
-	if (priv->settings_dialog.widget != NULL) {
-		gdk_window_show (priv->settings_dialog.widget->window);
-		gtk_widget_grab_focus (priv->settings_dialog.widget);
+	if (network_available == shell->priv->network_available)
 		return;
+
+	shell->priv->network_available = network_available;
+	g_object_notify (G_OBJECT (shell), "network-available");
+
+	/* If we're being forced offline, perhaps due to a network outage,
+	 * reconnect automatically when the network becomes available. */
+	if (!network_available && shell->priv->online) {
+		g_message ("Network disconnected.  Forced offline.");
+		e_shell_set_online (shell, FALSE);
+		shell->priv->auto_reconnect = TRUE;
+	} else if (network_available && shell->priv->auto_reconnect) {
+		g_message ("Connection established.  Going online.");
+		e_shell_set_online (shell, TRUE);
+		shell->priv->auto_reconnect = FALSE;
 	}
+}
 
-	priv->settings_dialog.widget = e_shell_settings_dialog_new ();
+/**
+ * e_shell_get_online:
+ * @shell: an #EShell
+ *
+ * Returns %TRUE if Evolution is online, %FALSE if Evolution is offline.
+ * Evolution may be offline because the user elected to work offline, or
+ * because the network has become unavailable.
+ *
+ * Returns: %TRUE if Evolution is online
+ **/
+gboolean
+e_shell_get_online (EShell *shell)
+{
+	g_return_val_if_fail (E_IS_SHELL (shell), FALSE);
 
-	if (type != NULL)
-		e_shell_settings_dialog_show_type (E_SHELL_SETTINGS_DIALOG (priv->settings_dialog.widget), type);
+	return shell->priv->online;
+}
 
-	g_object_add_weak_pointer (G_OBJECT (priv->settings_dialog.widget), &priv->settings_dialog.pointer);
+/**
+ * e_shell_set_online:
+ * @shell: an #EShell
+ * @online: %TRUE to go online, %FALSE to go offline
+ *
+ * Asynchronously places Evolution in online or offline mode.
+ **/
+void
+e_shell_set_online (EShell *shell,
+                    gboolean online)
+{
+	g_return_if_fail (E_IS_SHELL (shell));
 
-	gtk_window_set_transient_for (GTK_WINDOW (priv->settings_dialog.widget), GTK_WINDOW (shell_window));
-	gtk_widget_show (priv->settings_dialog.widget);
+	if (online == shell->priv->online)
+		return;
+
+	if (online)
+		shell_prepare_for_online (shell);
+	else
+		shell_prepare_for_offline (shell);
+}
+
+/**
+ * e_shell_get_preferences_window:
+ * @shell: an #EShell
+ *
+ * Returns the Evolution Preferences window.
+ *
+ * Returns: the preferences window
+ **/
+GtkWidget *
+e_shell_get_preferences_window (EShell *shell)
+{
+	g_return_val_if_fail (E_IS_SHELL (shell), NULL);
+
+	return shell->priv->preferences_window;
+}
+
+/**
+ * e_shell_event:
+ * @shell: an #EShell
+ * @event_name: the name of the event
+ * @event_data: data associated with the event
+ *
+ * The #EShell::event signal acts as a cheap mechanism for broadcasting
+ * events to the rest of the application, such as new mail arriving.  The
+ * @event_name is used as the signal detail, and @event_data may point to
+ * an object or data structure associated with the event.
+ **/
+void
+e_shell_event (EShell *shell,
+               const gchar *event_name,
+               gpointer event_data)
+{
+	GQuark detail;
+
+	g_return_if_fail (E_IS_SHELL (shell));
+	g_return_if_fail (event_name != NULL);
+
+	detail = g_quark_from_string (event_name);
+	g_signal_emit (shell, signals[EVENT], detail, event_data);
+}
+
+/**
+ * e_shell_quit:
+ * @shell: an #EShell
+ * @reason: the reason for quitting
+ *
+ * Requests an application shutdown.  This happens in two phases: the
+ * first is synchronous, the second is asynchronous.
+ *
+ * In the first phase, the @shell emits a #EShell::quit-requested signal
+ * to potentially give the user a chance to cancel shutdown.  If the user
+ * cancels shutdown, the function returns %FALSE.  Otherwise it proceeds
+ * into the second phase.
+ *
+ * In the second phase, the @shell emits a #EShell::prepare-for-quit
+ * signal and immediately returns %TRUE.  Signal handlers may delay the
+ * actual application shutdown while they clean up resources, but there
+ * is no way to cancel shutdown at this point.
+ *
+ * Consult the documentation for these two signals for details on how
+ * to handle them.
+ *
+ * Returns: %TRUE if shutdown is underway, %FALSE if it was cancelled
+ **/
+gboolean
+e_shell_quit (EShell *shell,
+              EShellQuitReason reason)
+{
+	UniqueApp *app;
+	UniqueResponse response;
+
+	g_return_val_if_fail (E_IS_SHELL (shell), FALSE);
+
+	app = UNIQUE_APP (shell);
+
+	if (unique_app_is_running (app))
+		goto unique;
+
+	if (!shell_request_quit (shell, reason))
+		return FALSE;
+
+	shell_prepare_for_quit (shell);
+
+	return TRUE;
+
+unique:  /* Send a message to the other Evolution process. */
+
+	response = unique_app_send_message (app, UNIQUE_CLOSE, NULL);
+
+	return (response == UNIQUE_RESPONSE_OK);
+}
+
+/**
+ * e_shell_cancel_quit:
+ * @shell: an #EShell
+ *
+ * This function may only be called from #EShell::quit-requested signal
+ * handlers to prevent Evolution from quitting.  Calling this will stop
+ * further emission of the #EShell::quit-requested signal.
+ *
+ * Note: This function has no effect during a #EShell::prepare-for-quit
+ * signal emission.
+ **/
+void
+e_shell_cancel_quit (EShell *shell)
+{
+	g_return_if_fail (E_IS_SHELL (shell));
+
+	shell->priv->quit_cancelled = TRUE;
+
+	g_signal_stop_emission (shell, signals[QUIT_REQUESTED], 0);
+}
+
+/**
+ * e_shell_adapt_window_size:
+ * @shell: an #EShell
+ * @window: a #GtkWindow to adapt to full-screen
+ *
+ * This is used to adapt to window's size to be optimal for
+ * the platform. The shell settings are used to determine if
+ * a window should be set to full screen etc.
+ *
+ * This method is best called when the widget is realized on
+ * a given screen.
+ **/
+void
+e_shell_adapt_window_size (EShell *shell,
+                           GtkWindow *window)
+{
+	GdkScreen *screen;
+	GdkRectangle rect;
+	GdkWindow *gdk_window;
+	gint monitor;
+
+	if (!e_shell_get_meego_mode (shell) ||
+	    !e_shell_get_small_screen_mode (shell))
+		return;
+
+	screen = gdk_screen_get_default ();
+	gdk_window = gtk_widget_get_window (GTK_WIDGET (window));
+	monitor = gdk_screen_get_monitor_at_window (screen, gdk_window);
+	gdk_screen_get_monitor_geometry (screen, monitor, &rect);
+
+	gtk_window_set_default_size (window, rect.width, rect.height);
+	gtk_window_set_decorated (window, FALSE);
+	gtk_window_maximize (window);
+}
+
+void
+e_shell_set_startup_view (EShell *shell,
+                          const gchar *view)
+{
+	g_return_if_fail (E_IS_SHELL (shell));
+
+	shell->priv->startup_view = g_strdup (view);
 }
 
 const gchar *
-e_shell_construct_result_to_string (EShellConstructResult result)
+e_shell_get_startup_view (EShell *shell)
 {
-	switch (result) {
-	case E_SHELL_CONSTRUCT_RESULT_OK:
-		return _("OK");
-	case E_SHELL_CONSTRUCT_RESULT_INVALIDARG:
-		return _("Invalid arguments");
-	case E_SHELL_CONSTRUCT_RESULT_CANNOTREGISTER:
-		return _("Cannot register on OAF");
-	case E_SHELL_CONSTRUCT_RESULT_NOCONFIGDB:
-		return _("Configuration Database not found");
-	case E_SHELL_CONSTRUCT_RESULT_GENERICERROR:
-		return _("Generic error");
-	default:
-		return _("Unknown error");
-	}
+	g_return_val_if_fail (E_IS_SHELL (shell), NULL);
+
+	return shell->priv->startup_view;
 }
-
-/* timeout handler, so returns TRUE if we can't quit yet */
-static gboolean
-es_run_quit(EShell *shell)
-{
-	EShellPrivate *priv;
-	GSList *component_infos;
-	GSList *sp;
-	CORBA_boolean done_quit;
-
-	g_return_val_if_fail (E_IS_SHELL (shell), FALSE);
-
-	priv = shell->priv;
-	priv->preparing_to_quit = TRUE;
-
-	component_infos = e_component_registry_peek_list (priv->component_registry);
-	done_quit = TRUE;
-	for (sp = component_infos; sp != NULL; sp = sp->next) {
-		EComponentInfo *info = sp->data;
-		CORBA_Environment ev;
-
-		CORBA_exception_init (&ev);
-
-		done_quit = GNOME_Evolution_Component_quit(info->iface, &ev);
-		if (BONOBO_EX (&ev)) {
-			/* The component might not implement the interface, in which case we assume we can quit. */
-			done_quit = TRUE;
-		}
-
-		CORBA_exception_free (&ev);
-
-		if (!done_quit)
-			break;
-	}
-
-	if (done_quit) {
-		if  (priv->quit_timeout) {
-			g_source_remove(priv->quit_timeout);
-			priv->quit_timeout = 0;
-		}
-		e_shell_close_all_windows(shell);
-	} else if (priv->quit_timeout == 0) {
-		priv->quit_timeout = g_timeout_add(500, (GSourceFunc)es_run_quit, shell);
-	}
-
-	return !done_quit;
-}
-
-gboolean
-e_shell_can_quit (EShell *shell)
-{
-	EShellPrivate *priv;
-	GSList *component_infos;
-	GSList *sp;
-	CORBA_boolean can_quit;
-
-	g_return_val_if_fail (E_IS_SHELL (shell), FALSE);
-
-	priv = shell->priv;
-
-	if (priv->preparing_to_quit)
-		return FALSE;
-
-	component_infos = e_component_registry_peek_list (priv->component_registry);
-	can_quit = TRUE;
-	for (sp = component_infos; sp != NULL; sp = sp->next) {
-		EComponentInfo *info = sp->data;
-		CORBA_Environment ev;
-
-		CORBA_exception_init (&ev);
-
-		can_quit = GNOME_Evolution_Component_requestQuit (info->iface, &ev);
-		if (BONOBO_EX (&ev)) {
-			/* The component might not implement the interface, in which case we assume we can quit. */
-			can_quit = TRUE;
-		}
-
-		CORBA_exception_free (&ev);
-
-		if (! can_quit)
-			break;
-	}
-
-	return can_quit;
-}
-
-gboolean
-e_shell_do_quit (EShell *shell)
-{
-	EShellPrivate *priv;
-	GList *p;
-	gboolean can_quit;
-
-	g_return_val_if_fail (E_IS_SHELL (shell), FALSE);
-
-	priv = shell->priv;
-
-	if (priv->preparing_to_quit)
-		return FALSE;
-
-	for (p = shell->priv->windows; p != NULL; p = p->next) {
-		gtk_widget_set_sensitive (GTK_WIDGET (p->data), FALSE);
-
-		if (p == shell->priv->windows)
-			e_shell_window_save_defaults (p->data);
-	}
-
-	can_quit = !es_run_quit (shell);
-
-	/* Mark a safe quit by destroying the lock. */
-	e_file_lock_destroy ();
-
-	return can_quit;
-}
-
-gboolean
-e_shell_quit (EShell *shell)
-{
-	return e_shell_can_quit (shell) && e_shell_do_quit (shell);
-}
-
-/**
- * gboolean (*EMainShellFunc) (EShell *shell, EShellWindow *window, gpointer user_data);
- * Function used in @ref e_shell_foreach_shell_window.
- * @param shell Pointer to EShell.
- * @param window Pointer to EShellWindow.
- * @param user_data User's data passed to @ref main_shell_foreach_shell_window.
- * @return TRUE if need to go to next window, FALSE when stop looking for next window.
- **/
-
-/**
- * e_shell_foreach_shell_window
- * This will call function callback for all known EShellWindow of main shell.
- * When there is no shell active, then this will do nothing.
- * @param shell EShell instance.
- * @param func Function to be called.
- * @param user_data User data to pass to func.
- **/
-void
-e_shell_foreach_shell_window (EShell *shell, EMainShellFunc func, gpointer user_data)
-{
-	EShellPrivate *priv;
-	GList *p;
-
-	if (!shell)
-		return;
-
-	priv = shell->priv;
-
-	for (p = priv->windows; p != NULL; p = p->next) {
-		EShellWindow *window;
-
-		window = E_SHELL_WINDOW (p->data);
-
-		if (window && !func (shell, window, user_data))
-			break;
-	}
-}
-
-BONOBO_TYPE_FUNC_FULL (EShell, GNOME_Evolution_Shell, PARENT_TYPE, e_shell)

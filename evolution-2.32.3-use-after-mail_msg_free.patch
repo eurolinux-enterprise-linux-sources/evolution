@@ -1,0 +1,11 @@
+diff -up evolution-2.32.3/mail/mail-mt.c.use-after-mail_msg_free evolution-2.32.3/mail/mail-mt.c
+--- evolution-2.32.3/mail/mail-mt.c.use-after-mail_msg_free	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/mail/mail-mt.c	2013-06-10 14:01:27.614678242 +0200
+@@ -931,7 +931,6 @@ op_status_exec (struct _op_status_msg *m
+ 				activity = g_object_ref (data->activity);
+ 
+ 				g_mutex_unlock (mail_msg_lock);
+-				mail_msg_free (msg);
+ 
+ 				if (activity != 0)
+ 					mail_async_event_emit (

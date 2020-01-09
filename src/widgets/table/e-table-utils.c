@@ -27,15 +27,18 @@
 #include <string.h>
 
 #include "e-util/e-util.h"
-#include "misc/e-unicode.h"
+#include "e-util/e-unicode.h"
 
 #include "e-table-utils.h"
 #include "e-table-header-utils.h"
 
 ETableHeader *
-e_table_state_to_header (GtkWidget *widget, ETableHeader *full_header, ETableState *state)
+e_table_state_to_header (GtkWidget *widget,
+                         ETableHeader *full_header,
+                         ETableState *state)
 {
 	ETableHeader *nh;
+	GtkStyle *style;
 	const gint max_cols = e_table_header_count (full_header);
 	gint column;
 	GValue *val = g_new0 (GValue, 1);
@@ -44,15 +47,17 @@ e_table_state_to_header (GtkWidget *widget, ETableHeader *full_header, ETableSta
 	g_return_val_if_fail (full_header, NULL);
 	g_return_val_if_fail (state, NULL);
 
+	style = gtk_widget_get_style (widget);
+
 	nh = e_table_header_new ();
 	g_value_init (val, G_TYPE_DOUBLE);
-	g_value_set_double (val, e_table_header_width_extras (widget->style));
+	g_value_set_double (val, e_table_header_width_extras (style));
 	g_object_set_property (G_OBJECT(nh), "width_extras", val);
 	g_free (val);
 
 	for (column = 0; column < state->col_count; column++) {
 		gint col;
-		double expansion;
+		gdouble expansion;
 		ETableCol *table_col;
 
 		col = state->columns[column];
@@ -79,15 +84,15 @@ et_col_spec_to_col (ETableColumnSpecification *col_spec,
 {
 	ETableCol *col = NULL;
 	ECell *cell = NULL;
-	GCompareFunc compare = NULL;
+	GCompareDataFunc compare = NULL;
 	ETableSearchFunc search = NULL;
 
 	if (col_spec->cell)
-		cell = e_table_extras_get_cell(ete, col_spec->cell);
+		cell = e_table_extras_get_cell (ete, col_spec->cell);
 	if (col_spec->compare)
-		compare = e_table_extras_get_compare(ete, col_spec->compare);
+		compare = e_table_extras_get_compare (ete, col_spec->compare);
 	if (col_spec->search)
-		search = e_table_extras_get_search(ete, col_spec->search);
+		search = e_table_extras_get_search (ete, col_spec->search);
 
 	if (cell && compare) {
 		gchar *title = dgettext (domain, col_spec->title);
@@ -95,24 +100,34 @@ et_col_spec_to_col (ETableColumnSpecification *col_spec,
 		title = g_strdup (title);
 
 		if (col_spec->pixbuf && *col_spec->pixbuf) {
-			GdkPixbuf *pixbuf;
+			const gchar *icon_name;
 
-			pixbuf = e_table_extras_get_pixbuf(
+			icon_name = e_table_extras_get_icon_name (
 				ete, col_spec->pixbuf);
-			if (pixbuf) {
-				col = e_table_col_new_with_pixbuf (
-					col_spec->model_col, title,
-					pixbuf, col_spec->expansion,
+			if (icon_name != NULL) {
+				col = e_table_col_new (
+					col_spec->model_col,
+					title, icon_name,
+					col_spec->expansion,
 					col_spec->minimum_width,
-					cell, compare, col_spec->resizable, col_spec->disabled, col_spec->priority);
+					cell, compare,
+					col_spec->resizable,
+					col_spec->disabled,
+					col_spec->priority);
 			}
 		}
+
 		if (col == NULL && col_spec->title && *col_spec->title) {
 			col = e_table_col_new (
-				col_spec->model_col, title,
-				col_spec->expansion, col_spec->minimum_width,
-				cell, compare, col_spec->resizable, col_spec->disabled, col_spec->priority);
+				col_spec->model_col, title, NULL,
+				col_spec->expansion,
+				col_spec->minimum_width,
+				cell, compare,
+				col_spec->resizable,
+				col_spec->disabled,
+				col_spec->priority);
 		}
+
 		col->search = search;
 		if (col_spec->sortable && !strcmp(col_spec->sortable, "false"))
 			col->sortable = FALSE;
@@ -159,14 +174,17 @@ check_col (ETableCol *col, gpointer user_data)
 }
 
 ETableCol *
-e_table_util_calculate_current_search_col (ETableHeader *header, ETableHeader *full_header, ETableSortInfo *sort_info, gboolean always_search)
+e_table_util_calculate_current_search_col (ETableHeader *header,
+                                           ETableHeader *full_header,
+                                           ETableSortInfo *sort_info,
+                                           gboolean always_search)
 {
 	gint i;
 	gint count;
 	ETableCol *col = NULL;
 	count = e_table_sort_info_grouping_get_count (sort_info);
 	for (i = 0; i < count; i++) {
-		ETableSortColumn column = e_table_sort_info_grouping_get_nth(sort_info, i);
+		ETableSortColumn column = e_table_sort_info_grouping_get_nth (sort_info, i);
 
 		col = e_table_header_get_column (full_header, column.column);
 
@@ -179,7 +197,7 @@ e_table_util_calculate_current_search_col (ETableHeader *header, ETableHeader *f
 	if (col == NULL) {
 		count = e_table_sort_info_sorting_get_count (sort_info);
 		for (i = 0; i < count; i++) {
-			ETableSortColumn column = e_table_sort_info_sorting_get_nth(sort_info, i);
+			ETableSortColumn column = e_table_sort_info_sorting_get_nth (sort_info, i);
 
 			col = e_table_header_get_column (full_header, column.column);
 

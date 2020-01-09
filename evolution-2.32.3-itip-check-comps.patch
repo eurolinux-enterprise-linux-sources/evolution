@@ -1,0 +1,30 @@
+diff -up evolution-2.32.3/calendar/gui/itip-utils.c.itip-check-comps evolution-2.32.3/calendar/gui/itip-utils.c
+--- evolution-2.32.3/calendar/gui/itip-utils.c.itip-check-comps	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/itip-utils.c	2013-09-30 07:51:13.589464009 +0200
+@@ -1817,8 +1817,22 @@ check_time (const struct icaltimetype tm
+ gboolean
+ is_icalcomp_valid (icalcomponent *icalcomp)
+ {
+-	return  icalcomp &&
+-		icalcomponent_is_valid (icalcomp) &&
+-		check_time (icalcomponent_get_dtstart (icalcomp), FALSE) &&
+-		check_time (icalcomponent_get_dtend (icalcomp), TRUE);
++	if (!icalcomp || !icalcomponent_is_valid (icalcomp))
++		return FALSE;
++
++	switch (icalcomponent_isa (icalcomp)) {
++	case ICAL_VEVENT_COMPONENT:
++		return	check_time (icalcomponent_get_dtstart (icalcomp), FALSE) &&
++			check_time (icalcomponent_get_dtend (icalcomp), TRUE);
++	case ICAL_VTODO_COMPONENT:
++		return	check_time (icalcomponent_get_dtstart (icalcomp), TRUE) &&
++			check_time (icalcomponent_get_due (icalcomp), TRUE);
++	case ICAL_VJOURNAL_COMPONENT:
++		return	check_time (icalcomponent_get_dtstart (icalcomp), TRUE) &&
++			check_time (icalcomponent_get_dtend (icalcomp), TRUE);
++	default:
++		break;
++	}
++
++	return TRUE;
+ }

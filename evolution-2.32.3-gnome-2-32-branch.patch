@@ -1,0 +1,107 @@
+Set of post 2.32.3 release bug fixes from gnome-2-32 branch
+
+commit 0574cabf14196a8cd7bf7cf7e69e61c5f344f779
+    Bug 619782 - Characters override in contact editor express mode
+
+commit f782c2c2a25d930983731ac11cda030a3d5fa9f6
+    Bug 653036 - CAL_STATIC_CAPABILITY_SAVE_SCHEDULES misbehaving
+
+diff --git a/addressbook/gui/contact-editor/contact-editor.ui b/addressbook/gui/contact-editor/contact-editor.ui
+index 88c90c1..41c6ac7 100644
+--- a/addressbook/gui/contact-editor/contact-editor.ui
++++ b/addressbook/gui/contact-editor/contact-editor.ui
+@@ -1583,7 +1583,6 @@
+                                 <property name="right_padding">10</property>
+                                 <child>
+                                   <object class="GtkHBox" id="hbox59">
+-                                    <property name="height_request">50</property>
+                                     <property name="visible">True</property>
+                                     <child>
+                                       <object class="GtkTable" id="table-home-address">
+@@ -1826,7 +1825,6 @@
+                                 <property name="right_padding">10</property>
+                                 <child>
+                                   <object class="GtkHBox" id="hbox98">
+-                                    <property name="height_request">50</property>
+                                     <property name="visible">True</property>
+                                     <child>
+                                       <object class="GtkTable" id="table-work-address">
+@@ -2068,7 +2066,6 @@
+                                 <property name="right_padding">10</property>
+                                 <child>
+                                   <object class="GtkHBox" id="hbox103">
+-                                    <property name="height_request">50</property>
+                                     <property name="visible">True</property>
+                                     <child>
+                                       <object class="GtkTable" id="table-other-address">
+diff --git a/plugins/itip-formatter/itip-formatter.c b/plugins/itip-formatter/itip-formatter.c
+index f46debf..07c2315 100644
+--- a/plugins/itip-formatter/itip-formatter.c
++++ b/plugins/itip-formatter/itip-formatter.c
+@@ -605,6 +605,29 @@ source_selected_cb (ItipView *view, ESource *source, gpointer data)
+ }
+ 
+ static void
++set_rsvp (struct _itip_puri *pitip, ECal *ecal)
++{
++	gboolean rsvp_enabled = FALSE;
++
++	/*
++	 * Only allow replies if backend doesn't do that automatically.
++	 * Only enable it for forwarded invitiations (PUBLISH) or direct
++	 * invitiations (REQUEST), but not replies (REPLY).
++	 * Replies only make sense for events with an organizer.
++	 */
++	if (!e_cal_get_static_capability (ecal, CAL_STATIC_CAPABILITY_SAVE_SCHEDULES) &&
++			(pitip->method == ICAL_METHOD_PUBLISH || pitip->method ==  ICAL_METHOD_REQUEST) &&
++			pitip->has_organizer) {
++		rsvp_enabled = TRUE;
++	}
++
++	itip_view_set_show_rsvp (ITIP_VIEW (pitip->view), rsvp_enabled);
++
++	/* default is chosen in extract_itip_data() based on content of the VEVENT */
++	itip_view_set_rsvp (ITIP_VIEW (pitip->view), !pitip->no_reply_wanted);
++}
++
++static void
+ find_cal_opened_cb (ECal *ecal, const GError *error, gpointer data)
+ {
+ 	FormatItipFindData *fd = data;
+@@ -707,32 +730,20 @@ find_cal_opened_cb (ECal *ecal, const GError *error, gpointer data)
+ 
+ 			itip_view_set_mode (ITIP_VIEW (pitip->view), ITIP_VIEW_MODE_PUBLISH);
+ 		}
++		
++		set_rsvp (pitip, pitip->current_ecal);
+ 	}
+ 
+  cleanup:
+ 	d(printf ("Decreasing itip formatter search count to %d\n", fd->count));
+ 
+ 	if (fd->count == 0) {
+-		gboolean rsvp_enabled = FALSE;
+ 
+ 		itip_view_remove_lower_info_item (ITIP_VIEW (pitip->view), pitip->progress_info_id);
+ 		pitip->progress_info_id = 0;
+ 
+-		/*
+-		 * Only allow replies if backend doesn't do that automatically.
+-                 * Only enable it for forwarded invitiations (PUBLISH) or direct
+-                 * invitiations (REQUEST), but not replies (REPLY).
+-		 * Replies only make sense for events with an organizer.
+-		 */
+-		if (!e_cal_get_static_capability (ecal, CAL_STATIC_CAPABILITY_SAVE_SCHEDULES) &&
+-                    (pitip->method == ICAL_METHOD_PUBLISH || pitip->method ==  ICAL_METHOD_REQUEST) &&
+-		    pitip->has_organizer) {
+-			rsvp_enabled = TRUE;
+-		}
+-		itip_view_set_show_rsvp (ITIP_VIEW (pitip->view), rsvp_enabled);
+-
+-		/* default is chosen in extract_itip_data() based on content of the VEVENT */
+-		itip_view_set_rsvp (ITIP_VIEW (pitip->view), !pitip->no_reply_wanted);
++		if (!pitip->current_ecal)
++			set_rsvp (pitip, ecal);
+ 
+ 		if ((pitip->method == ICAL_METHOD_PUBLISH || pitip->method ==  ICAL_METHOD_REQUEST)
+ 		    && !pitip->current_ecal) {

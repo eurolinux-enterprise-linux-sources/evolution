@@ -41,13 +41,17 @@ struct _CalendarViewFactoryPrivate {
 
 
 
-static void calendar_view_factory_finalize (GObject *object);
+static void	calendar_view_factory_finalize	(GObject *object);
+static const gchar *
+		calendar_view_factory_get_title	(GalViewFactory *factory);
+static const gchar *
+		calendar_view_factory_get_type_code
+						(GalViewFactory *factory);
+static GalView *
+		calendar_view_factory_new_view	(GalViewFactory *factory,
+						 const gchar *name);
 
-static const gchar *calendar_view_factory_get_title (GalViewFactory *factory);
-static const gchar *calendar_view_factory_get_type_code (GalViewFactory *factory);
-static GalView *calendar_view_factory_new_view (GalViewFactory *factory, const gchar *name);
-
-G_DEFINE_TYPE (CalendarViewFactory, calendar_view_factory, GAL_VIEW_FACTORY_TYPE)
+G_DEFINE_TYPE (CalendarViewFactory, calendar_view_factory, GAL_TYPE_VIEW_FACTORY)
 
 /* Class initialization function for the calendar view factory */
 static void
@@ -181,7 +185,7 @@ calendar_view_factory_new_view (GalViewFactory *factory, const gchar *name)
  *
  * Return value: The same value as @cal_view_factory.
  **/
-CalendarViewFactory *
+GalViewFactory *
 calendar_view_factory_construct (CalendarViewFactory *cal_view_factory,
 				 GnomeCalendarViewType view_type)
 {
@@ -194,7 +198,7 @@ calendar_view_factory_construct (CalendarViewFactory *cal_view_factory,
 
 	priv->view_type = view_type;
 
-	return cal_view_factory;
+	return GAL_VIEW_FACTORY (cal_view_factory);
 }
 
 /**
@@ -205,7 +209,7 @@ calendar_view_factory_construct (CalendarViewFactory *cal_view_factory,
  *
  * Return value: A newly-created calendar view factory.
  **/
-CalendarViewFactory *
+GalViewFactory *
 calendar_view_factory_new (GnomeCalendarViewType view_type)
 {
 	CalendarViewFactory *cal_view_factory;

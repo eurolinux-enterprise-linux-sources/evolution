@@ -1,0 +1,100 @@
+diff -up evolution-2.32.3/calendar/gui/alarm-notify/Makefile.am.init-dbus-glib evolution-2.32.3/calendar/gui/alarm-notify/Makefile.am
+--- evolution-2.32.3/calendar/gui/alarm-notify/Makefile.am.init-dbus-glib	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/alarm-notify/Makefile.am	2013-06-11 19:36:27.563369191 +0200
+@@ -21,6 +21,7 @@ evolution_alarm_notify_CPPFLAGS = 			\
+ 	$(GNOME_PLATFORM_CFLAGS)			\
+ 	$(CAMEL_CFLAGS)					\
+ 	$(EVOLUTION_CALENDAR_CFLAGS)			\
++	$(DBUS_GLIB_CFLAGS)				\
+ 	$(CANBERRA_CFLAGS)
+ 
+ ui_DATA =		\
+@@ -49,6 +50,7 @@ evolution_alarm_notify_LDADD =						\
+ 	$(EVOLUTION_CALENDAR_LIBS)					\
+ 	$(CANBERRA_LIBS)						\
+ 	$(GNOME_PLATFORM_LIBS)						\
++	$(DBUS_GLIB_LIBS)						\
+ 	$(EVOLUTIONALARMNOTIFYICON)
+ 
+ if OS_WIN32
+diff -up evolution-2.32.3/calendar/gui/alarm-notify/notify-main.c.init-dbus-glib evolution-2.32.3/calendar/gui/alarm-notify/notify-main.c
+--- evolution-2.32.3/calendar/gui/alarm-notify/notify-main.c.init-dbus-glib	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/alarm-notify/notify-main.c	2013-06-11 19:36:27.564369191 +0200
+@@ -35,6 +35,8 @@
+ #include <libedataserver/e-source.h>
+ #include <libedataserverui/e-passwords.h>
+ 
++#include <dbus/dbus-glib.h>
++
+ #include "alarm.h"
+ #include "alarm-queue.h"
+ #include "alarm-notify.h"
+@@ -98,6 +100,9 @@ main (gint argc, gchar **argv)
+ 
+ 	gtk_init (&argc, &argv);
+ 
++	/* this is to initialize threading for dbus-glib used by GConf */
++	dbus_g_thread_init ();
++
+ 	app = unique_app_new ("org.gnome.EvolutionAlarmNotify", NULL);
+ 
+ 	if (unique_app_is_running (app))
+diff -up evolution-2.32.3/configure.ac.init-dbus-glib evolution-2.32.3/configure.ac
+--- evolution-2.32.3/configure.ac.init-dbus-glib	2013-06-11 19:36:27.478369190 +0200
++++ evolution-2.32.3/configure.ac	2013-06-11 19:36:27.561369191 +0200
+@@ -322,6 +322,14 @@ PKG_CHECK_MODULES([EVOLUTION_DATA_SERVER
+ 	 libegroupwise-1.2 >= eds_minimum_version
+ 	 libebackend-1.2 >= eds_minimum_version])
+ 
++dnl ******************************
++dnl DBus-glib stuff, to initialize thread for GConf, which is using it
++dnl this is returned back only temporarily and wil lbe removed as soon
++dnl as eds will stop using GConf completely
++dnl ******************************
++PKG_CHECK_MODULES(DBUS_GLIB, dbus-glib-1 >= 0.6)
++AC_SUBST(DBUS_GLIB_CFLAGS)
++AC_SUBST(DBUS_GLIB_LIBS)
+ 
+ dnl ******************************
+ dnl Canberra / Canberra-GTK Sound
+diff -up evolution-2.32.3/shell/main.c.init-dbus-glib evolution-2.32.3/shell/main.c
+--- evolution-2.32.3/shell/main.c.init-dbus-glib	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/shell/main.c	2013-06-11 19:36:27.562369191 +0200
+@@ -26,6 +26,8 @@
+ #include <glib/gi18n.h>
+ #include <glib/gstdio.h>
+ 
++#include <dbus/dbus-glib.h>
++
+ #if HAVE_CLUTTER
+ #include <clutter-gtk/clutter-gtk.h>
+ #include <mx/mx.h>
+@@ -523,6 +525,9 @@ main (gint argc, gchar **argv)
+ 	if (!g_thread_get_initialized ())
+ 		g_thread_init (NULL);
+ 
++	/* this is to initialize threading for dbus-glib used by GConf */
++	dbus_g_thread_init ();
++
+ 	#ifdef HAVE_ICAL_UNKNOWN_TOKEN_HANDLING
+ 	ical_set_unknown_token_handling_setting (ICAL_DISCARD_TOKEN);
+ 	#endif
+diff -up evolution-2.32.3/shell/Makefile.am.init-dbus-glib evolution-2.32.3/shell/Makefile.am
+--- evolution-2.32.3/shell/Makefile.am.init-dbus-glib	2011-03-29 20:38:56.000000000 +0200
++++ evolution-2.32.3/shell/Makefile.am	2013-06-11 19:36:27.562369191 +0200
+@@ -133,6 +133,7 @@ evolution_CPPFLAGS =						\
+ 	$(GNOME_PLATFORM_CFLAGS)				\
+ 	$(TZDIALOG_CFLAGS)					\
+ 	$(CLUTTER_CFLAGS)					\
++	$(DBUS_GLIB_CFLAGS)					\
+ 	$(SHELL_CFLAGS)
+ 
+ evolution_SOURCES =				\
+@@ -149,6 +150,7 @@ evolution_LDADD =							\
+ 	$(SHELL_LIBS)							\
+ 	$(GNOME_PLATFORM_LIBS)						\
+ 	$(CLUTTER_LIBS)							\
++	$(DBUS_GLIB_LIBS)						\
+ 	$(EVOLUTIONICON)
+ 
+ if OS_WIN32

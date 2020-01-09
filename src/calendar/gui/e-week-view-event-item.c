@@ -40,188 +40,34 @@
 
 #include <text/e-text.h>
 
-static void e_week_view_event_item_set_property	(GObject	 *object,
-						 guint		  property_id,
-						 const GValue	 *value,
-						 GParamSpec	 *pspec);
-static void e_week_view_event_item_update	(GnomeCanvasItem *item,
-						 double		 *affine,
-						 ArtSVP		 *clip_path,
-						 gint		  flags);
-static void e_week_view_event_item_draw		(GnomeCanvasItem *item,
-						 GdkDrawable	 *drawable,
-						 gint		  x,
-						 gint		  y,
-						 gint		  width,
-						 gint		  height);
-static void e_week_view_draw_time		(EWeekView	*week_view,
-						 GdkDrawable	*drawable,
-						 gint		 time_x,
-						 gint		 time_y,
-						 gint		 hour,
-						 gint		 minute);
-static void e_week_view_event_item_draw_icons	(EWeekViewEventItem *wveitem,
-						 GdkDrawable        *drawable,
-						 gint		     icon_x,
-						 gint		     icon_y,
-						 gint		     x2,
-						 gboolean	     right_align,
-						 GdkRegion          *draw_region);
-static void e_week_view_event_item_draw_triangle (EWeekViewEventItem *wveitem,
-						  GdkDrawable	     *drawable,
-						  GdkColor            bg_color,
-						  gint		      x,
-						  gint		      y,
-						  gint		      w,
-						  gint		      h,
-						  GdkRegion          *draw_region);
-static double e_week_view_event_item_point	(GnomeCanvasItem *item,
-						 double		  x,
-						 double		  y,
-						 gint		  cx,
-						 gint		  cy,
-						 GnomeCanvasItem **actual_item);
-static gint e_week_view_event_item_event	(GnomeCanvasItem *item,
-						 GdkEvent	 *event);
-static gboolean e_week_view_event_item_button_press (EWeekViewEventItem *wveitem,
-						     GdkEvent		*event);
-static gboolean e_week_view_event_item_button_release (EWeekViewEventItem *wveitem,
-						       GdkEvent		  *event);
-static gboolean e_week_view_event_item_double_click (EWeekViewEventItem *wveitem,
-						     GdkEvent		*bevent);
-static ECalendarViewPosition e_week_view_event_item_get_position (EWeekViewEventItem *wveitem,
-							      gdouble x,
-							      gdouble y);
+#include "e-util/gtk-compat.h"
 
-/* The arguments we take */
+#define E_WEEK_VIEW_EVENT_ITEM_GET_PRIVATE(obj) \
+	(G_TYPE_INSTANCE_GET_PRIVATE \
+	((obj), E_TYPE_WEEK_VIEW_EVENT_ITEM, EWeekViewEventItemPrivate))
+
+struct _EWeekViewEventItemPrivate {
+	/* The event index in the EWeekView events array. */
+	gint event_num;
+
+	/* The span index within the event. */
+	gint span_num;
+};
+
 enum {
 	PROP_0,
 	PROP_EVENT_NUM,
 	PROP_SPAN_NUM
 };
 
-G_DEFINE_TYPE (EWeekViewEventItem, e_week_view_event_item, GNOME_TYPE_CANVAS_ITEM)
-
-static void
-e_week_view_event_item_class_init (EWeekViewEventItemClass *class)
-{
-	GObjectClass  *object_class;
-	GnomeCanvasItemClass *item_class;
-
-	object_class = G_OBJECT_CLASS (class);
-	object_class->set_property = e_week_view_event_item_set_property;
-
-	item_class = GNOME_CANVAS_ITEM_CLASS (class);
-	item_class->update = e_week_view_event_item_update;
-	item_class->draw = e_week_view_event_item_draw;
-	item_class->point = e_week_view_event_item_point;
-	item_class->event = e_week_view_event_item_event;
-
-	g_object_class_install_property (
-		object_class,
-		PROP_EVENT_NUM,
-		g_param_spec_int (
-			"event_num",
-			NULL,
-			NULL,
-			G_MININT,
-			G_MAXINT,
-			-1,
-			G_PARAM_WRITABLE));
-
-	g_object_class_install_property (
-		object_class,
-		PROP_SPAN_NUM,
-		g_param_spec_int (
-			"span_num",
-			NULL,
-			NULL,
-			G_MININT,
-			G_MAXINT,
-			-1,
-			G_PARAM_WRITABLE));
-}
-
-static void
-e_week_view_event_item_init (EWeekViewEventItem *wveitem)
-{
-	wveitem->event_num = -1;
-	wveitem->span_num = -1;
-}
-
-static void
-e_week_view_event_item_set_property (GObject *object,
-                                     guint property_id,
-                                     const GValue *value,
-                                     GParamSpec *pspec)
-{
-	GnomeCanvasItem *item;
-	EWeekViewEventItem *wveitem;
-
-	item = GNOME_CANVAS_ITEM (object);
-	wveitem = E_WEEK_VIEW_EVENT_ITEM (object);
-
-	switch (property_id) {
-	case PROP_EVENT_NUM:
-		wveitem->event_num = g_value_get_int (value);
-		gnome_canvas_item_request_update (item);
-		return;
-	case PROP_SPAN_NUM:
-		wveitem->span_num = g_value_get_int (value);
-		gnome_canvas_item_request_update (item);
-		return;
-	}
-
-	G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-}
-
-static void
-e_week_view_event_item_update (GnomeCanvasItem *item,
-			       double	       *affine,
-			       ArtSVP	       *clip_path,
-			       gint		flags)
-{
-	EWeekViewEventItem *wveitem;
-	EWeekView *week_view;
-	gint span_x, span_y, span_w;
-
-#if 0
-	g_print ("In e_week_view_event_item_update\n");
-#endif
-
-	wveitem = E_WEEK_VIEW_EVENT_ITEM (item);
-	week_view = E_WEEK_VIEW (GTK_WIDGET (item->canvas)->parent);
-	g_return_if_fail (E_IS_WEEK_VIEW (week_view));
-
-	if (GNOME_CANVAS_ITEM_CLASS (e_week_view_event_item_parent_class)->update)
-		(* GNOME_CANVAS_ITEM_CLASS (e_week_view_event_item_parent_class)->update) (item, affine, clip_path, flags);
-
-	item->x1 = 0;
-	item->y1 = 0;
-	item->x2 = 0;
-	item->y2 = 0;
-
-	if (wveitem->event_num != -1 && wveitem->span_num != -1) {
-		if (e_week_view_get_span_position (week_view,
-						   wveitem->event_num,
-						   wveitem->span_num,
-						   &span_x, &span_y,
-						   &span_w)) {
-#if 0
-			g_print ("  Event:%i Span:%i %i,%i W:%i\n",
-				 wveitem->event_num, wveitem->span_num,
-				 span_x, span_y, span_w);
-#endif
-			item->x1 = span_x;
-			item->y1 = span_y;
-			item->x2 = span_x + span_w - 1;
-			item->y2 = span_y + week_view->row_height - 1;
-		}
-	}
-}
+static gpointer parent_class;
 
 static gboolean
-can_draw_in_region (GdkRegion *draw_region, gint x, gint y, gint width, gint height)
+can_draw_in_region (GdkRegion *draw_region,
+                    gint x,
+                    gint y,
+                    gint width,
+                    gint height)
 {
 	GdkRectangle rect;
 
@@ -232,25 +78,649 @@ can_draw_in_region (GdkRegion *draw_region, gint x, gint y, gint width, gint hei
 	rect.width = width;
 	rect.height = height;
 
-	return gdk_region_rect_in (draw_region, &rect) != GDK_OVERLAP_RECTANGLE_OUT;
+	return gdk_region_rect_in (draw_region, &rect) !=
+		GDK_OVERLAP_RECTANGLE_OUT;
 }
 
-/*
- * DRAWING ROUTINES - functions to paint the canvas item.
- */
-static void
-e_week_view_event_item_draw (GnomeCanvasItem  *canvas_item,
-			     GdkDrawable      *drawable,
-			     gint	       x,
-			     gint	       y,
-			     gint	       width,
-			     gint	       height)
+static ECalendarViewPosition
+week_view_event_item_get_position (EWeekViewEventItem *event_item,
+                                   gdouble x,
+                                   gdouble y)
 {
-	EWeekViewEventItem *wveitem;
+	EWeekView *week_view;
+	GnomeCanvasItem *item;
+	GtkWidget *parent;
+
+	item = GNOME_CANVAS_ITEM (event_item);
+
+	parent = gtk_widget_get_parent (GTK_WIDGET (item->canvas));
+	g_return_val_if_fail (E_IS_WEEK_VIEW (parent), E_CALENDAR_VIEW_POS_NONE);
+
+	week_view = E_WEEK_VIEW (parent);
+
+	if (x < item->x1 + E_WEEK_VIEW_EVENT_L_PAD
+	    || x >= item->x2 - E_WEEK_VIEW_EVENT_R_PAD)
+		return E_CALENDAR_VIEW_POS_NONE;
+
+	/* Support left/right edge for long events only. */
+	if (!e_week_view_is_one_day_event (week_view, event_item->priv->event_num)) {
+		if (x < item->x1 + E_WEEK_VIEW_EVENT_L_PAD
+		    + E_WEEK_VIEW_EVENT_BORDER_WIDTH
+		    + E_WEEK_VIEW_EVENT_EDGE_X_PAD)
+			return E_CALENDAR_VIEW_POS_LEFT_EDGE;
+
+		if (x >= item->x2 + 1 - E_WEEK_VIEW_EVENT_R_PAD
+		    - E_WEEK_VIEW_EVENT_BORDER_WIDTH
+		    - E_WEEK_VIEW_EVENT_EDGE_X_PAD)
+			return E_CALENDAR_VIEW_POS_RIGHT_EDGE;
+	}
+
+	return E_CALENDAR_VIEW_POS_EVENT;
+}
+
+static gboolean
+week_view_event_item_double_click (EWeekViewEventItem *event_item,
+                                   GdkEvent *bevent)
+{
+	EWeekView *week_view;
+	EWeekViewEvent *event;
+	GnomeCanvasItem *item;
+	GtkWidget *parent;
+
+	item = GNOME_CANVAS_ITEM (event_item);
+
+	parent = gtk_widget_get_parent (GTK_WIDGET (item->canvas));
+	g_return_val_if_fail (E_IS_WEEK_VIEW (parent), FALSE);
+
+	week_view = E_WEEK_VIEW (parent);
+
+	if (!is_array_index_in_bounds (week_view->events, event_item->priv->event_num))
+		return TRUE;
+
+	event = &g_array_index (
+		week_view->events, EWeekViewEvent,
+		event_item->priv->event_num);
+
+	if (!is_comp_data_valid (event))
+		return TRUE;
+
+	if (week_view->editing_event_num >= 0) {
+		EWeekViewEvent *editing;
+
+		if (!is_array_index_in_bounds (week_view->events, week_view->editing_event_num))
+			return TRUE;
+
+		editing = &g_array_index (
+			week_view->events, EWeekViewEvent,
+			week_view->editing_event_num);
+
+		/* Do not call edit of the component, if double clicked
+		 * on the component, which is not on the server. */
+		if (editing && event &&
+			editing->comp_data == event->comp_data &&
+			is_comp_data_valid (editing) &&
+			(!event->comp_data ||
+			 !is_icalcomp_on_the_server (
+				event->comp_data->icalcomp,
+				event->comp_data->client)))
+			return TRUE;
+	}
+
+	e_week_view_stop_editing_event (week_view);
+
+	e_calendar_view_edit_appointment (
+		E_CALENDAR_VIEW (week_view),
+		event->comp_data->client,
+		event->comp_data->icalcomp, FALSE);
+
+	return TRUE;
+}
+
+static gboolean
+week_view_event_item_button_press (EWeekViewEventItem *event_item,
+                                   GdkEvent *bevent)
+{
+	EWeekView *week_view;
+	ECalendarViewPosition pos;
+	EWeekViewEvent *event;
+	EWeekViewEventSpan *span;
+	GnomeCanvasItem *item;
+	GtkWidget *parent;
+
+	item = GNOME_CANVAS_ITEM (event_item);
+
+	parent = gtk_widget_get_parent (GTK_WIDGET (item->canvas));
+	g_return_val_if_fail (E_IS_WEEK_VIEW (parent), FALSE);
+
+	week_view = E_WEEK_VIEW (parent);
+
+	if (!is_array_index_in_bounds (week_view->events, event_item->priv->event_num))
+		return FALSE;
+
+	event = &g_array_index (
+		week_view->events, EWeekViewEvent,
+		event_item->priv->event_num);
+
+	if (!is_array_index_in_bounds (
+		week_view->spans, event->spans_index +
+		event_item->priv->span_num))
+		return FALSE;
+
+	span = &g_array_index (week_view->spans, EWeekViewEventSpan,
+			       event->spans_index + event_item->priv->span_num);
+
+	pos = week_view_event_item_get_position (event_item, bevent->button.x,
+						   bevent->button.y);
+	if (pos == E_CALENDAR_VIEW_POS_NONE)
+		return FALSE;
+
+	if (bevent->button.button == 1) {
+		week_view->pressed_event_num = event_item->priv->event_num;
+		week_view->pressed_span_num = event_item->priv->span_num;
+
+		/* Ignore clicks on the event while editing. */
+		if (E_TEXT (span->text_item)->editing)
+			return FALSE;
+
+		/* Remember the item clicked and the mouse position,
+		   so we can start a drag if the mouse moves. */
+		week_view->drag_event_x = bevent->button.x;
+		week_view->drag_event_y = bevent->button.y;
+
+		/* FIXME: Remember the day offset from the start of the event.
+		 */
+
+		return TRUE;
+	} else if (bevent->button.button == 3) {
+		if (!gtk_widget_has_focus (GTK_WIDGET (week_view))) {
+			gtk_widget_grab_focus (GTK_WIDGET (week_view));
+			if (week_view->event_destroyed) {
+				week_view->event_destroyed = FALSE;
+				return FALSE;
+			}
+
+		}
+
+		e_week_view_set_selected_time_range_visible (
+			week_view, event->start, event->end);
+
+		e_week_view_show_popup_menu (
+			week_view, (GdkEventButton*) bevent,
+			event_item->priv->event_num);
+		g_signal_stop_emission_by_name (
+			item->canvas, "button_press_event");
+
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+static gboolean
+week_view_event_item_button_release (EWeekViewEventItem *event_item,
+                                     GdkEvent *event)
+{
+	EWeekView *week_view;
+	GnomeCanvasItem *item;
+	GtkWidget *parent;
+
+	item = GNOME_CANVAS_ITEM (event_item);
+
+	parent = gtk_widget_get_parent (GTK_WIDGET (item->canvas));
+	g_return_val_if_fail (E_IS_WEEK_VIEW (parent), FALSE);
+
+	week_view = E_WEEK_VIEW (parent);
+
+	if (week_view->pressed_event_num != -1
+	    && week_view->pressed_event_num == event_item->priv->event_num
+	    && week_view->pressed_span_num == event_item->priv->span_num) {
+		e_week_view_start_editing_event (week_view,
+						 event_item->priv->event_num,
+						 event_item->priv->span_num,
+						 NULL);
+		week_view->pressed_event_num = -1;
+		return TRUE;
+	}
+
+	week_view->pressed_event_num = -1;
+
+	return FALSE;
+}
+
+static void
+week_view_draw_time (EWeekView *week_view,
+                     GdkDrawable *drawable,
+                     gint time_x,
+                     gint time_y,
+                     gint hour,
+                     gint minute)
+{
+	ECalModel *model;
+	GtkStyle *style;
+	GdkGC *gc;
+	gint hour_to_display, suffix_width;
+	gint time_y_normal_font, time_y_small_font;
+	const gchar *suffix;
+	gchar buffer[128];
+	PangoLayout *layout;
+	PangoFontDescription *small_font_desc;
+
+	model = e_calendar_view_get_model (E_CALENDAR_VIEW (week_view));
+
+	style = gtk_widget_get_style (GTK_WIDGET (week_view));
+	small_font_desc = week_view->small_font_desc;
+	gc = week_view->main_gc;
+
+	gdk_gc_set_foreground (gc, &week_view->colors[E_WEEK_VIEW_COLOR_EVENT_TEXT]);
+
+	layout = gtk_widget_create_pango_layout (GTK_WIDGET (week_view), NULL);
+
+	time_y_normal_font = time_y_small_font = time_y;
+	if (small_font_desc)
+		time_y_small_font = time_y;
+
+	e_week_view_convert_time_to_display (week_view, hour, &hour_to_display,
+					     &suffix, &suffix_width);
+
+	if (week_view->use_small_font && week_view->small_font_desc) {
+		g_snprintf (buffer, sizeof (buffer), "%2i:%02i",
+			    hour_to_display, minute);
+
+		/* Draw the hour. */
+		if (hour_to_display < 10) {
+			pango_layout_set_text (layout, buffer + 1, 1);
+			gdk_draw_layout (drawable, gc,
+					 time_x + week_view->digit_width,
+					 time_y_normal_font,
+					 layout);
+		} else {
+			pango_layout_set_text (layout, buffer, 2);
+			gdk_draw_layout (drawable, gc,
+					 time_x,
+					 time_y_normal_font,
+					 layout);
+		}
+
+		time_x += week_view->digit_width * 2;
+
+		/* Draw the start minute, in the small font. */
+		pango_layout_set_font_description (layout, week_view->small_font_desc);
+		pango_layout_set_text (layout, buffer + 3, 2);
+		gdk_draw_layout (drawable, gc,
+				 time_x,
+				 time_y_small_font,
+				 layout);
+
+		pango_layout_set_font_description (layout, style->font_desc);
+
+		time_x += week_view->small_digit_width * 2;
+
+		/* Draw the 'am'/'pm' suffix, if 12-hour format. */
+		if (!e_cal_model_get_use_24_hour_format (model)) {
+			pango_layout_set_text (layout, suffix, -1);
+
+			gdk_draw_layout (drawable, gc,
+					 time_x,
+					 time_y_normal_font,
+					 layout);
+		}
+	} else {
+		/* Draw the start time in one go. */
+		g_snprintf (buffer, sizeof (buffer), "%2i:%02i%s",
+			    hour_to_display, minute, suffix);
+		if (hour_to_display < 10) {
+			pango_layout_set_text (layout, buffer + 1, -1);
+			gdk_draw_layout (drawable, gc,
+					 time_x + week_view->digit_width,
+					 time_y_normal_font,
+					 layout);
+		} else {
+			pango_layout_set_text (layout, buffer, -1);
+			gdk_draw_layout (drawable, gc,
+					 time_x,
+					 time_y_normal_font,
+					 layout);
+		}
+
+	}
+	g_object_unref (layout);
+}
+
+static void
+week_view_event_item_draw_icons (EWeekViewEventItem *event_item,
+                                 GdkDrawable *drawable,
+                                 gint icon_x,
+                                 gint icon_y,
+                                 gint x2,
+                                 gboolean right_align,
+                                 GdkRegion *draw_region)
+{
+	EWeekView *week_view;
+	EWeekViewEvent *event;
+	ECalComponent *comp;
+	GnomeCanvas *canvas;
+	GtkWidget *parent;
+	GdkGC *gc;
+	gint num_icons = 0, icon_x_inc;
+	gboolean draw_reminder_icon = FALSE, draw_recurrence_icon = FALSE;
+	gboolean draw_timezone_icon = FALSE, draw_attach_icon = FALSE;
+	gboolean draw_meeting_icon = FALSE;
+	GSList *categories_pixbufs = NULL, *pixbufs;
+	cairo_t *cr;
+
+	canvas = GNOME_CANVAS_ITEM (event_item)->canvas;
+	parent = gtk_widget_get_parent (GTK_WIDGET (canvas));
+	week_view = E_WEEK_VIEW (parent);
+
+	if (!is_array_index_in_bounds (week_view->events, event_item->priv->event_num))
+		return;
+
+	event = &g_array_index (week_view->events, EWeekViewEvent,
+				event_item->priv->event_num);
+
+	if (!is_comp_data_valid (event))
+		return;
+
+	comp = e_cal_component_new ();
+	e_cal_component_set_icalcomponent (
+		comp, icalcomponent_new_clone (event->comp_data->icalcomp));
+
+	gc = week_view->main_gc;
+	cr = gdk_cairo_create (drawable);
+
+	if (e_cal_component_has_alarms (comp)) {
+		draw_reminder_icon = TRUE;
+		num_icons++;
+	}
+
+	if (e_cal_component_has_recurrences (comp) || e_cal_component_is_instance (comp)) {
+		draw_recurrence_icon = TRUE;
+		num_icons++;
+	}
+
+	if (e_cal_component_has_attachments (comp)) {
+		draw_attach_icon = TRUE;
+		num_icons++;
+	}
+
+	if (e_cal_component_has_attendees (comp)) {
+		draw_meeting_icon = TRUE;
+		num_icons++;
+	}
+
+	if (event->different_timezone) {
+		draw_timezone_icon = TRUE;
+		num_icons++;
+	}
+
+	num_icons += cal_comp_util_get_n_icons (comp, &categories_pixbufs);
+
+	icon_x_inc = E_WEEK_VIEW_ICON_WIDTH + E_WEEK_VIEW_ICON_X_PAD;
+
+	if (right_align)
+		icon_x -= icon_x_inc * num_icons;
+
+	#define draw_pixbuf(pf)							\
+		if (can_draw_in_region (draw_region, icon_x, icon_y,		\
+		    E_WEEK_VIEW_ICON_WIDTH, E_WEEK_VIEW_ICON_HEIGHT)) {		\
+			cairo_save (cr);					\
+			gdk_cairo_set_source_pixbuf (cr, pf, icon_x, icon_y);	\
+			cairo_paint (cr);					\
+			cairo_restore (cr);					\
+		}								\
+										\
+		icon_x += icon_x_inc;
+
+	if (draw_reminder_icon && icon_x + E_WEEK_VIEW_ICON_WIDTH <= x2) {
+		draw_pixbuf (week_view->reminder_icon);
+	}
+
+	if (draw_attach_icon && icon_x + E_WEEK_VIEW_ICON_WIDTH <= x2) {
+		draw_pixbuf (week_view->attach_icon);
+	}
+
+	if (draw_recurrence_icon && icon_x + E_WEEK_VIEW_ICON_WIDTH <= x2) {
+		draw_pixbuf (week_view->recurrence_icon);
+	}
+
+	if (draw_timezone_icon && icon_x + E_WEEK_VIEW_ICON_WIDTH <= x2) {
+		draw_pixbuf (week_view->timezone_icon);
+	}
+
+	if (draw_meeting_icon && icon_x + E_WEEK_VIEW_ICON_WIDTH <= x2) {
+		draw_pixbuf (week_view->meeting_icon);
+	}
+
+	/* draw categories icons */
+	for (pixbufs = categories_pixbufs;
+	     pixbufs;
+	     pixbufs = pixbufs->next) {
+		GdkPixbuf *pixbuf = pixbufs->data;
+
+		draw_pixbuf (pixbuf);
+	}
+
+	#undef draw_pixbuf
+
+	g_slist_foreach (categories_pixbufs, (GFunc)g_object_unref, NULL);
+	g_slist_free (categories_pixbufs);
+
+	cairo_destroy (cr);
+	g_object_unref(comp);
+	gdk_gc_set_clip_mask (gc, NULL);
+}
+
+/* This draws a little triangle to indicate that an event extends past
+   the days visible on screen. */
+static void
+week_view_event_item_draw_triangle (EWeekViewEventItem *event_item,
+                                    GdkDrawable *drawable,
+                                    GdkColor bg_color,
+                                    gint x,
+                                    gint y,
+                                    gint w,
+                                    gint h,
+                                    GdkRegion *draw_region)
+{
+	ECalModel *model;
+	EWeekView *week_view;
+	EWeekViewEvent *event;
+	GnomeCanvas *canvas;
+	GtkWidget *parent;
+	GdkPoint points[3];
+	const gchar *color_spec;
+	gint c1, c2;
+	cairo_t *cr;
+
+	if (!can_draw_in_region (draw_region, x, y, w, h))
+		return;
+
+	canvas = GNOME_CANVAS_ITEM (event_item)->canvas;
+	parent = gtk_widget_get_parent (GTK_WIDGET (canvas));
+	week_view = E_WEEK_VIEW (parent);
+
+	if (!is_array_index_in_bounds (week_view->events, event_item->priv->event_num))
+		return;
+
+	event = &g_array_index (week_view->events, EWeekViewEvent,
+				event_item->priv->event_num);
+
+	if (!is_comp_data_valid (event))
+		return;
+
+	cr = gdk_cairo_create (drawable);
+
+	points[0].x = x;
+	points[0].y = y;
+	points[1].x = x + w;
+	points[1].y = y + (h / 2);
+	points[2].x = x;
+	points[2].y = y + h - 1;
+
+	model = e_calendar_view_get_model (E_CALENDAR_VIEW (week_view));
+
+	color_spec =
+		e_cal_model_get_color_for_component (model, event->comp_data);
+
+	if (gdk_color_parse (color_spec, &bg_color)) {
+		GdkColormap *colormap;
+
+		colormap = gtk_widget_get_colormap (GTK_WIDGET (week_view));
+		if (gdk_colormap_alloc_color (colormap, &bg_color, TRUE, TRUE)) {
+			gdk_cairo_set_source_color (cr, &bg_color);
+		} else {
+			EWeekViewColors wvc;
+			GdkColor *color;
+
+			wvc = E_WEEK_VIEW_COLOR_EVENT_BACKGROUND;
+			color = &week_view->colors[wvc];
+
+			gdk_cairo_set_source_color (cr, color);
+		}
+	} else {
+		EWeekViewColors wvc;
+		GdkColor *color;
+
+		wvc = E_WEEK_VIEW_COLOR_EVENT_BACKGROUND;
+		color = &week_view->colors[wvc];
+
+		gdk_cairo_set_source_color (cr, color);
+	}
+
+	cairo_save (cr);
+	cairo_set_line_width (cr, 0.7);
+	cairo_move_to (cr, points[0].x, points[0].y);
+	cairo_line_to (cr, points[1].x, points[1].y);
+	cairo_line_to (cr, points[2].x, points[2].y);
+	cairo_line_to (cr, points[0].x, points[0].y);
+	cairo_fill (cr);
+	cairo_restore (cr);
+
+	cairo_save (cr);
+	gdk_cairo_set_source_color (cr, &week_view->colors[E_WEEK_VIEW_COLOR_EVENT_BORDER]);
+
+	/* If the height is odd we can use the same central point for both
+	   lines. If it is even we use different end-points. */
+	c1 = c2 = y + (h / 2);
+	if (h % 2 == 0)
+		c1--;
+
+	cairo_set_line_width (cr, 0.7);
+	cairo_move_to (cr, x, y);
+	cairo_line_to (cr, x + w, c1);
+	cairo_move_to (cr, x, y + h - 1);
+	cairo_line_to (cr, x + w, c2);
+	cairo_restore (cr);
+
+	cairo_destroy (cr);
+}
+
+static void
+week_view_event_item_set_property (GObject *object,
+                                   guint property_id,
+                                   const GValue *value,
+                                   GParamSpec *pspec)
+{
+	switch (property_id) {
+		case PROP_EVENT_NUM:
+			e_week_view_event_item_set_event_num (
+				E_WEEK_VIEW_EVENT_ITEM (object),
+				g_value_get_int (value));
+			return;
+
+		case PROP_SPAN_NUM:
+			e_week_view_event_item_set_span_num (
+				E_WEEK_VIEW_EVENT_ITEM (object),
+				g_value_get_int (value));
+			return;
+	}
+
+	G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+}
+
+static void
+week_view_event_item_get_property (GObject *object,
+                                   guint property_id,
+                                   GValue *value,
+                                   GParamSpec *pspec)
+{
+	switch (property_id) {
+		case PROP_EVENT_NUM:
+			g_value_set_int (
+				value,
+				e_week_view_event_item_get_event_num (
+				E_WEEK_VIEW_EVENT_ITEM (object)));
+			return;
+
+		case PROP_SPAN_NUM:
+			g_value_set_int (
+				value,
+				e_week_view_event_item_get_span_num (
+				E_WEEK_VIEW_EVENT_ITEM (object)));
+			return;
+	}
+
+	G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+}
+
+static void
+week_view_event_item_update (GnomeCanvasItem *item,
+                             gdouble *affine,
+                             ArtSVP *clip_path,
+                             gint flags)
+{
+	GnomeCanvasItemClass *canvas_item_class;
+	EWeekViewEventItem *event_item;
+	EWeekView *week_view;
+	GtkWidget *parent;
+	gint event_num, span_num;
+	gint span_x, span_y, span_w;
+
+	event_item = E_WEEK_VIEW_EVENT_ITEM (item);
+	parent = gtk_widget_get_parent (GTK_WIDGET (item->canvas));
+	g_return_if_fail (E_IS_WEEK_VIEW (parent));
+
+	week_view = E_WEEK_VIEW (parent);
+
+	/* Chain up to parent's update() method. */
+	canvas_item_class = GNOME_CANVAS_ITEM_CLASS (parent_class);
+	canvas_item_class->update (item, affine, clip_path, flags);
+
+	item->x1 = 0;
+	item->y1 = 0;
+	item->x2 = 0;
+	item->y2 = 0;
+
+	event_num = e_week_view_event_item_get_event_num (event_item);
+	span_num = e_week_view_event_item_get_span_num (event_item);
+
+	if (event_num != -1 && span_num != -1) {
+		if (e_week_view_get_span_position (
+			week_view, event_num, span_num,
+			&span_x, &span_y, &span_w)) {
+			item->x1 = span_x;
+			item->y1 = span_y;
+			item->x2 = span_x + span_w - 1;
+			item->y2 = span_y + week_view->row_height - 1;
+		}
+	}
+}
+
+static void
+week_view_event_item_draw (GnomeCanvasItem *canvas_item,
+                           GdkDrawable *drawable,
+                           gint x,
+                           gint y,
+                           gint width,
+                           gint height)
+{
+	EWeekViewEventItem *event_item;
 	EWeekView *week_view;
 	EWeekViewEvent *event;
 	EWeekViewEventSpan *span;
+	ECalModel *model;
 	GdkGC *gc;
+	GtkWidget *parent;
 	gint x1, y1, x2, y2, time_x, time_y;
 	gint icon_x, icon_y, time_width, min_end_time_x, max_icon_x;
 	gint rect_x, rect_w, rect_x2 = 0;
@@ -268,28 +738,40 @@ e_week_view_event_item_draw (GnomeCanvasItem  *canvas_item,
 	gdouble cc = 65535.0;
 	GdkRegion *draw_region;
 	GdkRectangle rect;
+	const gchar *color_spec;
 
-#if 0
-	g_print ("In e_week_view_event_item_draw %i,%i %ix%i\n",
-		 x, y, width, height);
-#endif
+	event_item = E_WEEK_VIEW_EVENT_ITEM (canvas_item);
+	parent = gtk_widget_get_parent (GTK_WIDGET (canvas_item->canvas));
+	g_return_if_fail (E_IS_WEEK_VIEW (parent));
 
-	wveitem = E_WEEK_VIEW_EVENT_ITEM (canvas_item);
-	week_view = E_WEEK_VIEW (GTK_WIDGET (canvas_item->canvas)->parent);
-	g_return_if_fail (E_IS_WEEK_VIEW (week_view));
+	week_view = E_WEEK_VIEW (parent);
 
-	if (wveitem->event_num == -1 || wveitem->span_num == -1)
+	if (event_item->priv->event_num == -1 || event_item->priv->span_num == -1)
 		return;
 
-	g_return_if_fail (wveitem->event_num < week_view->events->len);
+	g_return_if_fail (event_item->priv->event_num < week_view->events->len);
+
+	if (!is_array_index_in_bounds (week_view->events, event_item->priv->event_num))
+		return;
 
 	event = &g_array_index (week_view->events, EWeekViewEvent,
-				wveitem->event_num);
+				event_item->priv->event_num);
 
-	g_return_if_fail (event->spans_index + wveitem->span_num < week_view->spans->len);
+	if (!is_comp_data_valid (event))
+		return;
 
-	span = &g_array_index (week_view->spans, EWeekViewEventSpan,
-			       event->spans_index + wveitem->span_num);
+	g_return_if_fail (
+		event->spans_index + event_item->priv->span_num <
+		week_view->spans->len);
+
+	if (!is_array_index_in_bounds (
+		week_view->spans, event->spans_index +
+		event_item->priv->span_num))
+		return;
+
+	span = &g_array_index (
+		week_view->spans, EWeekViewEventSpan,
+		event->spans_index + event_item->priv->span_num);
 
 	gc = week_view->main_gc;
 
@@ -315,7 +797,6 @@ e_week_view_event_item_draw (GnomeCanvasItem  *canvas_item,
 	cr = gdk_cairo_create (drawable);
 	gradient = calendar_config_get_display_events_gradient ();
 
-	icon_x = 0;
 	icon_y = y1 + E_WEEK_VIEW_EVENT_BORDER_HEIGHT + E_WEEK_VIEW_ICON_Y_PAD;
 
 	/* Get the start & end times in 24-hour format. */
@@ -331,10 +812,15 @@ e_week_view_event_item_draw (GnomeCanvasItem  *canvas_item,
 
 	time_width = e_week_view_get_time_string_width (week_view);
 
-	one_day_event = e_week_view_is_one_day_event (week_view, wveitem->event_num);
+	one_day_event = e_week_view_is_one_day_event (week_view, event_item->priv->event_num);
+
+	model = e_calendar_view_get_model (E_CALENDAR_VIEW (week_view));
+
+	color_spec =
+		e_cal_model_get_color_for_component (model, event->comp_data);
 
 	bg_color = week_view->colors[E_WEEK_VIEW_COLOR_EVENT_BACKGROUND];
-	if (gdk_color_parse (e_cal_model_get_color_for_component (e_calendar_view_get_model (E_CALENDAR_VIEW (week_view)), event->comp_data), &bg_color)) {
+	if (gdk_color_parse (color_spec, &bg_color)) {
 		GdkColormap *colormap;
 
 		colormap = gtk_widget_get_colormap (GTK_WIDGET (week_view));
@@ -425,17 +911,17 @@ e_week_view_event_item_draw (GnomeCanvasItem  *canvas_item,
 		}
 
 		if (draw_start) {
-			e_week_view_draw_time (week_view, drawable,
-					       time_x, time_y,
-					       start_hour, start_minute);
+			week_view_draw_time (
+				week_view, drawable, time_x,
+				time_y, start_hour, start_minute);
 			time_x += time_width;
 		}
 
 		if (draw_end) {
 			time_x += E_WEEK_VIEW_EVENT_TIME_SPACING;
-			e_week_view_draw_time (week_view, drawable,
-					       time_x, time_y,
-					       end_hour, end_minute);
+			week_view_draw_time (
+				week_view, drawable, time_x,
+				time_y, end_hour, end_minute);
 			time_x += time_width;
 		}
 
@@ -444,9 +930,9 @@ e_week_view_event_item_draw (GnomeCanvasItem  *canvas_item,
 			icon_x += E_WEEK_VIEW_EVENT_TIME_X_PAD;
 
 		/* Draw the icons. */
-		e_week_view_event_item_draw_icons (wveitem, drawable,
-						   icon_x, icon_y,
-						   x2, FALSE, draw_region);
+		week_view_event_item_draw_icons (
+			event_item, drawable, icon_x,
+			icon_y, x2, FALSE, draw_region);
 
 	} else {
 		rect_x = x1 + E_WEEK_VIEW_EVENT_L_PAD;
@@ -518,10 +1004,19 @@ e_week_view_event_item_draw (GnomeCanvasItem  *canvas_item,
 		}
 
 		if (draw_start_triangle) {
-			e_week_view_event_item_draw_triangle (wveitem, drawable, bg_color, x1 + E_WEEK_VIEW_EVENT_L_PAD + 2, y1, -3, y2 - y1 + 1, draw_region);
+			week_view_event_item_draw_triangle (
+				event_item, drawable, bg_color,
+				x1 + E_WEEK_VIEW_EVENT_L_PAD + 2,
+				y1, -3, y2 - y1 + 1, draw_region);
 		} else if (can_draw_in_region (draw_region, rect_x, y1, 1, y2 - y1)) {
+			EWeekViewColors wvc;
+			GdkColor *color;
+
+			wvc = E_WEEK_VIEW_COLOR_EVENT_BORDER;
+			color = &week_view->colors[wvc];
+
 			cairo_save (cr);
-			gdk_cairo_set_source_color (cr,  &week_view->colors[E_WEEK_VIEW_COLOR_EVENT_BORDER]);
+			gdk_cairo_set_source_color (cr, color);
 			cairo_set_line_width (cr, 0.7);
 			cairo_move_to (cr, rect_x, y1);
 			cairo_line_to (cr, rect_x, y2);
@@ -530,10 +1025,19 @@ e_week_view_event_item_draw (GnomeCanvasItem  *canvas_item,
 		}
 
 		if (draw_end_triangle) {
-			e_week_view_event_item_draw_triangle (wveitem, drawable, bg_color, x2 - E_WEEK_VIEW_EVENT_R_PAD - 2, y1, 3, y2 - y1 + 1, draw_region);
+			week_view_event_item_draw_triangle (
+				event_item, drawable, bg_color,
+				x2 - E_WEEK_VIEW_EVENT_R_PAD - 2,
+				y1, 3, y2 - y1 + 1, draw_region);
 		} else if (can_draw_in_region (draw_region, rect_x2, y2, 1, 1)) {
+			EWeekViewColors wvc;
+			GdkColor *color;
+
+			wvc = E_WEEK_VIEW_COLOR_EVENT_BORDER;
+			color = &week_view->colors[wvc];
+
 			cairo_save (cr);
-			gdk_cairo_set_source_color (cr,  &week_view->colors[E_WEEK_VIEW_COLOR_EVENT_BORDER]);
+			gdk_cairo_set_source_color (cr, color);
 			cairo_set_line_width (cr, 0.7);
 			/* rect_x2 is used uninitialized here */
 			cairo_move_to (cr, rect_x2, y2);
@@ -570,9 +1074,9 @@ e_week_view_event_item_draw (GnomeCanvasItem  *canvas_item,
 
 			gdk_gc_set_foreground (gc, &week_view->colors[E_WEEK_VIEW_COLOR_EVENT_TEXT]);
 
-			e_week_view_draw_time (week_view, drawable,
-					       time_x, time_y,
-					       start_hour, start_minute);
+			week_view_draw_time (
+				week_view, drawable, time_x,
+				time_y, start_hour, start_minute);
 
 			gdk_gc_set_clip_rectangle (gc, NULL);
 
@@ -598,9 +1102,9 @@ e_week_view_event_item_draw (GnomeCanvasItem  *canvas_item,
 			/* Draw the end time, if the position is greater than
 			   the minimum calculated above. */
 			if (time_x >= min_end_time_x) {
-				e_week_view_draw_time (week_view, drawable,
-						       time_x, time_y,
-						       end_hour, end_minute);
+				week_view_draw_time (
+					week_view, drawable, time_x,
+					time_y, end_hour, end_minute);
 				max_icon_x -= time_width
 					+ E_WEEK_VIEW_EVENT_TIME_X_PAD;
 			}
@@ -608,12 +1112,12 @@ e_week_view_event_item_draw (GnomeCanvasItem  *canvas_item,
 
 		/* Draw the icons. */
 		if (span->text_item
-		    && (week_view->editing_event_num != wveitem->event_num
-			|| week_view->editing_span_num != wveitem->span_num)) {
+		    && (week_view->editing_event_num != event_item->priv->event_num
+			|| week_view->editing_span_num != event_item->priv->span_num)) {
 			icon_x = span->text_item->x1 - E_WEEK_VIEW_ICON_R_PAD - x;
-			e_week_view_event_item_draw_icons (wveitem, drawable,
-							   icon_x, icon_y,
-							   max_icon_x, TRUE, draw_region);
+			week_view_event_item_draw_icons (
+				event_item, drawable, icon_x,
+				icon_y, max_icon_x, TRUE, draw_region);
 		}
 	}
 	cairo_destroy (cr);
@@ -621,322 +1125,38 @@ e_week_view_event_item_draw (GnomeCanvasItem  *canvas_item,
 	gdk_region_destroy (draw_region);
 }
 
-static void
-e_week_view_draw_time	(EWeekView	*week_view,
-			 GdkDrawable	*drawable,
-			 gint		 time_x,
-			 gint		 time_y,
-			 gint		 hour,
-			 gint		 minute)
-{
-	GtkStyle *style;
-	GdkGC *gc;
-	gint hour_to_display, suffix_width;
-	gint time_y_normal_font, time_y_small_font;
-	const gchar *suffix;
-	gchar buffer[128];
-	PangoLayout *layout;
-	PangoFontDescription *small_font_desc;
-
-	style = gtk_widget_get_style (GTK_WIDGET (week_view));
-	small_font_desc = week_view->small_font_desc;
-	gc = week_view->main_gc;
-
-	gdk_gc_set_foreground (gc, &week_view->colors[E_WEEK_VIEW_COLOR_EVENT_TEXT]);
-
-	layout = gtk_widget_create_pango_layout (GTK_WIDGET (week_view), NULL);
-
-	time_y_normal_font = time_y_small_font = time_y;
-	if (small_font_desc)
-		time_y_small_font = time_y;
-
-	e_week_view_convert_time_to_display (week_view, hour, &hour_to_display,
-					     &suffix, &suffix_width);
-
-	if (week_view->use_small_font && week_view->small_font_desc) {
-		g_snprintf (buffer, sizeof (buffer), "%2i:%02i",
-			    hour_to_display, minute);
-
-		/* Draw the hour. */
-		if (hour_to_display < 10) {
-			pango_layout_set_text (layout, buffer + 1, 1);
-			gdk_draw_layout (drawable, gc,
-					 time_x + week_view->digit_width,
-					 time_y_normal_font,
-					 layout);
-		} else {
-			pango_layout_set_text (layout, buffer, 2);
-			gdk_draw_layout (drawable, gc,
-					 time_x,
-					 time_y_normal_font,
-					 layout);
-		}
-
-		time_x += week_view->digit_width * 2;
-
-		/* Draw the start minute, in the small font. */
-		pango_layout_set_font_description (layout, week_view->small_font_desc);
-		pango_layout_set_text (layout, buffer + 3, 2);
-		gdk_draw_layout (drawable, gc,
-				 time_x,
-				 time_y_small_font,
-				 layout);
-
-		pango_layout_set_font_description (layout, style->font_desc);
-
-		time_x += week_view->small_digit_width * 2;
-
-		/* Draw the 'am'/'pm' suffix, if 12-hour format. */
-		if (!e_calendar_view_get_use_24_hour_format (E_CALENDAR_VIEW (week_view))) {
-			pango_layout_set_text (layout, suffix, -1);
-
-			gdk_draw_layout (drawable, gc,
-					 time_x,
-					 time_y_normal_font,
-					 layout);
-		}
-	} else {
-		/* Draw the start time in one go. */
-		g_snprintf (buffer, sizeof (buffer), "%2i:%02i%s",
-			    hour_to_display, minute, suffix);
-		if (hour_to_display < 10) {
-			pango_layout_set_text (layout, buffer + 1, -1);
-			gdk_draw_layout (drawable, gc,
-					 time_x + week_view->digit_width,
-					 time_y_normal_font,
-					 layout);
-		} else {
-			pango_layout_set_text (layout, buffer, -1);
-			gdk_draw_layout (drawable, gc,
-					 time_x,
-					 time_y_normal_font,
-					 layout);
-		}
-
-	}
-	g_object_unref (layout);
-}
-
-static void
-e_week_view_event_item_draw_icons (EWeekViewEventItem *wveitem,
-				   GdkDrawable        *drawable,
-				   gint		       icon_x,
-				   gint		       icon_y,
-				   gint		       x2,
-				   gboolean	       right_align,
-				   GdkRegion          *draw_region)
-{
-	EWeekView *week_view;
-	EWeekViewEvent *event;
-	ECalComponent *comp;
-	GdkGC *gc;
-	gint num_icons = 0, icon_x_inc;
-	gboolean draw_reminder_icon = FALSE, draw_recurrence_icon = FALSE;
-	gboolean draw_timezone_icon = FALSE, draw_attach_icon = FALSE;
-	gboolean draw_meeting_icon = FALSE;
-	GSList *categories_pixbufs = NULL, *pixbufs;
-	cairo_t *cr;
-
-	week_view = E_WEEK_VIEW (GTK_WIDGET (GNOME_CANVAS_ITEM (wveitem)->canvas)->parent);
-
-	event = &g_array_index (week_view->events, EWeekViewEvent,
-				wveitem->event_num);
-	comp = e_cal_component_new ();
-	e_cal_component_set_icalcomponent (comp, icalcomponent_new_clone (event->comp_data->icalcomp));
-
-	gc = week_view->main_gc;
-	cr = gdk_cairo_create (drawable);
-
-	if (e_cal_component_has_alarms (comp)) {
-		draw_reminder_icon = TRUE;
-		num_icons++;
-	}
-
-	if (e_cal_component_has_recurrences (comp) || e_cal_component_is_instance (comp)) {
-		draw_recurrence_icon = TRUE;
-		num_icons++;
-	}
-
-	if (e_cal_component_has_attachments (comp)) {
-		draw_attach_icon = TRUE;
-		num_icons++;
-	}
-
-	if (e_cal_component_has_attendees (comp)) {
-		draw_meeting_icon = TRUE;
-		num_icons++;
-	}
-
-	if (event->different_timezone) {
-		draw_timezone_icon = TRUE;
-		num_icons++;
-	}
-
-	num_icons += cal_comp_util_get_n_icons (comp, &categories_pixbufs);
-
-	icon_x_inc = E_WEEK_VIEW_ICON_WIDTH + E_WEEK_VIEW_ICON_X_PAD;
-
-	if (right_align)
-		icon_x -= icon_x_inc * num_icons;
-
-	#define draw_pixbuf(pf)							\
-		if (can_draw_in_region (draw_region, icon_x, icon_y,		\
-		    E_WEEK_VIEW_ICON_WIDTH, E_WEEK_VIEW_ICON_HEIGHT)) {		\
-			cairo_save (cr);					\
-			gdk_cairo_set_source_pixbuf (cr, pf, icon_x, icon_y);	\
-			cairo_paint (cr);					\
-			cairo_restore (cr);					\
-		}								\
-										\
-		icon_x += icon_x_inc;
-
-	if (draw_reminder_icon && icon_x + E_WEEK_VIEW_ICON_WIDTH <= x2) {
-		draw_pixbuf (week_view->reminder_icon);
-	}
-
-	if (draw_attach_icon && icon_x + E_WEEK_VIEW_ICON_WIDTH <= x2) {
-		draw_pixbuf (week_view->attach_icon);
-	}
-
-	if (draw_recurrence_icon && icon_x + E_WEEK_VIEW_ICON_WIDTH <= x2) {
-		draw_pixbuf (week_view->recurrence_icon);
-	}
-
-	if (draw_timezone_icon && icon_x + E_WEEK_VIEW_ICON_WIDTH <= x2) {
-		draw_pixbuf (week_view->timezone_icon);
-	}
-
-	if (draw_meeting_icon && icon_x + E_WEEK_VIEW_ICON_WIDTH <= x2) {
-		draw_pixbuf (week_view->meeting_icon);
-	}
-
-	/* draw categories icons */
-	for (pixbufs = categories_pixbufs;
-	     pixbufs;
-	     pixbufs = pixbufs->next) {
-		GdkPixbuf *pixbuf = pixbufs->data;
-
-		draw_pixbuf (pixbuf);
-	}
-
-	#undef draw_pixbuf
-
-	g_slist_foreach (categories_pixbufs, (GFunc)g_object_unref, NULL);
-	g_slist_free (categories_pixbufs);
-
-	cairo_destroy (cr);
-	g_object_unref(comp);
-	gdk_gc_set_clip_mask (gc, NULL);
-}
-
-/* This draws a little triangle to indicate that an event extends past
-   the days visible on screen. */
-static void
-e_week_view_event_item_draw_triangle (EWeekViewEventItem *wveitem,
-				      GdkDrawable	 *drawable,
-				      GdkColor            bg_color,
-				      gint		  x,
-				      gint		  y,
-				      gint		  w,
-				      gint		  h,
-				      GdkRegion          *draw_region)
-{
-	EWeekView *week_view;
-	EWeekViewEvent *event;
-	GdkGC *gc;
-	GdkPoint points[3];
-	gint c1, c2;
-	cairo_t *cr;
-
-	if (!can_draw_in_region (draw_region, x, y, w, h))
-		return;
-
-	week_view = E_WEEK_VIEW (GTK_WIDGET (GNOME_CANVAS_ITEM (wveitem)->canvas)->parent);
-
-	event = &g_array_index (week_view->events, EWeekViewEvent,
-				wveitem->event_num);
-
-	gc = week_view->main_gc;
-	cr = gdk_cairo_create (drawable);
-
-	points[0].x = x;
-	points[0].y = y;
-	points[1].x = x + w;
-	points[1].y = y + (h / 2);
-	points[2].x = x;
-	points[2].y = y + h - 1;
-
-	if (gdk_color_parse (e_cal_model_get_color_for_component (e_calendar_view_get_model (E_CALENDAR_VIEW (week_view)),
-								  event->comp_data),
-			     &bg_color)) {
-		GdkColormap *colormap;
-
-		colormap = gtk_widget_get_colormap (GTK_WIDGET (week_view));
-		if (gdk_colormap_alloc_color (colormap, &bg_color, TRUE, TRUE)) {
-			gdk_cairo_set_source_color (cr, &bg_color);
-		}
-		else {
-			gdk_cairo_set_source_color (cr, &week_view->colors[E_WEEK_VIEW_COLOR_EVENT_BACKGROUND]);
-
-			}
-	} else {
-		gdk_cairo_set_source_color (cr, &week_view->colors[E_WEEK_VIEW_COLOR_EVENT_BACKGROUND]);
-	}
-
-	cairo_save (cr);
-	cairo_set_line_width (cr, 0.7);
-	cairo_move_to (cr, points[0].x, points[0].y);
-	cairo_line_to (cr, points[1].x, points[1].y);
-	cairo_line_to (cr, points[2].x, points[2].y);
-	cairo_line_to (cr, points[0].x, points[0].y);
-	cairo_fill (cr);
-	cairo_restore (cr);
-
-	cairo_save (cr);
-	gdk_cairo_set_source_color (cr, &week_view->colors[E_WEEK_VIEW_COLOR_EVENT_BORDER]);
-
-	/* If the height is odd we can use the same central point for both
-	   lines. If it is even we use different end-points. */
-	c1 = c2 = y + (h / 2);
-	if (h % 2 == 0)
-		c1--;
-
-	cairo_set_line_width (cr, 0.7);
-	cairo_move_to (cr, x, y);
-	cairo_line_to (cr, x + w, c1);
-	cairo_move_to (cr, x, y + h - 1);
-	cairo_line_to (cr, x + w, c2);
-	cairo_restore (cr);
-
-	cairo_destroy (cr);
-}
-
-/* This is supposed to return the nearest item the the point and the distance.
-   Since we are the only item we just return ourself and 0 for the distance.
-   This is needed so that we get button/motion events. */
 static double
-e_week_view_event_item_point (GnomeCanvasItem *item, double x, double y,
-			      gint cx, gint cy,
-			      GnomeCanvasItem **actual_item)
+week_view_event_item_point (GnomeCanvasItem *item,
+                            gdouble x,
+                            gdouble y,
+                            gint cx,
+                            gint cy,
+                            GnomeCanvasItem **actual_item)
 {
+	/* This is supposed to return the nearest item the the point
+	 * and the distance.  Since we are the only item we just return
+	 * ourself and 0 for the distance.  This is needed so that we
+	 * get button/motion events. */
 	*actual_item = item;
+
 	return 0.0;
 }
 
 static gint
-e_week_view_event_item_event (GnomeCanvasItem *item, GdkEvent *event)
+week_view_event_item_event (GnomeCanvasItem *item,
+                            GdkEvent *event)
 {
-	EWeekViewEventItem *wveitem;
+	EWeekViewEventItem *event_item;
 
-	wveitem = E_WEEK_VIEW_EVENT_ITEM (item);
+	event_item = E_WEEK_VIEW_EVENT_ITEM (item);
 
 	switch (event->type) {
 	case GDK_2BUTTON_PRESS:
-		return e_week_view_event_item_double_click (wveitem, event);
+		return week_view_event_item_double_click (event_item, event);
 	case GDK_BUTTON_PRESS:
-		return e_week_view_event_item_button_press (wveitem, event);
+		return week_view_event_item_button_press (event_item, event);
 	case GDK_BUTTON_RELEASE:
-		return e_week_view_event_item_button_release (wveitem, event);
+		return week_view_event_item_button_release (event_item, event);
 	case GDK_MOTION_NOTIFY:
 		break;
 	default:
@@ -946,171 +1166,122 @@ e_week_view_event_item_event (GnomeCanvasItem *item, GdkEvent *event)
 	return FALSE;
 }
 
-static gboolean
-e_week_view_event_item_button_press (EWeekViewEventItem *wveitem,
-				     GdkEvent		*bevent)
+static void
+week_view_event_item_class_init (EWeekViewEventItemClass *class)
 {
-	EWeekView *week_view;
-	ECalendarViewPosition pos;
-	EWeekViewEvent *event;
-	EWeekViewEventSpan *span;
-	GnomeCanvasItem *item;
+	GObjectClass *object_class;
+	GnomeCanvasItemClass *item_class;
 
-	item = GNOME_CANVAS_ITEM (wveitem);
+	parent_class = g_type_class_peek_parent (class);
+	g_type_class_add_private (class, sizeof (EWeekViewEventItemPrivate));
 
-	week_view = E_WEEK_VIEW (GTK_WIDGET (item->canvas)->parent);
-	g_return_val_if_fail (E_IS_WEEK_VIEW (week_view), FALSE);
+	object_class = G_OBJECT_CLASS (class);
+	object_class->set_property = week_view_event_item_set_property;
+	object_class->get_property = week_view_event_item_get_property;
 
-	event = &g_array_index (week_view->events, EWeekViewEvent,
-				wveitem->event_num);
-	span = &g_array_index (week_view->spans, EWeekViewEventSpan,
-			       event->spans_index + wveitem->span_num);
+	item_class = GNOME_CANVAS_ITEM_CLASS (class);
+	item_class->update = week_view_event_item_update;
+	item_class->draw = week_view_event_item_draw;
+	item_class->point = week_view_event_item_point;
+	item_class->event = week_view_event_item_event;
 
-#if 0
-	g_print ("In e_week_view_event_item_button_press\n");
-#endif
+	g_object_class_install_property (
+		object_class,
+		PROP_EVENT_NUM,
+		g_param_spec_int (
+			"event-num",
+			"Event Num",
+			NULL,
+			G_MININT,
+			G_MAXINT,
+			-1,
+			G_PARAM_READWRITE));
 
-	pos = e_week_view_event_item_get_position (wveitem, bevent->button.x,
-						   bevent->button.y);
-	if (pos == E_CALENDAR_VIEW_POS_NONE)
-		return FALSE;
-
-	if (bevent->button.button == 1) {
-		week_view->pressed_event_num = wveitem->event_num;
-		week_view->pressed_span_num = wveitem->span_num;
-
-		/* Ignore clicks on the event while editing. */
-		if (E_TEXT (span->text_item)->editing)
-			return FALSE;
-
-		/* Remember the item clicked and the mouse position,
-		   so we can start a drag if the mouse moves. */
-		week_view->drag_event_x = bevent->button.x;
-		week_view->drag_event_y = bevent->button.y;
-
-		/* FIXME: Remember the day offset from the start of the event.
-		 */
-
-		return TRUE;
-	} else if (bevent->button.button == 3) {
-		if (!GTK_WIDGET_HAS_FOCUS (week_view)) {
-			gtk_widget_grab_focus (GTK_WIDGET (week_view));
-			if (week_view->event_destroyed) {
-				week_view->event_destroyed = FALSE;
-				return FALSE;
-			}
-
-		}
-
-		e_week_view_set_selected_time_range_visible (week_view, event->start, event->end);
-
-		e_week_view_show_popup_menu (week_view,
-					     (GdkEventButton*) bevent,
-					     wveitem->event_num);
-		g_signal_stop_emission_by_name (item->canvas, "button_press_event");
-
-		return TRUE;
-	}
-
-	return FALSE;
+	g_object_class_install_property (
+		object_class,
+		PROP_SPAN_NUM,
+		g_param_spec_int (
+			"span-num",
+			"Span Num",
+			NULL,
+			G_MININT,
+			G_MAXINT,
+			-1,
+			G_PARAM_READWRITE));
 }
 
-static gboolean
-e_week_view_event_item_button_release (EWeekViewEventItem *wveitem,
-				       GdkEvent		  *event)
+static void
+week_view_event_item_init (EWeekViewEventItem *event_item)
 {
-	EWeekView *week_view;
-	GnomeCanvasItem *item;
+	event_item->priv = E_WEEK_VIEW_EVENT_ITEM_GET_PRIVATE (event_item);
 
-	item = GNOME_CANVAS_ITEM (wveitem);
-
-	week_view = E_WEEK_VIEW (GTK_WIDGET (item->canvas)->parent);
-	g_return_val_if_fail (E_IS_WEEK_VIEW (week_view), FALSE);
-
-#if 0
-	g_print ("In e_week_view_event_item_button_release\n");
-#endif
-
-	if (week_view->pressed_event_num != -1
-	    && week_view->pressed_event_num == wveitem->event_num
-	    && week_view->pressed_span_num == wveitem->span_num) {
-		e_week_view_start_editing_event (week_view,
-						 wveitem->event_num,
-						 wveitem->span_num,
-						 NULL);
-		week_view->pressed_event_num = -1;
-		return TRUE;
-	}
-
-	week_view->pressed_event_num = -1;
-
-	return FALSE;
+	event_item->priv->event_num = -1;
+	event_item->priv->span_num = -1;
 }
 
-static gboolean
-e_week_view_event_item_double_click (EWeekViewEventItem *wveitem,
-				     GdkEvent		*bevent)
+GType
+e_week_view_event_item_get_type (void)
 {
-	EWeekView *week_view;
-	EWeekViewEvent *event;
-	GnomeCanvasItem *item;
+	static GType type = 0;
 
-	item = GNOME_CANVAS_ITEM (wveitem);
+	if (G_UNLIKELY (type == 0)) {
+		const GTypeInfo type_info = {
+			sizeof (EWeekViewEventItemClass),
+			(GBaseInitFunc) NULL,
+			(GBaseFinalizeFunc) NULL,
+			(GClassInitFunc) week_view_event_item_class_init,
+			(GClassFinalizeFunc) NULL,
+			NULL,  /* class_data */
+			sizeof (EWeekViewEventItem),
+			0,     /* n_preallocs */
+			(GInstanceInitFunc) week_view_event_item_init,
+			NULL   /* value_table */
+		};
 
-	week_view = E_WEEK_VIEW (GTK_WIDGET (item->canvas)->parent);
-	g_return_val_if_fail (E_IS_WEEK_VIEW (week_view), FALSE);
-
-	event = &g_array_index (week_view->events, EWeekViewEvent,
-				wveitem->event_num);
-
-	if (week_view->editing_event_num >= 0) {
-		EWeekViewEvent *editing = &g_array_index (week_view->events, EWeekViewEvent, week_view->editing_event_num);
-
-		/* do not call edit of the component, if double clicked on the component, which is not on the server */
-		if (editing && event && editing->comp_data == event->comp_data && (!event->comp_data || !is_icalcomp_on_the_server (event->comp_data->icalcomp, event->comp_data->client)))
-			return TRUE;
+		type = g_type_register_static (
+			GNOME_TYPE_CANVAS_ITEM, "EWeekViewEventItem",
+			&type_info, 0);
 	}
 
-	e_week_view_stop_editing_event (week_view);
-
-	e_calendar_view_edit_appointment (E_CALENDAR_VIEW (week_view), event->comp_data->client, event->comp_data->icalcomp, FALSE);
-
-	return TRUE;
+	return type;
 }
 
-static ECalendarViewPosition
-e_week_view_event_item_get_position (EWeekViewEventItem *wveitem,
-				     gdouble x,
-				     gdouble y)
+gint
+e_week_view_event_item_get_event_num (EWeekViewEventItem *event_item)
 {
-	EWeekView *week_view;
-	GnomeCanvasItem *item;
+	g_return_val_if_fail (E_IS_WEEK_VIEW_EVENT_ITEM (event_item), -1);
 
-	item = GNOME_CANVAS_ITEM (wveitem);
+	return event_item->priv->event_num;
+}
 
-	week_view = E_WEEK_VIEW (GTK_WIDGET (item->canvas)->parent);
-	g_return_val_if_fail (E_IS_WEEK_VIEW (week_view), E_CALENDAR_VIEW_POS_NONE);
+void
+e_week_view_event_item_set_event_num (EWeekViewEventItem *event_item,
+                                      gint event_num)
+{
+	g_return_if_fail (E_IS_WEEK_VIEW_EVENT_ITEM (event_item));
 
-#if 0
-	g_print ("In e_week_view_event_item_get_position item: %g,%g %g,%g point: %g,%g\n", item->x1, item->y1, item->x2, item->y2, x, y);
-#endif
+	event_item->priv->event_num = event_num;
+	gnome_canvas_item_request_update (GNOME_CANVAS_ITEM (event_item));
 
-	if (x < item->x1 + E_WEEK_VIEW_EVENT_L_PAD
-	    || x >= item->x2 - E_WEEK_VIEW_EVENT_R_PAD)
-		return E_CALENDAR_VIEW_POS_NONE;
+	g_object_notify (G_OBJECT (event_item), "event-num");
+}
 
-	/* Support left/right edge for long events only. */
-	if (!e_week_view_is_one_day_event (week_view, wveitem->event_num)) {
-		if (x < item->x1 + E_WEEK_VIEW_EVENT_L_PAD
-		    + E_WEEK_VIEW_EVENT_BORDER_WIDTH
-		    + E_WEEK_VIEW_EVENT_EDGE_X_PAD)
-			return E_CALENDAR_VIEW_POS_LEFT_EDGE;
+gint
+e_week_view_event_item_get_span_num (EWeekViewEventItem *event_item)
+{
+	g_return_val_if_fail (E_IS_WEEK_VIEW_EVENT_ITEM (event_item), -1);
 
-		if (x >= item->x2 + 1 - E_WEEK_VIEW_EVENT_R_PAD
-		    - E_WEEK_VIEW_EVENT_BORDER_WIDTH
-		    - E_WEEK_VIEW_EVENT_EDGE_X_PAD)
-			return E_CALENDAR_VIEW_POS_RIGHT_EDGE;
-	}
+	return event_item->priv->span_num;
+}
 
-	return E_CALENDAR_VIEW_POS_EVENT;
+void
+e_week_view_event_item_set_span_num (EWeekViewEventItem *event_item,
+                                     gint span_num)
+{
+	g_return_if_fail (E_IS_WEEK_VIEW_EVENT_ITEM (event_item));
+
+	event_item->priv->span_num = span_num;
+	gnome_canvas_item_request_update (GNOME_CANVAS_ITEM (event_item));
+
+	g_object_notify (G_OBJECT (event_item), "span-num");
 }

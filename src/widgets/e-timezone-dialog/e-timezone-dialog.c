@@ -27,21 +27,22 @@
 #include <time.h>
 #include <string.h>
 #include <glib/gi18n.h>
-#include <glade/glade.h>
 #include <misc/e-map.h>
 #include <libecal/e-cal-time-util.h>
 #include <libecal/e-cal-system-timezone.h>
 
+#include "e-util/e-util.h"
 #include "e-util/e-util-private.h"
 
 #include "e-timezone-dialog.h"
 
 #ifdef G_OS_WIN32
-/* Undef the similar macros from pthread.h, they don't check if
- * gmtime() and localtime() return NULL.
- */
+#ifdef gmtime_r
 #undef gmtime_r
+#endif
+#ifdef localtime_r
 #undef localtime_r
+#endif
 
 /* The gmtime() and localtime() in Microsoft's C library are MT-safe */
 #define gmtime_r(tp,tmp) (gmtime(tp)?(*(tmp)=*gmtime(tp),(tmp)):0)
@@ -58,8 +59,7 @@ struct _ETimezoneDialogPrivate {
 	   the displayed name is ""). */
 	icaltimezone *zone;
 
-	/* Glade XML data */
-	GladeXML *xml;
+	GtkBuilder *builder;
 
 	EMapPoint *point_selected;
 	EMapPoint *point_hover;
@@ -69,7 +69,7 @@ struct _ETimezoneDialogPrivate {
 	/* The timeout used to flash the nearest point. */
 	guint timeout_id;
 
-	/* Widgets from the Glade file */
+	/* Widgets from the UI file */
 	GtkWidget *app;
 	GtkWidget *table;
 	GtkWidget *map_window;
@@ -161,9 +161,9 @@ e_timezone_dialog_dispose (GObject *object)
 		priv->timeout_id = 0;
 	}
 
-	if (priv->xml) {
-		g_object_unref (priv->xml);
-		priv->xml = NULL;
+	if (priv->builder) {
+		g_object_unref (priv->builder);
+		priv->builder = NULL;
 	}
 
 	(* G_OBJECT_CLASS (e_timezone_dialog_parent_class)->dispose) (object);
@@ -240,7 +240,9 @@ e_timezone_dialog_add_timezones (ETimezoneDialog *etd)
 		g_hash_table_insert (index, (gchar *)(l->data), GINT_TO_POINTER (i));
 	}
 
-	g_object_set_data_full (G_OBJECT (list_store), "index", index, (GDestroyNotify) g_hash_table_destroy);
+	g_object_set_data_full (
+		G_OBJECT (list_store), "index", index,
+		(GDestroyNotify) g_hash_table_destroy);
 
 	gtk_combo_box_set_model (combo, (GtkTreeModel *) list_store);
 
@@ -260,8 +262,8 @@ ETimezoneDialog *
 e_timezone_dialog_construct (ETimezoneDialog *etd)
 {
 	ETimezoneDialogPrivate *priv;
+	GtkWidget *widget;
 	GtkWidget *map;
-	gchar *filename;
 
 	g_return_val_if_fail (etd != NULL, NULL);
 	g_return_val_if_fail (E_IS_TIMEZONE_DIALOG (etd), NULL);
@@ -270,29 +272,26 @@ e_timezone_dialog_construct (ETimezoneDialog *etd)
 
 	/* Load the content widgets */
 
-	filename = g_build_filename (EVOLUTION_GLADEDIR,
-				     "e-timezone-dialog.glade",
-				     NULL);
-	priv->xml = glade_xml_new (filename, NULL, NULL);
-	g_free (filename);
-
-	if (!priv->xml) {
-		g_message ("e_timezone_dialog_construct(): Could not load the Glade XML file!");
-		goto error;
-	}
+	priv->builder = gtk_builder_new ();
+	e_load_ui_builder_definition (priv->builder, "e-timezone-dialog.ui");
 
 	if (!get_widgets (etd)) {
-		g_message ("e_timezone_dialog_construct(): Could not find all widgets in the XML file!");
+		g_message (
+			"%s(): Could not find all widgets in the XML file!",
+			G_STRFUNC);
 		goto error;
 	}
 
-	gtk_container_set_border_width (GTK_CONTAINER (GTK_DIALOG (priv->app)->vbox), 0);
-	gtk_container_set_border_width (GTK_CONTAINER (GTK_DIALOG (priv->app)->action_area), 12);
+	widget = gtk_dialog_get_content_area (GTK_DIALOG (priv->app));
+	gtk_container_set_border_width (GTK_CONTAINER (widget), 0);
+
+	widget = gtk_dialog_get_action_area (GTK_DIALOG (priv->app));
+	gtk_container_set_border_width (GTK_CONTAINER (widget), 12);
 
 	priv->map = e_map_new ();
 	map = GTK_WIDGET (priv->map);
 
-	g_object_weak_ref(G_OBJECT(map), map_destroy_cb, priv);
+	g_object_weak_ref (G_OBJECT (map), map_destroy_cb, priv);
 
 	gtk_widget_set_events (map, gtk_widget_get_events (map)
 			       | GDK_LEAVE_NOTIFY_MASK
@@ -306,12 +305,22 @@ e_timezone_dialog_construct (ETimezoneDialog *etd)
 	/* Ensure a reasonable minimum amount of map is visible */
 	gtk_widget_set_size_request (priv->map_window, 200, 200);
 
-        g_signal_connect (map, "motion-notify-event", G_CALLBACK (on_map_motion), etd);
-        g_signal_connect (map, "leave-notify-event", G_CALLBACK (on_map_leave), etd);
-        g_signal_connect (map, "visibility-notify-event", G_CALLBACK (on_map_visibility_changed), etd);
-	g_signal_connect (map, "button-press-event", G_CALLBACK (on_map_button_pressed), etd);
+	g_signal_connect (
+		map, "motion-notify-event",
+		G_CALLBACK (on_map_motion), etd);
+	g_signal_connect (
+		map, "leave-notify-event",
+		G_CALLBACK (on_map_leave), etd);
+	g_signal_connect (
+		map, "visibility-notify-event",
+		G_CALLBACK (on_map_visibility_changed), etd);
+	g_signal_connect (
+		map, "button-press-event",
+		G_CALLBACK (on_map_button_pressed), etd);
 
-	g_signal_connect (GTK_COMBO_BOX (priv->timezone_combo), "changed", G_CALLBACK (on_combo_changed), etd);
+	g_signal_connect (
+		priv->timezone_combo, "changed",
+		G_CALLBACK (on_combo_changed), etd);
 
 	return etd;
 
@@ -325,7 +334,7 @@ e_timezone_dialog_construct (ETimezoneDialog *etd)
 static gint
 get_local_offset (void)
 {
-	time_t now = time(NULL), t_gmt, t_local;
+	time_t now = time (NULL), t_gmt, t_local;
 	struct tm gmt, local;
 	gint diff;
 
@@ -340,16 +349,18 @@ get_local_offset (void)
 #endif
 
 static icaltimezone*
-get_local_timezone(void)
+get_local_timezone (void)
 {
 	icaltimezone *zone;
 	gchar *location;
 
-	tzset();
+	tzset ();
 	location = e_cal_system_timezone_get_location ();
 
 	if (location)
-		zone =  icaltimezone_get_builtin_timezone (location);
+		zone = icaltimezone_get_builtin_timezone (location);
+	else
+		zone = icaltimezone_get_utc_timezone ();
 
 	g_free (location);
 
@@ -364,16 +375,16 @@ static gboolean
 get_widgets (ETimezoneDialog *etd)
 {
 	ETimezoneDialogPrivate *priv;
+	GtkBuilder *builder;
 
 	priv = etd->priv;
+	builder = etd->priv->builder;
 
-#define GW(name) glade_xml_get_widget (priv->xml, name)
-
-	priv->app		= GW ("timezone-dialog");
-	priv->map_window	= GW ("map-window");
-	priv->timezone_combo	= GW ("timezone-combo");
-	priv->table             = GW ("timezone-table");
-	priv->preview_label     = GW ("preview-label");
+	priv->app = e_builder_get_widget (builder, "timezone-dialog");
+	priv->map_window = e_builder_get_widget (builder, "map-window");
+	priv->timezone_combo = e_builder_get_widget (builder, "timezone-combo");
+	priv->table = e_builder_get_widget (builder, "timezone-table");
+	priv->preview_label = e_builder_get_widget (builder, "preview-label");
 
 	return (priv->app
 		&& priv->map_window
@@ -439,12 +450,12 @@ zone_display_name_with_offset (icaltimezone *zone)
 	struct tm local;
 	struct icaltimetype tt;
 	gint offset;
-	gchar buffer [100];
-	time_t now = time(NULL);
+	gchar buffer[100];
+	time_t now = time (NULL);
 
 	gmtime_r ((const time_t *) &now, &local);
 	tt = tm_to_icaltimetype (&local, TRUE);
-	offset = icaltimezone_get_utc_offset(zone, &tt, NULL);
+	offset = icaltimezone_get_utc_offset (zone, &tt, NULL);
 
 	format_utc_offset (offset, buffer);
 
@@ -496,14 +507,14 @@ on_map_motion (GtkWidget *widget, GdkEventMotion *event, gpointer data)
 {
 	ETimezoneDialog *etd;
 	ETimezoneDialogPrivate *priv;
-	double longitude, latitude;
+	gdouble longitude, latitude;
 	icaltimezone *new_zone;
 	gchar *display=NULL;
 
 	etd = E_TIMEZONE_DIALOG (data);
 	priv = etd->priv;
 
-	e_map_window_to_world (priv->map, (double) event->x, (double) event->y,
+	e_map_window_to_world (priv->map, (gdouble) event->x, (gdouble) event->y,
 			       &longitude, &latitude);
 
 	if (priv->point_hover && priv->point_hover != priv->point_selected)
@@ -519,7 +530,7 @@ on_map_motion (GtkWidget *widget, GdkEventMotion *event, gpointer data)
 
 	new_zone = get_zone_from_point (etd, priv->point_hover);
 
-	display = zone_display_name_with_offset(new_zone);
+	display = zone_display_name_with_offset (new_zone);
 	gtk_label_set_text (GTK_LABEL (priv->preview_label), display);
 
 	g_free (display);
@@ -586,12 +597,12 @@ on_map_button_pressed (GtkWidget *w, GdkEventButton *event, gpointer data)
 {
 	ETimezoneDialog *etd;
 	ETimezoneDialogPrivate *priv;
-	double longitude, latitude;
+	gdouble longitude, latitude;
 
 	etd = E_TIMEZONE_DIALOG (data);
 	priv = etd->priv;
 
-	e_map_window_to_world (priv->map, (double) event->x, (double) event->y,
+	e_map_window_to_world (priv->map, (gdouble) event->x, (gdouble) event->y,
 			       &longitude, &latitude);
 
 	if (event->button != 1) {
@@ -622,7 +633,7 @@ get_zone_from_point (ETimezoneDialog *etd,
 		     EMapPoint *point)
 {
 	icalarray *zones;
-	double longitude, latitude;
+	gdouble longitude, latitude;
 	gint i;
 
 	if (point == NULL)
@@ -635,7 +646,7 @@ get_zone_from_point (ETimezoneDialog *etd,
 
 	for (i = 0; i < zones->num_elements; i++) {
 		icaltimezone *zone;
-		double zone_longitude, zone_latitude;
+		gdouble zone_longitude, zone_latitude;
 
 		zone = icalarray_element_at (zones, i);
 		zone_longitude = icaltimezone_get_longitude (zone);
@@ -650,7 +661,7 @@ get_zone_from_point (ETimezoneDialog *etd,
 		}
 	}
 
-	g_return_val_if_reached(NULL);
+	g_return_val_if_reached (NULL);
 }
 
 /**
@@ -691,14 +702,11 @@ e_timezone_dialog_set_timezone (ETimezoneDialog *etd,
 
 	g_return_if_fail (E_IS_TIMEZONE_DIALOG (etd));
 
-	if (!zone) {
-		zone = (icaltimezone *)get_local_timezone();
-		if (!zone)
-			zone = icaltimezone_get_utc_timezone();
-	}
+	if (!zone)
+		zone = get_local_timezone ();
 
 	if (zone)
-		display = zone_display_name_with_offset(zone);
+		display = zone_display_name_with_offset (zone);
 
 	priv = etd->priv;
 
@@ -731,7 +739,7 @@ set_map_timezone (ETimezoneDialog *etd, icaltimezone *zone)
 {
 	ETimezoneDialogPrivate *priv;
 	EMapPoint *point;
-	double zone_longitude, zone_latitude;
+	gdouble zone_longitude, zone_latitude;
 
 	priv = etd->priv;
 
@@ -820,31 +828,13 @@ timezone_combo_set_active_text (GtkComboBox *combo, const gchar *zone_name)
 	return (id != NULL);
 }
 
-/**
- * e_timezone_dialog_reparent:
- * @etd: #ETimezoneDialog.
- * @new_parent: The new parent widget.
- *
- * Takes the internal widgets out of the dialog and put them into @new_parent
- */
-void
-e_timezone_dialog_reparent (ETimezoneDialog *etd,
-			    GtkWidget *new_parent)
-{
-	ETimezoneDialogPrivate *priv;
-
-	priv = etd->priv;
-
-	gtk_widget_reparent (priv->table, new_parent);
-}
-
 static void
-map_destroy_cb(gpointer data, GObject *where_object_was)
+map_destroy_cb (gpointer data, GObject *where_object_was)
 {
 
 	ETimezoneDialogPrivate *priv = data;
 	if (priv->timeout_id) {
-		g_source_remove(priv->timeout_id);
+		g_source_remove (priv->timeout_id);
 		priv->timeout_id = 0;
 	}
 	return;

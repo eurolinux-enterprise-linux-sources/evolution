@@ -28,12 +28,12 @@
 #include <libebook/e-book.h>
 #include <libebook/e-contact.h>
 #include <libedataserverui/e-source-combo-box.h>
-#include <addressbook/gui/component/addressbook.h>
+#include <addressbook/util/addressbook.h>
 #include <addressbook/util/eab-book-util.h>
 #include "e-contact-editor.h"
 #include "e-contact-quick-add.h"
 #include "eab-contact-merging.h"
-#include "e-util/e-error.h"
+#include "e-util/e-alert-dialog.h"
 
 typedef struct _QuickAdd QuickAdd;
 struct _QuickAdd {
@@ -49,7 +49,7 @@ struct _QuickAdd {
 	GtkWidget *dialog;
 	GtkWidget *name_entry;
 	GtkWidget *email_entry;
-	GtkWidget *option_menu;
+	GtkWidget *combo_box;
 
 	gint refs;
 
@@ -121,15 +121,18 @@ quick_add_set_vcard (QuickAdd *qa, const gchar *vcard)
 }
 
 static void
-merge_cb (EBook *book, EBookStatus status, gpointer closure)
+merge_cb (EBook *book, const GError *error, gpointer closure)
 {
 	QuickAdd *qa = (QuickAdd *) closure;
 
-	if (status == E_BOOK_ERROR_OK) {
+	if (!error) {
 		if (e_book_is_writable (book))
 			eab_merging_book_add_contact (book, qa->contact, NULL, NULL);
 		else
-			e_error_run (NULL, "addressbook:error-read-only", e_source_peek_name (e_book_get_source (book)), NULL);
+			e_alert_run_dialog_for_args (e_shell_get_active_window (NULL),
+						     "addressbook:error-read-only",
+						     e_source_peek_name (e_book_get_source (book)),
+						     NULL);
 
 		if (qa->cb)
 			qa->cb (qa->contact, qa->closure);
@@ -183,21 +186,33 @@ editor_closed_cb (GtkWidget *w, gpointer closure)
 }
 
 static void
-ce_have_book (EBook *book, EBookStatus status, gpointer closure)
+ce_have_contact (EBook *book, const GError *error, EContact *contact, gpointer closure)
 {
 	QuickAdd *qa = (QuickAdd *) closure;
 
-	if (status != E_BOOK_ERROR_OK) {
+	if (error) {
 		if (book)
 			g_object_unref (book);
-		g_warning ("Couldn't open local address book.");
+		g_warning ("Failed to find contact, status %d (%s).", error->code, error->message);
 		quick_add_unref (qa);
 	} else {
-		EContactEditor *contact_editor = e_contact_editor_new (book, qa->contact, TRUE, TRUE /* XXX */);
+		EShell *shell;
+		EABEditor *contact_editor;
+
+		if (contact) {
+			/* use found contact */
+			if (qa->contact)
+				g_object_unref (qa->contact);
+			qa->contact = g_object_ref (contact);
+		}
+
+		shell = e_shell_get_default ();
+		contact_editor = e_contact_editor_new (
+			shell, book, qa->contact, TRUE, TRUE /* XXX */);
 
 		/* mark it as changed so the Save buttons are enabled when we bring up the dialog. */
 		g_object_set (contact_editor,
-				"changed", TRUE,
+				"changed", contact != NULL,
 				NULL);
 
 		/* We pass this via object data, so that we don't get a dangling pointer referenced if both
@@ -216,6 +231,21 @@ ce_have_book (EBook *book, EBookStatus status, gpointer closure)
 				  NULL);
 
 		g_object_unref (book);
+	}
+}
+
+static void
+ce_have_book (EBook *book, const GError *error, gpointer closure)
+{
+	QuickAdd *qa = (QuickAdd *) closure;
+
+	if (error) {
+		if (book)
+			g_object_unref (book);
+		g_warning ("Couldn't open local address book (%s).", error->message);
+		quick_add_unref (qa);
+	} else {
+		eab_merging_book_find_contact (book, qa->contact, ce_have_contact, qa);
 	}
 }
 
@@ -284,7 +314,7 @@ sanitize_widgets (QuickAdd *qa)
 	g_return_if_fail (qa->dialog != NULL);
 
 	/* do not call here e_book_is_writable (qa->book), because it requires opened book, which takes time for remote books */
-	enabled = qa->book != NULL && e_source_combo_box_get_active_uid (E_SOURCE_COMBO_BOX (qa->option_menu));
+	enabled = qa->book != NULL && e_source_combo_box_get_active_uid (E_SOURCE_COMBO_BOX (qa->combo_box));
 
 	gtk_dialog_set_response_sensitive (GTK_DIALOG (qa->dialog), QUICK_ADD_RESPONSE_EDIT_FULL, enabled);
 	gtk_dialog_set_response_sensitive (GTK_DIALOG (qa->dialog), GTK_RESPONSE_OK, enabled);
@@ -312,6 +342,7 @@ build_quick_add_dialog (QuickAdd *qa)
 {
 	ESourceList *source_list;
 	GConfClient *gconf_client;
+	GtkWidget *container;
 	GtkWidget *dialog;
 	GtkWidget *label;
 	GtkTable *table;
@@ -320,19 +351,21 @@ build_quick_add_dialog (QuickAdd *qa)
 
 	g_return_val_if_fail (qa != NULL, NULL);
 
-	dialog = gtk_dialog_new_with_buttons (_("Contact Quick-Add"),
-					      NULL, /* XXX */
-					      GTK_DIALOG_NO_SEPARATOR,
-					      _("_Edit Full"), QUICK_ADD_RESPONSE_EDIT_FULL,
-					      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-					      GTK_STOCK_OK, GTK_RESPONSE_OK,
-					      NULL);
+	dialog = gtk_dialog_new_with_buttons (
+		_("Contact Quick-Add"),
+		e_shell_get_active_window (NULL),
+		GTK_DIALOG_NO_SEPARATOR,
+		_("_Edit Full"), QUICK_ADD_RESPONSE_EDIT_FULL,
+		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+		GTK_STOCK_OK, GTK_RESPONSE_OK,
+		NULL);
 
 	gtk_widget_ensure_style (dialog);
-	gtk_container_set_border_width (GTK_CONTAINER (GTK_DIALOG (dialog)->vbox),
-					0);
-	gtk_container_set_border_width (GTK_CONTAINER (GTK_DIALOG (dialog)->action_area),
-					12);
+
+	container = gtk_dialog_get_action_area (GTK_DIALOG (dialog));
+	gtk_container_set_border_width (GTK_CONTAINER (container), 12);
+	container = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+	gtk_container_set_border_width (GTK_CONTAINER (container), 0);
 
 	g_signal_connect (dialog, "response", G_CALLBACK (clicked_cb), qa);
 
@@ -355,13 +388,13 @@ build_quick_add_dialog (QuickAdd *qa)
 	gconf_client = gconf_client_get_default ();
 	source_list = e_source_list_new_for_gconf (gconf_client, "/apps/evolution/addressbook/sources");
 	g_object_unref (gconf_client);
-	qa->option_menu = e_source_combo_box_new (source_list);
+	qa->combo_box = e_source_combo_box_new (source_list);
 	book = e_book_new_default_addressbook (NULL);
 	e_source_combo_box_set_active (
-		E_SOURCE_COMBO_BOX (qa->option_menu),
+		E_SOURCE_COMBO_BOX (qa->combo_box),
 		e_book_get_source (book));
 
-	if (!e_source_combo_box_get_active_uid (E_SOURCE_COMBO_BOX (qa->option_menu))) {
+	if (!e_source_combo_box_get_active_uid (E_SOURCE_COMBO_BOX (qa->combo_box))) {
 		/* this means the e_book_new_default_addressbook didn't find any "default" nor "system" source,
 		    and created new one for us. That is wrong, choose one from combo instead. */
 
@@ -371,9 +404,9 @@ build_quick_add_dialog (QuickAdd *qa)
 		}
 
 		book = e_book_new (e_source_list_peek_source_any (source_list), NULL);
-		e_source_combo_box_set_active (E_SOURCE_COMBO_BOX (qa->option_menu), e_book_get_source (book));
+		e_source_combo_box_set_active (E_SOURCE_COMBO_BOX (qa->combo_box), e_book_get_source (book));
 
-		if (!e_source_combo_box_get_active_uid (E_SOURCE_COMBO_BOX (qa->option_menu))) {
+		if (!e_source_combo_box_get_active_uid (E_SOURCE_COMBO_BOX (qa->combo_box))) {
 			/* Does it failed again? What is going on? */
 			if (book)
 				g_object_unref (book);
@@ -386,9 +419,9 @@ build_quick_add_dialog (QuickAdd *qa)
 		qa->book = NULL;
 	}
 	qa->book = book;
-	source_changed (E_SOURCE_COMBO_BOX (qa->option_menu), qa);
+	source_changed (E_SOURCE_COMBO_BOX (qa->combo_box), qa);
 	g_signal_connect (
-		qa->option_menu, "changed",
+		qa->combo_box, "changed",
 		G_CALLBACK (source_changed), qa);
 
 	g_object_unref (source_list);
@@ -420,21 +453,20 @@ build_quick_add_dialog (QuickAdd *qa)
 			  GTK_EXPAND | GTK_FILL, 0, xpad, ypad);
 
 	label = gtk_label_new_with_mnemonic (_("_Select Address Book"));
-	gtk_label_set_mnemonic_widget ((GtkLabel *)label, qa->option_menu);
+	gtk_label_set_mnemonic_widget ((GtkLabel *)label, qa->combo_box);
 	gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
 
 	gtk_table_attach (table, label,
 			  0, 1, 2, 3,
 			  GTK_FILL, 0, xpad, ypad);
-	gtk_table_attach (table, qa->option_menu,
+	gtk_table_attach (table, qa->combo_box,
 			  1, 2, 2, 3,
 			  GTK_EXPAND | GTK_FILL, 0, xpad, ypad);
 
-	gtk_container_set_border_width (GTK_CONTAINER (table),
-					12);
-	gtk_box_pack_start (GTK_BOX (GTK_DIALOG (dialog)->vbox),
-			    GTK_WIDGET (table),
-			    FALSE, FALSE, 0);
+	gtk_container_set_border_width (GTK_CONTAINER (table), 12);
+	container = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+	gtk_box_pack_start (
+		GTK_BOX (container), GTK_WIDGET (table), FALSE, FALSE, 0);
 	gtk_widget_show_all (GTK_WIDGET (table));
 
 	return dialog;
@@ -556,6 +588,33 @@ e_contact_quick_add_free_form (const gchar *text, EContactQuickAddCallback cb, g
 	e_contact_quick_add (name, email, cb, closure);
 	g_free (name);
 	g_free (email);
+}
+
+void
+e_contact_quick_add_email (const gchar *email, EContactQuickAddCallback cb, gpointer closure)
+{
+	gchar *name = NULL;
+	gchar *addr = NULL;
+	gchar *lt, *gt;
+
+	/* Handle something of the form "Foo <foo@bar.com>".  This is more
+	 * more forgiving than the free-form parser, allowing for unquoted
+	 * whitespace since we know the whole string is an email address. */
+
+	lt = (email != NULL) ? strchr (email, '<') : NULL;
+	gt = (lt != NULL) ? strchr (email, '>') : NULL;
+
+	if (lt != NULL && gt != NULL && (gt - lt) > 0) {
+		name = g_strndup (email, lt - email);
+		addr = g_strndup (lt + 1, gt - lt - 1);
+	} else {
+		addr = g_strdup (email);
+	}
+
+	e_contact_quick_add (name, addr, cb, closure);
+
+	g_free (name);
+	g_free (addr);
 }
 
 void

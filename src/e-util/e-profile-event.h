@@ -69,15 +69,19 @@ struct _EProfileEventClass {
 	EEventClass popup_class;
 };
 
-GType e_profile_event_get_type(void);
+GType e_profile_event_get_type (void);
 
-EProfileEvent *e_profile_event_peek(void);
+EProfileEvent *e_profile_event_peek (void);
 
-EProfileEventTarget *e_profile_event_target_new(EProfileEvent *emp, const gchar *id, const gchar *uid, guint32 flags);
+EProfileEventTarget *
+e_profile_event_target_new (EProfileEvent *emp,
+                            const gchar *id,
+                            const gchar *uid,
+                            guint32 flags);
 
 /* we don't want ANY rubbish code lying around if we have profiling off */
 #ifdef ENABLE_PROFILING
-void e_profile_event_emit(const gchar *id, const gchar *uid, guint32 flags);
+void e_profile_event_emit (const gchar *id, const gchar *uid, guint32 flags);
 #else
 #define e_profile_event_emit(a, b, c)
 #endif
@@ -95,7 +99,7 @@ struct _EProfileEventHookClass {
 	EEventHookClass hook_class;
 };
 
-GType e_profile_event_hook_get_type(void);
+GType e_profile_event_hook_get_type (void);
 
 G_END_DECLS
 

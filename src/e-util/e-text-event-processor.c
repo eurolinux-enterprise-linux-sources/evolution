@@ -49,7 +49,10 @@ enum {
 
 static guint e_tep_signals[E_TEP_LAST_SIGNAL] = { 0 };
 
-G_DEFINE_TYPE (ETextEventProcessor, e_text_event_processor, G_TYPE_OBJECT)
+G_DEFINE_TYPE (
+	ETextEventProcessor,
+	e_text_event_processor,
+	G_TYPE_OBJECT)
 
 static void
 e_text_event_processor_class_init (ETextEventProcessorClass *klass)
@@ -73,8 +76,8 @@ e_text_event_processor_class_init (ETextEventProcessorClass *klass)
 
 	g_object_class_install_property (object_class, PROP_ALLOW_NEWLINES,
 					 g_param_spec_boolean ("allow_newlines",
-							       _( "Allow newlines" ),
-							       _( "Allow newlines" ),
+							       "Allow newlines",
+							       "Allow newlines",
 							       FALSE,
 							       G_PARAM_READWRITE));
 
@@ -90,10 +93,11 @@ e_text_event_processor_init (ETextEventProcessor *tep)
 }
 
 gint
-e_text_event_processor_handle_event (ETextEventProcessor *tep, ETextEventProcessorEvent *event)
+e_text_event_processor_handle_event (ETextEventProcessor *tep,
+                                     ETextEventProcessorEvent *event)
 {
-	if (E_TEXT_EVENT_PROCESSOR_GET_CLASS(tep)->event)
-		return E_TEXT_EVENT_PROCESSOR_GET_CLASS(tep)->event(tep, event);
+	if (E_TEXT_EVENT_PROCESSOR_GET_CLASS (tep)->event)
+		return E_TEXT_EVENT_PROCESSOR_GET_CLASS (tep)->event (tep, event);
 	else
 		return 0;
 }

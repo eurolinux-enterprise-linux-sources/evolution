@@ -1,69 +1,59 @@
+SUBDIRS = icons
+
 desktopdir = $(datadir)/applications
-desktop_in_in_file = evolution.desktop.in.in
-desktop_file = $(desktop_in_in_file:.desktop.in.in=.desktop)
-%.desktop.in: %.desktop.in.in
-	sed -e "s|\@BASE_VERSION\@|$(BASE_VERSION)|" -e "s|\@DATASERVER_EXEC_VERSION\@|$(DATASERVER_EXEC_VERSION)|" $< > $@
+desktop_in_files = evolution.desktop.in evolution-settings.desktop.in
+desktop_DATA = $(desktop_in_files:.desktop.in=.desktop)
+
+autostartdir = $(sysconfdir)/xdg/autostart
+autostart_in_files = evolution-alarm-notify.desktop.in
+autostart_DATA = $(autostart_in_files:.desktop.in=.desktop)
 
 @INTLTOOL_DESKTOP_RULE@
 
-keysdir = $(datadir)/mime-info
-keys_in_file = evolution.keys.in.in
-keys_file = $(keys_in_file:.keys.in.in=.keys) 
-%.keys.in: %.keys.in.in
-	sed -e "s|\@BASE_VERSION\@|$(BASE_VERSION)|" $< > $@
-
-@INTLTOOL_KEYS_RULE@
-
 mimedir = $(datadir)/mime-info
-mime_file = evolution.mime
+dist_mime_DATA = evolution.mime
+
+themedir = $(privdatadir)/theme
+dist_theme_DATA =	\
+	default.css	\
+	tab-bar-background.png \
+	tab-switcher.png 	\
+	tab-switcher-hover.png	\
+	tab-switcher-close.png	\
+	tab-switcher-close-hover.png	\
+	tab-inactive-hover.png	\
+	tab-inactive.png	\
+	tab-active.png		\
+	tab-inactive-hover-private.png	\
+	tab-inactive-private.png	\
+	tab-active-private.png	\
+	close-on-tab.png	\
+	close-on-tab-hover.png	\
+	preview-tab-inactive.png	\
+	preview-tab-active.png	\
+	preview-tab-hover.png	\
+	preview-tab-inactive-private.png	\
+	preview-tab-active-private.png	\
+	preview-tab-hover-private.png	\
+	tab-add.png	\
+	tab-add-hover.png
 
 if HAVE_KDE_APPLNK
 
 kdedesktopdir = $(KDE_APPLNK_DIR)/Applications
-kdedesktop_file = $(desktop_in_in_file:.desktop.in.in=.desktop)
-
-install-kde-applnk:
-	$(mkinstalldirs) $(DESTDIR)$(kdedesktopdir);	\
-	$(INSTALL_DATA) $(kdedesktop_file) \
-		        $(DESTDIR)$(kdedesktopdir)/$(kdedesktop_file)
-
-uninstall-kde-applnk:
-	rm -rf $(DESTDIR)$(kdedesktopdir)/$(kdedesktop_file)
-
-else
-
-install-kde-applnk:
-uninstall-kde-applnk:
+kdedesktop_DATA = $(desktop_in_in_file:.desktop.in.in=.desktop)
 
 endif
 
-noinst_MANS = evolution.1
-noinst_DATA = $(keys_file) $(desktop_file)
+dist_noinst_MANS = evolution.1
 
-SUBDIRS = icons
-
-install-data-local: install-kde-applnk $(desktop_file) $(keys_file) $(mime_file)
-	$(mkinstalldirs) $(DESTDIR)$(desktopdir);							\
-	$(INSTALL_DATA) $(desktop_file)									\
-			$(DESTDIR)$(desktopdir)/$(desktop_file) ;	\
-	$(mkinstalldirs) $(DESTDIR)$(keysdir);								\
-	$(INSTALL_DATA) $(keys_file) $(DESTDIR)$(keysdir)/$(keys_file) ;	\
-	$(mkinstalldirs) $(DESTDIR)$(mimedir);								\
-	$(INSTALL_DATA) $(srcdir)/$(mime_file) $(DESTDIR)$(mimedir)/$(mime_file) ;
-
-uninstall-local: uninstall-kde-applnk
-	rm -rf $(DESTDIR)$(desktopdir)/$(desktop_file) ; 	\
-	rm -rf $(DESTDIR)$(keysdir)/$(keys_file) ;	\
-	rm -rf $(DESTDIR)$(mimedir)/$(mime_file) ;
 
 CLEANFILES =					\
-	$(desktop_file)				\
-	$(keys_file)
+	$(autostart_DATA)			\
+	$(desktop_DATA)
 
 EXTRA_DIST =					\
-	$(desktop_in_in_file)			\
-	$(mime_file)				\
-	$(keys_in_file)				\
-	$(noinst_MANS)
+	$(autostart_in_files)			\
+	$(desktop_in_files)
 
 -include $(top_srcdir)/git.mk

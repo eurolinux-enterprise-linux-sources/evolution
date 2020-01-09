@@ -1,0 +1,12 @@
+diff -up evolution-2.32.3/mail/em-account-editor.c.account-editor-use-after-free evolution-2.32.3/mail/em-account-editor.c
+--- evolution-2.32.3/mail/em-account-editor.c.account-editor-use-after-free	2013-07-04 09:27:20.985936101 +0200
++++ evolution-2.32.3/mail/em-account-editor.c	2013-07-04 09:27:21.023936101 +0200
+@@ -1772,6 +1772,8 @@ emae_refresh_providers (EMAccountEditor 
+ 	gtk_combo_box_set_active (dropdown, active);
+ 	g_signal_connect (dropdown, "changed", G_CALLBACK(emae_provider_changed), service);
+ 
++	/* re-read uri, it can be changed within above call of emae_uri_changed() */
++	uri = e_account_get_string (account, info->account_uri_key);
+ 	if (!uri  || (url = camel_url_new (uri, NULL)) == NULL) {
+ 		return;
+ 	}

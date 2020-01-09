@@ -24,54 +24,20 @@
 #ifndef __MAIL_IMPORTER_H__
 #define __MAIL_IMPORTER_H__
 
-#include <bonobo/bonobo-generic-factory.h>
-#include <camel/camel-folder.h>
-
 #include <e-util/e-import.h>
-
-typedef struct _MailImporter MailImporter;
-struct _MailImporter {
-	CamelFolder *folder;
-	CamelStreamMem *mstream;
-
-	gboolean frozen; /* Is folder frozen? */
-};
-
-struct _MailComponent;
-
-void mail_importer_init (struct _MailComponent *mc);
-void mail_importer_uninit (void);
-
-void mail_importer_add_line (MailImporter *importer,
-			     const gchar *str,
-			     gboolean finished);
-void mail_importer_create_folder (const gchar *parent_path,
-				  const gchar *name,
-				  const gchar *description);
-
-/* creates a folder at folderpath on the local storage */
-gchar *mail_importer_make_local_folder(const gchar *folderpath);
+#include <camel/camel.h>
 
 EImportImporter *mbox_importer_peek(void);
 
+typedef void (*MboxImporterCreatePreviewFunc)(GObject *preview, GtkWidget **preview_widget);
+typedef void (*MboxImporterFillPreviewFunc)(GObject *preview, CamelMimeMessage *msg);
+
+/* 'create_func' is a function to create a view. 'fill_func' is to fill view with a preview of a message 'msg'
+   (mail importer cannot link to em-format-html-display directly) */
+void mbox_importer_set_preview_funcs (MboxImporterCreatePreviewFunc create_func, MboxImporterFillPreviewFunc fill_func);
+
 EImportImporter *elm_importer_peek(void);
 EImportImporter *pine_importer_peek(void);
-
-#define ELM_INTELLIGENT_IMPORTER_IID "OAFIID:GNOME_Evolution_Mail_Elm_Intelligent_Importer:" BASE_VERSION
-#define PINE_INTELLIGENT_IMPORTER_IID "OAFIID:GNOME_Evolution_Mail_Pine_Intelligent_Importer:" BASE_VERSION
-#define NETSCAPE_INTELLIGENT_IMPORTER_IID "OAFIID:GNOME_Evolution_Mail_Netscape_Intelligent_Importer:" BASE_VERSION
-
-#define MBOX_IMPORTER_IID "OAFIID:GNOME_Evolution_Mail_Mbox_Importer:" BASE_VERSION
-#define OUTLOOK_IMPORTER_IID "OAFIID:GNOME_Evolution_Mail_Outlook_Importer:" BASE_VERSION
-
-BonoboObject *elm_intelligent_importer_new(void);
-BonoboObject *pine_intelligent_importer_new(void);
-BonoboObject *netscape_intelligent_importer_new(void);
-
-BonoboObject *mbox_importer_new(void);
-BonoboObject *outlook_importer_new(void);
-
-BonoboObject *mail_importer_factory_cb(BonoboGenericFactory *factory, const gchar *iid, gpointer data);
 
 /* Defines copied from nsMsgMessageFlags.h in Mozilla source. */
 /* Evolution only cares about these headers I think */
@@ -80,7 +46,7 @@ BonoboObject *mail_importer_factory_cb(BonoboGenericFactory *factory, const gcha
 #define MSG_FLAG_MARKED 0x0004
 #define MSG_FLAG_EXPUNGED 0x0008
 
-gint mail_importer_import_mbox(const gchar *path, const gchar *folderuri, CamelOperation *cancel, void (*done)(gpointer data, CamelException *), gpointer data);
+gint mail_importer_import_mbox(const gchar *path, const gchar *folderuri, CamelOperation *cancel, void (*done)(gpointer data, GError **), gpointer data);
 void mail_importer_import_mbox_sync(const gchar *path, const gchar *folderuri, CamelOperation *cancel);
 
 struct _MailImporterSpecial {

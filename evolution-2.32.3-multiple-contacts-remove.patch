@@ -1,0 +1,67 @@
+diff -up evolution-2.32.3/addressbook/gui/widgets/e-addressbook-model.c.multiple-contacts-remove evolution-2.32.3/addressbook/gui/widgets/e-addressbook-model.c
+--- evolution-2.32.3/addressbook/gui/widgets/e-addressbook-model.c.multiple-contacts-remove	2011-03-29 20:38:45.000000000 +0200
++++ evolution-2.32.3/addressbook/gui/widgets/e-addressbook-model.c	2013-07-24 08:38:09.745434537 +0200
+@@ -177,6 +177,16 @@ create_contact (EBookView *book_view,
+ 	update_folder_bar_message (model);
+ }
+ 
++static gint
++sort_descending (gconstpointer ca,
++		 gconstpointer cb)
++{
++	gint a = *((gint *) ca);
++	gint b = *((gint *) cb);
++
++	return (a == b) ? 0 : (a < b) ? 1 : -1;
++}
++
+ static void
+ remove_contact(EBookView *book_view,
+ 	       GList *ids,
+@@ -215,6 +225,11 @@ remove_contact(EBookView *book_view,
+ 		}
+ 	}
+ 
++	/* Sort the 'indices' array in descending order, since
++	 * g_ptr_array_remove_index() shifts subsequent elements
++	 * down one position to fill the gap. */
++	g_array_sort (indices, sort_descending);
++
+ 	for (ii = 0; ii < indices->len; ii++) {
+ 		gint index;
+ 
+@@ -238,24 +253,27 @@ modify_contact(EBookView *book_view,
+ 	array = model->priv->contacts;
+ 
+ 	while (contact_list != NULL) {
+-		EContact *contact = contact_list->data;
++		EContact *new_contact = contact_list->data;
+ 		const gchar *target_uid;
+ 		gint ii;
+ 
+-		target_uid = e_contact_get_const (contact, E_CONTACT_UID);
++		target_uid = e_contact_get_const (new_contact, E_CONTACT_UID);
+ 
+ 		for (ii = 0; ii < array->len; ii++) {
++			EContact *old_contact;
+ 			const gchar *uid;
+ 
+-			uid = e_contact_get_const (
+-				array->pdata[ii], E_CONTACT_UID);
++			old_contact = array->pdata[ii];
++			g_return_if_fail (old_contact != NULL);
++
++			uid = e_contact_get_const (old_contact, E_CONTACT_UID);
++			g_return_if_fail (uid != NULL);
+ 
+ 			if (strcmp (uid, target_uid) != 0)
+ 				continue;
+ 
+-			g_object_unref (array->pdata[ii]);
+-			contact = e_contact_duplicate (contact);
+-			array->pdata[ii] = contact;
++			g_object_unref (old_contact);
++			array->pdata[ii] = e_contact_duplicate (new_contact);
+ 
+ 			g_signal_emit (
+ 				model, signals[CONTACT_CHANGED], 0, ii);

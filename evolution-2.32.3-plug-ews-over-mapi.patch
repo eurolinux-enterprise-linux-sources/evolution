@@ -1,0 +1,88 @@
+diff -up evolution-2.32.3/mail/e-mail-migrate.c.plug-ews-over-mapi evolution-2.32.3/mail/e-mail-migrate.c
+--- evolution-2.32.3/mail/e-mail-migrate.c.plug-ews-over-mapi	2013-08-13 08:14:05.095445198 -0400
++++ evolution-2.32.3/mail/e-mail-migrate.c	2013-08-14 09:46:19.285014127 -0400
+@@ -774,6 +774,71 @@ em_ensure_proxy_ignore_hosts_being_list 
+ 	g_object_unref (client);
+ }
+ 
++static void
++rhel_6_5_advertise_ews_over_mapi (void)
++{
++	EAccountList *account_list;
++	EIterator *iterator;
++	GtkWidget *dialog;
++	gboolean has_mapi_account = FALSE;
++
++	/* Look for a MAPI account. */
++
++	account_list = e_get_account_list ();
++	if (account_list == NULL)
++		return;
++
++	iterator = e_list_get_iterator (E_LIST (account_list));
++
++	while (e_iterator_is_valid (iterator)) {
++		EAccount *account;
++
++		account = (EAccount *) e_iterator_get (iterator);
++		e_iterator_next (iterator);
++
++		if (account->source == NULL)
++			continue;
++
++		if (account->source->url == NULL)
++			continue;
++
++		if (g_str_has_prefix (account->source->url, "mapi:"))
++			has_mapi_account = TRUE;
++	}
++
++	g_object_unref (iterator);
++
++	/* No MAPI account?  Keep quiet. */
++
++	if (!has_mapi_account)
++		return;
++
++	/* Advertise Exchange Web Services. */
++
++	dialog = gtk_message_dialog_new (
++		NULL, 0,
++		GTK_MESSAGE_INFO,
++		GTK_BUTTONS_CLOSE,
++		_("New account type available for Microsoft Exchange"));
++
++	gtk_message_dialog_format_secondary_markup (
++		GTK_MESSAGE_DIALOG (dialog),
++		_("Evolution now recommends a new account type named "
++		  "<b>Exchange Web Services</b> over <b>Exchange MAPI</b> "
++		  "for improved performance and enhanced functionality "
++		  "with Microsoft Exchange 2007 (or later) servers."
++		  "\n\n"
++		  "To use <b>Exchange Web Services</b>, first install the "
++		  "\"<tt>evolution-exchange</tt>\" package and restart "
++		  "Evolution. Then open <b>Edit\xE2\x86\x92Preferences</b> "
++		  "and create a new email account, choosing \"Server Type: "
++		  "Exchange Web Services\"."));
++
++	gtk_dialog_run (GTK_DIALOG (dialog));
++
++	gtk_widget_destroy (dialog);
++}
++
+ gboolean
+ e_mail_migrate (EShellBackend *shell_backend,
+                 gint major,
+@@ -828,5 +893,11 @@ e_mail_migrate (EShellBackend *shell_bac
+ 		em_ensure_proxy_ignore_hosts_being_list ();
+ 	}
+ 
++	/* For RHEL 6.5: If the user has a MAPI account configured when
++	 * upgrading from an earlier version, display a dialog promoting
++	 * the Exchange Web Services backend over MAPI. */
++	if (major < 2 || (major == 2 && minor < 32))
++		rhel_6_5_advertise_ews_over_mapi ();
++
+ 	return TRUE;
+ }
+diff -up evolution-2.32.3/shell/e-shell-migrate.c.plug-ews-over-mapi evolution-2.32.3/shell/e-shell-migrate.c

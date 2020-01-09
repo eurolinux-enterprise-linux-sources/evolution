@@ -24,7 +24,10 @@
 
 #include "e-contact-list-editor.h"
 #include <e-util/e-util-private.h>
-#include <e-util/e-error.h>
+#include <e-util/e-alert-dialog.h>
+#include <e-util/e-selection.h>
+#include <e-util/gtk-compat.h>
+#include "shell/e-shell.h"
 
 #include <string.h>
 
@@ -32,11 +35,11 @@
 #include <glib/gi18n.h>
 #include <gdk/gdkkeysyms.h>
 
+#include <camel/camel.h>
+#include <libedataserverui/e-book-auth-util.h>
 #include <libedataserverui/e-source-combo-box.h>
 
-#include "shell/evolution-shell-component-utils.h"
-
-#include "addressbook/gui/component/addressbook.h"
+#include "e-util/e-util.h"
 #include "addressbook/gui/widgets/eab-gui-util.h"
 #include "addressbook/util/eab-book-util.h"
 
@@ -50,8 +53,8 @@
 	((obj), E_TYPE_CONTACT_LIST_EDITOR, EContactListEditorPrivate))
 
 #define CONTACT_LIST_EDITOR_WIDGET(editor, name) \
-	(glade_xml_get_widget \
-	(E_CONTACT_LIST_EDITOR_GET_PRIVATE (editor)->xml, name))
+	(e_builder_get_widget \
+	(E_CONTACT_LIST_EDITOR_GET_PRIVATE (editor)->builder, name))
 
 /* More macros, less typos. */
 #define CONTACT_LIST_EDITOR_WIDGET_ADD_BUTTON(editor) \
@@ -61,7 +64,7 @@
 #define CONTACT_LIST_EDITOR_WIDGET_DIALOG(editor) \
 	CONTACT_LIST_EDITOR_WIDGET ((editor), "dialog")
 #define CONTACT_LIST_EDITOR_WIDGET_EMAIL_ENTRY(editor) \
-	CONTACT_LIST_EDITOR_WIDGET ((editor), "email-entry")
+	E_CONTACT_LIST_EDITOR_GET_PRIVATE (editor)->email_entry
 #define CONTACT_LIST_EDITOR_WIDGET_LIST_NAME_ENTRY(editor) \
 	CONTACT_LIST_EDITOR_WIDGET ((editor), "list-name-entry")
 #define CONTACT_LIST_EDITOR_WIDGET_MEMBERS_VBOX(editor) \
@@ -98,9 +101,13 @@ struct _EContactListEditorPrivate {
 	EBook *book;
 	EContact *contact;
 
-	GladeXML *xml;
+	GtkBuilder *builder;
 	GtkTreeModel *model;
 	ENameSelector *name_selector;
+
+	/* This is kept here because the builder has an old widget
+	 * which was changed with this one. */
+	ENameSelectorEntry *email_entry;
 
 	/* Whether we are editing a new contact or an existing one. */
 	guint is_new_list : 1;
@@ -117,20 +124,6 @@ struct _EContactListEditorPrivate {
 
 	/* Whether an async wombat call is in progress. */
 	guint in_async_call : 1;
-
-	/* ID for async load_source call */
-	guint load_source_id;
-	EBook *load_book;
-};
-
-#define VCARD_TYPE "text/x-vcard"
-
-enum {
-	TARGET_TYPE_VCARD
-};
-
-static GtkTargetEntry targets[] = {
-	{ (gchar *) VCARD_TYPE, 0, TARGET_TYPE_VCARD },
 };
 
 static gpointer parent_class;
@@ -210,46 +203,43 @@ contact_list_editor_add_email (EContactListEditor *editor)
 }
 
 static void
-contact_list_editor_book_loaded (EBook *new_book,
-                                 EBookStatus status,
-                                 EContactListEditor *editor)
+contact_list_editor_book_loaded_cb (ESource *source,
+                                    GAsyncResult *result,
+                                    EContactListEditor *editor)
 {
 	EContactListEditorPrivate *priv = editor->priv;
+	EContactStore *contact_store;
 	ENameSelectorEntry *entry;
+	EBook *book;
+	GError *error = NULL;
 
-	priv->load_source_id = 0;
-	priv->load_book = NULL;
+	book = e_load_book_source_finish (source, result, &error);
 
-	if (status != E_BOOK_ERROR_OK || new_book == NULL) {
-		eab_load_error_dialog (
-			NULL, e_book_get_source (new_book), status);
+	if (error != NULL) {
+		GtkWindow *parent;
+
+		parent = eab_editor_get_window (EAB_EDITOR (editor));
+		eab_load_error_dialog (GTK_WIDGET (parent), source, error);
+
 		e_source_combo_box_set_active (
 			E_SOURCE_COMBO_BOX (WIDGET (SOURCE_MENU)),
 			e_book_get_source (priv->book));
-		if (new_book)
-			g_object_unref (new_book);
-		return;
+
+		g_error_free (error);
+		goto exit;
 	}
 
+	g_return_if_fail (E_IS_BOOK (book));
+
 	entry = E_NAME_SELECTOR_ENTRY (WIDGET (EMAIL_ENTRY));
-	e_contact_store_add_book (entry->contact_store, new_book);
-	e_contact_list_editor_set_book (editor, new_book);
-	g_object_unref (new_book);
-}
+	contact_store = e_name_selector_entry_peek_contact_store (entry);
+	e_contact_store_add_book (contact_store, book);
+	e_contact_list_editor_set_book (editor, book);
 
-static void
-contact_list_editor_cancel_load (EContactListEditor *editor)
-{
-	EContactListEditorPrivate *priv = editor->priv;
+	g_object_unref (book);
 
-	if (priv->load_source_id == 0)
-		return;
-
-	addressbook_load_cancel (priv->load_source_id);
-	priv->load_source_id = 0;
-
-	g_object_unref (priv->load_book);
-	priv->load_book = NULL;
+exit:
+	g_object_unref (editor);
 }
 
 static gboolean
@@ -261,12 +251,13 @@ contact_list_editor_contact_exists (EContactListModel *model,
 	if (!e_contact_list_model_has_email (model, email))
 		return FALSE;
 
-	return (e_error_run (NULL, tag, email, NULL) != GTK_RESPONSE_YES);
+	return (e_alert_run_dialog_for_args (e_shell_get_active_window (NULL),
+					     tag, email, NULL) != GTK_RESPONSE_YES);
 }
 
 static void
 contact_list_editor_list_added_cb (EBook *book,
-                                   EBookStatus status,
+                                   const GError *error,
                                    const gchar *id,
                                    EditorCloseStruct *ecs)
 {
@@ -280,9 +271,9 @@ contact_list_editor_list_added_cb (EBook *book,
 	e_contact_set (priv->contact, E_CONTACT_UID, (gchar *) id);
 
 	eab_editor_contact_added (
-		EAB_EDITOR (editor), status, priv->contact);
+		EAB_EDITOR (editor), error, priv->contact);
 
-	if (status == E_BOOK_ERROR_OK) {
+	if (!error) {
 		priv->is_new_list = FALSE;
 
 		if (should_close)
@@ -297,7 +288,7 @@ contact_list_editor_list_added_cb (EBook *book,
 
 static void
 contact_list_editor_list_modified_cb (EBook *book,
-                                      EBookStatus status,
+                                      const GError *error,
                                       EditorCloseStruct *ecs)
 {
 	EContactListEditor *editor = ecs->editor;
@@ -308,9 +299,9 @@ contact_list_editor_list_modified_cb (EBook *book,
 	priv->in_async_call = FALSE;
 
 	eab_editor_contact_modified (
-		EAB_EDITOR (editor), status, priv->contact);
+		EAB_EDITOR (editor), error, priv->contact);
 
-	if (status == E_BOOK_ERROR_OK) {
+	if (!error) {
 		if (should_close)
 			eab_editor_close (EAB_EDITOR (editor));
 	}
@@ -434,27 +425,37 @@ contact_list_editor_drag_data_received_cb (GtkWidget *widget,
 void
 contact_list_editor_drag_data_received_cb (GtkWidget *widget,
                                            GdkDragContext *context,
-                                             gint x, gint y,
-                                             GtkSelectionData *selection_data,
-                                             guint info,
-                                             guint time)
+                                           gint x, gint y,
+                                           GtkSelectionData *selection_data,
+                                           guint info,
+                                           guint time)
 {
+	CamelInternetAddress *address;
 	EContactListEditor *editor;
 	EContactListModel *model;
-	gchar *target_type;
 	gboolean changed = FALSE;
 	gboolean handled = FALSE;
+	const guchar *data;
 	GList *list, *iter;
+	GdkAtom target;
+	gint n_addresses = 0;
+	gchar *text;
 
 	editor = contact_list_editor_extract (widget);
-
 	model = E_CONTACT_LIST_MODEL (editor->priv->model);
-	target_type = gdk_atom_name (selection_data->target);
 
-	if (strcmp (target_type, VCARD_TYPE) != 0)
+	target = gtk_selection_data_get_target (selection_data);
+
+	/* Sanity check the selection target. */
+
+	if (gtk_targets_include_text (&target, 1))
+		goto handle_text;
+
+	if (!e_targets_include_directory (&target, 1))
 		goto exit;
 
-	list = eab_contact_list_from_string ((gchar *) selection_data->data);
+	data = gtk_selection_data_get_data (selection_data);
+	list = eab_contact_list_from_string ((gchar *) data);
 
 	if (list != NULL)
 		handled = TRUE;
@@ -491,78 +492,41 @@ contact_list_editor_drag_data_received_cb (GtkWidget *widget,
 		contact_list_editor_update (editor);
 	}
 
+	goto exit;
+
+handle_text:
+
+	address = camel_internet_address_new ();
+	text = (gchar *) gtk_selection_data_get_text (selection_data);
+
+	/* See if Camel can parse a valid email address from the text. */
+	if (text != NULL && *text != '\0') {
+		camel_url_decode (text);
+		if (g_ascii_strncasecmp (text, "mailto:", 7) == 0)
+			n_addresses = camel_address_decode (
+				CAMEL_ADDRESS (address), text + 7);
+		else
+			n_addresses = camel_address_decode (
+				CAMEL_ADDRESS (address), text);
+	}
+
+	if (n_addresses == 1) {
+		g_free (text);
+
+		text = camel_address_format (CAMEL_ADDRESS (address));
+		e_contact_list_model_add_email (model, text);
+
+		contact_list_editor_scroll_to_end (editor);
+		editor->priv->changed = TRUE;
+
+		contact_list_editor_update (editor);
+		handled = TRUE;
+	}
+
+	g_free (text);
+
 exit:
 	gtk_drag_finish (context, handled, FALSE, time);
-}
-
-gboolean
-contact_list_editor_drag_drop_cb (GtkWidget *widget,
-                                  GdkDragContext *context,
-                                  gint x, gint y,
-                                  guint time);
-
-gboolean
-contact_list_editor_drag_drop_cb (GtkWidget *widget,
-                                  GdkDragContext *context,
-                                  gint x, gint y,
-                                  guint time)
-{
-	EContactListEditor *editor;
-	GList *iter;
-
-	editor = contact_list_editor_extract (widget);
-
-	for (iter = context->targets; iter != NULL; iter = iter->next) {
-		GdkAtom target = GDK_POINTER_TO_ATOM (iter->data);
-		gchar *possible_type;
-		gboolean match;
-
-		possible_type = gdk_atom_name (target);
-		match = (strcmp (possible_type, VCARD_TYPE) == 0);
-		g_free (possible_type);
-
-		if (match) {
-			gtk_drag_get_data (widget, context, target, time);
-			return TRUE;
-		}
-	}
-
-	return FALSE;
-}
-
-gboolean
-contact_list_editor_drag_motion_cb (GtkWidget *widget,
-                                    GdkDragContext *context,
-                                    gint x, gint y,
-                                    guint time);
-
-gboolean
-contact_list_editor_drag_motion_cb (GtkWidget *widget,
-                                    GdkDragContext *context,
-                                    gint x, gint y,
-                                    guint time)
-{
-	EContactListEditor *editor;
-	GList *iter;
-
-	editor = contact_list_editor_extract (widget);
-
-	for (iter = context->targets; iter != NULL; iter = iter->next) {
-		GdkAtom target = GDK_POINTER_TO_ATOM (iter->data);
-		gchar *possible_type;
-		gboolean match;
-
-		possible_type = gdk_atom_name (target);
-		match = (strcmp (possible_type, VCARD_TYPE) == 0);
-		g_free (possible_type);
-
-		if (match) {
-			gdk_drag_status (context, GDK_ACTION_LINK, time);
-			return TRUE;
-		}
-	}
-
-	return FALSE;
 }
 
 void
@@ -604,10 +568,35 @@ contact_list_editor_email_entry_key_press_event_cb (GtkWidget *widget,
                                                     GdkEventKey *event)
 {
 	EContactListEditor *editor;
+	gboolean can_comma = FALSE;
 
 	editor = contact_list_editor_extract (widget);
 
-	if (event->keyval == GDK_comma || event->keyval == GDK_Return) {
+	if (event->keyval == GDK_comma) {
+		GtkEntry *entry;
+		gint cpos = -1;
+
+		entry = GTK_ENTRY (WIDGET (EMAIL_ENTRY));
+		g_object_get (G_OBJECT (entry), "cursor-position", &cpos, NULL);
+
+		/* not the first letter */
+		if (cpos > 0) {
+			const gchar *text;
+			gint quotes = 0, i;
+
+			text = gtk_entry_get_text (entry);
+
+			for (i = 0; text && text[i] && i < cpos; i++) {
+				if (text[i] == '\"')
+					quotes++;
+			}
+
+			/* even count of quotes */
+			can_comma = (quotes & 1) == 0;
+		}
+	}
+
+	if (can_comma || event->keyval == GDK_Return) {
 		g_signal_emit_by_name (widget, "activate", 0);
 		contact_list_editor_add_email (editor);
 
@@ -636,7 +625,7 @@ contact_list_editor_email_entry_updated_cb (GtkWidget *widget,
 	entry = E_NAME_SELECTOR_ENTRY (widget);
 	model = E_CONTACT_LIST_MODEL (editor->priv->model);
 
-	email = g_strdup (e_destination_get_address (destination));
+	email = g_strdup (e_destination_get_textrep (destination, TRUE));
 	store = e_name_selector_entry_peek_destination_store (entry);
 	e_destination_store_remove_destination (store, destination);
 	gtk_entry_set_text (GTK_ENTRY (WIDGET (EMAIL_ENTRY)), "");
@@ -753,6 +742,7 @@ contact_list_editor_select_button_clicked_cb (GtkWidget *widget)
 	ENameSelectorDialog *dialog;
 	EDestinationStore *store;
 	GList *list, *iter;
+	GtkWindow *window;
 
 	editor = contact_list_editor_extract (widget);
 
@@ -776,6 +766,9 @@ contact_list_editor_select_button_clicked_cb (GtkWidget *widget)
 
 	g_list_free (list);
 
+	window = eab_editor_get_window (EAB_EDITOR (editor));
+	e_name_selector_show_dialog (
+		editor->priv->name_selector, GTK_WIDGET (window));
 	gtk_dialog_run (GTK_DIALOG (dialog));
 	gtk_widget_hide (GTK_WIDGET (dialog));
 
@@ -806,6 +799,7 @@ void
 contact_list_editor_source_menu_changed_cb (GtkWidget *widget)
 {
 	EContactListEditor *editor;
+	GtkWindow *parent;
 	ESource *source;
 
 	editor = contact_list_editor_extract (widget);
@@ -814,10 +808,12 @@ contact_list_editor_source_menu_changed_cb (GtkWidget *widget)
 	if (e_source_equal (e_book_get_source (editor->priv->book), source))
 		return;
 
-	editor->priv->load_book = e_book_new (source, NULL);
-	editor->priv->load_source_id = addressbook_load (
-		editor->priv->load_book, (EBookCallback)
-		contact_list_editor_book_loaded, editor);
+	parent = eab_editor_get_window (EAB_EDITOR (editor));
+
+	e_load_book_source_async (
+		source, parent, NULL, (GAsyncReadyCallback)
+		contact_list_editor_book_loaded_cb,
+		g_object_ref (editor));
 }
 
 gboolean
@@ -839,31 +835,59 @@ contact_list_editor_tree_view_key_press_event_cb (GtkWidget *widget,
 	return FALSE;
 }
 
-/*********************** Glade Custom Widget Factories ***********************/
+/******************** GtkBuilder Custom Widgets Functions ********************/
 
-GtkWidget *
-contact_list_editor_create_source_combo_box (gchar *name,
-                                             gchar *string1,
-                                             gchar *string2,
-                                             gint int1,
-                                             gint int2);
+static gpointer
+contact_editor_fudge_new (EBook *book,
+                          EContact *contact,
+                          gboolean is_new,
+                          gboolean editable)
+{
+	EShell *shell = e_shell_get_default ();
 
-GtkWidget *
-contact_list_editor_create_source_combo_box (gchar *name,
-                                             gchar *string1,
-                                             gchar *string2,
-                                             gint int1,
-                                             gint int2)
+	/* XXX Putting this function signature in libedataserverui
+	 *     was a terrible idea.  Now we're stuck with it. */
+
+	return e_contact_editor_new (
+		shell, book, contact, is_new, editable);
+}
+
+static gpointer
+contact_list_editor_fudge_new (EBook *book,
+                               EContact *contact,
+                               gboolean is_new,
+                               gboolean editable)
+{
+	EShell *shell = e_shell_get_default ();
+
+	/* XXX Putting this function signature in libedataserverui
+	 *     was a terrible idea.  Now we're stuck with it. */
+
+	return e_contact_list_editor_new (
+		shell, book, contact, is_new, editable);
+}
+
+static void
+setup_custom_widgets (EContactListEditor *editor)
 {
 	const gchar *key = "/apps/evolution/addressbook/sources";
-
 	GtkWidget *combo_box;
 	GConfClient *client;
 	ESourceList *source_list;
+	ENameSelectorEntry *name_selector_entry;
+	ENameSelector *name_selector;
+	GtkWidget *old, *parent;
+	EContactListEditorPrivate *priv;
+	guint ba = 0, la = 0, ra = 0, ta = 0, xo = 0, xp = 0, yo = 0, yp = 0;
 
+	g_return_if_fail (editor != NULL);
+
+	priv = E_CONTACT_LIST_EDITOR_GET_PRIVATE (editor);
+
+	combo_box = WIDGET (SOURCE_MENU);
 	client = gconf_client_get_default ();
 	source_list = e_source_list_new_for_gconf (client, key);
-	combo_box = e_source_combo_box_new (source_list);
+	g_object_set (G_OBJECT (combo_box), "source-list", source_list, NULL);
 	g_object_unref (source_list);
 	g_object_unref (client);
 
@@ -871,27 +895,8 @@ contact_list_editor_create_source_combo_box (gchar *name,
 		combo_box, "changed", G_CALLBACK (
 		contact_list_editor_source_menu_changed_cb), NULL);
 
-	gtk_widget_show (combo_box);
-
-	return combo_box;
-}
-
-GtkWidget *
-contact_list_editor_create_name_selector (gchar *name,
-                                          gchar *string1,
-                                          gchar *string2,
-                                          gint int1,
-                                          gint int2);
-
-GtkWidget *
-contact_list_editor_create_name_selector (gchar *name,
-                                          gchar *string1,
-                                          gchar *string2,
-                                          gint int1,
-                                          gint int2)
-{
-	ENameSelectorEntry *name_selector_entry;
-	ENameSelector *name_selector;
+	old = CONTACT_LIST_EDITOR_WIDGET (editor, "email-entry");
+	g_return_if_fail (old != NULL);
 
 	name_selector = e_name_selector_new ();
 
@@ -902,11 +907,37 @@ contact_list_editor_create_name_selector (gchar *name,
 	name_selector_entry = e_name_selector_peek_section_entry (
 		name_selector, "Members");
 
-	e_name_selector_entry_set_contact_editor_func (
-		name_selector_entry, e_contact_editor_new);
-	e_name_selector_entry_set_contact_list_editor_func (
-		name_selector_entry, e_contact_list_editor_new);
+	gtk_widget_set_name (
+		GTK_WIDGET (name_selector_entry),
+		gtk_widget_get_name (old));
+	parent = gtk_widget_get_parent (old);
+
+	gtk_container_child_get (GTK_CONTAINER (parent), old,
+		"bottom-attach", &ba,
+		"left-attach", &la,
+		"right-attach", &ra,
+		"top-attach", &ta,
+		"x-options", &xo,
+		"x-padding", &xp,
+		"y-options", &yo,
+		"y-padding", &yp,
+		NULL);
+
+	/* only hide it... */
+	gtk_widget_hide (old);
+
+	/* ... and place the new name selector to the
+	 * exact place as is the old one in UI file */
 	gtk_widget_show (GTK_WIDGET (name_selector_entry));
+	gtk_table_attach (
+		GTK_TABLE (parent), GTK_WIDGET (name_selector_entry),
+		la, ra, ta, ba, xo, yo, xp, yp);
+	priv->email_entry = name_selector_entry;
+
+	e_name_selector_entry_set_contact_editor_func (
+		name_selector_entry, contact_editor_fudge_new);
+	e_name_selector_entry_set_contact_list_editor_func (
+		name_selector_entry, contact_list_editor_fudge_new);
 
 	g_signal_connect (
 		name_selector_entry, "activate", G_CALLBACK (
@@ -920,89 +951,6 @@ contact_list_editor_create_name_selector (gchar *name,
 	g_signal_connect (
 		name_selector_entry, "updated", G_CALLBACK (
 		contact_list_editor_email_entry_updated_cb), NULL);
-
-	return GTK_WIDGET (name_selector_entry);
-}
-
-/**************************** EABEditor Callbacks ****************************/
-
-static void
-contact_list_editor_show (EABEditor *editor)
-{
-	gtk_widget_show (WIDGET (DIALOG));
-}
-
-static void
-contact_list_editor_close (EABEditor *editor)
-{
-	gtk_widget_destroy (WIDGET (DIALOG));
-	eab_editor_closed (editor);
-}
-
-static void
-contact_list_editor_raise (EABEditor *editor)
-{
-	gdk_window_raise (WIDGET (DIALOG)->window);
-}
-
-static void
-contact_list_editor_save_contact (EABEditor *eab_editor,
-                                  gboolean should_close)
-{
-	EContactListEditor *editor = E_CONTACT_LIST_EDITOR (eab_editor);
-	EContactListEditorPrivate *priv = editor->priv;
-	EditorCloseStruct *ecs;
-	EContact *contact;
-
-	contact = e_contact_list_editor_get_contact (editor);
-
-	if (priv->book == NULL)
-		return;
-
-	ecs = g_new (EditorCloseStruct, 1);
-	ecs->editor = g_object_ref (editor);
-	ecs->should_close = should_close;
-
-	gtk_widget_set_sensitive (WIDGET (DIALOG), FALSE);
-	priv->in_async_call = TRUE;
-
-	if (priv->is_new_list)
-		eab_merging_book_add_contact (
-			priv->book, contact, (EBookIdCallback)
-			contact_list_editor_list_added_cb, ecs);
-	else
-		eab_merging_book_commit_contact (
-			priv->book, contact, (EBookCallback)
-			contact_list_editor_list_modified_cb, ecs);
-
-	priv->changed = FALSE;
-}
-
-static gboolean
-contact_list_editor_is_valid (EABEditor *editor)
-{
-	GtkEditable *editable;
-	gboolean valid;
-	gchar *chars;
-
-	editable = GTK_EDITABLE (WIDGET (LIST_NAME_ENTRY));
-	chars = gtk_editable_get_chars (editable, 0, -1);
-	valid = (chars != NULL && *chars != '\0');
-	g_free (chars);
-
-	return valid;
-}
-
-static gboolean
-contact_list_editor_is_changed (EABEditor *editor)
-{
-	return E_CONTACT_LIST_EDITOR_GET_PRIVATE (editor)->changed;
-}
-
-static GtkWindow*
-contact_list_editor_get_window (EABEditor *editor)
-{
-	return GTK_WINDOW (WIDGET (DIALOG));
 }
 
 /***************************** GObject Callbacks *****************************/
@@ -1103,8 +1051,6 @@ contact_list_editor_dispose (GObject *object)
 	EContactListEditor *editor = E_CONTACT_LIST_EDITOR (object);
 	EContactListEditorPrivate *priv = editor->priv;
 
-	contact_list_editor_cancel_load (editor);
-
 	if (priv->name_selector) {
 		g_object_unref (priv->name_selector);
 		priv->name_selector = NULL;
@@ -1112,6 +1058,138 @@ contact_list_editor_dispose (GObject *object)
 
 	/* Chain up to parent's dispose() method. */
 	G_OBJECT_CLASS (parent_class)->dispose (object);
+}
+
+/**************************** EABEditor Callbacks ****************************/
+
+static void
+contact_list_editor_show (EABEditor *editor)
+{
+	gtk_widget_show (WIDGET (DIALOG));
+}
+
+static void
+contact_list_editor_close (EABEditor *editor)
+{
+	gtk_widget_destroy (WIDGET (DIALOG));
+	eab_editor_closed (editor);
+}
+
+static void
+contact_list_editor_raise (EABEditor *editor)
+{
+	GdkWindow *window;
+
+	window = gtk_widget_get_window (WIDGET (DIALOG));
+	gdk_window_raise (window);
+}
+
+static void
+contact_list_editor_save_contact (EABEditor *eab_editor,
+                                  gboolean should_close)
+{
+	EContactListEditor *editor = E_CONTACT_LIST_EDITOR (eab_editor);
+	EContactListEditorPrivate *priv = editor->priv;
+	EditorCloseStruct *ecs;
+	EContact *contact;
+
+	contact = e_contact_list_editor_get_contact (editor);
+
+	if (priv->book == NULL)
+		return;
+
+	ecs = g_new (EditorCloseStruct, 1);
+	ecs->editor = g_object_ref (editor);
+	ecs->should_close = should_close;
+
+	gtk_widget_set_sensitive (WIDGET (DIALOG), FALSE);
+	priv->in_async_call = TRUE;
+
+	if (priv->is_new_list)
+		eab_merging_book_add_contact (
+			priv->book, contact, (EBookIdAsyncCallback)
+			contact_list_editor_list_added_cb, ecs);
+	else
+		eab_merging_book_commit_contact (
+			priv->book, contact, (EBookAsyncCallback)
+			contact_list_editor_list_modified_cb, ecs);
+
+	priv->changed = FALSE;
+}
+
+static gboolean
+contact_list_editor_is_valid (EABEditor *editor)
+{
+	GtkEditable *editable;
+	gboolean valid;
+	gchar *chars;
+
+	editable = GTK_EDITABLE (WIDGET (LIST_NAME_ENTRY));
+	chars = gtk_editable_get_chars (editable, 0, -1);
+	valid = (chars != NULL && *chars != '\0');
+	g_free (chars);
+
+	return valid;
+}
+
+static gboolean
+contact_list_editor_is_changed (EABEditor *editor)
+{
+	return E_CONTACT_LIST_EDITOR_GET_PRIVATE (editor)->changed;
+}
+
+static GtkWindow *
+contact_list_editor_get_window (EABEditor *editor)
+{
+	return GTK_WINDOW (WIDGET (DIALOG));
+}
+
+static void
+contact_list_editor_contact_added (EABEditor *editor,
+                                   const GError *error,
+                                   EContact *contact)
+{
+	if (!error)
+		return;
+
+	if (g_error_matches (error, E_BOOK_ERROR, E_BOOK_ERROR_CANCELLED))
+		return;
+
+	eab_error_dialog (_("Error adding list"), error);
+}
+
+static void
+contact_list_editor_contact_modified (EABEditor *editor,
+                                      const GError *error,
+                                      EContact *contact)
+{
+	if (!error)
+		return;
+
+	if (g_error_matches (error, E_BOOK_ERROR, E_BOOK_ERROR_CANCELLED))
+		return;
+
+	eab_error_dialog (_("Error modifying list"), error);
+}
+
+static void
+contact_list_editor_contact_deleted (EABEditor *editor,
+                                     const GError *error,
+                                     EContact *contact)
+{
+	if (!error)
+		return;
+
+	if (g_error_matches (error, E_BOOK_ERROR, E_BOOK_ERROR_CANCELLED))
+		return;
+
+	eab_error_dialog (_("Error removing list"), error);
+}
+
+static void
+contact_list_editor_closed (EABEditor *editor)
+{
+	g_object_unref (editor);
 }
 
 /****************************** GType Callbacks ******************************/
@@ -1139,14 +1217,18 @@ contact_list_editor_class_init (EContactListEditorClass *class)
 	editor_class->is_valid = contact_list_editor_is_valid;
 	editor_class->is_changed = contact_list_editor_is_changed;
 	editor_class->get_window = contact_list_editor_get_window;
+	editor_class->contact_added = contact_list_editor_contact_added;
+	editor_class->contact_modified = contact_list_editor_contact_modified;
+	editor_class->contact_deleted = contact_list_editor_contact_deleted;
+	editor_class->editor_closed = contact_list_editor_closed;
 
 	g_object_class_install_property (
 		object_class,
 		PROP_BOOK,
 		g_param_spec_object (
 			"book",
-			_("Book"),
-			/*_( */"XXX blurb" /*)*/,
+			"Book",
+			NULL,
 			E_TYPE_BOOK,
 			G_PARAM_READWRITE));
 
@@ -1155,8 +1237,8 @@ contact_list_editor_class_init (EContactListEditorClass *class)
 		PROP_CONTACT,
 		g_param_spec_object (
 			"contact",
-			_("Contact"),
-			/*_( */"XXX blurb" /*)*/,
+			"Contact",
+			NULL,
 			E_TYPE_CONTACT,
 			G_PARAM_READWRITE));
 
@@ -1165,8 +1247,8 @@ contact_list_editor_class_init (EContactListEditorClass *class)
 		PROP_IS_NEW_LIST,
 		g_param_spec_boolean (
 			"is_new_list",
-			_("Is New List"),
-			/*_( */"XXX blurb" /*)*/,
+			"Is New List",
+			NULL,
 			FALSE,
 			G_PARAM_READWRITE));
 
@@ -1175,8 +1257,8 @@ contact_list_editor_class_init (EContactListEditorClass *class)
 		PROP_EDITABLE,
 		g_param_spec_boolean (
 			"editable",
-			_("Editable"),
-			/*_( */"XXX blurb" /*)*/,
+			"Editable",
+			NULL,
 			FALSE,
 			G_PARAM_READWRITE));
 }
@@ -1188,18 +1270,15 @@ contact_list_editor_init (EContactListEditor *editor)
 	GtkTreeViewColumn *column;
 	GtkCellRenderer *renderer;
 	GtkTreeView *view;
-	gchar *filename;
 
 	priv = E_CONTACT_LIST_EDITOR_GET_PRIVATE (editor);
 
 	priv->editable = TRUE;
 	priv->allows_contact_lists = TRUE;
 
-	filename = g_build_filename (
-		EVOLUTION_GLADEDIR, "contact-list-editor.glade", NULL);
-	priv->xml = glade_xml_new (filename, NULL, NULL);
-	glade_xml_signal_autoconnect (priv->xml);
-	g_free (filename);
+	priv->builder = gtk_builder_new ();
+	e_load_ui_builder_definition (priv->builder, "contact-list-editor.ui");
+	gtk_builder_connect_signals (priv->builder, NULL);
 
 	/* Embed a pointer to the EContactListEditor in the top-level
 	 * widget.  Signal handlers can then access the pointer from any
@@ -1212,8 +1291,10 @@ contact_list_editor_init (EContactListEditor *editor)
 
 	gtk_tree_selection_set_mode (
 		gtk_tree_view_get_selection (view), GTK_SELECTION_MULTIPLE);
-	gtk_tree_view_enable_model_drag_dest (
-		view, targets, G_N_ELEMENTS (targets), GDK_ACTION_LINK);
+
+	gtk_tree_view_enable_model_drag_dest (view, NULL, 0, GDK_ACTION_LINK);
+	e_drag_dest_add_directory_targets (WIDGET (TREE_VIEW));
+	gtk_drag_dest_add_text_targets (WIDGET (TREE_VIEW));
 
 	g_signal_connect (
 		priv->model, "row-deleted",
@@ -1247,6 +1328,8 @@ contact_list_editor_init (EContactListEditor *editor)
 
 	gtk_widget_show_all (WIDGET (DIALOG));
 
+	setup_custom_widgets (editor);
+
 	editor->priv = priv;
 }
 
@@ -1269,26 +1352,20 @@ e_contact_list_editor_get_type (void)
 	return type;
 }
 
-static void
-contact_list_editor_destroy_notify (gpointer data,
-				    GObject *where_the_object_was)
+EABEditor *
+e_contact_list_editor_new (EShell *shell,
+                           EBook *book,
+                           EContact *list_contact,
+                           gboolean is_new_list,
+                           gboolean editable)
 {
-	eab_editor_remove (EAB_EDITOR (data));
-}
+	EABEditor *editor;
 
-EContactListEditor *
-e_contact_list_editor_new (EBook *book,
-			   EContact *list_contact,
-			   gboolean is_new_list,
-			   gboolean editable)
-{
-	EContactListEditor *editor;
+	g_return_val_if_fail (E_IS_SHELL (shell), NULL);
 
-	editor = g_object_new (E_TYPE_CONTACT_LIST_EDITOR, NULL);
-
-	eab_editor_add (EAB_EDITOR (editor));
-	g_object_weak_ref (
-		G_OBJECT (editor), contact_list_editor_destroy_notify, editor);
+	editor = g_object_new (
+		E_TYPE_CONTACT_LIST_EDITOR,
+		"shell", shell, NULL);
 
 	g_object_set (editor,
 		      "book", book,

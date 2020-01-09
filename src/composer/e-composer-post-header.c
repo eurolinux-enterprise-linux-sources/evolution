@@ -22,9 +22,7 @@
 
 #include <string.h>
 #include <glib/gi18n.h>
-
-#include "mail/em-folder-selector.h"
-#include "mail/em-folder-tree.h"
+#include <camel/camel.h>
 
 #define E_COMPOSER_POST_HEADER_GET_PRIVATE(obj) \
 	(G_TYPE_INSTANCE_GET_PRIVATE \
@@ -41,26 +39,35 @@ struct _EComposerPostHeaderPrivate {
 	gboolean custom;
 };
 
-static gpointer parent_class;
-
-/* Forward Declarations (to avoid pulling in Bonobo stuff) */
-struct _MailComponent *mail_component_peek (void);
-struct _EMFolderTreeModel *mail_component_peek_tree_model (struct _MailComponent *component);
+G_DEFINE_TYPE (
+	EComposerPostHeader,
+	e_composer_post_header,
+	E_TYPE_COMPOSER_TEXT_HEADER)
 
 static gchar *
 composer_post_header_folder_name_to_string (EComposerPostHeader *header,
                                             const gchar *url)
 {
+	gchar *res = NULL;
 	const gchar *base_url = header->priv->base_url;
 
 	if (base_url != NULL) {
 		gsize length = strlen (base_url);
 
-		if (g_ascii_strncasecmp (url, base_url, length) == 0)
-			return g_strdup (url + length);
+		if (g_ascii_strncasecmp (url, base_url, length) == 0) {
+			res = g_uri_unescape_string (url + length, NULL);
+			if (!res)
+				res = g_strdup (url + length);
+		}
 	}
 
-	return g_strdup (url);
+	if (!res) {
+		res = g_uri_unescape_string (url, NULL);
+		if (!res)
+			res = g_strdup (url);
+	}
+
+	return res;
 }
 
 static void
@@ -84,6 +91,7 @@ composer_post_header_set_base_url (EComposerPostHeader *header)
 	url = camel_url_to_string (camel_url, CAMEL_URL_HIDE_ALL);
 	camel_url_free (camel_url);
 
+	g_free (header->priv->base_url);
 	header->priv->base_url = url;
 }
 
@@ -106,56 +114,6 @@ composer_post_header_split_csv (const gchar *csv)
 	return g_list_reverse (list);
 }
 
-static void
-composer_post_header_changed_cb (EComposerPostHeader *header)
-{
-	header->priv->custom = TRUE;
-}
-
-static void
-composer_post_header_clicked_cb (EComposerPostHeader *header)
-{
-	EMFolderTreeModel *model;
-	GtkWidget *folder_tree;
-	GtkWidget *dialog;
-	GList *list;
-
-	model = mail_component_peek_tree_model (mail_component_peek ());
-	folder_tree = em_folder_tree_new_with_model (model);
-
-	em_folder_tree_set_multiselect (
-		EM_FOLDER_TREE (folder_tree), TRUE);
-	em_folder_tree_set_excluded (
-		EM_FOLDER_TREE (folder_tree),
-		EMFT_EXCLUDE_NOSELECT |
-		EMFT_EXCLUDE_VIRTUAL |
-		EMFT_EXCLUDE_VTRASH);
-
-	dialog = em_folder_selector_new (
-		EM_FOLDER_TREE (folder_tree),
-		EM_FOLDER_SELECTOR_CAN_CREATE,
-		_("Posting destination"),
-		_("Choose folders to post the message to."),
-		NULL);
-
-	list = e_composer_post_header_get_folders (header);
-	em_folder_selector_set_selected_list (
-		EM_FOLDER_SELECTOR (dialog), list);
-	g_list_foreach (list, (GFunc) g_free, NULL);
-	g_list_free (list);
-
-	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_OK) {
-		list = em_folder_selector_get_selected_uris (
-			EM_FOLDER_SELECTOR (dialog));
-		e_composer_post_header_set_folders (header, list);
-		header->priv->custom = FALSE;
-		g_list_foreach (list, (GFunc) g_free, NULL);
-		g_list_free (list);
-	}
-
-	gtk_widget_destroy (dialog);
-}
-
 static GObject *
 composer_post_header_constructor (GType type,
                                   guint n_construct_properties,
@@ -164,20 +122,13 @@ composer_post_header_constructor (GType type,
 	GObject *object;
 
 	/* Chain up to parent's constructor() method. */
-	object = G_OBJECT_CLASS (parent_class)->constructor (
+	object = G_OBJECT_CLASS (
+		e_composer_post_header_parent_class)->constructor (
 		type, n_construct_properties, construct_properties);
 
 	e_composer_header_set_title_tooltip (
 		E_COMPOSER_HEADER (object),
 		_("Click here to select folders to post to"));
-
-	g_signal_connect (
-		object, "changed",
-		G_CALLBACK (composer_post_header_changed_cb), NULL);
-
-	g_signal_connect (
-		object, "clicked",
-		G_CALLBACK (composer_post_header_clicked_cb), NULL);
 
 	return object;
 }
@@ -229,7 +180,7 @@ composer_post_header_dispose (GObject *object)
 	}
 
 	/* Chain up to parent's dispose() method. */
-	G_OBJECT_CLASS (parent_class)->dispose (object);
+	G_OBJECT_CLASS (e_composer_post_header_parent_class)->dispose (object);
 }
 
 static void
@@ -242,15 +193,35 @@ composer_post_header_finalize (GObject *object)
 	g_free (priv->base_url);
 
 	/* Chain up to parent's finalize() method. */
-	G_OBJECT_CLASS (parent_class)->finalize (object);
+	G_OBJECT_CLASS (e_composer_post_header_parent_class)->finalize (object);
 }
 
 static void
-composer_post_header_class_init (EComposerPostHeaderClass *class)
+composer_post_header_changed (EComposerHeader *header)
+{
+	EComposerPostHeaderPrivate *priv;
+
+	priv = E_COMPOSER_POST_HEADER_GET_PRIVATE (header);
+
+	priv->custom = TRUE;
+}
+
+static void
+composer_post_header_clicked (EComposerHeader *header)
+{
+	EComposerPostHeaderPrivate *priv;
+
+	priv = E_COMPOSER_POST_HEADER_GET_PRIVATE (header);
+
+	priv->custom = FALSE;
+}
+
+static void
+e_composer_post_header_class_init (EComposerPostHeaderClass *class)
 {
 	GObjectClass *object_class;
+	EComposerHeaderClass *header_class;
 
-	parent_class = g_type_class_peek_parent (class);
 	g_type_class_add_private (class, sizeof (EComposerPostHeaderPrivate));
 
 	object_class = G_OBJECT_CLASS (class);
@@ -259,6 +230,10 @@ composer_post_header_class_init (EComposerPostHeaderClass *class)
 	object_class->get_property = composer_post_header_get_property;
 	object_class->dispose = composer_post_header_dispose;
 	object_class->finalize = composer_post_header_finalize;
+
+	header_class = E_COMPOSER_HEADER_CLASS (class);
+	header_class->changed = composer_post_header_changed;
+	header_class->clicked = composer_post_header_clicked;
 
 	g_object_class_install_property (
 		object_class,
@@ -272,36 +247,9 @@ composer_post_header_class_init (EComposerPostHeaderClass *class)
 }
 
 static void
-composer_post_header_init (EComposerPostHeader *header)
+e_composer_post_header_init (EComposerPostHeader *header)
 {
 	header->priv = E_COMPOSER_POST_HEADER_GET_PRIVATE (header);
-}
-
-GType
-e_composer_post_header_get_type (void)
-{
-	static GType type = 0;
-
-	if (G_UNLIKELY (type == 0)) {
-		static const GTypeInfo type_info = {
-			sizeof (EComposerPostHeaderClass),
-			(GBaseInitFunc) NULL,
-			(GBaseFinalizeFunc) NULL,
-			(GClassInitFunc) composer_post_header_class_init,
-			(GClassFinalizeFunc) NULL,
-			NULL,  /* class_data */
-			sizeof (EComposerPostHeader),
-			0,     /* n_preallocs */
-			(GInstanceInitFunc) composer_post_header_init,
-			NULL   /* value_table */
-		};
-
-		type = g_type_register_static (
-			E_TYPE_COMPOSER_TEXT_HEADER,
-			"EComposerPostHeader", &type_info, 0);
-	}
-
-	return type;
 }
 
 EComposerHeader *

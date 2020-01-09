@@ -1,6 +1,6 @@
 dnl Evolution Versions
 m4_define([evo_major_version], [2])
-m4_define([evo_minor_version], [28])
+m4_define([evo_minor_version], [32])
 m4_define([evo_micro_version], [3])
 m4_define([evo_version],
 	[evo_major_version.evo_minor_version.evo_micro_version])
@@ -13,8 +13,8 @@ dnl Base Version: This is for API/version tracking for things like
 dnl Bonobo server files.  This should always be the major/minor of
 dnl the stable version or stable version to be.  Note, this is set
 dnl the way it is so that GETTEXT_PACKAGE will be parsed correctly.
-BASE_VERSION=2.28
-m4_define([base_version], [2.28])
+BASE_VERSION=2.32
+m4_define([base_version], [2.32])
 
 dnl Upgrade Revision: This is for triggering migration calls between
 dnl varying versions. Reset to 0 whenever BASE_VERSION changes.
@@ -23,7 +23,7 @@ m4_define([upgrade_revision], [0])
 dnl Autoconf / Automake Initialization
 AC_PREREQ(2.58)
 AC_INIT([evolution],[evo_version],[http://bugzilla.gnome.org/enter_bug.cgi?product=Evolution])
-AM_INIT_AUTOMAKE([gnu 1.9])
+AM_INIT_AUTOMAKE([1.10 -Wall -Werror foreign])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_SRCDIR(README)
@@ -34,47 +34,120 @@ AC_LANG(C)
 dnl Automake 1.11 - Silent Build Rules
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
-dnl Gnome Doc Initialization
-GNOME_DOC_INIT
-
-dnl Some requirements have versioned package names
-dnl XXX In the spirit of getting rid of versioned
-dnl     files, can we please drop these suffixes?
-EDS_PACKAGE=1.2
-GTKHTML_PACKAGE=3.14
-
 dnl Required Packages
-m4_define([glib_minimum_version], [2.20.0])
-m4_define([gtk_minimum_version], [2.16.0])
+m4_define([glib_minimum_version], [2.25.12])
 m4_define([eds_minimum_version], [evo_version])
-m4_define([gnome_icon_theme_minimum_version], [2.19.91])
-m4_define([gnome_desktop_minimum_version], [2.26.0])
-m4_define([libbonobo_minimum_version], [2.20.3])
-m4_define([libbonoboui_minimum_version], [2.4.2])
-m4_define([libgtkhtml_minimum_version], [3.27.90])
+m4_define([gtkhtml_minimum_version], [3.31.90])
+m4_define([gnome_icon_theme_minimum_version], [2.30.2.1])
+m4_define([pangoft2_minimum_version], [1.0.1])		dnl For libgnomecanvas
 m4_define([gconf_minimum_version], [2.0.0])		dnl XXX Just a Guess
-m4_define([libglade_minimum_version], [2.0.0])		dnl XXX Just a Guess
-m4_define([libgnomecanvas_minimum_version], [2.0.0])	dnl XXX Just a Guess
-m4_define([libgnomeui_minimum_version], [2.0.0])	dnl XXX Just a Guess
+m4_define([libsoup_minimum_version], [2.4.0])		dnl XXX Just a Guess
 m4_define([libxml_minimum_version], [2.7.3])
 m4_define([shared_mime_info_minimum_version], [0.22])
 m4_define([libpst_minimum_version], [0.6.41])
 
 dnl Optional Packages
-m4_define([dbus_minimum_version], [0.74])
 m4_define([nm_minimum_version],[0.7])
-m4_define([hal_minimum_version], [0.5.4])
-m4_define([libnotify_minimum_version], [0.3.0])
-m4_define([gnome_pilot_minimum_version], [2.0.15])
-m4_define([gweather_minimum_version], [2.25.3])
+m4_define([geoclue_minimum_version], [0.11.1])
+m4_define([gladeui_minimum_version], [3.0.0])
 
+dnl **********************************
+dnl Gtk-3 compatibility
+dnl **********************************
+AC_ARG_ENABLE([gtk3],
+	AS_HELP_STRING([--enable-gtk3],
+	[Attempt to use gtk+-3]),
+	[enable_gtk3=$enableval],[enable_gtk3=no])
+
+if test "x${enable_gtk3}" = "xyes"; then
+	LIBEDATASERVERUI="libedataserverui-3.0"
+	GTK="gtk+-3.0"
+	gtk_minimum_version="2.90.4"
+
+	GAIL="gail-3.0"
+	gail_minimum_version="2.90.4"
+
+	UNIQUE="unique-3.0"
+	unique_minimum_version="2.90"
+
+	GNOME_DESKTOP="gnome-desktop-3.0"
+	gnome_desktop_minimum_version="2.90"
+
+	CANBERRA_GTK="libcanberra-gtk3"
+	libcanberra_gtk_minimum_version="0.25"
+
+	CLUTTER_GTK="clutter-gtk-1.0"
+	clutter_gtk_minimum_version="0.90"
+
+	GTKHTML="libgtkhtml-4.0"
+	GTKHTML_EDITOR="gtkhtml-editor-4.0"
+
+	GWEATHER="gweather-3.0"
+	gweather_minimum_version="2.90.0"
+
+	libnotify_minimum_version="0.5.1"
+
+	dnl XXX These versions don't yet exist.  The latest releases
+	dnl     link to gtk+-2.0 so we've bumped the versions to some
+	dnl     bogus value to force some plugins to be disabled.
+	champlain_minimum_version="0.8"
+	gtkimageview_minimum_version="2.0"
+
+	EVOLUTION_SHELL="evolution-shell-3.0"
+else
+	LIBEDATASERVERUI="libedataserverui-1.2"
+
+	GTK="gtk+-2.0"
+	gtk_minimum_version="2.20.0"
+
+	GAIL="gail"
+	gail_minimum_version="1.9.0"
+
+	UNIQUE="unique-1.0"
+	unique_minimum_version="1.1.2"
+
+	GNOME_DESKTOP="gnome-desktop-2.0"
+	gnome_desktop_minimum_version="2.26.0"
+
+	CANBERRA_GTK="libcanberra-gtk"
+	libcanberra_gtk_minimum_version="0"
+
+	CLUTTER_GTK="clutter-gtk-0.10"
+	clutter_gtk_minimum_version="0.10"
+
+	GTKHTML="libgtkhtml-3.14"
+	GTKHTML_EDITOR="gtkhtml-editor-3.14"
+
+	GWEATHER="gweather"
+	gweather_minimum_version="2.25.3"
+
+	champlain_minimum_version="0.4"
+	gtkimageview_minimum_version="1.6"
+	libnotify_minimum_version="0.3.0"
+
+	EVOLUTION_SHELL="evolution-shell"
+fi
+
+AC_SUBST(GTKHTML_EDITOR)
+AC_SUBST(GTK)
+AC_SUBST(GTKHTML)
+AC_SUBST(UNIQUE)
+AC_SUBST(GNOME_DESKTOP)
+AC_SUBST(LIBEDATASERVERUI)
+AC_SUBST(EVOLUTION_SHELL)
+AM_CONDITIONAL([ENABLE_GTK3], [test "$enable_gtk3" = yes])
+
+dnl ******************************
 dnl Compiler Warning Flags
-
+dnl ******************************
+dnl GDK_DISABLE_DEPRECATED is excluded until
+dnl we can port the GDK drawing code to cairo.
 AS_COMPILER_FLAGS(WARNING_FLAGS,
 	"-DG_DISABLE_DEPRECATED
 	-DPANGO_DISABLE_DEPRECATED
 	-DGDK_PIXBUF_DISABLE_DEPRECATED
-	-DGDK_DISABLE_DEPRECATED
+	-DGTK_DISABLE_DEPRECATED
+	-DEDS_DISABLE_DEPRECATED
 	-DG_DISABLE_SINGLE_INCLUDES
 	-DGTK_DISABLE_SINGLE_INCLUDES
 	-Wall -Wextra
@@ -90,20 +163,32 @@ AS_COMPILER_FLAGS(WARNING_FLAGS,
 AC_SUBST(WARNING_FLAGS)
 
 dnl Other useful compiler warnings for test builds only.
-dnl These may produce warnings we have no control over.
+dnl These may produce warnings we have no control over,
+dnl or false positives we don't always want to see.
+dnl
 dnl	-Wmissing-format-attribute
 dnl	-Wshadow
 dnl	-Wformat-nonliteral
+dnl	-Wstrict-aliasing=2
+dnl	-DE_BOOK_DISABLE_DEPRECATED
+dnl	-DE_CAL_DISABLE_DEPRECATED
 
-CFLAGS="$CFLAGS $WARNING_FLAGS"
+AM_CPPFLAGS="$WARNING_FLAGS -fno-strict-aliasing"
+AC_SUBST(AM_CPPFLAGS)
+
+LDFLAGS="$LDFLAGS -Wl,--no-undefined"
 
 AC_CANONICAL_HOST
 AC_DEFINE_UNQUOTED(VERSION_COMMENT, "", [Define if you want a comment appended to the version number])
 
+dnl *************************************
 dnl Put the ACLOCAL flags in the Makefile
+dnl *************************************
 ACLOCAL="$ACLOCAL $ACLOCAL_FLAGS"
 
+dnl ******************************
 dnl Initialize maintainer mode
+dnl ******************************
 AM_MAINTAINER_MODE
 
 if test "$evo_version" != "$evo_stable_version"; then
@@ -120,33 +205,30 @@ AC_DEFINE_UNQUOTED(UPGRADE_REVISION, ["$UPGRADE_REVISION"], [The number of times
 AC_PROG_CC
 AC_C_INLINE
 AC_PROG_CPP
+AM_PROG_CC_C_O
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
-AM_PROG_LEX
-AC_PROG_YACC
 AC_PROG_AWK
 AC_PATH_PROG([PERL], [perl])
 AC_SUBST(PERL)
 
-case $YACC in
-*yacc*)
-	AC_MSG_ERROR([You need bison to build Evolution])
-	;;
-esac
 AC_ARG_PROGRAM
 
-dnl  Test whether jw is installed
-AC_PATH_PROG(JW,jw,no)
-if test x$JW = xno; then
-	HAVE_JW="no"
-else
-	HAVE_JW="yes"
+dnl GCC 4.4 got more aggressive in its aliasing optimizations, changing
+dnl behavior that -- according to the C99 standard -- is supposed to be
+dnl undefined.  We may still have aliasing abuses lying around that rely
+dnl on GCC's previous "undefined" behavior, so disable strict-aliasing
+dnl optimzation until we can find and fix all the abuses.
+dnl (AC_PROG_CC must run first to set the GCC variable.)
+dnl XXX This really belongs in AM_CFLAGS.
+if test "x${GCC}" = "xyes"; then
+	CFLAGS="$CFLAGS -fno-strict-aliasing"
 fi
-AM_CONDITIONAL(HAVE_JW, [test x$HAVE_JW = xyes])
-AC_SUBST(HAVE_JW)
 
+dnl ******************************
 dnl I18N stuff
+dnl ******************************
 IT_PROG_INTLTOOL([0.35.5])
 
 AM_GLIB_GNU_GETTEXT
@@ -158,18 +240,23 @@ AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [Package name for gettex
 localedir='$(prefix)/$(DATADIRNAME)/locale'
 AC_SUBST(localedir)
 
+dnl ******************************
 dnl Initialize libtool
-dnl if switch to libtool >= 2.2, replace existing with following:
-dnl LT_PREREQ(2.2)
-dnl LT_INIT(disable-static win32-dll)
-AM_DISABLE_STATIC
-AC_LIBTOOL_WIN32_DLL
-AM_PROG_LIBTOOL
-DOLT
+dnl ******************************
+LT_PREREQ(2.2)
+LT_INIT(disable-static win32-dll)
 
 PKG_PROG_PKG_CONFIG
 
+dnl ********************************************
+dnl User / Developer Documentation
+dnl ********************************************
+GNOME_DOC_INIT
+GTK_DOC_CHECK(1.9)
+
+dnl ******************************
 dnl Win32
+dnl ******************************
 AC_MSG_CHECKING([for Win32])
 case "$host" in
 *-mingw*)
@@ -180,23 +267,26 @@ case "$host" in
 	BF_JUNK_PLUGIN=''
 	DL_LIB=''
 	SOFTOKN3_LIB=''
-	HAL_REQUIREMENT=''
+	CHAMPLAIN_REQUIREMENT=''
+	GEOCLUE_REQUIREMENT=''
 	;;
 *)
 	os_win32=no
-	NO_UNDEFINED=''
+	NO_UNDEFINED='-no-undefined'
 	SOEXT='.so'
 	SA_JUNK_PLUGIN=sa-junk-plugin
 	BF_JUNK_PLUGIN=bogo-junk-plugin
 	DL_LIB='-ldl'
 	SOFTOKN3_LIB='-lsoftokn3'
-	HAL_REQUIREMENT='hal'
 	;;
 esac
 AC_MSG_RESULT([$os_win32])
 AM_CONDITIONAL(OS_WIN32, [test $os_win32 = yes])
 AC_SUBST(NO_UNDEFINED)
 AC_SUBST(SOEXT)
+
+MATH_LIB="-lm"
+AC_SUBST(MATH_LIB)
 
 if test "$os_win32" = "yes"; then
 	AC_CHECK_TOOL(WINDRES, windres, :)
@@ -208,35 +298,48 @@ AM_CONDITIONAL(HAVE_WINDRES, test "x$WINDRES" != "x:")
 
 AC_SUBST(WINDRES)
 
+dnl **********************************
 dnl Check for base dependencies early.
+dnl **********************************
 PKG_CHECK_MODULES([GNOME_PLATFORM],
-	[glib-2.0 >= glib_minimum_version
-	gtk+-2.0 >= gtk_minimum_version
-	gconf-2.0 >= gconf_minimum_version
-	libbonobo-2.0 >= libbonobo_minimum_version
-	libbonoboui-2.0 >= libbonoboui_minimum_version
-	libglade-2.0 >= libglade_minimum_version
-	libgnomecanvas-2.0 >= libgnomecanvas_minimum_version
-	libgnomeui-2.0 >= libgnomeui_minimum_version
-	libxml-2.0 >= libxml_minimum_version
-	shared-mime-info >= shared_mime_info_minimum_version
-	gnome-desktop-2.0 >= gnome_desktop_minimum_version])
+	[gio-2.0 >= glib_minimum_version
+	 $GTK >= $gtk_minimum_version
+	 $GAIL >= $gail_minimum_version
+	 gconf-2.0 >= gconf_minimum_version
+	 libxml-2.0 >= libxml_minimum_version
+	 pangoft2 >= pangoft2_minimum_version
+	 shared-mime-info >= shared_mime_info_minimum_version
+	 $GNOME_DESKTOP >= $gnome_desktop_minimum_version
+	 $UNIQUE >= $unique_minimum_version])
 AC_SUBST(GNOME_PLATFORM_CFLAGS)
 AC_SUBST(GNOME_PLATFORM_LIBS)
 
 PKG_CHECK_MODULES([EVOLUTION_DATA_SERVER],
-	[libebook-$EDS_PACKAGE >= eds_minimum_version
-	libecal-$EDS_PACKAGE >= eds_minimum_version
-	libedataserver-$EDS_PACKAGE >= eds_minimum_version
-	libedataserverui-$EDS_PACKAGE >= eds_minimum_version
-	libegroupwise-$EDS_PACKAGE >= eds_minimum_version
-	libebackend-$EDS_PACKAGE >= eds_minimum_version
-	libgdata-$EDS_PACKAGE >= eds_minimum_version
-	libgdata-google-$EDS_PACKAGE >= eds_minimum_version])
+	[libebook-1.2 >= eds_minimum_version
+	 libecal-1.2 >= eds_minimum_version
+	 libedataserver-1.2 >= eds_minimum_version
+	 $LIBEDATASERVERUI >= eds_minimum_version
+	 libegroupwise-1.2 >= eds_minimum_version
+	 libebackend-1.2 >= eds_minimum_version])
 
+
+dnl ******************************
+dnl Canberra / Canberra-GTK Sound
+dnl ******************************
+AC_ARG_ENABLE([canberra],
+	[AS_HELP_STRING([--enable-canberra],
+	[Enable Canberra and Canberra-GTK sound @<:@default=yes@:>@])],
+	[enable_canberra="$enableval"], [enable_canberra=yes])
+
+if test $enable_canberra = yes; then
+	PKG_CHECK_MODULES([CANBERRA],[$CANBERRA_GTK >= $libcanberra_gtk_minimum_version])
+	AC_DEFINE(HAVE_CANBERRA, 1, [Define if using Canberra and Canberra-GTK for sound])
+fi
+AC_SUBST(CANBERRA_CFLAGS)
+AC_SUBST(CANBERRA_LIBS)
 
 dnl ******************
-dnl User documentation
+dnl User Documentation
 dnl ******************
 AC_MSG_CHECKING([whether to build user documentation])
 AC_ARG_WITH([help],
@@ -319,6 +422,7 @@ if test "$have_iconv" = no; then
 fi
 AC_SUBST(ICONV_LIBS)
 
+save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -I$srcdir"
 
 AC_MSG_CHECKING([preferred charset name formats for system iconv])
@@ -356,15 +460,14 @@ AC_RUN_IFELSE([AC_LANG_SOURCE([[
 CFLAGS="$save_CFLAGS"
 LIBS="$save_LIBS"
 
-dnl alloca()
-AC_FUNC_ALLOCA
-
+dnl **************
 dnl waitpid() etc
+dnl **************
 AC_HEADER_SYS_WAIT
 
-dnl
+dnl ***************
 dnl Purify support
-dnl
+dnl ***************
 EVO_PURIFY_SUPPORT
 
 dnl **************
@@ -519,19 +622,19 @@ AC_CHECK_HEADER([sys/mount.h],
 AC_CHECK_FUNCS(statfs)
 
 dnl **************************************************
-dnl * Gnome Icon Theme
+dnl Gnome Icon Theme
 dnl **************************************************
 PKG_CHECK_MODULES([GIT], [gnome-icon-theme >= gnome_icon_theme_minimum_version])
 
 dnl **************************************************
-dnl * Accessibility support
+dnl Accessibility support
 dnl **************************************************
 PKG_CHECK_MODULES([A11Y], [atk])
 AC_SUBST(A11Y_CFLAGS)
 AC_SUBST(A11Y_LIBS)
 
 dnl **************************************************
-dnl * XF86 multimedia keys support
+dnl XF86 multimedia keys support
 dnl **************************************************
 have_xfree=no
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
@@ -545,43 +648,64 @@ if test x"$have_xfree" = "xyes" ; then
 fi
 
 dnl **************************************************
+dnl Clutter support.
+dnl **************************************************
+AC_MSG_CHECKING([whether to build with Clutter])
+AC_ARG_WITH([clutter],
+       [AC_HELP_STRING([--with-clutter],
+       [Build with Clutter [default=no]])],
+       with_clutter="$withval", with_clutter="no")
+AC_MSG_RESULT($with_clutter)
+
+if test "x$with_clutter" = "xyes"; then
+   PKG_CHECK_MODULES(CLUTTER, [mx-1.0 $CLUTTER_GTK >= $clutter_gtk_minimum_version clutter-1.0 >= 1.0.0])
+
+   AC_DEFINE(HAVE_CLUTTER, 1, [Clutter available])
+   AM_CONDITIONAL(ENABLE_CLUTTER, true)
+else
+   AC_DEFINE(HAVE_CLUTTER, 0, [Clutter not available])
+   AM_CONDITIONAL(ENABLE_CLUTTER, false)
+fi
+
+
+dnl **************************************************
 dnl LDAP support.
 dnl **************************************************
 if test "$os_win32" != yes; then
-EVO_LDAP_CHECK(no)
-case $with_openldap in
-no)
-	msg_ldap=no
-	;;
-*)
-	case $with_static_ldap in
-	yes)
-		msg_ldap="yes (static)"
+	EVO_LDAP_CHECK(no)
+	case $with_openldap in
+	no)
+		msg_ldap=no
 		;;
 	*)
-		msg_ldap="yes (dynamic)"
+		case $with_static_ldap in
+		yes)
+			msg_ldap="yes (static)"
 		;;
+		*)
+			msg_ldap="yes (dynamic)"
+			;;
+		esac
 	esac
-esac
 
-SAVE_CFLAGS="$CFLAGS"
-SAVE_LIBS="$LIBS"
-LDAP_CFLAGS="$LDAP_CFLAGS -DLDAP_DEPRECATED"
-CFLAGS="$CFLAGS $LDAP_CFLAGS"
-LIBS="$LIBS $LDAP_LIBS"
-AC_CHECK_FUNCS(ldap_ntlm_bind)
-CFLAGS="$SAVE_CFLAGS"
-LIBS="$SAVE_LIBS"
-
-else dnl Win32
-LDAP_CFLAGS="-DLDAP_DEPRECATED"
-LDAP_LIBS="-lwldap32"
-AC_SUBST(LDAP_CFLAGS)
-AC_SUBST(LDAP_LIBS)
-AC_DEFINE(HAVE_LDAP,1,[Define if you have LDAP support])
-AM_CONDITIONAL(ENABLE_LDAP, true)
-msg_ldap="yes"
-fi dnl Win32
+	SAVE_CFLAGS="$CFLAGS"
+	SAVE_LIBS="$LIBS"
+	LDAP_CFLAGS="$LDAP_CFLAGS -DLDAP_DEPRECATED"
+	CFLAGS="$CFLAGS $LDAP_CFLAGS"
+	LIBS="$LIBS $LDAP_LIBS"
+	AC_CHECK_FUNCS(ldap_ntlm_bind)
+	CFLAGS="$SAVE_CFLAGS"
+	LIBS="$SAVE_LIBS"
+dnl Win32 support
+else
+	LDAP_CFLAGS="-DLDAP_DEPRECATED"
+	LDAP_LIBS="-lwldap32"
+	AC_SUBST(LDAP_CFLAGS)
+	AC_SUBST(LDAP_LIBS)
+	AC_DEFINE(HAVE_LDAP,1,[Define if you have LDAP support])
+	AM_CONDITIONAL(ENABLE_LDAP, true)
+	msg_ldap="yes"
+fi
 
 dnl **************************************************
 dnl SunLDAP support, but if OpenLDAP support, skip check SunLDAP.
@@ -607,301 +731,34 @@ else
 fi
 AM_CONDITIONAL(SUNLDAP, [test x$with_sunldap != xno])
 
-dnl **************************************************
-dnl NNTP support.
-dnl **************************************************
-AC_ARG_ENABLE([nntp],
-	AS_HELP_STRING([--enable-nntp],
-	[Build Usenet news (NNTP) backend]),
-	[enable_nntp=$enableval],[enable_nntp=yes])
-if test "x$enable_nntp" = "xyes"; then
-	AC_DEFINE(ENABLE_NNTP,1,[Build NNTP backend])
-	msg_nntp=yes
-else
-	msg_nntp=no
-fi
-AM_CONDITIONAL(ENABLE_NNTP, [test x$enable_nntp = xyes])
-
 AC_DEFINE(HANDLE_LIBICAL_MEMORY, 1, [Define it once memory returned by libical is free'ed properly])
 
-dnl **************************************************
-dnl * Posix thread support
-dnl **************************************************
-
-dnl GLIB_CONFIG=${GLIB_CONFIG-glib-config}
-dnl GNOME_PTHREAD_CHECK
-
-dnl if test "x$PTHREAD_LIB" = "x" ; then
-dnl 	AC_MSG_ERROR([POSIX threads are currently required for Evolution])
-dnl fi
-
-dnl
-dnl Notice that this is a hack, and we wont be able to use this forever, but
-dnl at least for some time
-dnl
-
-EVO_PTHREAD_CHECK
-
-THREADS_LIBS="$PTHREAD_LIB"
-THREADS_CFLAGS="$PTHREAD_CFLAGS"
-
-AC_SUBST(THREADS_LIBS)
-AC_SUBST(THREADS_CFLAGS)
-AC_DEFINE(ENABLE_THREADS,1,[Required])
-
-
-dnl *********
-dnl Libraries
-dnl *********
-
+dnl ************
+dnl regex check
+dnl ************
 AC_CHECK_FUNCS(regexec,,[AC_CHECK_LIB(regex,regexec,
 			[REGEX_LIBS=-lregex
 			AC_DEFINE(HAVE_REGEXEC,1,[Define to 1 if you have the regexec function.])],
 			[AC_MSG_ERROR([No regex library found])])])
 AC_SUBST(REGEX_LIBS)
 
+dnl *************************
+dnl GTKHTML check
 dnl XXX Drop the version from the package name?
-PKG_CHECK_MODULES([GTKHTML], [libgtkhtml-3.14 >= libgtkhtml_minimum_version])
+dnl *************************
+PKG_CHECK_MODULES([GTKHTML], [$GTKHTML >= gtkhtml_minimum_version])
 AC_SUBST(GTKHTML_CFLAGS)
 AC_SUBST(GTKHTML_LIBS)
-GTKHTML_DATADIR=`$PKG_CONFIG --variable gtkhtml_datadir libgtkhtml-3.14`
-AC_SUBST(GTKHTML_DATADIR)
-GTKHTML_API_VERSION=`$PKG_CONFIG --variable gtkhtml_apiversion libgtkhtml-3.14`
-AC_DEFINE_UNQUOTED(GTKHTML_API_VERSION, "$GTKHTML_API_VERSION", [The gtkhtml api version])
+
+dnl ************
+dnl Kerberos 5
+dnl ************
+EVO_KRB5_SUPPORT
 
 dnl ******************************
-dnl Pilot checking
-dnl ******************************
-AC_ARG_ENABLE([pilot-conduits],
-	AS_HELP_STRING([--enable-pilot-conduits],
-	[Enable support for building pilot conduits.]),,
-	[enable_pilot_conduits=no])
-if test "x$enable_pilot_conduits" = "xyes"; then
-	PKG_CHECK_MODULES([GNOME_PILOT], [gnome-pilot-2.0 >= gnome_pilot_minimum_version])
-
-	CFLAGS_save="$CFLAGS"
-	CFLAGS="$CFLAGS $GNOME_PILOT_CFLAGS"
-	LDFLAGS_save="$LDFLAGS"
-	LDFLAGS="$GNOME_PILOT_LIBS $LDFLAGS"
-
-	AC_CACHE_CHECK([if pilot-link handles UTF-8 conversions],[ac_cv_pilot_link_utf8],
-	AC_RUN_IFELSE([AC_LANG_SOURCE(
-	[[	#include <stdlib.h>
-		#include <string.h>
-		#include <pi-util.h>
-
-		int main (){
-		const char *utf8 = "\x66\x66\x66\x66\x66\x66\x66\xC2\xA9";
-		size_t utf8_real_len = strlen (utf8);
-		char *pstring;
-		if (convert_ToPilotChar ("UTF-8", utf8, utf8_real_len, &pstring) == -1)
-			exit (1);
-		return (0);
-		}
-	]]
-	)],[ac_cv_pilot_link_utf8=yes],[ac_cv_pilot_link_utf8=no],[ac_cv_pilot_link_utf8=no]))
-
-	CFLAGS="$CFLAGS_save"
-	LDFLAGS="$LDFLAGS_save"
-
-	if test "$ac_cv_pilot_link_utf8" = no; then
-		AC_MSG_ERROR([evolution requires pilot-link to have working UTF-8 conversion routines])
-	fi
-fi
-AM_CONDITIONAL(ENABLE_PILOT_CONDUITS, [test x$enable_pilot_conduits = xyes])
-dnl ******************************
-dnl If pilot conduits are enabled, check version of pilot-link
-dnl ******************************
-if test x$enable_pilot_conduits = xyes; then
-	msg_pilot=yes
-
-	PILOT_LINK_CHECK(0.11.4)
-	AC_SUBST(PILOT_LINK_MAJOR)
-	AC_SUBST(PILOT_LINK_MINOR)
-	AC_SUBST(PILOT_LINK_MICRO)
-	AC_SUBST(PILOT_LINK_PATCH)
-	AC_SUBST(PILOT_LINK_VERSION)
-
-	if test $PILOT_LINK_MINOR -ge 12; then
-		AC_DEFINE(PILOT_LINK_0_12,,[Building against pilot-link 0.12.0 or greater])
-	fi
-else
-	msg_pilot=no
-fi
-AC_SUBST(GNOME_PILOT_CFLAGS)
-AC_SUBST(GNOME_PILOT_LIBS)
-
-dnl ********
-dnl Kerberos
-dnl ********
-AC_ARG_WITH([krb5],
-	AS_HELP_STRING([--with-krb5=PATH],
-	[Location of Kerberos 5 install dir]),
-	[with_krb5=$withval],[with_krb5=no])
-AC_ARG_WITH([krb5-libs],
-	AS_HELP_STRING([--with-krb5-libs=PATH],
-	[Location of Kerberos 5 libraries]),
-	[with_krb5_libs=$withval],[with_krb5_libs=$with_krb5/lib])
-AC_ARG_WITH([krb5-includes],
-	AS_HELP_STRING([--with-krb5-includes=PATH],
-	[Location of Kerberos 5 headers]),
-	[with_krb5_includes=$withval],[with_krb5_includes=""])
-AC_ARG_WITH([krb4],
-	AS_HELP_STRING([--with-krb4=PATH],
-	[Location of Kerberos 4 install dir]),
-	[with_krb4=$withval],[with_krb4=no])
-AC_ARG_WITH([krb4-libs],
-	AS_HELP_STRING([--with-krb4-libs=PATH],
-	[Location of Kerberos 4 libraries]),
-	[with_krb4_libs=$withval],[with_krb4_libs=$with_krb4/lib])
-AC_ARG_WITH([krb4-includes],
-	AS_HELP_STRING([--with-krb4-includes=PATH],
-	[Location of Kerberos 4 headers]),
-	[with_krb4_includes=$withval],[with_krb4_includes=""])
-
-msg_krb5="no"
-if test "x${with_krb5}" != "xno"; then
-	LIBS_save="$LIBS"
-
-	mitlibs="-lkrb5 -lk5crypto -lcom_err -lgssapi_krb5"
-	heimlibs="-lkrb5 -lcrypto -lasn1 -lcom_err -lroken -lgssapi"
-	sunlibs="-lkrb5 -lgss"
-	AC_CACHE_CHECK([for Kerberos 5], [ac_cv_lib_kerberos5],
-	[
-		LIBS="$LIBS -L$with_krb5_libs $mitlibs"
-		AC_LINK_IFELSE([AC_LANG_CALL([], [krb5_init_context])],
-		[ac_cv_lib_kerberos5="$mitlibs"],
-		[
-			LIBS="$LIBS_save -L$with_krb5_libs $heimlibs"
-			AC_LINK_IFELSE([AC_LANG_CALL([], [krb5_init_context])],
-			[ac_cv_lib_kerberos5="$heimlibs"],
-			[
-				LIBS="$LIBS_save -L$with_krb5_libs $sunlibs"
-				AC_LINK_IFELSE([AC_LANG_CALL([], [krb5_init_context])],
-				[ac_cv_lib_kerberos5="$sunlibs"], [ac_cv_lib_kerberos5="no"])
-			])
-		])
-		LIBS="$LIBS_save"
-	])
-	if test "$ac_cv_lib_kerberos5" != "no"; then
-		AC_DEFINE(HAVE_KRB5,1,[Define if you have Krb5])
-		if test "$ac_cv_lib_kerberos5" = "$mitlibs"; then
-			AC_DEFINE(HAVE_MIT_KRB5,1,[Define if you have MIT Krb5])
-			if test -z "$with_krb5_includes"; then
-				KRB5_CFLAGS="-I$with_krb5/include"
-			else
-				KRB5_CFLAGS="-I$with_krb5_includes"
-			fi
-			msg_krb5="yes (MIT)"
-		else
-			if test "$ac_cv_lib_kerberos5" = "$heimlibs"; then
-				AC_DEFINE(HAVE_HEIMDAL_KRB5,1,[Define if you have Heimdal])
-				if test -z "$with_krb5_includes"; then
-					KRB5_CFLAGS="-I$with_krb5/include/heimdal"
-				else
-					KRB5_CFLAGS="-I$with_krb5_includes"
-				fi
-				msg_krb5="yes (Heimdal)"
-			else
-				AC_DEFINE(HAVE_SUN_KRB5,1,[Define if you have Sun Kerberosv5])
-				if test -z "$with_krb5_includes"; then
-					KRB5_CFLAGS="-I$with_krb5/include/kerberosv5"
-				else
-					KRB5_CFLAGS="-I$with_krb5_includes"
-				fi
-				msg_krb5="yes (Sun)"
-			fi
-		fi
-		KRB5_LIBS="-L$with_krb5_libs $ac_cv_lib_kerberos5"
-	fi
-else
-	AC_MSG_CHECKING([for Kerberos 5])
-	AC_MSG_RESULT([$with_krb5])
-fi
-
-AC_CHECK_HEADER([et/com_err.h],
-	[AC_DEFINE([HAVE_ET_COM_ERR_H], 1, [Have <et/comm_err.h>])],,
-	[[	#if HAVE_ET_COM_ERR_H
-		#include <com_err.h>
-		#endif
-	]])
-AC_CHECK_HEADER([com_err.h],
-	[AC_DEFINE([HAVE_COM_ERR_H], 1, [Have <comm_err.h>])],,
-	[[	#if HAVE_COM_ERR_H
-		#include <com_err.h>
-		#endif
-	]])
-
-msg_krb4="no"
-if test "x${with_krb4}" != "xno"; then
-	LIBS_save="$LIBS"
-	AC_CACHE_CHECK([for Kerberos 4], [ac_cv_lib_kerberos4],
-	[
-		ac_cv_lib_kerberos4="no"
-		mitcompatlibs="-lkrb4 -ldes425 -lkrb5 -lk5crypto -lcom_err"
-		dnl Look for MIT krb5 compat krb4
-		LIBS="$LIBS_save -L$with_krb4_libs $mitcompatlibs"
-		AC_LINK_IFELSE([AC_LANG_CALL([], [krb_mk_req])],
-		[ac_cv_lib_kerberos4="$mitcompatlibs"])
-
-		if test "$ac_cv_lib_kerberos4" = "no"; then
-			dnl Look for KTH krb4
-			LIBS="$LIBS_save -L$with_krb4_libs -lkrb -lcrypto -lcom_err -lroken"
-			AC_LINK_IFELSE([AC_LANG_CALL([], [krb_mk_req])],
-			[ac_cv_lib_kerberos4="-lkrb -lcrypto -lcom_err -lroken"])
-		fi
-		if test "$ac_cv_lib_kerberos4" = "no"; then
-			dnl Look for old MIT krb4
-			LIBS="$LIBS_save -L$with_krb4_libs -lkrb"
-			AC_LINK_IFELSE([AC_LANG_CALL([], [krb_mk_req])],
-			[ac_cv_lib_kerberos4="-lkrb"],
-			[
-				LIBS="$LIBS_save -ldes"
-				AC_LINK_IFELSE([AC_LANG_CALL([], [krb_mk_req])],
-				[ac_cv_lib_kerberos4="-lkrb -ldes"])
-			])
-		fi
-	])
-	LIBS="$LIBS_save"
-	if test "$ac_cv_lib_kerberos4" != "no"; then
-		AC_DEFINE(HAVE_KRB4,1,[Define if you have Krb4])
-		msg_krb4="yes"
-
-		if test -z "$with_krb4_includes"; then
-			if test -f "$with_krb4/include/krb.h" -o -f "$with_krb4/include/port-sockets.h"; then
-				KRB4_CFLAGS="-I$with_krb4/include"
-			fi
-			if test -d "$with_krb4/include/kerberosIV"; then
-				KRB4_CFLAGS="$KRB4_CFLAGS -I$with_krb4/include/kerberosIV"
-			fi
-		else
-			KRB4_CFLAGS="-I$with_krb4_includes"
-		fi
-		KRB4_LIBS="-L$with_krb4_libs $ac_cv_lib_kerberos4"
-
-		CFLAGS_save="$CFLAGS"
-		CFLAGS="$CFLAGS $KRB4_CFLAGS"
-		AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
-		[[	#include "krb.h"
-			int krb_sendauth;
-		]]
-		,[[]])],[AC_DEFINE(NEED_KRB_SENDAUTH_PROTO,1,[Need krb_sendauth proto])],[])
-		CFLAGS="$CFLAGS_save"
-	fi
-else
-	AC_MSG_CHECKING([for Kerberos 4])
-	AC_MSG_RESULT([${with_krb4}])
-fi
-
-AC_SUBST(KRB5_CFLAGS)
-AC_SUBST(KRB5_LIBS)
-AC_SUBST(KRB4_CFLAGS)
-AC_SUBST(KRB4_LIBS)
-
 dnl Mono hooks
-dnl This should just define mono CFLAGS etc here, it is used later to
-dnl turn on the mono plugin or not.
-
+dnl This should just define mono CFLAGS etc here, it is used later to turn on the mono plugin or not.
+dnl ******************************
 MONO_CFLAGS=
 MONO_LIBS=
 AC_ARG_ENABLE([mono],
@@ -911,15 +768,17 @@ AC_ARG_ENABLE([mono],
 if test "x${enable_mono}" = "xyes"; then
 	PKG_CHECK_MODULES([MONO], ["mono"])
 	AC_DEFINE(ENABLE_MONO,1,[Define if Mono embedding should be enabled])
-	MONO_PLUGIN="mono"
 fi
 AC_SUBST(MONO_CFLAGS)
 AC_SUBST(MONO_LIBS)
 
+AM_CONDITIONAL(ENABLE_MONO, [test "x$enable_mono" = "xyes"])
+
+dnl ******************************
 dnl Python hooks
-dnl This should just define python CFLAGS etc here, it is used later to
-dnl turn on the python plugin or not.
+dnl This should just define python CFLAGS etc here, it is used later to turn on the python plugin or not.
 dnl (Thanks to Pidgin)
+dnl ******************************
 
 AC_ARG_ENABLE([python],
 	AS_HELP_STRING([--enable-python],
@@ -938,22 +797,22 @@ if test "x${enable_python}" = "xyes"; then
 		changequote([, ])dnl
 
 		if test -f $PY_PREFIX/include/python$PY_VERSION/Python.h -a "$PY_MAJOR" = "2."; then
-		   	PY_LIBS="-lpython$PY_VERSION -L$PY_EXEC_PREFIX/lib/python$PY_VERSION/config"
+			PY_LIBS="-lpython$PY_VERSION -L$PY_EXEC_PREFIX/lib/python$PY_VERSION/config"
 			PY_INCLUDES="-I$PY_PREFIX/include/python$PY_VERSION"
 			AC_MSG_RESULT([ok])
 			python_package="python-devel"
-			PYTHON_PLUGIN="python"
 		else
 			AC_MSG_ERROR([Can't find Python.h])
 			PY_LIBS=""
 			PY_INCLUDES=""
 			python_package=""
-			PYTHON_PLUGIN=""
 		fi
 	fi
 	AC_SUBST(PY_LIBS)
 	AC_SUBST(PY_INCLUDES)
 fi
+
+AM_CONDITIONAL(ENABLE_PYTHON, [test "x$enable_python" = "xyes"])
 
 
 dnl ********************************************************************************
@@ -1082,30 +941,30 @@ if test "x${enable_nss}" = "xyes" || test "x${enable_nss}" = "xstatic"; then
 					[Please specify the path to libnspr4.a]
 					[Example: --with-nspr-libs=/usr/lib])
 				else
-					nsprlibs="$DL_LIB $with_nspr_libs/libplc4.a $with_nspr_libs/libplds4.a $with_nspr_libs/libnspr4.a $PTHREAD_LIB"
+					nsprlibs="$DL_LIB $with_nspr_libs/libplc4.a $with_nspr_libs/libplds4.a $with_nspr_libs/libnspr4.a"
 				fi
 			else
-				nsprlibs="$DL_LIB -lplc4 -lplds4 -lnspr4 $PTHREAD_LIB"
+				nsprlibs="$DL_LIB -lplc4 -lplds4 -lnspr4"
 			fi
 
 			AC_CACHE_CHECK([for Mozilla nspr libraries], [ac_cv_moz_nspr_libs],
 			[
-		       		LIBS_save="$LIBS"
+				LIBS_save="$LIBS"
 				CFLAGS="$CFLAGS $MANUAL_NSPR_CFLAGS"
 
 				if test "x${with_nspr_libs}" != "x"; then
-		       			LIBS="$nsprlibs"
-		       			LDFLAGS="$LDFLAGS -L$with_nspr_libs"
+					LIBS="$nsprlibs"
+					LDFLAGS="$LDFLAGS -L$with_nspr_libs"
 				else
-		       			LIBS="$nsprlibs"
-		       			LDFLAGS="$LDFLAGS"
+					LIBS="$nsprlibs"
+					LDFLAGS="$LDFLAGS"
 				fi
 
 				AC_LINK_IFELSE([AC_LANG_CALL([], [PR_Init])],
 				[ac_cv_moz_nspr_libs="yes"], [ac_cv_moz_nspr_libs="no"])
 				CFLAGS="$CFLAGS_save"
 				LDFLAGS="$LDFLAGS_save"
-	 			LIBS="$LIBS_save"
+				LIBS="$LIBS_save"
 			])
 			if test "x$ac_cv_moz_nspr_libs" != "xno"; then
 				have_nspr_libs="yes"
@@ -1159,7 +1018,7 @@ if test "x${enable_nss}" = "xyes" || test "x${enable_nss}" = "xstatic"; then
 			LDFLAGS_save="$LDFLAGS"
 
 			if test "$enable_nss" = "static"; then
-		    		if test -z "${with_nss_libs}"; then
+				if test -z "${with_nss_libs}"; then
 					AC_MSG_ERROR([Static linkage requested, but path to nss libraries not set.]
 					[Please specify the path to libnss3.a]
 					[Example: --with-nspr-libs=/usr/lib/mozilla])
@@ -1172,14 +1031,14 @@ if test "x${enable_nss}" = "xyes" || test "x${enable_nss}" = "xstatic"; then
 					esac
 				fi
 			else
-		 		nsslibs="-lssl3 -lsmime3 -lnss3"
+				nsslibs="-lssl3 -lsmime3 -lnss3"
 			fi
 
 			AC_CACHE_CHECK([for Mozilla nss libraries], [ac_cv_moz_nss_libs],
 			[
-	 			LIBS_save="$LIBS"
+				LIBS_save="$LIBS"
 				LDFLAGS="$LDFLAGS -L$with_nspr_libs $nsprlibs -L$with_nss_libs $nsslibs"
-		      		LIBS="$nsslibs $nsprlibs"
+				LIBS="$nsslibs $nsprlibs"
 				AC_LINK_IFELSE([AC_LANG_CALL([], [NSS_Init])],
 				[ac_cv_moz_nss_libs="yes"], [ac_cv_moz_nss_libs="no"])
 				if test "$ac_cv_moz_nss_libs" = no; then
@@ -1189,7 +1048,7 @@ if test "x${enable_nss}" = "xyes" || test "x${enable_nss}" = "xstatic"; then
 					[ac_cv_moz_nss_libs="yes"], [ac_cv_moz_nss_libs="no"])
 				fi
 				LDFLAGS="$LDFLAGS_save"
-	 			LIBS="$LIBS_save"
+				LIBS="$LIBS_save"
 			])
 			if test "$ac_cv_moz_nss_libs" != no; then
 				AC_DEFINE(HAVE_NSS)
@@ -1197,7 +1056,7 @@ if test "x${enable_nss}" = "xyes" || test "x${enable_nss}" = "xstatic"; then
 				AC_DEFINE_UNQUOTED(MOZILLA_NSS_LIB_DIR,"$with_nss_libs", [Define to the full path of mozilla nss library])
 				if test "$enable_nss" = "static"; then
 					msg_ssl="yes (Mozilla NSS:static)"
-		 		else
+				else
 					msg_ssl="yes (Mozilla NSS)"
 				fi
 				dnl static_nss
@@ -1228,41 +1087,6 @@ AC_SUBST(MANUAL_NSPR_LIBS)
 AC_SUBST(MANUAL_NSS_CFLAGS)
 AC_SUBST(MANUAL_NSS_LIBS)
 
-dnl **************************************************
-dnl Check if we should build the weather calendar plugin
-dnl **************************************************
-AC_MSG_CHECKING([if we should build the weather calendar plugin])
-AC_ARG_WITH([weather],
-	[AS_HELP_STRING([--with-weather],
-	[Build the weather calendar setup plugin (default=yes)])],
-	[use_gweather=$withval],[use_gweather=yes])
-AC_MSG_RESULT([$use_gweather])
-
-if test $use_gweather = yes; then
-	PKG_CHECK_MODULES([LIBGWEATHER],
-	[gweather >= gweather_minimum_version],
-	[CALENDAR_WEATHER="calendar-weather"],
-	[AC_MSG_ERROR([The weather calendar setup plugin requires GWeather >= gweather_minimum_version. Alternatively, you may specify --without-weather as a configure option to avoid building the plugin.])])
-else
-	CALENDAR_WEATHER=""
-fi
-
-dnl **************************************************
-dnl Exchange support.
-dnl **************************************************
-AC_ARG_ENABLE([exchange],
-	AS_HELP_STRING([--enable-exchange],
-	[Build Exchange plugins]),
-	[enable_exchange=$enableval],[enable_exchange=yes])
-
-if test "x$enable_exchange" = "xyes"; then
-	msg_exchange=yes
-	EXCHANGE_PLUGIN="exchange-operations"
-else
-	msg_exchange=no
-fi
-AM_CONDITIONAL(ENABLE_EXCHANGE, [test x$enable_exchange = xyes])
-
 dnl *****************
 dnl killall or pkill?
 dnl *****************
@@ -1291,83 +1115,19 @@ dnl We use AC_SUBST_FILE because AC_SUBST won't deal with newlines
 EVO_MARSHAL_RULE=$srcdir/marshal.mk
 AC_SUBST_FILE(EVO_MARSHAL_RULE)
 
-dnl **************************
-dnl Check for X libs and -lX11
-dnl **************************
-
-PKG_CHECK_MODULES([X], [x11], [:], [
-dnl pkg-config modules not found (only present since X11R7 aka Xorg); use
-dnl old-style detection
-AC_PATH_XTRA
-dnl X found
-if test x$no_x != xyes ; then
-	evolution_save_cflags="$CFLAGS"
-	evolution_save_libs="$LIBS"
-	CFLAGS="$X_CFLAGS"
-	LIBS="$X_PRE_LIBS $X_LIBS $X_EXTRA_LIBS"
-	AC_CHECK_LIB(X11, XFree, :, AC_MSG_ERROR([libX11 not found]))
-	CFLAGS="$evolution_save_cflags"
-	LIBS="$evolution_save_libs"
-	X_LIBS="$X_PRE_LIBS $X_LIBS -lX11 $X_EXTRA_LIBS"
-fi
-])
-
-dnl *************************
-dnl Check for the Gtk backend
-dnl if it's X11, we -lX11
-dnl *************************
-
-evolution_save_cflags="$CFLAGS"
-dnl pull in the CFLAGS to locate gdkconfig.h
-CFLAGS=`$PKG_CONFIG --cflags gtk+-2.0`
-AC_COMPILE_IFELSE([
-	#include <gdkconfig.h>
-	int main(void){
-	#ifndef GDK_WINDOWING_X11
-	#error GDK_WINDOWING_X11 not defined
-	#endif
-	return 0;
-	}],
-	GDK_BACKEND_X11=yes,
-	GDK_BACKEND_X11=no)
-
-CFLAGS="$evolution_save_cflags"
-
-
-AM_PATH_ORBIT2(2.9.8)
-
-AC_MSG_CHECKING([for CORBA include paths])
-IDL_INCLUDES="-I "`${PKG_CONFIG} --variable=idldir libbonobo-2.0`" -I "`${PKG_CONFIG} --variable=idldir bonobo-activation-2.0`" -I "`${PKG_CONFIG} --variable=idldir evolution-data-server-1.2`
-AC_MSG_RESULT([$IDL_INCLUDES])
-AC_SUBST(IDL_INCLUDES)
-
+dnl *****************************************************************
 dnl Utility macro to set compiler flags for a specific lib.
 dnl EVO_SET_COMPILE_FLAGS(VAR-PREFIX, DEPS, EXTRA-CFLAGS, EXTRA-LIBS)
+dnl *****************************************************************
 AC_DEFUN([EVO_SET_COMPILE_FLAGS], [
 	PKG_CHECK_MODULES([$1], [$2])
-	$1_CFLAGS="[$]$1_CFLAGS \$(WERROR) $3"
+	$1_CFLAGS="[$]$1_CFLAGS $3"
 	$1_LIBS="[$]$1_LIBS $4"
 ])
 
-dnl --- Required version numbers
-
-BONOBOUI_REQUIRED=libbonoboui_minimum_version
-AC_SUBST(BONOBOUI_REQUIRED)
-
-dnl --- Flags to get all the GNOME stuff
-
-FULL_GNOME_DEPS="libbonoboui-2.0 gconf-2.0 gthread-2.0 gobject-2.0 libgnomeui-2.0 libglade-2.0"
-
-PKG_CHECK_MODULES([HAL], [hal >= hal_minimum_version], [HAVE_HAL="yes"], [HAVE_HAL="no"])
-if test "x$HAVE_HAL" = "xyes"; then
-	AC_DEFINE(HAVE_HAL, 1, [hal available])
-	HAL_REQUIREMENT="hal"
-	IPOD_SYNC="ipod-sync"
-else
-	HAL_REQUIREMENT=""
-	IPOD_SYNC=""
-fi
-
+dnl ******************************
+dnl TNEF implementation
+dnl ******************************
 AC_MSG_CHECKING([for yTNEF])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 	[[
@@ -1400,33 +1160,9 @@ else
 fi
 AC_SUBST(TNEF_CFLAGS)
 
-dnl Check for dbus-glib-1 and dbus
-AC_ARG_ENABLE([dbus],
-	[AS_HELP_STRING([--enable-dbus],
-	[enable DBUS support (default=yes)])],
-	[enable_dbus=$enableval],[enable_dbus=yes])
-AC_MSG_CHECKING([if dbus support is enabled])
-AC_MSG_RESULT([$enable_dbus])
-if test "$enable_dbus" = "yes"; then
-	PKG_CHECK_MODULES([DBUS_GLIB], [dbus-glib-1 >= dbus_minimum_version],
-	[DBUS_SUPPORT="yes"],
-	[AC_MSG_ERROR([DBUS respectively dbus-glib not found! (or version < dbus_minimum_version)!
-	If you want to disable DBUS, please append --disable-dbus to configure!
-	DBUS is required for NetworkManager - NetworkManager support will then be disabled, too!])])
-	AC_DEFINE(DBUS_SUPPORT, 1, [dbus available])
-	AC_SUBST(HAVE_DBUS)
-	AC_SUBST(DBUS_GLIB_CFLAGS)
-	AC_SUBST(DBUS_GLIB_LIBS)
-elif test "$enable_dbus" = "no" -a "$enable_nm" = "yes"; then
-	AC_MSG_ERROR([DBUS disabled and NetworkManager enabled - this won't work!
-	Disable NetworkManager (append --disable-nm to configure)!])
-else
-	AC_MSG_WARN([DBUS support disabled!])
-	DBUS_SUPPORT="no"
-fi
-AM_CONDITIONAL([DBUS_SUPPORT], [test "$DBUS_SUPPORT" = yes])
-
+dnl ******************************
 dnl Check for NetworkManager
+dnl ******************************
 AC_ARG_ENABLE([nm],
 	[AS_HELP_STRING([--enable-nm],
 	[enable NetworkManager support (default=yes)])],
@@ -1434,26 +1170,88 @@ AC_ARG_ENABLE([nm],
 AC_MSG_CHECKING([if NetworkManager support is enabled])
 AC_MSG_RESULT([$enable_nm])
 if test "$enable_nm" = yes; then
-	PKG_CHECK_MODULES([NM], [NetworkManager >= nm_minimum_version],
-	[NM_SUPPORT="yes"],
-	[AC_MSG_ERROR([NetworkManager not found (or version < nm_minimum_version)!
-	If you want to disable NetworkManager, please append --disable-nm to configure!])])
-	AC_DEFINE(NM_SUPPORT, 1, [network manager available])
+	PKG_CHECK_MODULES([NM], [NetworkManager >= nm_minimum_version],,
+	[AC_MSG_ERROR([NetworkManager not found (or version < nm_minimum_version).
+	If you want to disable NetworkManager, please append --disable-nm to configure.])])
 	AC_SUBST(HAVE_NM)
 	AC_SUBST(NM_CFLAGS)
-else
-	NM_SUPPORT="no"
 fi
+AM_CONDITIONAL([ENABLE_NETWORK_MANAGER], [test "$enable_nm" = yes])
 
-AM_CONDITIONAL([NM_SUPPORT], [test "$NM_SUPPORT" = yes])
+dnl ******************************
+dnl Check for Windows SENS API
+dnl ******************************
+AC_ARG_ENABLE([sens],
+	[AS_HELP_STRING([--enable-sens],
+	[enable Windows SENS support (default=yes)])],
+	[enable_sens=$enableval],[enable_sens=yes])
+if test "x$os_win32" = xyes; then
+	if test "x$enable_sens" = xyes; then
+		AC_CHECK_HEADER([rpc.h],[ enable_sens="yes" ],[ enable_sens="no" ])
+	fi
+else
+	enable_sens="no"
+fi
+AC_MSG_CHECKING([if Windows SENS support is enabled])
+AC_MSG_RESULT([$enable_sens])
+if test "$enable_sens" = yes; then
+	SENS_LIBS="-lole32 -loleaut32 -luuid -lrpcrt4"
+	AC_CHECK_HEADER([eventsys.h],
+		[AC_DEFINE([HAVE_EVENTSYS_H], 1, [Have <eventsys.h>])],,
+		[[	#if HAVE_EVENTSYS_H
+			#include <eventsys.h>
+			#endif
+		]])
+	AC_CHECK_HEADER([sensevts.h],
+		[AC_DEFINE([HAVE_SENSEVTS_H], 1, [Have <sensevts.h>])],,
+		[[	#if HAVE_SENSEVTS_H
+			#include <sensevts.h>
+			#endif
+		]])
+	AC_SUBST(HAVE_SENS)
+	AC_SUBST(SENS_LIBS)
+fi
+AC_MSG_CHECKING([if Windows SENS support is enabled])
+AC_MSG_RESULT([$enable_sens])
+if test "$enable_sens" = yes; then
+	SENS_LIBS="-lole32 -loleaut32 -luuid -lrpcrt4"
+	AC_CHECK_HEADER([eventsys.h],
+		[AC_DEFINE([HAVE_EVENTSYS_H], 1, [Have <eventsys.h>])],,
+		[[	#if HAVE_EVENTSYS_H
+			#include <eventsys.h>
+			#endif
+		]])
+	AC_CHECK_HEADER([sensevts.h],
+		[AC_DEFINE([HAVE_SENSEVTS_H], 1, [Have <sensevts.h>])],,
+		[[	#if HAVE_SENSEVTS_H
+			#include <sensevts.h>
+			#endif
+		]])
+	AC_SUBST(HAVE_SENS)
+	AC_SUBST(SENS_LIBS)
+fi
+AM_CONDITIONAL([ENABLE_WINDOWS_SENS], [test "$enable_sens" = yes])
 
-dnl --- Flags for the various libraries we build
+dnl ******************************
+dnl Enable ConnMan support ?
+dnl ******************************
+AC_ARG_ENABLE([connman],
+	[AS_HELP_STRING([--enable-connman],
+	[enable ConnMan support (default=no)])],
+	[enable_connman=$enableval],[enable_connman=no])
+if test "x$enable_nm$enable_connman" = "xyesyes"; then
+	AC_MSG_ERROR([It is not possible to enable both ConnMan and NetworkManager])
+fi
+AM_CONDITIONAL([ENABLE_CONNMAN], [test "$enable_connman" = yes])
 
-EVO_SET_COMPILE_FLAGS(CAMEL, camel-provider-$EDS_PACKAGE)
+dnl ******************************
+dnl Camel Flags
+dnl ******************************
+EVO_SET_COMPILE_FLAGS(CAMEL, camel-provider-1.2, $MANUAL_NSS_CFLAGS, $MOXILLA_NSS_CFLAGS)
 AC_SUBST(CAMEL_CFLAGS)
 AC_SUBST(CAMEL_LIBS)
 
-EVO_SET_COMPILE_FLAGS(CAMEL_GROUPWISE, camel-provider-$EDS_PACKAGE libedataserver-$EDS_PACKAGE libegroupwise-$EDS_PACKAGE)
+EVO_SET_COMPILE_FLAGS(CAMEL_GROUPWISE, camel-provider-1.2 libedataserver-1.2 libegroupwise-1.2)
 AC_SUBST(CAMEL_GROUPWISE_CFLAGS)
 AC_SUBST(CAMEL_GROUPWISE_LIBS)
 
@@ -1466,66 +1264,80 @@ else
 	fi
 fi
 
-EVO_SET_COMPILE_FLAGS(CERT_UI, libedataserverui-$EDS_PACKAGE libglade-2.0 gthread-2.0, $MANUAL_NSS_CFLAGS $MOZILLA_NSS_CFLAGS, 	$MOZILLA_L_DIR $MANUAL_NSS_LIBS $MOZILLA_NSS_LIBS)
+dnl ******************************
+dnl CERT_UI Flags
+dnl ******************************
+dnl
+dnl Here we want the Mozilla flags to go *before* the other ones,
+dnl especially the mozilla-nss -I flags to go before the gnutls ones
+dnl (which are dragged in through libedataserverui), as both
+dnl gnutls and mozilla-nss have a header called "pkcs12.h" which is
+dnl included in smime/lib/e-pkcs12.c. It wants the Mozilla NSS one.
+dnl
+EVO_SET_COMPILE_FLAGS(CERT_UI, $LIBEDATASERVERUI)
+CERT_UI_CFLAGS="$MANUAL_NSS_CFLAGS $MOZILLA_NSS_CFLAGS $CERT_UI_CFLAGS"
+CERT_UI_LIBS="$MOZILLA_L_DIR $MANUAL_NSS_LIBS $MOZILLA_NSS_LIBS $CERT_UI_LIBS"
 AC_SUBST(CERT_UI_CFLAGS)
 AC_SUBST(CERT_UI_LIBS)
 
-EVO_SET_COMPILE_FLAGS(E_NAME, libgnomeui-2.0 libbonoboui-2.0)
-AC_SUBST(E_NAME_CFLAGS)
-AC_SUBST(E_NAME_LIBS)
-
-dnl If Gtk/Gdk is built against X11, e-util uses some
-dnl X11-specific code so link with X11.
-if test "x$GDK_BACKEND_X11" = "xyes"; then
-	E_UTIL_X11_CFLAGS="$X_CFLAGS"
-	E_UTIL_X11_LIBS="$X_LIBS"
-else
-	E_UTIL_X11_CFLAGS=""
-	E_UTIL_X11_LIBS=""
-fi
-EVO_SET_COMPILE_FLAGS(E_UTIL, libbonoboui-2.0 libglade-2.0 libgnomeui-2.0 gnome-desktop-2.0 libedataserver-$EDS_PACKAGE libedataserverui-$EDS_PACKAGE camel-$EDS_PACKAGE $mozilla_nspr, $THREADS_CFLAGS $MANUAL_NSPR_CFLAGS $E_UTIL_X11_CFLAGS, $THREADS_LIBS $MANUAL_NSPR_LIBS $E_UTIL_X11_LIBS)
+dnl ************
+dnl E_UTIL Flags
+dnl ************
+EVO_SET_COMPILE_FLAGS(E_UTIL, $LIBEDATASERVERUI camel-1.2 $mozilla_nspr, $MANUAL_NSPR_CFLAGS $MANUAL_NSPR_LIBS)
 AC_SUBST(E_UTIL_CFLAGS)
 AC_SUBST(E_UTIL_LIBS)
 
-EVO_SET_COMPILE_FLAGS(TZDIALOG, libecal-$EDS_PACKAGE, $GNOME_PLATFORM_CFLAGS, $GNOME_PLATFORM_LIBS)
+E_UTIL_LIBS="$E_UTIL_LIBS $MATH_LIB"
+
+dnl **************
+dnl TZDIALOG Flags
+dnl **************
+EVO_SET_COMPILE_FLAGS(TZDIALOG, libecal-1.2 camel-1.2)
 AC_SUBST(TZDIALOG_CFLAGS)
 AC_SUBST(TZDIALOG_LIBS)
 
-EVO_SET_COMPILE_FLAGS(E_WIDGETS, libbonoboui-2.0 gio-2.0 gconf-2.0 gobject-2.0 libgnomeui-2.0 libglade-2.0 libedataserverui-$EDS_PACKAGE libedataserver-$EDS_PACKAGE)
+dnl ***************
+dnl E_WIDGETS Flags
+dnl ***************
+EVO_SET_COMPILE_FLAGS(E_WIDGETS, $LIBEDATASERVERUI $GTKHTML_EDITOR)
 AC_SUBST(E_WIDGETS_CFLAGS)
 AC_SUBST(E_WIDGETS_LIBS)
 
-EVO_SET_COMPILE_FLAGS(IMPORTERS, libedataserverui-$EDS_PACKAGE camel-provider-$EDS_PACKAGE camel-$EDS_PACKAGE libglade-2.0 libbonoboui-2.0 libgnomeui-2.0 libebook-$EDS_PACKAGE)
+dnl ***************
+dnl IMPORTERS Flags
+dnl ***************
+EVO_SET_COMPILE_FLAGS(IMPORTERS, $LIBEDATASERVERUI camel-provider-1.2 libebook-1.2)
 AC_SUBST(IMPORTERS_CFLAGS)
 AC_SUBST(IMPORTERS_LIBS)
 
-EVO_SET_COMPILE_FLAGS(LIBFILTER, libgnomeui-2.0 libglade-2.0 libedataserver-$EDS_PACKAGE)
+dnl ***************
+dnl LIBFILTER Flags
+dnl ***************
+EVO_SET_COMPILE_FLAGS(LIBFILTER, libedataserver-1.2 camel-1.2)
 AC_SUBST(LIBFILTER_CFLAGS)
 AC_SUBST(LIBFILTER_LIBS)
 
-dnl --- evolution (shell) flags
-EVO_SET_COMPILE_FLAGS(SHELL, libgnomeui-2.0 libbonoboui-2.0 libglade-2.0 gio-2.0 gconf-2.0 gobject-2.0 libgtkhtml-$GTKHTML_PACKAGE)
-
+dnl ***********
+dnl Shell Flags
+dnl ***********
+EVO_SET_COMPILE_FLAGS(SHELL, $GTKHTML $LIBEDATASERVERUI)
 AC_SUBST(SHELL_CFLAGS)
 AC_SUBST(SHELL_LIBS)
 
-dnl --- evolution-addressbook flags
-
-EVOLUTION_ADDRESSBOOK_DEPS="libbonoboui-2.0 libglade-2.0 libgnomeui-2.0 gio-2.0 gconf-2.0 gobject-2.0 libgtkhtml-$GTKHTML_PACKAGE libebook-$EDS_PACKAGE libedataserverui-$EDS_PACKAGE camel-$EDS_PACKAGE gtkhtml-editor"
-
+dnl *****************
+dnl Addressbook Flags
+dnl *****************
+EVOLUTION_ADDRESSBOOK_DEPS="$GTKHTML libebook-1.2 $LIBEDATASERVERUI camel-1.2 $GTKHTML_EDITOR"
 EVO_SET_COMPILE_FLAGS(EVOLUTION_ADDRESSBOOK, $EVOLUTION_ADDRESSBOOK_DEPS)
 AC_SUBST(EVOLUTION_ADDRESSBOOK_CFLAGS)
 AC_SUBST(EVOLUTION_ADDRESSBOOK_LIBS)
 
-if test x$enable_pilot_conduits = xyes; then
-EVO_SET_COMPILE_FLAGS(EVOLUTION_ADDRESSBOOK_CONDUIT, gnome-pilot-2.0 $EVOLUTION_ADDRESSBOOK_DEPS)
-AC_SUBST(EVOLUTION_ADDRESSBOOK_CONDUIT_CFLAGS)
-AC_SUBST(EVOLUTION_ADDRESSBOOK_CONDUIT_LIBS)
-fi
-
+dnl ***************
+dnl Libnotify Flags
+dnl ***************
 LIBNOTIFY_CFLAGS=
 LIBNOTIFY_LIBS=
-PKG_CHECK_MODULES([LIBNOTIFY], [libnotify >= libnotify_minimum_version], [HAVE_LIBNOTIFY="yes"], [HAVE_LIBNOTIFY="no"])
+PKG_CHECK_MODULES([LIBNOTIFY], [libnotify >= $libnotify_minimum_version], [HAVE_LIBNOTIFY="yes"], [HAVE_LIBNOTIFY="no"])
 if test "x$HAVE_LIBNOTIFY" = "xyes"; then
 	AC_DEFINE(HAVE_LIBNOTIFY, 1, [libnotify available])
 	libnotify="libnotify"
@@ -1535,57 +1347,65 @@ fi
 AC_SUBST(LIBNOTIFY_CFLAGS)
 AC_SUBST(LIBNOTIFY_LIBS)
 
-dnl --- evolution-calendar flags
-EVO_SET_COMPILE_FLAGS(LIBSOUP, libsoup-2.4 >= 2.3.0)
+dnl **************
+dnl Calendar Flags
+dnl **************
+EVO_SET_COMPILE_FLAGS(LIBSOUP, libsoup-2.4 >= libsoup_minimum_version)
 AC_SUBST(LIBSOUP_CFLAGS)
 AC_SUBST(LIBSOUP_LIBS)
 
-EVO_SET_COMPILE_FLAGS(EVOLUTION_CALENDAR, libgnomeui-2.0 libbonoboui-2.0 libglade-2.0 gio-2.0 gconf-2.0 gobject-2.0 libgtkhtml-$GTKHTML_PACKAGE libebook-$EDS_PACKAGE libecal-$EDS_PACKAGE libedataserverui-$EDS_PACKAGE libebackend-$EDS_PACKAGE $HAL_REQUIREMENT $libnotify gtkhtml-editor libgdata-$EDS_PACKAGE libgdata-google-$EDS_PACKAGE)
+EVO_SET_COMPILE_FLAGS(GDATA, libgdata >= 0.4.0)
+AC_SUBST(GDATA_CFLAGS)
+AC_SUBST(GDATA_LIBS)
+
+EVO_SET_COMPILE_FLAGS(EVOLUTION_CALENDAR, $GTKHTML libebook-1.2 libecal-1.2 $LIBEDATASERVERUI libebackend-1.2 $libnotify $GTKHTML_EDITOR)
 AC_SUBST(EVOLUTION_CALENDAR_CFLAGS)
 AC_SUBST(EVOLUTION_CALENDAR_LIBS)
 
-if test x$enable_pilot_conduits = xyes; then
-EVO_SET_COMPILE_FLAGS(EVOLUTION_CALENDAR_CONDUIT, gnome-pilot-2.0, $EVOLUTION_CALENDAR_CFLAGS, $EVOLUTION_CALENDAR_LIBS)
-AC_SUBST(EVOLUTION_CALENDAR_CONDUIT_CFLAGS)
-AC_SUBST(EVOLUTION_CALENDAR_CONDUIT_LIBS)
-fi
+dnl ****************************
+dnl Check for ical_set_unknown_token_handling_setting function
+dnl ****************************
+AC_MSG_CHECKING([ical_set_unknown_token_handling_setting function])
+save_cflags=$CFLAGS; CFLAGS=$EVOLUTION_CALENDAR_CFLAGS
+save_libs=$LIBS; LIBS="$EVOLUTION_CALENDAR_LIBS"
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+	[[#include <libical/ical.h>]],
+	[[ical_set_unknown_token_handling_setting (ICAL_DISCARD_TOKEN)]])],
+	[AC_DEFINE(HAVE_ICAL_UNKNOWN_TOKEN_HANDLING, 1, [libical provides ical_set_unknown_token_handling_setting function]) ac_cv_have_iuth=yes],[ac_cv_have_iuth=no])
+CFLAGS=$save_cflags
+LIBS=$save_libs
+AC_MSG_RESULT([$ac_cv_have_iuth])
 
-dnl --- evolution-mail flags
-
-EVO_SET_COMPILE_FLAGS(EVOLUTION_MAIL, camel-provider-$EDS_PACKAGE libgnomeui-2.0 libbonoboui-2.0 libglade-2.0 gio-2.0 gconf-2.0 gobject-2.0 libgtkhtml-$GTKHTML_PACKAGE gtkhtml-editor bonobo-activation-2.0 $mozilla_nss libebook-$EDS_PACKAGE libedataserverui-$EDS_PACKAGE)
+dnl **********
+dnl Mail Flags
+dnl **********
+EVO_SET_COMPILE_FLAGS(EVOLUTION_MAIL, camel-provider-1.2 $GTKHTML $GTKHTML_EDITOR $mozilla_nss libebook-1.2 $LIBEDATASERVERUI)
 AC_SUBST(EVOLUTION_MAIL_CFLAGS)
 AC_SUBST(EVOLUTION_MAIL_LIBS)
 
-dnl -- evolution-data-server IDL and version
-
-AC_DEFINE(DATASERVER_API_VERSION, "1.2", evolution-data-server API version)
-AC_DEFINE_UNQUOTED(DATASERVER_VERSION, "`${PKG_CONFIG} --modversion evolution-data-server-1.2`", evolution-data-server version)
-
+dnl ***************************
+dnl Evolution-Data-Server Flags
+dnl ***************************
 DATASERVER_EXEC_VERSION=`${PKG_CONFIG} --variable=execversion evolution-data-server-1.2`
 AC_SUBST(DATASERVER_EXEC_VERSION)
 
-AC_MSG_CHECKING([for evolution-data-server IDL])
-DATASERVER_IDL=`${PKG_CONFIG} --variable=idldir evolution-data-server-1.2`/Evolution-DataServer.idl
-if test -f "$DATASERVER_IDL"; then
-	AC_MSG_RESULT([$DATASERVER_IDL])
-	AC_SUBST(DATASERVER_IDL)
+dnl *****************
+dnl EggSMClient Flags
+dnl *****************
+if test "x$os_win32" = "xyes"; then
+	EVO_SET_COMPILE_FLAGS(EGG_SMCLIENT, $GTK)
 else
-	AC_MSG_ERROR([no])
+	EVO_SET_COMPILE_FLAGS(EGG_SMCLIENT, $GTK,, -lSM -lICE)
 fi
-
-dnl --- evolution-test flags
-
-EVO_SET_COMPILE_FLAGS(EVOLUTION_TEST, libgnomeui-2.0 libbonoboui-2.0)
-AC_SUBST(EVOLUTION_TEST_CFLAGS)
-AC_SUBST(EVOLUTION_TEST_LIBS)
+AC_SUBST(EGG_SMCLIENT_CFLAGS)
+AC_SUBST(EGG_SMCLIENT_LIBS)
 
 dnl *******************
 dnl Special directories
 dnl *******************
 
-dnl --- If you add something here, consider whether or not you also
-dnl --- need to add it to one or more .pc.in files (for Connector,
-dnl --- etc)
+dnl If you add something here, consider whether or not you also need to add it to one or more .pc.in
+dnl files (for Connector, etc)
 
 privlibdir='${libdir}'/evolution/$BASE_VERSION
 AC_SUBST(privlibdir)
@@ -1599,26 +1419,20 @@ AC_SUBST(privdatadir)
 privincludedir='${includedir}'/evolution-$BASE_VERSION
 AC_SUBST(privincludedir)
 
-componentdir="$privlibdir/components"
-AC_SUBST(componentdir)
+moduledir="$privlibdir/modules"
+AC_SUBST(moduledir)
 
-idldir='${datadir}'/idl/evolution-$BASE_VERSION
-AC_SUBST(idldir)
-
-serverdir="$libdir/bonobo/servers"
-AC_SUBST(serverdir)
-
-evolutionuidir="$privdatadir/ui"
-AC_SUBST(evolutionuidir)
+uidir="$privdatadir/ui"
+AC_SUBST(uidir)
 
 evolutionhelpdir="$privdatadir/help"
 AC_SUBST(evolutionhelpdir)
 
+icondir="$privdatadir/icons"
+AC_SUBST(icondir)
+
 imagesdir="$privdatadir/images"
 AC_SUBST(imagesdir)
-
-images16dir="$privdatadir/images/16x16"
-AC_SUBST(images16dir)
 
 if test "$os_win32" = yes; then
 	dnl On Win32 there is no "rpath" mechanism. We install the private
@@ -1627,43 +1441,13 @@ if test "$os_win32" = yes; then
 	dnl also means gnome_win32_get_prefixes() will be able to deduce the
 	dnl installation folder correctly.
 	privsolibdir=$libdir
-	dnl On Win32, use a relative path to the executables in .server
-	dnl files. The path is relative to the folder where the .server file
-	dnl is, i.e. $prefix/lib/bonobo/servers.
-	bindir_in_server_file=../../../bin
-	privlibexecdir_in_server_file=../../../libexec/evolution/$BASE_VERSION
-	componentdir_in_server_file=../../../lib/evolution/$BASE_VERSION/components
 else
 	privsolibdir=$privlibdir
-	bindir_in_server_file="$bindir"
-	privlibexecdir_in_server_file='${libexecdir}'/evolution/$BASE_VERSION
-	componentdir_in_server_file="$componentdir"
 fi
 AC_SUBST(privsolibdir)
-AC_SUBST(bindir_in_server_file)
-AC_SUBST(privlibexecdir_in_server_file)
-AC_SUBST(componentdir_in_server_file)
-
-dnl images18dir="$privdatadir/images/18x18"
-dnl AC_SUBST(images18dir)
-
-dnl images20dir="$privdatadir/images/20x20"
-dnl AC_SUBST(images20dir)
-
-dnl images24dir="$privdatadir/images/24x24"
-dnl AC_SUBST(images24dir)
-
-dnl images32dir="$privdatadir/images/32x32"
-dnl AC_SUBST(images32dir)
-
-images48dir="$privdatadir/images/48x48"
-AC_SUBST(images48dir)
 
 soundsdir="$privdatadir/sounds"
 AC_SUBST(soundsdir)
-
-gladedir="$privdatadir/glade"
-AC_SUBST(gladedir)
 
 etspecdir="$privdatadir/etspec"
 AC_SUBST(etspecdir)
@@ -1671,19 +1455,8 @@ AC_SUBST(etspecdir)
 viewsdir="$privdatadir/views"
 AC_SUBST(viewsdir)
 
-privconduitdir='${libdir}'/evolution/$BASE_VERSION/conduits
-AC_SUBST(privconduitdir)
-
-dnl ************************
-dnl IDL/Component Versioning
-dnl ************************
-
-INTERFACE_VERSION="$BASE_VERSION"
-AC_SUBST(INTERFACE_VERSION)
-AC_DEFINE_UNQUOTED(INTERFACE_VERSION, "$INTERFACE_VERSION", [IDL interface version (Major.Minor)])
-
-EVO_SERVER_RULE=$srcdir/server.mk
-AC_SUBST_FILE(EVO_SERVER_RULE)
+dnl For evolution-alarm-notify.desktop
+AS_AC_EXPAND(PRIVLIBEXECDIR, "$privlibexecdir")
 
 dnl ************************
 dnl Plugins
@@ -1701,19 +1474,162 @@ AC_ARG_ENABLE([plugins],
 	[enable_plugins="$enableval"],[enable_plugins=all])
 
 dnl Add any new plugins here
-plugins_base_always="calendar-file calendar-http $CALENDAR_WEATHER itip-formatter plugin-manager default-source addressbook-file startup-wizard mark-all-read groupwise-features groupwise-account-setup mail-account-disable publish-calendar caldav imap-features google-account-setup webdav-account-setup"
+plugins_base_always="calendar-file calendar-http itip-formatter plugin-manager default-source addressbook-file mark-all-read groupwise-features publish-calendar caldav imap-features google-account-setup webdav-account-setup"
 
-plugins_base="$plugins_base_always $SA_JUNK_PLUGIN $BF_JUNK_PLUGIN $EXCHANGE_PLUGIN $MONO_PLUGIN "
-all_plugins_base="$plugins_base_always sa-junk-plugin bogo-junk-plugin exchange-operations mono"
+plugins_base="$plugins_base_always $SA_JUNK_PLUGIN $BF_JUNK_PLUGIN"
+dist_plugins_base="$plugins_base_always calendar-weather sa-junk-plugin bogo-junk-plugin"
 
-plugins_standard_always="bbdb subject-thread save-calendar select-one-source copy-tool mail-to-task audio-inline mailing-list-actions default-mailer prefer-plain mail-notification attachment-reminder backup-restore email-custom-header templates pst-import vcard-inline"
+plugins_standard_always="bbdb subject-thread save-calendar mail-to-task mailing-list-actions prefer-plain mail-notification attachment-reminder backup-restore email-custom-header templates vcard-inline dbx-import"
 
 plugins_standard="$plugins_standard_always"
-all_plugins_standard="$plugins_standard"
+dist_plugins_standard="$plugins_standard audio-inline image-inline pst-import"
 
-plugins_experimental_always="face folder-unsubscribe external-editor hula-account-setup"
-plugins_experimental="$plugins_experimental_always $IPOD_SYNC $TNEF_ATTACHMENTS $PYTHON_PLUGIN"
-all_plugins_experimental="$plugins_experimental_always ipod-sync tnef-attachments"
+plugins_experimental_always="face external-editor"
+
+plugins_experimental="$plugins_experimental_always $TNEF_ATTACHMENTS"
+dist_plugins_experimental="$plugins_experimental_always profiler tnef-attachments contacts-map"
+
+dnl ******************************
+dnl Profiling support
+dnl ******************************
+AC_ARG_ENABLE([profiling],
+	AS_HELP_STRING([--enable-profiling],
+	[Enable profiling plugin.]),
+	[enable_profiling=$enableval],[enable_profiling=no])
+
+case x"$enable_profiling" in
+x | xyes)
+	plugins_experimental="$plugins_experimental profiler"
+	AC_DEFINE(ENABLE_PROFILING,1,[Profiling Hooks Enabled])
+	;;
+esac
+
+dnl ******************************************************************
+dnl The following plugins have additional library dependencies.
+dnl They must be explicitly disabled if the libraries are not present.
+dnl ******************************************************************
+
+dnl *******************************************
+dnl audio-inline plugin requires gstreamer-0.10
+dnl *******************************************
+AC_ARG_ENABLE([audio-inline],
+	[AS_HELP_STRING([--enable-audio-inline],
+	[Enable audio-inline plugin @<:@default=yes@:>@])],
+	[enable_audio_inline="$enableval"], [enable_audio_inline=yes])
+
+if test "x$enable_audio_inline" = "xyes"; then
+	PKG_CHECK_MODULES(GSTREAMER, gstreamer-0.10, have_gst=yes, have_gst=no)
+	AC_SUBST(GSTREAMER_CFLAGS)
+	AC_SUBST(GSTREAMER_LIBS)
+
+	if test "x$have_gst" = "xyes"; then
+		plugins_standard="$plugins_standard audio-inline"
+	else
+		AC_MSG_ERROR([gstreamer-0.10 is required for the audio-inline plugin.  Use --disable-audio-inline to exclude the plugin.])
+	fi
+fi
+
+dnl *****************************************
+dnl calendar-weather plugin requires gweather
+dnl *****************************************
+AC_ARG_ENABLE([weather],
+	[AS_HELP_STRING([--enable-weather],
+	[Enable calendar-weather plugin @<:@default=yes@:>@])],
+	[enable_weather="$enableval"],[enable_weather=yes])
+
+if test "x$enable_weather" = "xyes"; then
+	PKG_CHECK_MODULES([LIBGWEATHER], $GWEATHER >= $gweather_minimum_version,
+	have_weather="yes", have_weather="no")
+	AC_SUBST(GWEATHER_CFLAGS)
+	AC_SUBST(GWEATHER_LIBS)
+
+	if test "x$have_weather" = "xyes"; then
+		plugins_base="$plugins_base calendar-weather"
+	else
+		AC_MSG_ERROR([$GWEATHER >= $gweather_minimum_version is required for the calendar-weather plugin.  Use --disable-weather to exclude the plugin.])
+	fi
+fi
+
+dnl ******************************************************
+dnl contacts-map plugin requires champlain-gtk and geoclue
+dnl N.B. The plugin is experimental so only require these
+dnl      packages if we are building experimental plugins.
+dnl ******************************************************
+if test "x$enable_plugins" = "xexperimental"; then
+	AC_ARG_ENABLE([contacts-map],
+		[AS_HELP_STRING([--enable-contacts-map],
+		[Enable contacts-map plugin @<:@default=yes@:>@])],
+		[enable_contacts_map="$enableval"], [enable_contacts_map=yes])
+
+	if test "x$enable_contacts_map" = "xyes"; then
+		PKG_CHECK_MODULES([CHAMPLAIN], [champlain-gtk-0.5 >= $champlain_minimum_version], [have_champlain=yes], [have_champlain=no])
+		if test "x$have_champlain" = "xno"; then
+			PKG_CHECK_MODULES([CHAMPLAIN], [champlain-gtk-0.4 >= $champlain_minimum_version], [have_champlain=yes], [have_champlain=no])
+		fi
+		AC_SUBST(CHAMPLAIN_CFLAGS)
+		AC_SUBST(CHAMPLAIN_LIBS)
+
+		if test "x$have_champlain" = "xno"; then
+			AC_MSG_ERROR([champlain-gtk >= $champlain_minimum_version is required for the contacts-map plugin.  Use --disable-contacts-map to exclude the plugin.])
+		fi
+
+		PKG_CHECK_MODULES([GEOCLUE], [geoclue >= geoclue_minimum_version], [have_geoclue=yes], [have_geoclue=no])
+		AC_SUBST(GEOCLUE_CFLAGS)
+		AC_SUBST(GEOCLUE_LIBS)
+
+		if test "x$have_geoclue" = "xno"; then
+			AC_MSG_ERROR([geoclue is required for the contacts-map plugin.  Use --disable-contacts-map to exclude the plugin.])
+		fi
+
+		PKG_CHECK_MODULES( [CLUTTER_GTK], [$CLUTTER_GTK >= $clutter_gtk_minimum_version], [have_clutter_gtk="yes"], [have_clutter_gtk="no"] )
+
+		if test "x$have_clutter_gtk" = "xno"; then
+			AC_MSG_ERROR([$CLUTTER_GTK is required for the contacts-map plugin.  Use --disable-contacts-map to exclude the plugin.])
+		fi
+
+		plugins_standard="$plugins_standard contacts-map"
+	fi
+fi
+
+dnl *****************************************
+dnl image-inline plugin requires gtkimageview
+dnl *****************************************
+AC_ARG_ENABLE([image-inline],
+	[AS_HELP_STRING([--enable-image-inline],
+	[Enable image-inline plugin @<:@default=yes@:>@])],
+	[enable_image_inline="$enableval"], [enable_image_inline=yes])
+
+if test "x$enable_image_inline" = "xyes"; then
+	PKG_CHECK_MODULES(GTKIMAGEVIEW, gtkimageview >= $gtkimageview_minimum_version, have_imageview=yes, have_imageview=no)
+	AC_SUBST(GTKIMAGEVIEW_CFLAGS)
+	AC_SUBST(GTKIMAGEVIEW_LIBS)
+
+	if test "x$have_imageview" = "xyes"; then
+		plugins_standard="$plugins_standard image-inline"
+	else
+		AC_MSG_ERROR([gtkimageview >= $gtkimageview_minimum_version is required for the image-inline plugin.  Use --disable-image-inline to exclude the plugin.])
+	fi
+fi
+
+dnl *********************************
+dnl pst-import plugin requires libpst
+dnl *********************************
+AC_ARG_ENABLE([pst-import],
+	[AS_HELP_STRING([--enable-pst-import],
+	[Enable pst-import plugin @<:@default=yes@:>@])],
+	[enable_pst="$enableval"], [enable_pst=yes])
+
+if test "x$enable_pst" = "xyes"; then
+	PKG_CHECK_MODULES(LIBPST, libpst, have_pst=yes, have_pst=no)
+	AC_SUBST(LIBPST_CFLAGS)
+	AC_SUBST(LIBPST_LIBS)
+
+	if test "x$have_pst" = "xyes"; then
+		plugins_standard="$plugins_standard pst-import"
+	else
+		AC_MSG_ERROR([libpst is required for the pst-import plugin.  Use --disable-pst-import to exclude the plugin.])
+	fi
+fi
 
 case x"$enable_plugins" in
 xno)
@@ -1738,83 +1654,10 @@ xexperimental)
 	;;
 esac
 
-AC_ARG_ENABLE([profiling],
-	AS_HELP_STRING([--enable-profiling],
-	[Enable profiling plugin.]),
-	[enable_profiling=$enableval],[enable_profiling=no])
-
-case x"$enable_profiling" in
-x | xyes)
-	plugins_enabled="$plugins_enabled profiler"
-	msg_plugins="$msg_plugins (and profiling)"
-	AC_DEFINE(ENABLE_PROFILING,1,[Profiling Hooks Enabled])
-	;;
-esac
-
-if test "x${enable_mono}" = "xyes"; then
-	plugins_enabled="$plugins_enabled mono"
-	msg_plugins="$msg_plugins (and mono)"
-fi
-
-
-if test "x${enable_python}" = "xyes"; then
-	plugins_enabled="$plugins_enabled python"
-	msg_plugins="$msg_plugins (and python)"
-fi
-
 AC_SUBST(plugins_enabled)
-AC_SUBST(all_plugins_base)
-AC_SUBST(all_plugins_standard)
-AC_SUBST(all_plugins_experimental)
-
-if echo ${plugins_enabled} | grep "audio-inline" > /dev/null
-then
-	if ${PKG_CONFIG} --exists gstreamer-0.10
-	then
-		dnl *********************
-		dnl gstreamer
-		dnl *********************
-		PKG_CHECK_MODULES([GSTREAMER], [gstreamer-0.10])
-		AC_SUBST(GSTREAMER_CFLAGS)
-		AC_SUBST(GSTREAMER_LIBS)
-	else
-		plugins_enabled=`echo $plugins_enabled | sed -e "s/audio-inline//g"`
-		echo "warning: gstreamer was not found, audio-inline plugin will not be built."
-		echo "you are probably missing gstreamer-devel package."
-	fi
-fi
-
-if echo ${plugins_enabled} | grep "exchange-operations" > /dev/null ; then
-	PKG_CHECK_MODULES([LIBEXCHANGESTORAGE], [libexchange-storage-$EDS_PACKAGE >= eds_minimum_version], [have_libexchange="yes"], [have_libexchange="no"])
-	if test "x$have_libexchange" = "xyes"; then
-		dnl **************************************************
-		dnl * Exchange Operations plugin
-		dnl **************************************************
-		EVO_SET_COMPILE_FLAGS(CAMEL_EXCHANGE, libbonoboui-2.0 libglade-2.0 gconf-2.0 camel-provider-$EDS_PACKAGE libebook-$EDS_PACKAGE libedataserverui-$EDS_PACKAGE libexchange-storage-$EDS_PACKAGE libecal-$EDS_PACKAGE)
-		AC_SUBST(CAMEL_EXCHANGE_CFLAGS)
-		AC_SUBST(CAMEL_EXCHANGE_LIBS)
-	else
-		plugins_enabled=`echo $plugins_enabled | sed -e "s/exchange-operations//g"`
-		echo "warning: libevolution-exchange-$EDS_PACKAGE was not found, Exchange Operations plugin will not be built."
-	fi
-fi
-
-if echo ${plugins_enabled} | grep "pst-import" > /dev/null
-then
-	if ${PKG_CONFIG} --exists libpst
-	then
-		dnl *********************
-		dnl libpst
-		dnl *********************
-		PKG_CHECK_MODULES([LIBPST], [libpst >= libpst_minimum_version])
-		AC_SUBST(LIBPST_CFLAGS)
-		AC_SUBST(LIBPST_LIBS)
-	else
-		plugins_enabled=`echo $plugins_enabled | sed -e "s/pst-import//g"`
-		echo "warning: libpst was not found, pst-import plugin will not be built."
-		echo "you are probably missing libpst-devel package."
-	fi
-fi
+AC_SUBST(dist_plugins_base)
+AC_SUBST(dist_plugins_standard)
+AC_SUBST(dist_plugins_experimental)
 
 dnl ***********
 dnl GConf stuff
@@ -1830,13 +1673,6 @@ AC_ARG_WITH([sub-version],
 	[Specify a sub-version string]))
 
 AC_DEFINE_UNQUOTED(SUB_VERSION, "$with_sub_version", [Version substring, for packagers])
-
-AC_ARG_ENABLE([default-binary],
-	AS_HELP_STRING([--disable-default-binary],
-	[Do not install as the default "evolution" binary]),,
-	[enable_default_binary=no])
-
-AM_CONDITIONAL(DEFAULT_BINARY, test x$enable_default_binary = xyes)
 
 dnl ********************
 dnl KDE applnk directory
@@ -1857,6 +1693,19 @@ fi
 AM_CONDITIONAL(HAVE_KDE_APPLNK, test x"$KDE_APPLNK_DIR" != x)
 AC_SUBST(KDE_APPLNK_DIR)
 
+dnl ********************************************
+dnl Glade 3 catalog files (for maintainers only)
+dnl ********************************************
+AC_ARG_WITH([glade-catalog],
+	[AS_HELP_STRING([--with-glade-catalog],
+	[Install the catalog files for Glade 3 ]
+	[(for maintainers only) [default=no]])],
+	[with_catalog="$withval"], [with_catalog="no"])
+if test "$with_catalog" = "yes"; then
+	PKG_CHECK_MODULES(GLADEUI, [gladeui-1.0 >= gladeui_minimum_version])
+fi
+AM_CONDITIONAL(GLADE_CATALOG, test "x$with_catalog" != "xno")
+
 dnl ******************************
 dnl Makefiles
 dnl ******************************
@@ -1871,17 +1720,9 @@ AC_SUBST(EVOLUTION_DIR)
 
 AC_CONFIG_FILES([ po/Makefile.in
 Makefile
-win32/Makefile
 a11y/Makefile
-a11y/addressbook/Makefile
-a11y/calendar/Makefile
-a11y/widgets/Makefile
-a11y/e-table/Makefile
-a11y/e-text/Makefile
 addressbook/Makefile
-addressbook/conduit/Makefile
 addressbook/gui/Makefile
-addressbook/gui/component/Makefile
 addressbook/gui/contact-editor/Makefile
 addressbook/gui/contact-list-editor/Makefile
 addressbook/gui/merging/Makefile
@@ -1893,8 +1734,15 @@ addressbook/tools/csv2vcard
 addressbook/util/Makefile
 art/Makefile
 data/Makefile
+data/evolution.desktop.in
+data/evolution-alarm-notify.desktop.in
+data/evolution-settings.desktop.in
 data/icons/Makefile
+doc/Makefile
+doc/reference/Makefile
+doc/reference/shell/Makefile
 e-util/Makefile
+em-format/Makefile
 filter/Makefile
 help/Makefile
 help/quickref/Makefile
@@ -1911,6 +1759,8 @@ help/quickref/pl/Makefile
 help/quickref/pt/Makefile
 help/quickref/sv/Makefile
 help/quickref/sq/Makefile
+libart_lgpl/Makefile
+libgnomecanvas/Makefile
 shell/Makefile
 shell/evolution-nognome
 shell/test/Makefile
@@ -1930,16 +1780,11 @@ widgets/table/Makefile
 calendar/Makefile
 calendar/importers/Makefile
 calendar/common/Makefile
-calendar/idl/Makefile
-calendar/conduits/Makefile
-calendar/conduits/common/Makefile
-calendar/conduits/todo/Makefile
-calendar/conduits/calendar/Makefile
-calendar/conduits/memo/Makefile
 calendar/gui/Makefile
 calendar/gui/alarm-notify/Makefile
 calendar/gui/dialogs/Makefile
 composer/Makefile
+m4/Makefile
 mail/Makefile
 mail/default/Makefile
 mail/default/C/Makefile
@@ -1950,6 +1795,7 @@ mail/default/es/Makefile
 mail/default/fi/Makefile
 mail/default/fr/Makefile
 mail/default/hu/Makefile
+mail/default/id/Makefile
 mail/default/it/Makefile
 mail/default/ja/Makefile
 mail/default/ko/Makefile
@@ -1964,6 +1810,20 @@ mail/default/sr@latin/Makefile
 mail/default/sv/Makefile
 mail/default/zh_CN/Makefile
 mail/importers/Makefile
+maint/Makefile
+modules/Makefile
+modules/addressbook/Makefile
+modules/calendar/Makefile
+modules/mail/Makefile
+modules/mailto-handler/Makefile
+modules/network-manager/Makefile
+modules/composer-autosave/Makefile
+modules/connman/Makefile
+modules/plugin-lib/Makefile
+modules/plugin-mono/Makefile
+modules/plugin-python/Makefile
+modules/startup-wizard/Makefile
+modules/windows-sens/Makefile
 plugins/Makefile
 plugins/addressbook-file/Makefile
 plugins/attachment-reminder/Makefile
@@ -1975,48 +1835,44 @@ plugins/caldav/Makefile
 plugins/calendar-file/Makefile
 plugins/calendar-http/Makefile
 plugins/calendar-weather/Makefile
-plugins/copy-tool/Makefile
-plugins/default-mailer/Makefile
+plugins/dbx-import/Makefile
 plugins/default-source/Makefile
 plugins/email-custom-header/Makefile
-plugins/exchange-operations/Makefile
 plugins/external-editor/Makefile
 plugins/face/Makefile
-plugins/folder-unsubscribe/Makefile
 plugins/google-account-setup/Makefile
-plugins/groupwise-account-setup/Makefile
 plugins/groupwise-features/Makefile
-plugins/hula-account-setup/Makefile
+plugins/image-inline/Makefile
 plugins/imap-features/Makefile
-plugins/ipod-sync/Makefile
 plugins/itip-formatter/Makefile
-plugins/mail-account-disable/Makefile
 plugins/mail-notification/Makefile
 plugins/mail-to-task/Makefile
 plugins/mailing-list-actions/Makefile
 plugins/mark-all-read/Makefile
-plugins/mono/Makefile
 plugins/plugin-manager/Makefile
 plugins/prefer-plain/Makefile
 plugins/profiler/Makefile
 plugins/pst-import/Makefile
 plugins/publish-calendar/Makefile
-plugins/python/Makefile
 plugins/sa-junk-plugin/Makefile
 plugins/save-calendar/Makefile
-plugins/select-one-source/Makefile
-plugins/startup-wizard/Makefile
 plugins/subject-thread/Makefile
 plugins/templates/Makefile
 plugins/tnef-attachments/Makefile
 plugins/vcard-inline/Makefile
 plugins/webdav-account-setup/Makefile
+plugins/contacts-map/Makefile
+smclient/Makefile
 smime/Makefile
 smime/lib/Makefile
 smime/gui/Makefile
 sounds/Makefile
-tools/Makefile
+capplet/Makefile
+capplet/settings/Makefile
+capplet/settings/mail-autoconfig/Makefile
 evolution-zip
+evolution-calendar.pc
+evolution-mail.pc
 evolution-shell.pc
 evolution-plugin.pc
 ])
@@ -2032,14 +1888,14 @@ echo "
 fi
 
 echo "
+	GTK+ package:		$GTK
 	LDAP support:		$msg_ldap
-	HAL:			$HAVE_HAL
-	DBUS:			$DBUS_SUPPORT
-	NetworkManager:		$NM_SUPPORT
-	NNTP support:		$msg_nntp
-	Pilot conduits:		$msg_pilot
+	Clutter support:	$with_clutter
+	NetworkManager:		$enable_nm
+	Windows SENS:           $enable_sens
+	ConnMan:		$enable_connman
 	Libnotify:		$HAVE_LIBNOTIFY
-	Kerberos 4/5:		$msg_krb4/$msg_krb5
+	Kerberos 5:		$msg_krb5
 	SSL support:		$msg_ssl
 	SMIME support:		$msg_smime
 	Plugins:		$msg_plugins

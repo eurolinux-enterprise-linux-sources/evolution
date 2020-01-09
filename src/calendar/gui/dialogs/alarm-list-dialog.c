@@ -33,11 +33,10 @@
 #include <string.h>
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
-#include <glade/glade.h>
 #include <libedataserver/e-time-utils.h>
-#include "e-util/e-dialog-widgets.h"
 #include <libecal/e-cal-util.h>
 #include <libecal/e-cal-time-util.h>
+#include "e-util/e-util.h"
 #include "e-util/e-dialog-widgets.h"
 #include "e-util/e-util-private.h"
 #include "alarm-dialog.h"
@@ -46,8 +45,7 @@
 
 
 typedef struct {
-	/* Glade XML data */
-	GladeXML *xml;
+	GtkBuilder *builder;
 
 	/* The client */
 	ECal *ecal;
@@ -70,7 +68,7 @@ typedef struct {
 static gboolean
 get_widgets (Dialog *dialog)
 {
-#define GW(name) glade_xml_get_widget (dialog->xml, name)
+#define GW(name) e_builder_get_widget (dialog->builder, name)
 
 	dialog->toplevel = GW ("alarm-list-dialog");
 	if (!dialog->toplevel)
@@ -263,25 +261,17 @@ gboolean
 alarm_list_dialog_run (GtkWidget *parent, ECal *ecal, EAlarmList *list_store)
 {
 	Dialog dialog;
+	GtkWidget *container;
 	gint response_id;
-	gchar *gladefile;
 
 	dialog.ecal = ecal;
 	dialog.list_store = list_store;
 
-	gladefile = g_build_filename (EVOLUTION_GLADEDIR,
-				      "alarm-list-dialog.glade",
-				      NULL);
-	dialog.xml = glade_xml_new (gladefile, NULL, NULL);
-	g_free (gladefile);
-
-	if (!dialog.xml) {
-		g_message (G_STRLOC ": Could not load the Glade XML file!");
-		return FALSE;
-	}
+	dialog.builder = gtk_builder_new ();
+	e_load_ui_builder_definition (dialog.builder, "alarm-list-dialog.ui");
 
 	if (!get_widgets (&dialog)) {
-		g_object_unref(dialog.xml);
+		g_object_unref(dialog.builder);
 		return FALSE;
 	}
 
@@ -290,20 +280,25 @@ alarm_list_dialog_run (GtkWidget *parent, ECal *ecal, EAlarmList *list_store)
 	sensitize_buttons (&dialog);
 
 	gtk_widget_ensure_style (dialog.toplevel);
-	gtk_container_set_border_width (GTK_CONTAINER (GTK_DIALOG (dialog.toplevel)->vbox), 0);
-	gtk_container_set_border_width (GTK_CONTAINER (GTK_DIALOG (dialog.toplevel)->action_area), 12);
+
+	container = gtk_dialog_get_action_area (GTK_DIALOG (dialog.toplevel));
+	gtk_container_set_border_width (GTK_CONTAINER (container), 12);
+
+	container = gtk_dialog_get_content_area (GTK_DIALOG (dialog.toplevel));
+	gtk_container_set_border_width (GTK_CONTAINER (container), 0);
 
 	gtk_window_set_icon_name (
 		GTK_WINDOW (dialog.toplevel), "x-office-calendar");
 
-	gtk_window_set_transient_for (GTK_WINDOW (dialog.toplevel),
-				      GTK_WINDOW (parent));
+	gtk_window_set_transient_for (
+		GTK_WINDOW (dialog.toplevel),
+		GTK_WINDOW (parent));
 
 	response_id = gtk_dialog_run (GTK_DIALOG (dialog.toplevel));
 	gtk_widget_hide (dialog.toplevel);
 
 	gtk_widget_destroy (dialog.toplevel);
-	g_object_unref (dialog.xml);
+	g_object_unref (dialog.builder);
 
 	return response_id == GTK_RESPONSE_OK ? TRUE : FALSE;
 }
@@ -312,25 +307,16 @@ GtkWidget *
 alarm_list_dialog_peek (ECal *ecal, EAlarmList *list_store)
 {
 	Dialog *dialog;
-	gchar *gladefile;
 
 	dialog = (Dialog *)g_new (Dialog, 1);
 	dialog->ecal = ecal;
 	dialog->list_store = list_store;
 
-	gladefile = g_build_filename (EVOLUTION_GLADEDIR,
-				      "alarm-list-dialog.glade",
-				      NULL);
-	dialog->xml = glade_xml_new (gladefile, NULL, NULL);
-	g_free (gladefile);
-
-	if (!dialog->xml) {
-		g_message (G_STRLOC ": Could not load the Glade XML file!");
-		return NULL;
-	}
+	dialog->builder = gtk_builder_new ();
+	e_load_ui_builder_definition (dialog->builder, "alarm-list-dialog.ui");
 
 	if (!get_widgets (dialog)) {
-		g_object_unref(dialog->xml);
+		g_object_unref(dialog->builder);
 		return NULL;
 	}
 
@@ -338,7 +324,7 @@ alarm_list_dialog_peek (ECal *ecal, EAlarmList *list_store)
 
 	sensitize_buttons (dialog);
 
-	g_object_unref (dialog->xml);
+	g_object_unref (dialog->builder);
 
 	/* Free the other stuff when the parent really gets destroyed. */
 	g_object_set_data_full (G_OBJECT (dialog->box), "toplevel", dialog->toplevel, (GDestroyNotify) gtk_widget_destroy);

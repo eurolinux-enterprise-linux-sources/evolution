@@ -57,9 +57,9 @@ Meer informatie
 	U kunt kunt u abonneren op de (engelstalige) gebruikerslijst van 
 	Evolution op http://mail.gnome.org/mailman/listinfo/evolution-list.
 	Informatie over het Evolution project is beschikbaar op 
-	http://www.gnome.org/projects/evolution.
+	http://projects.gnome.org/evolution.
 	U kunt een lijst met (Engelstalige) antwoorden op veelgestelde
-	vragen vinden (FAQ) op http://go-evolution.org/FAQ
+	vragen vinden (FAQ) op http://live.gnome.org/Evolution/FAQ
 
 
 Hoogachtend,
@@ -75,7 +75,7 @@ Content-Type: text/html; charset=utf-8
   <META HTTP-EQUIV="Content-Type" CONTENT="text/html; CHARSET=UTF-8">
   <META NAME="GENERATOR" CONTENT="GtkHTML/0.13.99">
 </HEAD>
-<BODY BGCOLOR="#f8fcf8">
+<BODY BGCOLOR="#f8fcf8" TEXT="#000000">
 <TABLE BACKGROUND="cid:1001417869.27019.4.camel@spectrolite" CELLSPACING="0" CELLPADDING="0" WIDTH="100%">
 <TR><TD ALIGN="left" VALIGN="top">
 <IMG SRC="cid:1001417869.27019.5.camel@spectrolite" ALIGN="top" BORDER="0" WIDTH="8" HEIGHT="8"></TD>
@@ -136,14 +136,14 @@ Meer informatie
 
 <blockquote>
 	U kunt kunt u abonneren op de (Engelstalige) gebruikerslijst van 
-	Evolution op <a href="http://lists.gnome.org/mailman/listinfo/evolution">http://lists.gnome.org/mailman/listinfo/evolution</a>.
+	Evolution op <a href="http://lists.gnome.org/mailman/listinfo/evolution-list">http://lists.gnome.org/mailman/listinfo/evolution-list</a>.
 
 	Informatie over het Evolution project is beschikbaar op
-	<a href="http://www.gnome.org/projects/evolution">http://www.gnome.org/projects/evolution</a>.
+	<a href="http://projects.gnome.org/evolution">http://projects.gnome.org/evolution</a>.
 	<!--
 	U kunt een lijst met (Engelstalige) antwoorden op veelgestelde
 	vragen vinden (FAQ) op
-	<a href="http://go-evolution.org/FAQ">http://go-evolution.org/FAQ</a>.
+	<a href="http://live.gnome.org/Evolution/FAQ">http://live.gnome.org/Evolution/FAQ</a>.
 	-->
 <br><br>	
 </blockquote>

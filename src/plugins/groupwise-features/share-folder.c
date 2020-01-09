@@ -23,11 +23,11 @@
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
 #endif
-#include <glade/glade.h>
 #include "share-folder.h"
 #include <glib/gi18n-lib.h>
 #include <libedataserverui/e-contact-store.h>
-#include <e-util/e-error.h>
+#include <e-util/e-util.h>
+#include <e-util/e-alert-dialog.h>
 #include <e-util/e-util-private.h>
 #include <e-gw-container.h>
 #include <e-gw-connection.h>
@@ -99,7 +99,7 @@ static void
 share_folder_finalise (GObject *obj)
 {
 	ShareFolder *sf = (ShareFolder *) obj;
-	g_object_unref (sf->xml);
+	g_object_unref (sf->builder);
 	free_all(sf);
 	G_OBJECT_CLASS (parent_class)->finalize (obj);
 }
@@ -339,10 +339,13 @@ add_clicked(GtkButton *button, ShareFolder *sf)
 		email = e_destination_get_email (tmp->data);
 		/* You can't share a folder with yourself*/
 		if (g_strrstr (email, "@") == NULL || (!g_ascii_strcasecmp (email , self_email)))
-			e_error_run (NULL, "org.gnome.evolution.mail_shared_folder:invalid-user",email ,NULL);
+			e_alert_run_dialog_for_args (GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (button))),
+						     "org.gnome.evolution.mail_shared_folder:invalid-user",
+						     email, NULL);
 		else {
 			if (!g_ascii_strcasecmp (email, "" )) {
-				e_error_run (NULL, "org.gnome.evolution.mail_shared_folder:no-user",NULL);
+				e_alert_run_dialog_for_args (GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (button))),
+							     "org.gnome.evolution.mail_shared_folder:no-user", NULL);
 
 				return;
 			}
@@ -479,7 +482,6 @@ not_ok_clicked(GtkButton *button, ShareFolder *sf)
 	GtkTextIter *start, *end;
 	GtkTextBuffer *buffer;
 
-	buffer = gtk_text_buffer_new (NULL);
 	start = g_new0 (GtkTextIter, 1);
 	end = g_new0 (GtkTextIter, 1);
 	subj = g_strdup (gtk_entry_get_text (sf->subject));
@@ -504,29 +506,25 @@ not_cancel_clicked(GtkButton *button, GtkWidget *window)
 static void
 notification_clicked(GtkButton *button, ShareFolder *sf)
 {
-	static  GladeXML *xmln;
+	static  GtkBuilder *builder;
 	GtkButton *not_ok;
 	GtkButton *not_cancel;
 	GtkWidget *vbox;
-	gchar *gladefile;
 
 	sf->window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_type_hint (GTK_WINDOW (sf->window), GDK_WINDOW_TYPE_HINT_DIALOG);
 
-	gladefile = g_build_filename (EVOLUTION_GLADEDIR,
-				      "properties.glade",
-				      NULL);
-	xmln = glade_xml_new (gladefile, NROOTNODE , NULL);
-	g_free (gladefile);
+	builder = gtk_builder_new ();
+	e_load_ui_builder_definition (builder, "properties.ui");
 
-	vbox = GTK_WIDGET (glade_xml_get_widget (xmln, "vbox191"));
+	vbox = GTK_WIDGET (e_builder_get_widget (builder, "vbox191"));
 	gtk_container_add (GTK_CONTAINER (sf->window), vbox);
-	sf->subject = GTK_ENTRY (glade_xml_get_widget (xmln, "entry3"));
+	sf->subject = GTK_ENTRY (e_builder_get_widget (builder, "entry3"));
 	gtk_entry_set_text(GTK_ENTRY (sf->subject) , sf->sub);
-	sf->message = GTK_TEXT_VIEW (glade_xml_get_widget (xmln, "textview1"));
-	not_ok = GTK_BUTTON (glade_xml_get_widget (xmln, "nOK"));
+	sf->message = GTK_TEXT_VIEW (e_builder_get_widget (builder, "textview1"));
+	not_ok = GTK_BUTTON (e_builder_get_widget (builder, "nOK"));
 	g_signal_connect ((gpointer) not_ok, "clicked", G_CALLBACK (not_ok_clicked), sf);
-	not_cancel = GTK_BUTTON (glade_xml_get_widget (xmln, "nCancel"));
+	not_cancel = GTK_BUTTON (e_builder_get_widget (builder, "nCancel"));
 	g_signal_connect ((gpointer) not_cancel, "clicked", G_CALLBACK (not_cancel_clicked), sf->window);
 	gtk_window_set_title (GTK_WINDOW (sf->window), _("Custom Notification"));
 	gtk_window_set_position (GTK_WINDOW (sf->window) , GTK_WIN_POS_CENTER_ALWAYS);
@@ -538,29 +536,19 @@ notification_clicked(GtkButton *button, ShareFolder *sf)
 }
 
 static void
-addressbook_dialog_response (ENameSelectorDialog *name_selector_dialog, gint response, gpointer user_data)
-{
-	gtk_widget_hide (GTK_WIDGET (name_selector_dialog));
-}
-
-static void
 addressbook_entry_changed (GtkWidget *entry, gpointer   user_data)
 {
 
 }
 
 static void
-address_button_clicked_cb (GtkButton *button, gpointer data)
+address_button_clicked_cb (GtkButton *button, ShareFolder *sf)
 {
-	ShareFolder *sf = data;
-	ENameSelectorDialog *name_selector_dialog;
-
-	name_selector_dialog = e_name_selector_peek_dialog (sf->name_selector);
-	gtk_widget_show (GTK_WIDGET (name_selector_dialog));
+	e_name_selector_show_dialog (sf->name_selector, sf->window);
 }
 
-	static void
-user_selected(GtkTreeSelection *selection, ShareFolder *sf)
+static void
+user_selected (GtkTreeSelection *selection, ShareFolder *sf)
 {
 	GtkTreeModel *model;
 
@@ -589,7 +577,7 @@ add_right_clicked (GtkCellRenderer *renderer, gchar *arg1, ShareFolder *sf )
 		gtk_tree_path_free (path);
 		return;
 	}
-	if (! usr->flag)  /* if user was already existing one change the flag to update*/
+	if (!usr->flag)  /* if user was already existing one change the flag to update*/
 		usr->flag = usr->flag | 0x2;
 	user = usr->user_node;
 	if (!right) {
@@ -622,7 +610,7 @@ edit_right_clicked(GtkCellRenderer *renderer, gchar *arg1, ShareFolder *sf )
 		gtk_tree_path_free (path);
 		return;
 	}
-	if (! usr->flag)  /* if user was already existing one change the flag to update*/
+	if (!usr->flag)  /* if user was already existing one change the flag to update*/
 		usr->flag = usr->flag | 0x2;
 	user = usr->user_node;
 
@@ -656,7 +644,7 @@ delete_right_clicked(GtkCellRenderer *renderer, gchar *arg1, ShareFolder *sf )
 		gtk_tree_path_free (path);
 		return;
 	}
-	if (! usr->flag)  /* if user was already existing one change the flag to update*/
+	if (!usr->flag)  /* if user was already existing one change the flag to update*/
 		usr->flag = usr->flag | 0x2;
 	user = usr->user_node;
 	if (!right) {
@@ -672,42 +660,32 @@ delete_right_clicked(GtkCellRenderer *renderer, gchar *arg1, ShareFolder *sf )
 static void
 share_folder_construct (ShareFolder *sf)
 {
-	GladeXML *xml;
 	ENameSelectorDialog *name_selector_dialog;
 	ENameSelectorModel *name_selector_model;
 	ENameSelectorEntry *name_selector_entry;
 	GtkWidget *box;
-	gchar *gladefile;
 
-	gladefile = g_build_filename (EVOLUTION_GLADEDIR,
-				      "properties.glade",
-				      NULL);
-	xml = glade_xml_new (gladefile, ROOTNODE, NULL);
-	g_free (gladefile);
+	sf->builder = gtk_builder_new ();
+	e_load_ui_builder_definition (sf->builder, "properties.ui");
 
-	sf->xml =xml;
-
-	if (!sf->xml) {
-		g_warning ("could not get xml");
-	}
-	sf->vbox = GTK_VBOX (glade_xml_get_widget(sf->xml, "vboxSharing"));
-	sf->table = GTK_VBOX (glade_xml_get_widget (sf->xml, "vbox194"));
+	sf->vbox = GTK_VBOX (e_builder_get_widget(sf->builder, "vboxSharing"));
+	sf->table = GTK_VBOX (e_builder_get_widget (sf->builder, "vbox194"));
 	gtk_widget_set_sensitive (GTK_WIDGET (sf->table), FALSE);
 
-	sf->shared = GTK_RADIO_BUTTON (glade_xml_get_widget (sf->xml, "radShared"));
+	sf->shared = GTK_RADIO_BUTTON (e_builder_get_widget (sf->builder, "radShared"));
 	g_signal_connect ((gpointer) sf->shared, "clicked", G_CALLBACK (shared_clicked), sf);
 
-	sf->not_shared = GTK_RADIO_BUTTON (glade_xml_get_widget (sf->xml, "radNotShared"));
+	sf->not_shared = GTK_RADIO_BUTTON (e_builder_get_widget (sf->builder, "radNotShared"));
 	g_signal_connect ((gpointer) sf->not_shared, "clicked", G_CALLBACK (not_shared_clicked), sf);
 
-	sf->add_book = GTK_BUTTON (glade_xml_get_widget (sf->xml, "Address"));
+	sf->add_book = GTK_BUTTON (e_builder_get_widget (sf->builder, "Address"));
 	gtk_widget_set_sensitive (GTK_WIDGET (sf->add_book), TRUE);
 	g_signal_connect((GtkWidget *) sf->add_book, "clicked", G_CALLBACK (address_button_clicked_cb), sf);
 
 	sf->name_selector = e_name_selector_new ();
 	name_selector_dialog = e_name_selector_peek_dialog (sf->name_selector);
 	g_signal_connect (name_selector_dialog, "response",
-			G_CALLBACK (addressbook_dialog_response), sf);
+			G_CALLBACK (gtk_widget_hide), sf);
 
 	name_selector_model = e_name_selector_peek_model (sf->name_selector);
 	e_name_selector_model_add_section (name_selector_model, "Add User", _("Add User"), NULL);
@@ -715,26 +693,26 @@ share_folder_construct (ShareFolder *sf)
 	name_selector_entry = e_name_selector_peek_section_entry (sf->name_selector, "Add User");
 	g_signal_connect (name_selector_entry, "changed",
 			G_CALLBACK (addressbook_entry_changed), sf);
-	gtk_label_set_mnemonic_widget (GTK_LABEL (glade_xml_get_widget (sf->xml, "label557")), GTK_WIDGET (name_selector_entry));
+	gtk_label_set_mnemonic_widget (GTK_LABEL (e_builder_get_widget (sf->builder, "label557")), GTK_WIDGET (name_selector_entry));
 
-	sf->add_button = GTK_BUTTON (glade_xml_get_widget(sf->xml, "Add"));
+	sf->add_button = GTK_BUTTON (e_builder_get_widget(sf->builder, "Add"));
 	g_signal_connect((GtkWidget *) sf->add_button, "clicked", G_CALLBACK (add_clicked), sf);
 
-	sf->remove = GTK_BUTTON(glade_xml_get_widget(sf->xml, "Remove"));
+	sf->remove = GTK_BUTTON(e_builder_get_widget(sf->builder, "Remove"));
 	g_signal_connect ((GtkWidget *) sf->remove, "clicked", G_CALLBACK (remove_clicked), sf);
 	gtk_widget_set_sensitive(GTK_WIDGET (sf->remove), FALSE);
 
-	sf->notification = GTK_BUTTON (glade_xml_get_widget (sf->xml, "Notification"));
+	sf->notification = GTK_BUTTON (e_builder_get_widget (sf->builder, "Notification"));
 	g_signal_connect((GtkWidget *) sf->notification, "clicked", G_CALLBACK (notification_clicked), sf);
 
-	sf->name = GTK_ENTRY (glade_xml_get_widget (sf->xml, "entry4"));
+	sf->name = GTK_ENTRY (e_builder_get_widget (sf->builder, "entry4"));
 		/*TODO:connect name and label*/
 	gtk_widget_hide (GTK_WIDGET(sf->name));
-	box = GTK_WIDGET (glade_xml_get_widget (sf->xml, "hbox227"));
+	box = GTK_WIDGET (e_builder_get_widget (sf->builder, "hbox227"));
 	gtk_box_pack_start (GTK_BOX (box), (GtkWidget *) name_selector_entry, TRUE, TRUE, 0);
 	gtk_widget_show ((GtkWidget *) name_selector_entry);
 
-	sf->scrolled_window = GTK_WIDGET (glade_xml_get_widget (sf->xml,"scrolledwindow4"));
+	sf->scrolled_window = GTK_WIDGET (e_builder_get_widget (sf->builder,"scrolledwindow4"));
 
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (sf->scrolled_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 

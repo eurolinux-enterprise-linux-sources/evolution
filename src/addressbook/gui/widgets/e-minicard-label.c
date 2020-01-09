@@ -67,7 +67,7 @@ enum {
 	LAST_SIGNAL
 };
 
-static guint e_minicard_label_signals [LAST_SIGNAL] = {0, };
+static guint e_minicard_label_signals[LAST_SIGNAL] = {0, };
 
 GType
 e_minicard_label_get_type (void)
@@ -112,61 +112,61 @@ e_minicard_label_class_init (EMinicardLabelClass *klass)
 
 	g_object_class_install_property (object_class, PROP_WIDTH,
 					 g_param_spec_double ("width",
-							      _("Width"),
-							      /*_( */"XXX blurb" /*)*/,
+							      "Width",
+							      NULL,
 							      0.0, G_MAXDOUBLE, 10.0,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_HEIGHT,
 					 g_param_spec_double ("height",
-							      _("Height"),
-							      /*_( */"XXX blurb" /*)*/,
+							      "Height",
+							      NULL,
 							      0.0, G_MAXDOUBLE, 10.0,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_HAS_FOCUS,
 					 g_param_spec_boolean ("has_focus",
-							       _("Has Focus"),
-							       /*_( */"XXX blurb" /*)*/,
+							       "Has Focus",
+							       NULL,
 							       FALSE,
 							       G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_FIELD,
 					 g_param_spec_string ("field",
-							      _("Field"),
-							      /*_( */"XXX blurb" /*)*/,
+							      "Field",
+							      NULL,
 							      NULL,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_FIELDNAME,
 					 g_param_spec_string ("fieldname",
-							      _("Field Name"),
-							      /*_( */"XXX blurb" /*)*/,
+							      "Field Name",
+							      NULL,
 							      NULL,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_TEXT_MODEL,
 					 g_param_spec_object ("text_model",
-							      _("Text Model"),
-							      /*_( */"XXX blurb" /*)*/,
+							      "Text Model",
+							      NULL,
 							      E_TYPE_TEXT_MODEL,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_MAX_FIELD_NAME_WIDTH,
 					 g_param_spec_double ("max_field_name_length",
-							      _("Max field name length"),
-							      /*_( */"XXX blurb" /*)*/,
+							      "Max field name length",
+							      NULL,
 							      -1.0, G_MAXDOUBLE, -1.0,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_EDITABLE,
 					 g_param_spec_boolean ("editable",
-							       _("Editable"),
-							       /*_( */"XXX blurb" /*)*/,
+							       "Editable",
+							       NULL,
 							       FALSE,
 							       G_PARAM_READWRITE));
 
-	e_minicard_label_signals [STYLE_SET] =
+	e_minicard_label_signals[STYLE_SET] =
 		g_signal_new ("style_set",
 			      G_TYPE_FROM_CLASS (object_class),
 			      G_SIGNAL_RUN_FIRST,
@@ -347,7 +347,7 @@ e_minicard_label_event (GnomeCanvasItem *item, GdkEvent *event)
 
 	e_minicard_label = E_MINICARD_LABEL (item);
 
-	switch ( event->type ) {
+	switch (event->type) {
 	case GDK_KEY_PRESS:
 		if (event->key.keyval == GDK_Escape) {
 			GnomeCanvasItem *parent;
@@ -392,9 +392,9 @@ e_minicard_label_event (GnomeCanvasItem *item, GdkEvent *event)
 static void
 e_minicard_label_resize_children(EMinicardLabel *e_minicard_label)
 {
-	double left_width;
-	double fieldnamewidth;
-	double fieldwidth;
+	gdouble left_width;
+	gdouble fieldnamewidth;
+	gdouble fieldwidth;
 	gboolean is_rtl = (gtk_widget_get_default_direction () == GTK_TEXT_DIR_RTL);
 	if (e_minicard_label->max_field_name_length != -1 && ((e_minicard_label->width / 2) - 4 > e_minicard_label->max_field_name_length))
 		left_width = e_minicard_label->max_field_name_length;
@@ -414,9 +414,15 @@ e_minicard_label_resize_children(EMinicardLabel *e_minicard_label)
 static void
 set_colors (EMinicardLabel *label)
 {
-	if ( (GTK_OBJECT_FLAGS( label ) & GNOME_CANVAS_ITEM_REALIZED) ) {
-		GtkWidget *canvas = GTK_WIDGET (GNOME_CANVAS_ITEM (label)->canvas);
-		GtkStyle *style = gtk_widget_get_style (canvas);
+	GnomeCanvasItem *item = GNOME_CANVAS_ITEM (label);
+
+	if ((item->flags & GNOME_CANVAS_ITEM_REALIZED)) {
+		GnomeCanvas *canvas;
+		GtkStyle *style;
+
+		canvas = GNOME_CANVAS_ITEM (label)->canvas;
+		style = gtk_widget_get_style (GTK_WIDGET (canvas));
+
 		if (label->has_focus) {
 			gnome_canvas_item_set (label->rect,
 					       "outline_color_gdk", &style->mid[GTK_STATE_SELECTED],
@@ -424,11 +430,11 @@ set_colors (EMinicardLabel *label)
 					       NULL);
 
 			gnome_canvas_item_set (label->field,
-					       "fill_color_gdk", &canvas->style->text[GTK_STATE_NORMAL],
+					       "fill_color_gdk", &style->text[GTK_STATE_NORMAL],
 					       NULL);
 
 			gnome_canvas_item_set (label->fieldname,
-					       "fill_color_gdk", &canvas->style->text[GTK_STATE_NORMAL],
+					       "fill_color_gdk", &style->text[GTK_STATE_NORMAL],
 					       NULL);
 		}
 		else {
@@ -438,11 +444,11 @@ set_colors (EMinicardLabel *label)
 					       NULL);
 
 			gnome_canvas_item_set (label->field,
-					       "fill_color_gdk", &canvas->style->text[GTK_STATE_NORMAL],
+					       "fill_color_gdk", &style->text[GTK_STATE_NORMAL],
 					       NULL);
 
 			gnome_canvas_item_set (label->fieldname,
-					       "fill_color_gdk", &canvas->style->text[GTK_STATE_NORMAL],
+					       "fill_color_gdk", &style->text[GTK_STATE_NORMAL],
 					       NULL);
 		}
 	}

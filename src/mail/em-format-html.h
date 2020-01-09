@@ -22,19 +22,15 @@
  */
 
 /*
-  Concrete class for formatting mails to html
+  Abstract class for formatting mails to html
 */
 
 #ifndef EM_FORMAT_HTML_H
 #define EM_FORMAT_HTML_H
 
-#include <mail/em-format.h>
+#include <em-format/em-format.h>
 #include <mail/mail-config.h>
-#include <camel/camel-medium.h>
-#include <camel/camel-mime-part.h>
-#include <camel/camel-stream.h>
-#include <camel/camel-url.h>
-#include <gtkhtml/gtkhtml.h>
+#include <misc/e-web-view.h>
 #include <gtkhtml/gtkhtml-embedded.h>
 
 /* Standard GObject macros */
@@ -73,6 +69,16 @@ typedef enum {
 	EM_FORMAT_HTML_STATE_RENDERING
 } EMFormatHTMLState;
 
+typedef enum {
+	EM_FORMAT_HTML_COLOR_BODY,	/* header area background */
+	EM_FORMAT_HTML_COLOR_CITATION,	/* citation font color */
+	EM_FORMAT_HTML_COLOR_CONTENT,	/* message area background */
+	EM_FORMAT_HTML_COLOR_FRAME,	/* frame around message area */
+	EM_FORMAT_HTML_COLOR_HEADER,	/* header font color */
+	EM_FORMAT_HTML_COLOR_TEXT,	/* message font color */
+	EM_FORMAT_HTML_NUM_COLOR_TYPES
+} EMFormatHTMLColorType;
+
 /* A HTMLJob will be executed in another thread, in sequence.
    It's job is to write to its stream, close it if successful,
    then exit. */
@@ -82,8 +88,6 @@ typedef struct _EMFormatHTMLJob EMFormatHTMLJob;
 /**
  * struct _EMFormatHTMLJob - A formatting job.
  *
- * @next: Double linked list header.
- * @prev: Double linked list header.
  * @format: Set by allocation function.
  * @stream: Free for use by caller.
  * @puri_level: Set by allocation function.
@@ -103,15 +107,12 @@ typedef struct _EMFormatHTMLJob EMFormatHTMLJob;
  * may be used to allocate these.
  **/
 struct _EMFormatHTMLJob {
-	EMFormatHTMLJob *next;
-	EMFormatHTMLJob *prev;
-
 	EMFormatHTML *format;
 	CamelStream *stream;
 
 	/* We need to track the state of the visibility tree at
 	   the point this uri was generated */
-	struct _EMFormatPURITree *puri_level;
+	GNode *puri_level;
 	CamelURL *base;
 
 	void (*callback)(EMFormatHTMLJob *job, gint cancelled);
@@ -119,7 +120,7 @@ struct _EMFormatHTMLJob {
 		gchar *uri;
 		CamelMedium *msg;
 		EMFormatPURI *puri;
-		struct _EMFormatPURITree *puri_level;
+		GNode *puri_level;
 		gpointer data;
 	} u;
 };
@@ -132,8 +133,6 @@ typedef gboolean (*EMFormatHTMLPObjectFunc)(EMFormatHTML *md, GtkHTMLEmbedded *e
 /**
  * struct _EMFormatHTMLPObject - Pending object.
  *
- * @next: Double linked list header.
- * @prev: Double linked list header.
  * @free: Invoked when the object is no longer needed.
  * @format: The parent formatter.
  * @classid: The assigned class id as passed to add_pobject().
@@ -148,9 +147,6 @@ typedef gboolean (*EMFormatHTMLPObjectFunc)(EMFormatHTML *md, GtkHTMLEmbedded *e
  * em_format_html_add_pobject() may be used to allocate these.
  **/
 struct _EMFormatHTMLPObject {
-	EMFormatHTMLPObject *next;
-	EMFormatHTMLPObject *prev;
-
 	void (*free)(EMFormatHTMLPObject *);
 	EMFormatHTML *format;
 
@@ -196,26 +192,14 @@ struct _EMFormatHTMLPObject {
  * multipart/related objects and inline images.
  **/
 struct _EMFormatHTML {
-	EMFormat format;
-
+	EMFormat parent;
 	EMFormatHTMLPrivate *priv;
 
-	GtkHTML *html;
-
-	EDList pending_object_list;
+	GQueue pending_object_list;
 
 	GSList *headers;
 
 	guint32 text_html_flags; /* default flags for text to html conversion */
-	guint32 body_colour;	/* header box colour */
-	guint32 header_colour;
-	guint32 text_colour;
-	guint32 frame_colour;
-	guint32 content_colour;
-	guint32 citation_colour;
-	guint load_http:2;
-	guint load_http_now:1;
-	guint mark_citations:1;
 	guint simple_headers:1; /* simple header format, no box/table */
 	guint hide_headers:1; /* no headers at all */
 	guint show_icon:1; /* show an icon when the sender used Evo */
@@ -225,19 +209,41 @@ struct _EMFormatHTML {
 };
 
 struct _EMFormatHTMLClass {
-	EMFormatClass format_class;
+	EMFormatClass parent_class;
+
+	GType html_widget_type;
 };
 
 GType		em_format_html_get_type		(void);
-EMFormatHTML *	em_format_html_new		(void);
-void		em_format_html_load_http	(EMFormatHTML *efh);
-
-void		em_format_html_set_load_http	(EMFormatHTML *efh,
-						 gint style);
+EWebView *	em_format_html_get_web_view	(EMFormatHTML *efh);
+void		em_format_html_load_images	(EMFormatHTML *efh);
+void		em_format_html_get_color	(EMFormatHTML *efh,
+						 EMFormatHTMLColorType type,
+						 GdkColor *color);
+void		em_format_html_set_color	(EMFormatHTML *efh,
+						 EMFormatHTMLColorType type,
+						 const GdkColor *color);
+MailConfigHTTPMode
+		em_format_html_get_image_loading_policy
+						(EMFormatHTML *efh);
+void		em_format_html_set_image_loading_policy
+						(EMFormatHTML *efh,
+						 MailConfigHTTPMode policy);
+gboolean	em_format_html_get_mark_citations
+						(EMFormatHTML *efh);
 void		em_format_html_set_mark_citations
 						(EMFormatHTML *efh,
-						 gint state,
-						 guint32 citation_colour);
+						 gboolean mark_citations);
+gboolean	em_format_html_get_only_local_photos
+						(EMFormatHTML *efh);
+void		em_format_html_set_only_local_photos
+						(EMFormatHTML *efh,
+						 gboolean only_local_photos);
+gboolean	em_format_html_get_show_sender_photo
+						(EMFormatHTML *efh);
+void		em_format_html_set_show_sender_photo
+						(EMFormatHTML *efh,
+						 gboolean show_sender_photo);
 
 /* retrieves a pseudo-part icon wrapper for a file */
 CamelMimePart *	em_format_html_file_part	(EMFormatHTML *efh,
@@ -261,13 +267,17 @@ EMFormatHTMLPObject *
 void		em_format_html_remove_pobject	(EMFormatHTML *efh,
 						 EMFormatHTMLPObject *pobject);
 void		em_format_html_clear_pobject	(EMFormatHTML *efh);
-
 EMFormatHTMLJob *
 		em_format_html_job_new		(EMFormatHTML *efh,
 						 void (*callback)(EMFormatHTMLJob *job, gint cancelled),
 						 gpointer data);
 void		em_format_html_job_queue	(EMFormatHTML *efh,
 						 EMFormatHTMLJob *job);
+gboolean	em_format_html_get_show_real_date(EMFormatHTML *efh);
+void		em_format_html_set_show_real_date(EMFormatHTML *efh,
+						 gboolean show_real_date);
+
+gchar *		em_format_html_format_cert_infos (CamelCipherCertInfo *first_cinfo);
 
 G_END_DECLS
 

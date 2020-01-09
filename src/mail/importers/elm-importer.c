@@ -38,13 +38,10 @@
 
 #include <gconf/gconf-client.h>
 
-#include <camel/camel-operation.h>
-
 #include "mail-importer.h"
 
 #include "mail/mail-mt.h"
 #include "e-util/e-import.h"
-#include "e-util/e-error.h"
 
 #define d(x)
 
@@ -145,7 +142,6 @@ elm_get_rc(EImport *ei, const gchar *name)
 static gboolean
 elm_supported(EImport *ei, EImportTarget *target, EImportImporter *im)
 {
-	EImportTargetHome *s;
 	const gchar *maildir;
 	gchar *elmdir;
 	gboolean mailexists, exists;
@@ -153,9 +149,7 @@ elm_supported(EImport *ei, EImportTarget *target, EImportImporter *im)
 	if (target->type != E_IMPORT_TARGET_HOME)
 		return FALSE;
 
-	s = (EImportTargetHome *)target;
-
-	elmdir = g_build_filename(s->homedir, ".elm", NULL);
+	elmdir = g_build_filename(g_get_home_dir (), ".elm", NULL);
 	exists = g_file_test(elmdir, G_FILE_TEST_IS_DIR);
 	g_free(elmdir);
 	if (!exists)
@@ -166,7 +160,7 @@ elm_supported(EImport *ei, EImportTarget *target, EImportImporter *im)
 		maildir = "Mail";
 
 	if (!g_path_is_absolute(maildir))
-		elmdir = g_build_filename(s->homedir, maildir, NULL);
+		elmdir = g_build_filename(g_get_home_dir (), maildir, NULL);
 	else
 		elmdir = g_strdup (maildir);
 
@@ -198,7 +192,7 @@ elm_import_exec (struct _elm_import_msg *m)
 		maildir = "Mail";
 
 	if (!g_path_is_absolute(maildir))
-		elmdir = g_build_filename(m->target->homedir, maildir, NULL);
+		elmdir = g_build_filename(g_get_home_dir (), maildir, NULL);
 	else
 		elmdir = g_strdup(maildir);
 
@@ -211,7 +205,7 @@ elm_import_done(struct _elm_import_msg *m)
 {
 	printf("importing complete\n");
 
-	if (!camel_exception_is_set(&m->base.ex)) {
+	if (m->base.error == NULL) {
 		GConfClient *gconf;
 
 		gconf = gconf_client_get_default();
@@ -306,7 +300,9 @@ mail_importer_elm_import(EImport *ei, EImportTarget *target)
 static void
 checkbox_toggle_cb (GtkToggleButton *tb, EImportTarget *target)
 {
-	g_datalist_set_data(&target->data, "elm-do-mail", GINT_TO_POINTER(gtk_toggle_button_get_active(tb)));
+	g_datalist_set_data (
+		&target->data, "elm-do-mail",
+		GINT_TO_POINTER (gtk_toggle_button_get_active (tb)));
 }
 
 static GtkWidget *
@@ -317,10 +313,12 @@ elm_getwidget(EImport *ei, EImportTarget *target, EImportImporter *im)
 	gboolean done_mail;
 
 	gconf = gconf_client_get_default ();
-	done_mail = gconf_client_get_bool (gconf, "/apps/evolution/importer/elm/mail", NULL);
+	done_mail = gconf_client_get_bool (
+		gconf, "/apps/evolution/importer/elm/mail", NULL);
 	g_object_unref(gconf);
 
-	g_datalist_set_data(&target->data, "elm-do-mail", GINT_TO_POINTER(!done_mail));
+	g_datalist_set_data (
+		&target->data, "elm-do-mail", GINT_TO_POINTER(!done_mail));
 
 	box = gtk_vbox_new(FALSE, 2);
 
@@ -359,6 +357,7 @@ static EImportImporter elm_importer = {
 	elm_getwidget,
 	elm_import,
 	elm_cancel,
+	NULL, /* get_preview */
 };
 
 EImportImporter *

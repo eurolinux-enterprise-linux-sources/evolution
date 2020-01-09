@@ -30,25 +30,21 @@
 #include <glib/gi18n.h>
 #include <e-util/e-config.h>
 #include <mail/em-config.h>
-#include <mail/em-popup.h>
 #include <mail/em-folder-properties.h>
 #include <mail/em-folder-tree.h>
 #include <mail/em-folder-selector.h>
 #include <mail/mail-mt.h>
-#include <mail/mail-component.h>
 #include <mail/mail-config.h>
 #include <mail/mail-vfolder.h>
+#include <mail/em-utils.h>
 #include <mail/em-vfolder-rule.h>
-#include <filter/filter-rule.h>
-#include <camel/camel-store.h>
-#include <camel/camel-session.h>
-#include <camel/camel-store.h>
-#include <camel/camel-vee-store.h>
-#include <camel/camel-folder.h>
+#include <filter/e-filter-rule.h>
 #include <e-gw-container.h>
 #include <e-gw-connection.h>
-#include <glade/glade.h>
+#include <shell/e-shell-sidebar.h>
 #include "share-folder.h"
+#include "gw-ui.h"
+
 #define d(x)
 
 ShareFolder *common = NULL;
@@ -61,9 +57,6 @@ struct ShareInfo {
 };
 
 GtkWidget * org_gnome_shared_folder_factory (EPlugin *ep, EConfigHookItemFactoryData *hook_data);
-void org_gnome_create_option(EPlugin *ep, EMPopupTargetFolder *target);
-static void create_shared_folder(EPopup *ep, EPopupItem *p, gpointer data);
-static void popup_free (EPopup *ep, GSList *items, gpointer data);
 void shared_folder_commit (EPlugin *ep, EConfigTarget *tget);
 void shared_folder_abort (EPlugin *ep, EConfigTarget *target);
 
@@ -74,7 +67,6 @@ refresh_folder_tree (EMFolderTreeModel *model, CamelStore *store)
 {
 	gchar *uri;
 	EAccount *account;
-	CamelException ex;
 	CamelProvider *provider;
 
 	uri = camel_url_to_string (((CamelService *) store)->url, CAMEL_URL_HIDE_ALL);
@@ -86,27 +78,28 @@ refresh_folder_tree (EMFolderTreeModel *model, CamelStore *store)
 	uri = account->source->url;
 	em_folder_tree_model_remove_store (model, store);
 
-	camel_exception_init (&ex);
-	if (!(provider = camel_provider_get(uri, &ex))) {
-		camel_exception_clear (&ex);
+	provider = camel_provider_get (uri, NULL);
+	if (provider == NULL)
 		return;
-	}
+
 	if (!(provider->flags & CAMEL_PROVIDER_IS_STORAGE))
 		return;
 	em_folder_tree_model_add_store (model, store, account->name);
-	/* camel_object_unref (store); */
+	/* g_object_unref (store); */
 }
 
 void
 shared_folder_commit (EPlugin *ep, EConfigTarget *tget)
 {
 	EMConfigTargetFolder *target =  (EMConfigTargetFolder *)tget->config->target;
-	CamelFolder *folder = target->folder;
-	CamelStore *store = folder->parent_store;
-	EMFolderTreeModel *model = mail_component_peek_tree_model (mail_component_peek ());
+	CamelStore *parent_store;
+	EMFolderTreeModel *model = NULL; /*mail_component_peek_tree_model (mail_component_peek ())*/;
+
+	parent_store = camel_folder_get_parent_store (target->folder);
+
 	if (common) {
 		share_folder (common);
-		refresh_folder_tree (model, store);
+		refresh_folder_tree (model, parent_store);
 		g_object_run_dispose ((GObject *)common);
 		common = NULL;
 	}
@@ -141,7 +134,7 @@ struct _EMCreateFolder {
 static gchar *
 create_folder_desc (struct _EMCreateFolder *m)
 {
-	return g_strdup_printf (_("Creating folder `%s'"), m->full_name);
+	return g_strdup_printf (_("Creating folder '%s'"), m->full_name);
 }
 
 static void
@@ -149,9 +142,9 @@ create_folder_exec (struct _EMCreateFolder *m)
 {
 	d(printf ("creating folder parent='%s' name='%s' full_name='%s'\n", m->parent, m->name, m->full_name));
 
-	if ((m->fi = camel_store_create_folder (m->store, m->parent, m->name, &m->base.ex))) {
+	if ((m->fi = camel_store_create_folder (m->store, m->parent, m->name, &m->base.error))) {
 		if (camel_store_supports_subscriptions (m->store))
-			camel_store_subscribe_folder (m->store, m->full_name, &m->base.ex);
+			camel_store_subscribe_folder (m->store, m->full_name, &m->base.error);
 	}
 }
 
@@ -179,7 +172,7 @@ static void
 create_folder_free (struct _EMCreateFolder *m)
 {
 	camel_store_free_folder_info (m->store, m->fi);
-	camel_object_unref (m->store);
+	g_object_unref (m->store);
 	g_free (m->full_name);
 	g_free (m->parent);
 	g_free (m->name);
@@ -225,7 +218,7 @@ create_folder (CamelStore *store, const gchar *full_name, void (* done) (struct 
 	}
 
 	m = mail_msg_new (&create_folder_info);
-	camel_object_ref (store);
+	g_object_ref (store);
 	m->store = store;
 	m->full_name = g_strdup (full_name);
 	m->parent = g_strdup (parent);
@@ -245,7 +238,6 @@ users_dialog_response(GtkWidget *dialog, gint response, struct ShareInfo *ssi)
 	struct _EMFolderTreeModelStoreInfo *si;
 	EMFolderSelector *emfs = ssi->emfs;
 	const gchar *uri, *path;
-	CamelException ex;
 	CamelStore *store;
 
 	if (response != GTK_RESPONSE_OK) {
@@ -259,15 +251,14 @@ users_dialog_response(GtkWidget *dialog, gint response, struct ShareInfo *ssi)
 
 	d(printf ("Creating new folder: %s (%s)\n", path, uri));
 
-	camel_exception_init (&ex);
-	if (!(store = (CamelStore *) camel_session_get_service (session, uri, CAMEL_PROVIDER_STORE, &ex))) {
-		camel_exception_clear (&ex);
+	store = (CamelStore *) camel_session_get_service (
+		session, uri, CAMEL_PROVIDER_STORE, NULL);
+	if (store == NULL)
 		return;
-	}
 
-	if (!(si = g_hash_table_lookup ((ssi->model)->store_hash, store))) {
+	if (!(si = em_folder_tree_model_lookup_store_info (ssi->model, store))) {
 		g_assert_not_reached ();
-		camel_object_unref (store);
+		g_object_unref (store);
 		return;
 	}
 
@@ -278,7 +269,7 @@ users_dialog_response(GtkWidget *dialog, gint response, struct ShareInfo *ssi)
 		vfolder_load_storage ();
 
 		rule = em_vfolder_rule_new();
-		filter_rule_set_name((FilterRule *)rule, path);
+		e_filter_rule_set_name((EFilterRule *)rule, path);
 		vfolder_gui_add_rule(rule);
 		gtk_widget_destroy((GtkWidget *)emfs);
 	} else {
@@ -287,18 +278,18 @@ users_dialog_response(GtkWidget *dialog, gint response, struct ShareInfo *ssi)
 		create_folder (si->store, path, new_folder_created_cb, ssi);
 
 	}
-	camel_object_unref (store);
+	g_object_unref (store);
 }
 
 static void
 new_folder_response (EMFolderSelector *emfs, gint response, EMFolderTreeModel *model)
 {
 	GtkWidget *users_dialog;
+	GtkWidget *content_area;
 	GtkWidget *w;
 	struct ShareInfo *ssi;
 	const gchar *uri;
 	EGwConnection *cnc;
-	CamelException ex;
 	CamelStore *store;
 
 	ssi = g_new0(struct ShareInfo, 1);
@@ -309,87 +300,54 @@ new_folder_response (EMFolderSelector *emfs, gint response, EMFolderTreeModel *m
 
 	/* i want store at this point to get cnc not sure proper or not*/
 	uri = em_folder_selector_get_selected_uri (emfs);
-	camel_exception_init (&ex);
-	if (!(store = (CamelStore *) camel_session_get_service (session, uri, CAMEL_PROVIDER_STORE, &ex))) {
-		camel_exception_clear (&ex);
+	store = (CamelStore *) camel_session_get_service (
+		session, uri, CAMEL_PROVIDER_STORE, NULL);
+	if (store == NULL)
 		return;
-	}
 
 	cnc = get_cnc (store);
 	users_dialog = gtk_dialog_new_with_buttons (
 			_("Users"), NULL, GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_NO_SEPARATOR, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,GTK_STOCK_OK, GTK_RESPONSE_OK, NULL);
 	w = gtk_label_new_with_mnemonic (_("Enter the users and set permissions"));
 	gtk_widget_show(w);
-	gtk_box_pack_start(GTK_BOX (GTK_DIALOG (users_dialog)->vbox), (GtkWidget *) w, TRUE, TRUE, 6);
+	content_area = gtk_dialog_get_content_area (GTK_DIALOG (users_dialog));
+	gtk_box_pack_start(GTK_BOX (content_area), (GtkWidget *) w, TRUE, TRUE, 6);
 	ssi->sf = share_folder_new (cnc, NULL);
 	gtk_widget_set_sensitive (GTK_WIDGET ((ssi->sf)->table), TRUE);
 	ssi->model = model;
 	ssi->emfs = emfs;
-	gtk_widget_reparent (GTK_WIDGET ((ssi->sf)->table), GTK_DIALOG (users_dialog)->vbox);
+	gtk_widget_reparent (GTK_WIDGET ((ssi->sf)->table), content_area);
 	gtk_widget_hide((GtkWidget*) emfs);
 	gtk_window_resize (GTK_WINDOW (users_dialog), 350, 300);
 	gtk_widget_show(users_dialog);
 	g_signal_connect (users_dialog, "response", G_CALLBACK (users_dialog_response), ssi);
 
-	camel_object_unref (store);
+	g_object_unref (store);
 	return;
 
 }
 
-static EPopupItem popup_items[] = {
-	{ E_POPUP_ITEM, (gchar *) "20.emc.001", (gchar *) N_("New _Shared Folder..."), create_shared_folder, NULL, (gchar *) "folder-new", 0, EM_POPUP_FOLDER_INFERIORS }
-};
-
-static void
-popup_free (EPopup *ep, GSList *items, gpointer data)
-{
-g_slist_free (items);
-}
-
 void
-org_gnome_create_option(EPlugin *ep, EMPopupTargetFolder *t)
+gw_new_shared_folder_cb (GtkAction *action, EShellView *shell_view)
 {
-	GSList *menus = NULL;
-	gint i = 0;
-	static gint first = 0;
-
-	if (! g_strrstr (t->uri, "groupwise://"))
-		return;
-
-	/* for translation*/
-	if (!first) {
-		popup_items[0].label =  _(popup_items[0].label);
-
-	}
-
-	first++;
-
-	for (i = 0; i < sizeof (popup_items) / sizeof (popup_items[0]); i++)
-		menus = g_slist_prepend (menus, &popup_items[i]);
-
-	e_popup_add_items (t->target.popup, menus, NULL, popup_free, NULL);
-
-}
-
-static void
-create_shared_folder(EPopup *ep, EPopupItem *p, gpointer data)
-{
-
-	EMFolderTreeModel *model;
 	EMFolderTree *folder_tree;
 	GtkWidget *dialog;
 	gchar *uri;
+	gpointer parent;
 
-	model = mail_component_peek_tree_model (mail_component_peek ());
-	folder_tree = (EMFolderTree *) em_folder_tree_new_with_model (model);
-	dialog = em_folder_selector_create_new (folder_tree, 0, _("Create folder"), _("Specify where to create the folder:"));
-	uri = em_folder_tree_get_selected_uri(folder_tree);
-	em_folder_selector_set_selected ((EMFolderSelector *) dialog, uri);
+	parent = e_shell_view_get_shell_window (shell_view);
+	folder_tree = (EMFolderTree *) em_folder_tree_new ();
+	emu_restore_folder_tree_state (folder_tree);
+
+	dialog = em_folder_selector_create_new (parent, folder_tree, 0, _("Create folder"), _("Specify where to create the folder:"));
+	uri = em_folder_tree_get_selected_uri (folder_tree);
+	if (uri != NULL)
+		em_folder_selector_set_selected ((EMFolderSelector *) dialog, uri);
 	g_free(uri);
-	g_signal_connect (dialog, "response", G_CALLBACK (new_folder_response), model);
+
+	g_signal_connect (dialog, "response", G_CALLBACK (new_folder_response), gtk_tree_view_get_model (GTK_TREE_VIEW (folder_tree)));
 	gtk_window_set_title (GTK_WINDOW (dialog), "New Shared Folder" );
 	gtk_widget_show(dialog);
-
 }
 
 GtkWidget *
@@ -405,7 +363,7 @@ org_gnome_shared_folder_factory (EPlugin *ep, EConfigHookItemFactoryData *hook_d
 	EMConfigTargetFolder *target=  (EMConfigTargetFolder *)hook_data->config->target;
 	CamelFolder *folder = target->folder;
 
-	folder_name = g_strdup (folder->full_name);
+	folder_name = g_strdup (camel_folder_get_full_name (folder));
 	folderuri = g_strdup(target->uri);
 	if (folderuri && folder_name)
 		account = g_strrstr(folderuri, "groupwise");
@@ -431,8 +389,10 @@ org_gnome_shared_folder_factory (EPlugin *ep, EConfigHookItemFactoryData *hook_d
 	}
 
 	if (account) {
-		CamelStore *store = folder->parent_store;
-		cnc = get_cnc (store);
+		CamelStore *parent_store;
+
+		parent_store = camel_folder_get_parent_store (folder);
+		cnc = get_cnc (parent_store);
 
 		if (E_IS_GW_CONNECTION (cnc))
 			id = get_container_id (cnc, folder_name);
@@ -506,7 +466,7 @@ get_container_id(EGwConnection *cnc, const gchar *fname)
 
 	names = g_strsplit (fname, "/", -1);
 	if (names) {
-		while (names [parts])
+		while (names[parts])
 			parts++;
 		fname = names[i];
 	}

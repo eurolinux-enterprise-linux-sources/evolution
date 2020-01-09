@@ -29,12 +29,14 @@
 #include "ea-widgets.h"
 
 #include <time.h>
+#include <stdlib.h>
 #include <string.h>
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 #include <glib/gi18n.h>
 #include <libedataserver/e-data-server-util.h>
 #include <e-util/e-util.h>
+#include <e-util/e-extensible.h>
 
 static const gint e_calendar_item_days_in_month[12] = {
 	31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
@@ -45,11 +47,11 @@ static const gint e_calendar_item_days_in_month[12] = {
   && ((year) % 4 == 0 && ((year) % 100 != 0 || (year) % 400 == 0))) ? 1 : 0)
 
 static void e_calendar_item_dispose	(GObject	 *object);
-static void e_calendar_item_get_property(GObject	 *object,
+static void e_calendar_item_get_property (GObject	 *object,
 					 guint		  property_id,
 					 GValue		 *value,
 					 GParamSpec	 *pspec);
-static void e_calendar_item_set_property(GObject	 *object,
+static void e_calendar_item_set_property (GObject	 *object,
 					 guint		  property_id,
 					 const GValue	 *value,
 					 GParamSpec	 *pspec);
@@ -57,7 +59,7 @@ static void e_calendar_item_realize	(GnomeCanvasItem *item);
 static void e_calendar_item_unrealize	(GnomeCanvasItem *item);
 static void e_calendar_item_unmap	(GnomeCanvasItem *item);
 static void e_calendar_item_update	(GnomeCanvasItem *item,
-					 double		 *affine,
+					 gdouble		 *affine,
 					 ArtSVP		 *clip_path,
 					 gint		  flags);
 static void e_calendar_item_draw	(GnomeCanvasItem *item,
@@ -85,9 +87,9 @@ static void e_calendar_item_draw_day_numbers (ECalendarItem	*calitem,
 					      gint		 start_weekday,
 					      gint		 cells_x,
 					      gint		 cells_y);
-static double e_calendar_item_point	(GnomeCanvasItem *item,
-					 double		  x,
-					 double		  y,
+static gdouble e_calendar_item_point	(GnomeCanvasItem *item,
+					 gdouble		  x,
+					 gdouble		  y,
 					 gint		  cx,
 					 gint		  cy,
 					 GnomeCanvasItem **actual_item);
@@ -100,8 +102,8 @@ static gint e_calendar_item_key_press_event (ECalendarItem *item,
 					     GdkEvent *event);
 static gint e_calendar_item_event	(GnomeCanvasItem *item,
 					 GdkEvent	 *event);
-static void e_calendar_item_bounds (GnomeCanvasItem *item, double *x1, double *y1,
-				    double *x2, double *y2);
+static void e_calendar_item_bounds (GnomeCanvasItem *item, gdouble *x1, gdouble *y1,
+				    gdouble *x2, gdouble *y2);
 
 static gboolean e_calendar_item_button_press	(ECalendarItem	*calitem,
 						 GdkEvent	*event);
@@ -123,7 +125,7 @@ static void e_calendar_item_get_month_info	(ECalendarItem	*calitem,
 						 gint		*first_day_offset,
 						 gint		*days_in_month,
 						 gint		*days_in_prev_month);
-static void e_calendar_item_recalc_sizes(ECalendarItem *calitem);
+static void e_calendar_item_recalc_sizes (ECalendarItem *calitem);
 
 static void e_calendar_item_get_day_style	(ECalendarItem	*calitem,
 						 gint		 year,
@@ -145,12 +147,12 @@ static void e_calendar_item_check_selection_end	(ECalendarItem	*calitem,
 						 gint		 start_day,
 						 gint		*end_month,
 						 gint		*end_day);
-static void e_calendar_item_check_selection_start(ECalendarItem	*calitem,
+static void e_calendar_item_check_selection_start (ECalendarItem	*calitem,
 						  gint		*start_month,
 						  gint		*start_day,
 						  gint		 end_month,
 						  gint		 end_day);
-static void e_calendar_item_add_days_to_selection(ECalendarItem	*calitem,
+static void e_calendar_item_add_days_to_selection (ECalendarItem	*calitem,
 						  gint		 days);
 static void e_calendar_item_round_up_selection	(ECalendarItem	*calitem,
 						 gint		*month_offset,
@@ -177,7 +179,7 @@ static gboolean e_calendar_item_ensure_days_visible (ECalendarItem *calitem,
 static void e_calendar_item_show_popup_menu	(ECalendarItem	*calitem,
 						 GdkEventButton	*event,
 						 gint		 month_offset);
-static void e_calendar_item_on_menu_item_activate(GtkWidget	*menuitem,
+static void e_calendar_item_on_menu_item_activate (GtkWidget	*menuitem,
 						  ECalendarItem	*calitem);
 static void e_calendar_item_position_menu	(GtkMenu            *menu,
 						 gint               *x,
@@ -188,8 +190,8 @@ static void e_calendar_item_date_range_changed	(ECalendarItem	*calitem);
 static void e_calendar_item_queue_signal_emission	(ECalendarItem	*calitem);
 static gboolean e_calendar_item_signal_emission_idle_cb	(gpointer data);
 static void e_calendar_item_set_selection_if_emission (ECalendarItem	*calitem,
-						       GDate		*start_date,
-						       GDate		*end_date,
+						       const GDate	*start_date,
+						       const GDate	*end_date,
 						       gboolean emission);
 
 /* Our arguments. */
@@ -228,7 +230,12 @@ enum {
 
 static guint e_calendar_item_signals[LAST_SIGNAL] = { 0 };
 
-G_DEFINE_TYPE (ECalendarItem, e_calendar_item, GNOME_TYPE_CANVAS_ITEM)
+G_DEFINE_TYPE_WITH_CODE (
+	ECalendarItem,
+	e_calendar_item,
+	GNOME_TYPE_CANVAS_ITEM,
+	G_IMPLEMENT_INTERFACE (
+		E_TYPE_EXTENSIBLE, NULL))
 
 static void
 e_calendar_item_class_init (ECalendarItemClass *class)
@@ -843,7 +850,9 @@ e_calendar_item_realize		(GnomeCanvasItem *item)
 
 	calitem = E_CALENDAR_ITEM (item);
 
-	e_calendar_item_style_set (GTK_WIDGET(item->canvas), calitem);
+	e_calendar_item_style_set (GTK_WIDGET (item->canvas), calitem);
+
+	e_extensible_load_extensions (E_EXTENSIBLE (calitem));
 }
 
 static void
@@ -880,10 +889,11 @@ e_calendar_item_unmap		(GnomeCanvasItem *item)
 
 static void
 e_calendar_item_update		(GnomeCanvasItem *item,
-				 double		 *affine,
+				 gdouble		 *affine,
 				 ArtSVP		 *clip_path,
 				 gint		  flags)
 {
+	GnomeCanvasItemClass *item_class;
 	ECalendarItem *calitem;
 	GtkStyle *style;
 	gint char_height, width, height, space, space_per_cal, space_per_cell;
@@ -892,11 +902,12 @@ e_calendar_item_update		(GnomeCanvasItem *item,
 	PangoContext *pango_context;
 	PangoFontMetrics *font_metrics;
 
-	if (GNOME_CANVAS_ITEM_CLASS (e_calendar_item_parent_class)->update)
-		(* GNOME_CANVAS_ITEM_CLASS (e_calendar_item_parent_class)->update) (item, affine, clip_path, flags);
+	item_class = GNOME_CANVAS_ITEM_CLASS (e_calendar_item_parent_class);
+	if (item_class->update != NULL)
+		item_class->update (item, affine, clip_path, flags);
 
 	calitem = E_CALENDAR_ITEM (item);
-	style = GTK_WIDGET (item->canvas)->style;
+	style = gtk_widget_get_style (GTK_WIDGET (item->canvas));
 	xthickness = style->xthickness;
 	ythickness = style->ythickness;
 
@@ -1021,7 +1032,6 @@ e_calendar_item_draw		(GnomeCanvasItem *canvas_item,
 {
 	ECalendarItem *calitem;
 	GtkStyle *style;
-	GdkGC *base_gc, *bg_gc;
 	gint char_height, row, col, row_y, bar_height, col_x;
 	gint xthickness, ythickness;
 	PangoFontDescription *font_desc;
@@ -1035,7 +1045,7 @@ e_calendar_item_draw		(GnomeCanvasItem *canvas_item,
 		 x, y, width, height);
 #endif
 	calitem = E_CALENDAR_ITEM (canvas_item);
-	style = GTK_WIDGET (canvas_item->canvas)->style;
+	style = gtk_widget_get_style (GTK_WIDGET (canvas_item->canvas));
 
 	/* Set up Pango prerequisites */
 	font_desc = calitem->font_desc;
@@ -1050,8 +1060,6 @@ e_calendar_item_draw		(GnomeCanvasItem *canvas_item,
 		PANGO_PIXELS (pango_font_metrics_get_descent (font_metrics));
 	xthickness = style->xthickness;
 	ythickness = style->ythickness;
-	base_gc = style->base_gc[GTK_STATE_NORMAL];
-	bg_gc = style->bg_gc[GTK_STATE_NORMAL];
 
 	base = style->base[GTK_STATE_NORMAL];
 	bg = style->bg[GTK_STATE_NORMAL];
@@ -1162,7 +1170,6 @@ e_calendar_item_draw_month	(ECalendarItem   *calitem,
 	PangoFontMetrics *font_metrics;
 	PangoLayout *layout;
 	cairo_t *cr;
-	GdkColor fg;
 
 #if 0
 	g_print ("In e_calendar_item_draw_month: %i,%i %ix%i row:%i col:%i\n",
@@ -1170,7 +1177,7 @@ e_calendar_item_draw_month	(ECalendarItem   *calitem,
 #endif
 	item = GNOME_CANVAS_ITEM (calitem);
 	widget = GTK_WIDGET (item->canvas);
-	style = widget->style;
+	style = gtk_widget_get_style (widget);
 
 	cr = gdk_cairo_create (drawable);
 
@@ -1188,8 +1195,6 @@ e_calendar_item_draw_month	(ECalendarItem   *calitem,
 	xthickness = style->xthickness;
 	ythickness = style->ythickness;
 	fg_gc = style->fg_gc[GTK_STATE_NORMAL];
-
-	fg = style->fg[GTK_STATE_NORMAL];
 
 	pango_font_metrics_unref (font_metrics);
 
@@ -1321,7 +1326,7 @@ e_calendar_item_draw_month	(ECalendarItem   *calitem,
 	for (day = 0; day < 7; day++) {
 		layout_set_day_text (calitem, layout, day_index);
 		gdk_draw_layout (drawable, fg_gc,
-				 text_x - calitem->day_widths [day_index],
+				 text_x - calitem->day_widths[day_index],
 				 text_y,
 				 layout);
 		text_x += (gtk_widget_get_direction (widget) == GTK_TEXT_DIR_RTL)
@@ -1363,11 +1368,11 @@ get_digit_fomat ()
 	gint minor = 0;
 	gint revision = 0;
 
-	major = atoi (split [0]);
-	minor = atoi (split [1]);
+	major = atoi (split[0]);
+	minor = atoi (split[1]);
 
 	if (g_strv_length (split) > 2)
-		revision = atoi (split [2]);
+		revision = atoi (split[2]);
 	g_strfreev (split);
 
 	if (major > 2 || minor > 2 || (minor == 2 && revision > 2)) {
@@ -1394,7 +1399,7 @@ e_calendar_item_draw_day_numbers (ECalendarItem	*calitem,
 	GnomeCanvasItem *item;
 	GtkWidget *widget;
 	GtkStyle *style;
-	PangoFontDescription *font_desc, *wkfont_desc;
+	PangoFontDescription *font_desc;
 	GdkGC *fg_gc;
 	GdkColor *bg_color, *fg_color, *box_color;
 	struct tm today_tm;
@@ -1417,7 +1422,7 @@ e_calendar_item_draw_day_numbers (ECalendarItem	*calitem,
 
 	item = GNOME_CANVAS_ITEM (calitem);
 	widget = GTK_WIDGET (item->canvas);
-	style = widget->style;
+	style = gtk_widget_get_style (widget);
 
 	cr = gdk_cairo_create (drawable);
 
@@ -1425,9 +1430,6 @@ e_calendar_item_draw_day_numbers (ECalendarItem	*calitem,
 	font_desc = calitem->font_desc;
 	if (!font_desc)
 		font_desc = style->font_desc;
-	wkfont_desc = calitem->week_number_font_desc;
-	if (!wkfont_desc)
-		wkfont_desc = font_desc;
 	fg_gc = style->fg_gc[GTK_STATE_NORMAL];
 
 	pango_context = gtk_widget_get_pango_context (widget);
@@ -1559,7 +1561,7 @@ e_calendar_item_draw_day_numbers (ECalendarItem	*calitem,
 					day_style = calitem->styles[(month_offset + 1) * 32 + day_num];
 
 				/* Get the colors & style to use for the day.*/
-				if ((GTK_WIDGET_HAS_FOCUS(item->canvas)) &&
+				if ((gtk_widget_has_focus (GTK_WIDGET (item->canvas))) &&
 				    item->canvas->focused_item == item)
 					has_focus = TRUE;
 				else
@@ -1715,9 +1717,7 @@ e_calendar_item_get_week_number	(ECalendarItem *calitem,
 {
 	GDate date;
 	guint weekday, yearday;
-	gint offset, week_num;
-
-	/* FIXME: check what happens at year boundaries. */
+	gint week_num;
 
 	g_date_clear (&date, 1);
 	g_date_set_dmy (&date, day, month + 1, year);
@@ -1725,24 +1725,29 @@ e_calendar_item_get_week_number	(ECalendarItem *calitem,
 	/* This results in a value of 0 (Monday) - 6 (Sunday). (or -1 on error - oops!!) */
 	weekday = g_date_get_weekday (&date) - 1;
 
-	/* Calculate the offset from the start of the week. */
-	offset = (calitem->week_start_day + 7 - weekday) % 7;
+	if (weekday > 0) {
+		/* we want always point to nearest Monday, as the first day of the week,
+		   regardless of the calendar's week_start_day */
+		if (weekday >= 3)
+			g_date_add_days (&date, 7 - weekday);
+		else
+			g_date_subtract_days (&date, weekday);
+	}
 
 	/* Calculate the day of the year, from 0 to 365. */
 	yearday = g_date_get_day_of_year (&date) - 1;
 
 	/* If the week starts on or after 29th December, it is week 1 of the
 	   next year, since there are 4 days in the next year. */
-	g_date_subtract_days (&date, offset);
 	if (g_date_get_month (&date) == 12 && g_date_get_day (&date) >= 29)
 		return 1;
 
 	/* Calculate the week number, from 0. */
-	week_num = (yearday - offset) / 7;
+	week_num = yearday / 7;
 
 	/* If the first week starts on or after Jan 5th, then we need to add
 	   1 since the previous week will really be the first week. */
-	if ((yearday - offset) % 7 >= 4)
+	if (yearday % 7 >= 4)
 		week_num++;
 
 	/* Add 1 so week numbers are from 1 to 53. */
@@ -1753,7 +1758,7 @@ e_calendar_item_get_week_number	(ECalendarItem *calitem,
    Since we are the only item we just return ourself and 0 for the distance.
    This is needed so that we get button/motion events. */
 static double
-e_calendar_item_point (GnomeCanvasItem *item, double x, double y,
+e_calendar_item_point (GnomeCanvasItem *item, gdouble x, gdouble y,
 			   gint cx, gint cy,
 			   GnomeCanvasItem **actual_item)
 {
@@ -1773,7 +1778,7 @@ e_calendar_item_stop_selecting (ECalendarItem *calitem, guint32 time)
 
 	/* If the user selects the grayed dates before the first month or
 	   after the last month, we move backwards or forwards one month.
-	   The set_month() call should take care of updating the selection. */
+	   The set_month () call should take care of updating the selection. */
 	if (calitem->selection_end_month_offset == -1)
 		e_calendar_item_set_first_month (calitem, calitem->year,
 						 calitem->month - 1);
@@ -1916,8 +1921,8 @@ e_calendar_item_event (GnomeCanvasItem *item, GdkEvent *event)
 }
 
 static void
-e_calendar_item_bounds (GnomeCanvasItem *item, double *x1, double *y1,
-			double *x2, double *y2)
+e_calendar_item_bounds (GnomeCanvasItem *item, gdouble *x1, gdouble *y1,
+			gdouble *x2, gdouble *y2)
 {
 	ECalendarItem *calitem;
 
@@ -1945,7 +1950,7 @@ e_calendar_item_recalc_sizes		(ECalendarItem *calitem)
 	PangoLayout *layout;
 
 	canvas_item = GNOME_CANVAS_ITEM (calitem);
-	style = GTK_WIDGET (canvas_item->canvas)->style;
+	style = gtk_widget_get_style (GTK_WIDGET (canvas_item->canvas));
 
 	if (!style)
 		return;
@@ -2055,7 +2060,7 @@ e_calendar_item_get_day_style		(ECalendarItem	*calitem,
 	GtkStyle *style;
 
 	widget = GTK_WIDGET (GNOME_CANVAS_ITEM (calitem)->canvas);
-	style = widget->style;
+	style = gtk_widget_get_style (widget);
 
 	*bg_color = NULL;
 	*fg_color = NULL;
@@ -2068,7 +2073,7 @@ e_calendar_item_get_day_style		(ECalendarItem	*calitem,
 		*box_color = &calitem->colors[E_CALENDAR_ITEM_COLOR_TODAY_BOX];
 
 	if (prev_or_next_month)
-		*fg_color = &style->mid[GTK_WIDGET_STATE (widget)];
+		*fg_color = &style->mid[gtk_widget_get_state (widget)];
 
 	if (selected) {
 		if (has_focus) {
@@ -2153,10 +2158,14 @@ e_calendar_item_button_press	(ECalendarItem	*calitem,
 	}
 
 	if (round_up_end)
-		e_calendar_item_round_up_selection (calitem, &calitem->selection_end_month_offset, &calitem->selection_end_day);
+		e_calendar_item_round_up_selection (
+			calitem, &calitem->selection_end_month_offset,
+			&calitem->selection_end_day);
 
 	if (round_down_start)
-		e_calendar_item_round_down_selection (calitem, &calitem->selection_start_month_offset, &calitem->selection_start_day);
+		e_calendar_item_round_down_selection (
+			calitem, &calitem->selection_start_month_offset,
+			&calitem->selection_start_day);
 
 	gnome_canvas_item_request_update (GNOME_CANVAS_ITEM (calitem));
 
@@ -2214,11 +2223,13 @@ e_calendar_item_motion		(ECalendarItem	*calitem,
 		end_month = tmp_month;
 		end_day = tmp_day;
 
-		calitem->selection_dragging_end = !calitem->selection_dragging_end;
+		calitem->selection_dragging_end =
+			!calitem->selection_dragging_end;
 	}
 
 	if (calitem->days_to_start_week_selection > 0) {
-		days_in_selection = e_calendar_item_get_inclusive_days (calitem, start_month, start_day, end_month, end_day);
+		days_in_selection = e_calendar_item_get_inclusive_days (
+			calitem, start_month, start_day, end_month, end_day);
 		if (days_in_selection >= calitem->days_to_start_week_selection) {
 			round_down_start = TRUE;
 			round_up_end = TRUE;
@@ -2387,7 +2398,7 @@ e_calendar_item_convert_position_to_day	(ECalendarItem	*calitem,
 
 	item = GNOME_CANVAS_ITEM (calitem);
 	widget = GTK_WIDGET (item->canvas);
-	style = widget->style;
+	style = gtk_widget_get_style (widget);
 
 	font_desc = calitem->font_desc;
 	if (!font_desc)
@@ -2542,7 +2553,7 @@ e_calendar_item_get_month_info	(ECalendarItem	*calitem,
 }
 
 void
-e_calendar_item_get_first_month(ECalendarItem	*calitem,
+e_calendar_item_get_first_month (ECalendarItem	*calitem,
 				gint		*year,
 				gint		*month)
 {
@@ -2590,7 +2601,7 @@ e_calendar_item_preserve_day_selection	(ECalendarItem	*calitem,
 
 /* This also handles values of month < 0 or > 11 by updating the year. */
 void
-e_calendar_item_set_first_month(ECalendarItem	*calitem,
+e_calendar_item_set_first_month (ECalendarItem	*calitem,
 				gint		 year,
 				gint		 month)
 {
@@ -2623,8 +2634,12 @@ e_calendar_item_set_first_month(ECalendarItem	*calitem,
 			gint selected_day;
 			struct tm tmp_tm = { 0 };
 
-			old_days_in_selection = e_calendar_item_get_inclusive_days (calitem, calitem->selection_start_month_offset, calitem->selection_start_day,
-										    calitem->selection_end_month_offset, calitem->selection_end_day);
+			old_days_in_selection = e_calendar_item_get_inclusive_days (
+				calitem,
+				calitem->selection_start_month_offset,
+				calitem->selection_start_day,
+				calitem->selection_end_month_offset,
+				calitem->selection_end_day);
 
 			/* Calculate the currently selected day */
 			tmp_tm.tm_year = calitem->year - 1900;
@@ -2647,17 +2662,31 @@ e_calendar_item_set_first_month(ECalendarItem	*calitem,
 			calitem->year = new_year;
 			calitem->month = new_month;
 
-			e_calendar_item_ensure_valid_day (calitem, &calitem->selection_start_month_offset, &calitem->selection_start_day);
-			e_calendar_item_ensure_valid_day (calitem, &calitem->selection_end_month_offset, &calitem->selection_end_day);
+			e_calendar_item_ensure_valid_day (
+				calitem, &calitem->selection_start_month_offset,
+				&calitem->selection_start_day);
+			e_calendar_item_ensure_valid_day (
+				calitem, &calitem->selection_end_month_offset,
+				&calitem->selection_end_day);
 
 			if (calitem->preserve_day_when_moving) {
-				e_calendar_item_preserve_day_selection (calitem, selected_day, &calitem->selection_start_month_offset, &calitem->selection_start_day);
+				e_calendar_item_preserve_day_selection (
+					calitem, selected_day,
+					&calitem->selection_start_month_offset,
+					&calitem->selection_start_day);
 			}
 
-			new_days_in_selection = e_calendar_item_get_inclusive_days (calitem, calitem->selection_start_month_offset, calitem->selection_start_day, calitem->selection_end_month_offset, calitem->selection_end_day);
+			new_days_in_selection = e_calendar_item_get_inclusive_days (
+				calitem,
+				calitem->selection_start_month_offset,
+				calitem->selection_start_day,
+				calitem->selection_end_month_offset,
+				calitem->selection_end_day);
 
 			if (old_days_in_selection != new_days_in_selection)
-				e_calendar_item_add_days_to_selection (calitem, old_days_in_selection - new_days_in_selection);
+				e_calendar_item_add_days_to_selection (
+					calitem, old_days_in_selection -
+					new_days_in_selection);
 
 			/* Flag that we need to emit the "selection_changed"
 			   signal. We don't want to emit it here since setting
@@ -2692,14 +2721,14 @@ e_calendar_item_set_max_days_sel       (ECalendarItem	*calitem,
 
 /* Get the maximum number of days before whole weeks are selected */
 gint
-e_calendar_item_get_days_start_week_sel(ECalendarItem	*calitem)
+e_calendar_item_get_days_start_week_sel (ECalendarItem	*calitem)
 {
 	return calitem->days_to_start_week_selection;
 }
 
 /* Set the maximum number of days before whole weeks are selected */
 void
-e_calendar_item_set_days_start_week_sel(ECalendarItem	*calitem,
+e_calendar_item_set_days_start_week_sel (ECalendarItem	*calitem,
 					gint            days)
 {
 	calitem->days_to_start_week_selection = days;
@@ -2834,6 +2863,7 @@ e_calendar_item_mark_day	(ECalendarItem	*calitem,
 				 gboolean        add_day_style)
 {
 	gint month_offset;
+	gint index;
 
 	month_offset = (year - calitem->year) * 12 + month - calitem->month;
 	if (month_offset < -1 || month_offset > calitem->rows * calitem->cols)
@@ -2842,7 +2872,9 @@ e_calendar_item_mark_day	(ECalendarItem	*calitem,
 	if (!calitem->styles)
 		calitem->styles = g_new0 (guint8, (calitem->rows * calitem->cols + 2) * 32);
 
-	calitem->styles[(month_offset + 1) * 32 + day] = (add_day_style ? calitem->styles[(month_offset + 1) * 32 + day] : 0) | day_style;
+	index = (month_offset + 1) * 32 + day;
+	calitem->styles[index] = day_style |
+		(add_day_style ? calitem->styles[index] : 0);
 
 	gnome_canvas_item_request_update (GNOME_CANVAS_ITEM (calitem));
 }
@@ -2886,6 +2918,8 @@ e_calendar_item_mark_days	(ECalendarItem	*calitem,
 		calitem->styles = g_new0 (guint8, (calitem->rows * calitem->cols + 2) * 32);
 
 	for (;;) {
+		gint index;
+
 		if (month_offset == end_month_offset && day > end_day)
 			break;
 
@@ -2897,7 +2931,9 @@ e_calendar_item_mark_days	(ECalendarItem	*calitem,
 #if 0
 		g_print ("Marking Month:%i Day:%i\n", month_offset, day);
 #endif
-		calitem->styles[(month_offset + 1) * 32 + day] = (add_day_style ? calitem->styles[(month_offset + 1) * 32 + day] : 0) | day_style;
+		index = (month_offset + 1) * 32 + day;
+		calitem->styles[index] = day_style |
+			(add_day_style ? calitem->styles[index] : 0);
 
 		day++;
 		if (day == 32) {
@@ -3063,8 +3099,8 @@ e_calendar_item_get_selection		(ECalendarItem	*calitem,
 
 static void
 e_calendar_item_set_selection_if_emission (ECalendarItem	*calitem,
-					   GDate		*start_date,
-					   GDate		*end_date,
+					   const GDate		*start_date,
+					   const GDate		*end_date,
 					   gboolean emission)
 {
 	gint start_year, start_month, start_day;
@@ -3143,17 +3179,31 @@ e_calendar_item_set_selection_if_emission (ECalendarItem	*calitem,
 void
 e_calendar_item_style_set (GtkWidget *widget, ECalendarItem *calitem)
 {
-	calitem->colors[E_CALENDAR_ITEM_COLOR_TODAY_BOX] = widget->style->bg[GTK_STATE_SELECTED];
-	calitem->colors[E_CALENDAR_ITEM_COLOR_SELECTION_FG] = widget->style->base[GTK_STATE_NORMAL];
-	calitem->colors[E_CALENDAR_ITEM_COLOR_SELECTION_BG_FOCUSED] = widget->style->bg[GTK_STATE_SELECTED];
-	calitem->colors[E_CALENDAR_ITEM_COLOR_SELECTION_BG] = widget->style->fg[GTK_STATE_INSENSITIVE];
-	calitem->colors[E_CALENDAR_ITEM_COLOR_PREV_OR_NEXT_MONTH_FG] = widget->style->fg[GTK_STATE_INSENSITIVE];
+	GtkStyle *style;
+	GdkColor *color;
+
+	style = gtk_widget_get_style (widget);
+
+	color = &style->bg[GTK_STATE_SELECTED];
+	calitem->colors[E_CALENDAR_ITEM_COLOR_TODAY_BOX] = *color;
+
+	color = &style->base[GTK_STATE_NORMAL];
+	calitem->colors[E_CALENDAR_ITEM_COLOR_SELECTION_FG] = *color;
+
+	color = &style->bg[GTK_STATE_SELECTED];
+	calitem->colors[E_CALENDAR_ITEM_COLOR_SELECTION_BG_FOCUSED] = *color;
+
+	color = &style->fg[GTK_STATE_INSENSITIVE];
+	calitem->colors[E_CALENDAR_ITEM_COLOR_SELECTION_BG] = *color;
+
+	color = &style->fg[GTK_STATE_INSENSITIVE];
+	calitem->colors[E_CALENDAR_ITEM_COLOR_PREV_OR_NEXT_MONTH_FG] = *color;
 }
 
 void
 e_calendar_item_set_selection (ECalendarItem	*calitem,
-			       GDate		*start_date,
-			       GDate		*end_date)
+			       const GDate	*start_date,
+			       const GDate	*end_date)
 {
 	/* If the user is in the middle of a selection, we must abort it. */
 	if (calitem->selecting) {
@@ -3327,11 +3377,20 @@ static void
 e_calendar_item_on_menu_item_activate	(GtkWidget	*menuitem,
 					 ECalendarItem	*calitem)
 {
+	GtkWidget *parent;
 	gint year, month_offset, month;
+	gpointer data;
 
-	year = GPOINTER_TO_INT (g_object_get_data(G_OBJECT(menuitem->parent), "year"));
-	month_offset = GPOINTER_TO_INT (g_object_get_data(G_OBJECT(menuitem->parent), "month_offset"));
-	month = GPOINTER_TO_INT (g_object_get_data(G_OBJECT(menuitem), "month"));
+	parent = gtk_widget_get_parent (menuitem);
+	data = g_object_get_data (G_OBJECT (parent), "year");
+	year = GPOINTER_TO_INT (data);
+
+	parent = gtk_widget_get_parent (menuitem);
+	data = g_object_get_data (G_OBJECT (parent), "month_offset");
+	month_offset = GPOINTER_TO_INT (data);
+
+	data = g_object_get_data (G_OBJECT (menuitem), "month");
+	month = GPOINTER_TO_INT (data);
 
 	month -= month_offset;
 	e_calendar_item_normalize_date (calitem, &year, &month);
@@ -3392,7 +3451,10 @@ static void
 e_calendar_item_queue_signal_emission	(ECalendarItem	*calitem)
 {
 	if (calitem->signal_emission_idle_id == 0) {
-		calitem->signal_emission_idle_id = g_idle_add_full (G_PRIORITY_HIGH, e_calendar_item_signal_emission_idle_cb, calitem, NULL);
+		calitem->signal_emission_idle_id = g_idle_add_full (
+			G_PRIORITY_HIGH, (GSourceFunc)
+			e_calendar_item_signal_emission_idle_cb,
+			calitem, NULL);
 	}
 }
 
@@ -3411,7 +3473,7 @@ e_calendar_item_signal_emission_idle_cb	(gpointer data)
 
 	/* We ref the calitem & check in case it gets destroyed, since we
 	   were getting a free memory write here. */
-	g_object_ref((calitem));
+	g_object_ref ((calitem));
 
 	if (calitem->date_range_changed) {
 		calitem->date_range_changed = FALSE;
@@ -3423,7 +3485,7 @@ e_calendar_item_signal_emission_idle_cb	(gpointer data)
 		g_signal_emit (calitem, e_calendar_item_signals[SELECTION_CHANGED], 0);
 	}
 
-	g_object_unref((calitem));
+	g_object_unref ((calitem));
 
 	GDK_THREADS_LEAVE ();
 	return FALSE;

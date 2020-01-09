@@ -114,8 +114,11 @@ remove_row (ETableWithout *etw, gint view_row)
 	ETableSubset *etss = E_TABLE_SUBSET (etw);
 
 	e_table_model_pre_change (E_TABLE_MODEL (etw));
-	memmove (etss->map_table + view_row, etss->map_table + view_row + 1, (etss->n_map - view_row - 1) * sizeof (gint));
-	etss->n_map --;
+	memmove (
+		etss->map_table + view_row,
+		etss->map_table + view_row + 1,
+		(etss->n_map - view_row - 1) * sizeof (gint));
+	etss->n_map--;
 	e_table_model_row_deleted (E_TABLE_MODEL (etw), view_row);
 }
 
@@ -149,7 +152,10 @@ etw_dispose (GObject *object)
 }
 
 static void
-etw_proxy_model_rows_inserted (ETableSubset *etss, ETableModel *etm, gint model_row, gint count)
+etw_proxy_model_rows_inserted (ETableSubset *etss,
+                               ETableModel *etm,
+                               gint model_row,
+                               gint count)
 {
 	gint i;
 	ETableWithout *etw = E_TABLE_WITHOUT (etss);
@@ -177,7 +183,10 @@ etw_proxy_model_rows_inserted (ETableSubset *etss, ETableModel *etm, gint model_
 }
 
 static void
-etw_proxy_model_rows_deleted (ETableSubset *etss, ETableModel *etm, gint model_row, gint count)
+etw_proxy_model_rows_deleted (ETableSubset *etss,
+                              ETableModel *etm,
+                              gint model_row,
+                              gint count)
 {
 	gint i; /* View row */
 	ETableWithout *etw = E_TABLE_WITHOUT (etss);
@@ -257,9 +266,9 @@ e_table_without_construct (ETableWithout                 *etw,
 			   ETableWithoutFreeKeyFunc       free_duplicated_key_func,
 			   void                          *closure)
 {
-	if (e_table_subset_construct (E_TABLE_SUBSET(etw), source, 1) == NULL)
+	if (e_table_subset_construct (E_TABLE_SUBSET (etw), source, 1) == NULL)
 		return NULL;
-	E_TABLE_SUBSET(etw)->n_map = 0;
+	E_TABLE_SUBSET (etw)->n_map = 0;
 
 	etw->priv->hash_func                = hash_func;
 	etw->priv->compare_func	    = compare_func;
@@ -316,7 +325,7 @@ void         e_table_without_hide       (ETableWithout *etw,
 	for (i = 0; i < etss->n_map; i++) {
 		if (check_with_key (etw, key, etw_view_to_model_row (etw, i))) {
 			remove_row (etw, i);
-			i --;
+			i--;
 		}
 	}
 }
@@ -332,7 +341,7 @@ void         e_table_without_hide_adopt (ETableWithout *etw,
 	for (i = 0; i < etss->n_map; i++) {
 		if (check_with_key (etw, key, etw_view_to_model_row (etw, i))) {
 			remove_row (etw, i);
-			i --;
+			i--;
 		}
 	}
 }
@@ -378,7 +387,7 @@ e_table_without_show_all   (ETableWithout *etw)
 	}
 	etw->priv->hash = g_hash_table_new (etw->priv->hash_func, etw->priv->compare_func);
 
-	row_count = e_table_model_row_count (E_TABLE_MODEL(etss->source));
+	row_count = e_table_model_row_count (E_TABLE_MODEL (etss->source));
 	g_free (etss->map_table);
 	etss->map_table = g_new (int, row_count);
 

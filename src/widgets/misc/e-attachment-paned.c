@@ -60,11 +60,22 @@ struct _EAttachmentPanedPrivate {
 enum {
 	PROP_0,
 	PROP_ACTIVE_VIEW,
+	PROP_DRAGGING,
 	PROP_EDITABLE,
 	PROP_EXPANDED
 };
 
-static gpointer parent_class;
+/* Forward Declarations */
+static void	e_attachment_paned_interface_init
+					(EAttachmentViewInterface *interface);
+
+G_DEFINE_TYPE_WITH_CODE (
+	EAttachmentPaned,
+	e_attachment_paned,
+	GTK_TYPE_VPANED,
+	G_IMPLEMENT_INTERFACE (
+		E_TYPE_ATTACHMENT_VIEW,
+		e_attachment_paned_interface_init))
 
 void
 e_attachment_paned_set_default_height (gint height)
@@ -84,41 +95,11 @@ attachment_paned_notify_cb (EAttachmentPaned *paned,
 
 	/* Update the expander label. */
 	if (gtk_expander_get_expanded (expander))
-		text = _("Hide _Attachment Bar");
+		text = _("Hide Attachment _Bar");
 	else
-		text = _("Show _Attachment Bar");
+		text = _("Show Attachment _Bar");
 
 	gtk_label_set_text_with_mnemonic (label, text);
-}
-
-static void
-attachment_paned_sync_icon_view (EAttachmentPaned *paned)
-{
-	EAttachmentView *source;
-	EAttachmentView *target;
-
-	source = E_ATTACHMENT_VIEW (paned->priv->tree_view);
-	target = E_ATTACHMENT_VIEW (paned->priv->icon_view);
-
-	/* Only sync if the tree view is active.  This prevents the
-	 * two views from endlessly trying to sync with each other. */
-	if (e_attachment_paned_get_active_view (paned) == 1)
-		e_attachment_view_sync_selection (source, target);
-}
-
-static void
-attachment_paned_sync_tree_view (EAttachmentPaned *paned)
-{
-	EAttachmentView *source;
-	EAttachmentView *target;
-
-	source = E_ATTACHMENT_VIEW (paned->priv->icon_view);
-	target = E_ATTACHMENT_VIEW (paned->priv->tree_view);
-
-	/* Only sync if the icon view is active.  This prevents the
-	 * two views from endlessly trying to sync with each other. */
-	if (e_attachment_paned_get_active_view (paned) == 0)
-		e_attachment_view_sync_selection (source, target);
 }
 
 static void
@@ -142,10 +123,15 @@ attachment_paned_update_status (EAttachmentPaned *paned)
 	total_size = e_attachment_store_get_total_size (store);
 	display_size = g_format_size_for_display (total_size);
 
-	markup = g_strdup_printf (
-		"<b>%d</b> %s (%s)", num_attachments, ngettext (
-		"Attachment", "Attachments", num_attachments),
-		display_size);
+	if (total_size > 0)
+		markup = g_strdup_printf (
+			"<b>%d</b> %s (%s)", num_attachments, ngettext (
+			"Attachment", "Attachments", num_attachments),
+			display_size);
+	else
+		markup = g_strdup_printf (
+			"<b>%d</b> %s", num_attachments, ngettext (
+			"Attachment", "Attachments", num_attachments));
 	gtk_label_set_markup (label, markup);
 	g_free (markup);
 
@@ -175,6 +161,12 @@ attachment_paned_set_property (GObject *object,
 				g_value_get_int (value));
 			return;
 
+		case PROP_DRAGGING:
+			e_attachment_view_set_dragging (
+				E_ATTACHMENT_VIEW (object),
+				g_value_get_boolean (value));
+			return;
+
 		case PROP_EDITABLE:
 			e_attachment_view_set_editable (
 				E_ATTACHMENT_VIEW (object),
@@ -202,6 +194,12 @@ attachment_paned_get_property (GObject *object,
 			g_value_set_int (
 				value, e_attachment_paned_get_active_view (
 				E_ATTACHMENT_PANED (object)));
+			return;
+
+		case PROP_DRAGGING:
+			g_value_set_boolean (
+				value, e_attachment_view_get_dragging (
+				E_ATTACHMENT_VIEW (object)));
 			return;
 
 		case PROP_EDITABLE:
@@ -278,7 +276,7 @@ attachment_paned_dispose (GObject *object)
 	}
 
 	/* Chain up to parent's dispose() method. */
-	G_OBJECT_CLASS (parent_class)->dispose (object);
+	G_OBJECT_CLASS (e_attachment_paned_parent_class)->dispose (object);
 }
 
 static void
@@ -295,32 +293,40 @@ attachment_paned_constructed (GObject *object)
 	/* Set up property-to-property bindings. */
 
 	e_mutual_binding_new (
-		G_OBJECT (object), "active-view",
-		G_OBJECT (priv->combo_box), "active");
+		object, "active-view",
+		priv->combo_box, "active");
 
 	e_mutual_binding_new (
-		G_OBJECT (object), "active-view",
-		G_OBJECT (priv->notebook), "page");
+		object, "active-view",
+		priv->notebook, "page");
 
 	e_mutual_binding_new (
-		G_OBJECT (object), "editable",
-		G_OBJECT (priv->icon_view), "editable");
+		object, "dragging",
+		priv->icon_view, "dragging");
 
 	e_mutual_binding_new (
-		G_OBJECT (object), "editable",
-		G_OBJECT (priv->tree_view), "editable");
+		object, "dragging",
+		priv->tree_view, "dragging");
 
 	e_mutual_binding_new (
-		G_OBJECT (object), "expanded",
-		G_OBJECT (priv->expander), "expanded");
+		object, "editable",
+		priv->icon_view, "editable");
 
 	e_mutual_binding_new (
-		G_OBJECT (object), "expanded",
-		G_OBJECT (priv->combo_box), "sensitive");
+		object, "editable",
+		priv->tree_view, "editable");
 
 	e_mutual_binding_new (
-		G_OBJECT (object), "expanded",
-		G_OBJECT (priv->notebook), "visible");
+		object, "expanded",
+		priv->expander, "expanded");
+
+	e_mutual_binding_new (
+		object, "expanded",
+		priv->combo_box, "sensitive");
+
+	e_mutual_binding_new (
+		object, "expanded",
+		priv->notebook, "visible");
 
 	/* Set up property-to-GConf bindings. */
 
@@ -444,11 +450,10 @@ attachment_paned_update_actions (EAttachmentView *view)
 }
 
 static void
-attachment_paned_class_init (EAttachmentPanedClass *class)
+e_attachment_paned_class_init (EAttachmentPanedClass *class)
 {
 	GObjectClass *object_class;
 
-	parent_class = g_type_class_peek_parent (class);
 	g_type_class_add_private (class, sizeof (EAttachmentPanedPrivate));
 
 	object_class = G_OBJECT_CLASS (class);
@@ -482,29 +487,16 @@ attachment_paned_class_init (EAttachmentPanedClass *class)
 			G_PARAM_CONSTRUCT));
 
 	g_object_class_override_property (
+		object_class, PROP_DRAGGING, "dragging");
+
+	g_object_class_override_property (
 		object_class, PROP_EDITABLE, "editable");
 }
 
 static void
-attachment_paned_iface_init (EAttachmentViewIface *iface)
-{
-	iface->get_private = attachment_paned_get_private;
-	iface->get_store = attachment_paned_get_store;
-	iface->get_path_at_pos = attachment_paned_get_path_at_pos;
-	iface->get_selected_paths = attachment_paned_get_selected_paths;
-	iface->path_is_selected = attachment_paned_path_is_selected;
-	iface->select_path = attachment_paned_select_path;
-	iface->unselect_path = attachment_paned_unselect_path;
-	iface->select_all = attachment_paned_select_all;
-	iface->unselect_all = attachment_paned_unselect_all;
-	iface->update_actions = attachment_paned_update_actions;
-}
-
-static void
-attachment_paned_init (EAttachmentPaned *paned)
+e_attachment_paned_init (EAttachmentPaned *paned)
 {
 	EAttachmentView *view;
-	GtkTreeSelection *selection;
 	GtkSizeGroup *size_group;
 	GtkWidget *container;
 	GtkWidget *widget;
@@ -542,7 +534,7 @@ attachment_paned_init (EAttachmentPaned *paned)
 	container = widget;
 
 	widget = e_attachment_icon_view_new ();
-	GTK_WIDGET_SET_FLAGS (widget, GTK_CAN_FOCUS);
+	gtk_widget_set_can_focus (widget, TRUE);
 	gtk_icon_view_set_model (GTK_ICON_VIEW (widget), paned->priv->model);
 	gtk_container_add (GTK_CONTAINER (container), widget);
 	paned->priv->icon_view = g_object_ref (widget);
@@ -562,7 +554,7 @@ attachment_paned_init (EAttachmentPaned *paned)
 	container = widget;
 
 	widget = e_attachment_tree_view_new ();
-	GTK_WIDGET_SET_FLAGS (widget, GTK_CAN_FOCUS);
+	gtk_widget_set_can_focus (widget, TRUE);
 	gtk_tree_view_set_model (GTK_TREE_VIEW (widget), paned->priv->model);
 	gtk_container_add (GTK_CONTAINER (container), widget);
 	paned->priv->tree_view = g_object_ref (widget);
@@ -614,16 +606,29 @@ attachment_paned_init (EAttachmentPaned *paned)
 
 	/* Request the width to be as large as possible, and let the
 	 * GtkExpander allocate what space there is.  This effectively
-	 * packs the widget to expand. */
+	 * packs the widget to expand.
+	 *
+	 * XXX This hack causes nasty side-effects in RTL locales,
+	 *     so check the reading direction before applying it.
+	 *     See GNOME bug #614049 for details + screenshot.
+	 *
+	 * XXX It also trips a height-for-width assertion GTK+ 3.
+	 *     The same GNOME bug has a patch to add a "label-fill"
+	 *     boolean property to GtkExpander to allow me to do
+	 *     what I'm trying to do here properly.
+	 */
 	widget = gtk_hbox_new (FALSE, 6);
 	gtk_size_group_add_widget (size_group, widget);
-	gtk_widget_set_size_request (widget, G_MAXINT, -1);
+#if !GTK_CHECK_VERSION(2,90,0)
+	if (gtk_widget_get_direction (widget) != GTK_TEXT_DIR_RTL)
+		gtk_widget_set_size_request (widget, G_MAXINT, -1);
+#endif
 	gtk_expander_set_label_widget (GTK_EXPANDER (container), widget);
 	gtk_widget_show (widget);
 
 	container = widget;
 
-	widget = gtk_label_new_with_mnemonic (_("Show _Attachment Bar"));
+	widget = gtk_label_new_with_mnemonic (_("Show Attachment _Bar"));
 	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
 	paned->priv->show_hide_label = g_object_ref (widget);
 	gtk_widget_show (widget);
@@ -652,17 +657,6 @@ attachment_paned_init (EAttachmentPaned *paned)
 	paned->priv->status_label = g_object_ref (widget);
 	gtk_widget_hide (widget);
 
-	selection = gtk_tree_view_get_selection (
-		GTK_TREE_VIEW (paned->priv->tree_view));
-
-	g_signal_connect_swapped (
-		selection, "changed",
-		G_CALLBACK (attachment_paned_sync_icon_view), paned);
-
-	g_signal_connect_swapped (
-		paned->priv->icon_view, "selection-changed",
-		G_CALLBACK (attachment_paned_sync_tree_view), paned);
-
 	g_signal_connect_swapped (
 		paned->priv->expander, "notify::expanded",
 		G_CALLBACK (attachment_paned_notify_cb), paned);
@@ -678,40 +672,19 @@ attachment_paned_init (EAttachmentPaned *paned)
 	g_object_unref (size_group);
 }
 
-GType
-e_attachment_paned_get_type (void)
+static void
+e_attachment_paned_interface_init (EAttachmentViewInterface *interface)
 {
-	static GType type = 0;
-
-	if (G_UNLIKELY (type == 0)) {
-		static const GTypeInfo type_info = {
-			sizeof (EAttachmentPanedClass),
-			(GBaseInitFunc) NULL,
-			(GBaseFinalizeFunc) NULL,
-			(GClassInitFunc) attachment_paned_class_init,
-			(GClassFinalizeFunc) NULL,
-			NULL,  /* class_data */
-			sizeof (EAttachmentPaned),
-			0,     /* n_preallocs */
-			(GInstanceInitFunc) attachment_paned_init,
-			NULL   /* value_table */
-		};
-
-		static const GInterfaceInfo iface_info = {
-			(GInterfaceInitFunc) attachment_paned_iface_init,
-			(GInterfaceFinalizeFunc) NULL,
-			NULL   /* interface_data */
-		};
-
-		type = g_type_register_static (
-			GTK_TYPE_VPANED, "EAttachmentPaned",
-			&type_info, 0);
-
-		g_type_add_interface_static (
-			type, E_TYPE_ATTACHMENT_VIEW, &iface_info);
-	}
-
-	return type;
+	interface->get_private = attachment_paned_get_private;
+	interface->get_store = attachment_paned_get_store;
+	interface->get_path_at_pos = attachment_paned_get_path_at_pos;
+	interface->get_selected_paths = attachment_paned_get_selected_paths;
+	interface->path_is_selected = attachment_paned_path_is_selected;
+	interface->select_path = attachment_paned_select_path;
+	interface->unselect_path = attachment_paned_unselect_path;
+	interface->select_all = attachment_paned_select_all;
+	interface->unselect_all = attachment_paned_unselect_all;
+	interface->update_actions = attachment_paned_update_actions;
 }
 
 GtkWidget *
@@ -740,10 +713,30 @@ void
 e_attachment_paned_set_active_view (EAttachmentPaned *paned,
                                     gint active_view)
 {
+	EAttachmentView *source;
+	EAttachmentView *target;
+
 	g_return_if_fail (E_IS_ATTACHMENT_PANED (paned));
 	g_return_if_fail (active_view >= 0 && active_view < NUM_VIEWS);
 
+	if (active_view == paned->priv->active_view)
+		return;
+
 	paned->priv->active_view = active_view;
+
+	/* Synchronize the item selection of the view we're
+	 * switching TO with the view we're switching FROM. */
+	if (active_view == 0) {
+		/* from tree view to icon view */
+		source = E_ATTACHMENT_VIEW (paned->priv->tree_view);
+		target = E_ATTACHMENT_VIEW (paned->priv->icon_view);
+	} else {
+		/* from icon view to tree view */
+		source = E_ATTACHMENT_VIEW (paned->priv->icon_view);
+		target = E_ATTACHMENT_VIEW (paned->priv->tree_view);
+	}
+
+	e_attachment_view_sync_selection (source, target);
 
 	g_object_notify (G_OBJECT (paned), "active-view");
 }

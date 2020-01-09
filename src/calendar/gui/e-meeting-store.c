@@ -31,13 +31,18 @@
 #include <libecal/e-cal-util.h>
 #include <libecal/e-cal-time-util.h>
 #include <libedataserver/e-data-server-util.h>
-#include "calendar-config.h"
+#include <e-util/e-extensible.h>
 #include "itip-utils.h"
 #include "e-meeting-utils.h"
 #include "e-meeting-attendee.h"
 #include "e-meeting-store.h"
 
-#define ROW_VALID(store, row) (row >= 0 && row < store->priv->attendees->len)
+#define ROW_VALID(store, row) \
+	(row >= 0 && row < store->priv->attendees->len)
+
+#define E_MEETING_STORE_GET_PRIVATE(obj) \
+	(G_TYPE_INSTANCE_GET_PRIVATE \
+	((obj), E_TYPE_MEETING_STORE, EMeetingStorePrivate))
 
 struct _EMeetingStorePrivate {
 	GPtrArray *attendees;
@@ -76,7 +81,20 @@ struct _EMeetingStoreQueueData {
 	GPtrArray *data;
 };
 
-static GObjectClass *parent_class = NULL;
+enum {
+	PROP_0,
+	PROP_CLIENT,
+	PROP_FREE_BUSY_TEMPLATE,
+	PROP_TIMEZONE
+};
+
+/* Forward Declarations */
+static void ems_tree_model_init (GtkTreeModelIface *iface);
+
+G_DEFINE_TYPE_WITH_CODE (
+	EMeetingStore, e_meeting_store, GTK_TYPE_LIST_STORE,
+	G_IMPLEMENT_INTERFACE (E_TYPE_EXTENSIBLE, NULL)
+	G_IMPLEMENT_INTERFACE (GTK_TYPE_TREE_MODEL, ems_tree_model_init))
 
 static icalparameter_cutype
 text_to_type (const gchar *type)
@@ -257,7 +275,7 @@ get_iter (GtkTreeModel *model, GtkTreeIter *iter, GtkTreePath *path)
 	g_return_val_if_fail (E_IS_MEETING_STORE (model), FALSE);
 	g_return_val_if_fail (gtk_tree_path_get_depth (path) > 0, FALSE);
 
-	row = gtk_tree_path_get_indices (path) [0];
+	row = gtk_tree_path_get_indices (path)[0];
 
 	if (!ROW_VALID (E_MEETING_STORE (model), row))
 	       return FALSE;
@@ -308,43 +326,60 @@ get_value (GtkTreeModel *model, GtkTreeIter *iter, gint col, GValue *value)
 	switch (col) {
 	case E_MEETING_STORE_ADDRESS_COL:
 		g_value_init (value, G_TYPE_STRING);
-		g_value_set_string (value, itip_strip_mailto (e_meeting_attendee_get_address (attendee)));
+		g_value_set_string (
+			value, itip_strip_mailto (
+			e_meeting_attendee_get_address (attendee)));
 		break;
 	case E_MEETING_STORE_MEMBER_COL:
 		g_value_init (value, G_TYPE_STRING);
-		g_value_set_string (value, e_meeting_attendee_get_member (attendee));
+		g_value_set_string (
+			value, e_meeting_attendee_get_member (attendee));
 		break;
 	case E_MEETING_STORE_TYPE_COL:
 		g_value_init (value, G_TYPE_STRING);
-		g_value_set_string (value, type_to_text (e_meeting_attendee_get_cutype (attendee)));
+		g_value_set_string (
+			value, type_to_text (
+			e_meeting_attendee_get_cutype (attendee)));
 		break;
 	case E_MEETING_STORE_ROLE_COL:
 		g_value_init (value, G_TYPE_STRING);
-		g_value_set_string (value, role_to_text (e_meeting_attendee_get_role (attendee)));
+		g_value_set_string (
+			value, role_to_text (
+			e_meeting_attendee_get_role (attendee)));
 		break;
 	case E_MEETING_STORE_RSVP_COL:
 		g_value_init (value, G_TYPE_STRING);
-		g_value_set_string (value, boolean_to_text (e_meeting_attendee_get_rsvp (attendee)));
+		g_value_set_string (
+			value, boolean_to_text (
+			e_meeting_attendee_get_rsvp (attendee)));
 		break;
 	case E_MEETING_STORE_DELTO_COL:
 		g_value_init (value, G_TYPE_STRING);
-		g_value_set_string (value, itip_strip_mailto (e_meeting_attendee_get_delto (attendee)));
+		g_value_set_string (
+			value, itip_strip_mailto (
+			e_meeting_attendee_get_delto (attendee)));
 		break;
 	case E_MEETING_STORE_DELFROM_COL:
 		g_value_init (value, G_TYPE_STRING);
-		g_value_set_string (value, itip_strip_mailto (e_meeting_attendee_get_delfrom (attendee)));
+		g_value_set_string (
+			value, itip_strip_mailto (
+			e_meeting_attendee_get_delfrom (attendee)));
 		break;
 	case E_MEETING_STORE_STATUS_COL:
 		g_value_init (value, G_TYPE_STRING);
-		g_value_set_string (value, partstat_to_text (e_meeting_attendee_get_status (attendee)));
+		g_value_set_string (
+			value, partstat_to_text (
+			e_meeting_attendee_get_status (attendee)));
 		break;
 	case E_MEETING_STORE_CN_COL:
 		g_value_init (value, G_TYPE_STRING);
-		g_value_set_string (value, e_meeting_attendee_get_cn (attendee));
+		g_value_set_string (
+			value, e_meeting_attendee_get_cn (attendee));
 		break;
 	case E_MEETING_STORE_LANGUAGE_COL:
 		g_value_init (value, G_TYPE_STRING);
-		g_value_set_string (value, e_meeting_attendee_get_language (attendee));
+		g_value_set_string (
+			value, e_meeting_attendee_get_language (attendee));
 		break;
 	case E_MEETING_STORE_ATTENDEE_COL:
 		g_value_init (value, G_TYPE_STRING);
@@ -352,12 +387,16 @@ get_value (GtkTreeModel *model, GtkTreeIter *iter, gint col, GValue *value)
 		if (strcmp (cn, ""))
 			g_value_set_string (value, cn);
 		else
-			g_value_set_string (value, itip_strip_mailto (e_meeting_attendee_get_address (attendee)));
+			g_value_set_string (
+				value, itip_strip_mailto (
+				e_meeting_attendee_get_address (attendee)));
 		break;
 	case E_MEETING_STORE_ATTENDEE_UNDERLINE_COL:
 		cn = e_meeting_attendee_get_cn (attendee);
 		g_value_init (value, PANGO_TYPE_UNDERLINE);
-		g_value_set_enum (value, strcmp ("", cn) == 0 ? PANGO_UNDERLINE_NONE : PANGO_UNDERLINE_SINGLE);
+		g_value_set_enum (
+			value, strcmp ("", cn) == 0 ?
+			PANGO_UNDERLINE_NONE : PANGO_UNDERLINE_SINGLE);
 	}
 }
 
@@ -462,7 +501,9 @@ e_meeting_store_set_value (EMeetingStore *store, gint row, gint col, const gchar
 	switch (col) {
 	case E_MEETING_STORE_ADDRESS_COL:
 		if (val != NULL && *((gchar *)val))
-			e_meeting_attendee_set_address (attendee, g_strdup_printf ("MAILTO:%s", (gchar *) val));
+			e_meeting_attendee_set_address (
+				attendee, g_strdup_printf (
+				"MAILTO:%s", (gchar *) val));
 		break;
 	case E_MEETING_STORE_MEMBER_COL:
 		e_meeting_attendee_set_member (attendee, g_strdup (val));
@@ -507,10 +548,14 @@ refresh_queue_remove (EMeetingStore *store, EMeetingAttendee *attendee)
 	priv = store->priv;
 
 	/* Free the queue data */
-	qdata = g_hash_table_lookup (priv->refresh_data, itip_strip_mailto (e_meeting_attendee_get_address (attendee)));
+	qdata = g_hash_table_lookup (
+		priv->refresh_data, itip_strip_mailto (
+		e_meeting_attendee_get_address (attendee)));
 	if (qdata) {
 		g_mutex_lock (priv->mutex);
-		g_hash_table_remove (priv->refresh_data, itip_strip_mailto (e_meeting_attendee_get_address (attendee)));
+		g_hash_table_remove (
+			priv->refresh_data, itip_strip_mailto (
+			e_meeting_attendee_get_address (attendee)));
 		g_mutex_unlock (priv->mutex);
 		g_ptr_array_free (qdata->call_backs, TRUE);
 		g_ptr_array_free (qdata->data, TRUE);
@@ -523,13 +568,73 @@ refresh_queue_remove (EMeetingStore *store, EMeetingAttendee *attendee)
 }
 
 static void
-ems_finalize (GObject *obj)
+meeting_store_set_property (GObject *object,
+                            guint property_id,
+                            const GValue *value,
+                            GParamSpec *pspec)
 {
-	EMeetingStore *store = E_MEETING_STORE (obj);
+	switch (property_id) {
+		case PROP_CLIENT:
+			e_meeting_store_set_client (
+				E_MEETING_STORE (object),
+				g_value_get_object (value));
+			return;
+
+		case PROP_FREE_BUSY_TEMPLATE:
+			e_meeting_store_set_free_busy_template (
+				E_MEETING_STORE (object),
+				g_value_get_string (value));
+			return;
+
+		case PROP_TIMEZONE:
+			e_meeting_store_set_timezone (
+				E_MEETING_STORE (object),
+				g_value_get_pointer (value));
+			return;
+	}
+
+	G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+}
+
+static void
+meeting_store_get_property (GObject *object,
+                            guint property_id,
+                            GValue *value,
+                            GParamSpec *pspec)
+{
+	switch (property_id) {
+		case PROP_CLIENT:
+			g_value_set_object (
+				value,
+				e_meeting_store_get_client (
+				E_MEETING_STORE (object)));
+			return;
+
+		case PROP_FREE_BUSY_TEMPLATE:
+			g_value_set_string (
+				value,
+				e_meeting_store_get_free_busy_template (
+				E_MEETING_STORE (object)));
+			return;
+
+		case PROP_TIMEZONE:
+			g_value_set_pointer (
+				value,
+				e_meeting_store_get_timezone (
+				E_MEETING_STORE (object)));
+			return;
+	}
+
+	G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+}
+
+static void
+meeting_store_finalize (GObject *object)
+{
 	EMeetingStorePrivate *priv;
 	gint i;
 
-	priv = store->priv;
+	priv = E_MEETING_STORE_GET_PRIVATE (object);
 
 	for (i = 0; i < priv->attendees->len; i++)
 		g_object_unref (g_ptr_array_index (priv->attendees, i));
@@ -539,7 +644,9 @@ ems_finalize (GObject *obj)
 		g_object_unref (priv->client);
 
 	while (priv->refresh_queue->len > 0)
-		refresh_queue_remove (store, g_ptr_array_index (priv->refresh_queue, 0));
+		refresh_queue_remove (
+			E_MEETING_STORE (object),
+			g_ptr_array_index (priv->refresh_queue, 0));
 	g_ptr_array_free (priv->refresh_queue, TRUE);
 	g_hash_table_destroy (priv->refresh_data);
 
@@ -550,75 +657,66 @@ ems_finalize (GObject *obj)
 
 	g_mutex_free (priv->mutex);
 
-	g_free (priv);
-
-	if (G_OBJECT_CLASS (parent_class)->finalize)
-		(* G_OBJECT_CLASS (parent_class)->finalize) (obj);
+	/* Chain up to parent's finalize() method. */
+	G_OBJECT_CLASS (e_meeting_store_parent_class)->finalize (object);
 }
 
 static void
-ems_class_init (GObjectClass *klass)
+e_meeting_store_class_init (EMeetingStoreClass *class)
 {
-	parent_class = g_type_class_peek_parent (klass);
+	GObjectClass *object_class;
 
-	klass->finalize = ems_finalize;
+	g_type_class_add_private (class, sizeof (EMeetingStorePrivate));
+
+	object_class = G_OBJECT_CLASS (class);
+	object_class->set_property = meeting_store_set_property;
+	object_class->get_property = meeting_store_get_property;
+	object_class->finalize = meeting_store_finalize;
+
+	g_object_class_install_property (
+		object_class,
+		PROP_CLIENT,
+		g_param_spec_object (
+			"client",
+			"Client",
+			NULL,
+			E_TYPE_CAL,
+			G_PARAM_READWRITE));
+
+	g_object_class_install_property (
+		object_class,
+		PROP_FREE_BUSY_TEMPLATE,
+		g_param_spec_string (
+			"free-busy-template",
+			"Free/Busy Template",
+			NULL,
+			NULL,
+			G_PARAM_READWRITE));
+
+	g_object_class_install_property (
+		object_class,
+		PROP_TIMEZONE,
+		g_param_spec_pointer (
+			"timezone",
+			"Timezone",
+			NULL,
+			G_PARAM_READWRITE));
 }
 
 static void
-ems_init (EMeetingStore *store)
+e_meeting_store_init (EMeetingStore *store)
 {
-	EMeetingStorePrivate *priv;
+	store->priv = E_MEETING_STORE_GET_PRIVATE (store);
 
-	priv = g_new0 (EMeetingStorePrivate, 1);
+	store->priv->attendees = g_ptr_array_new ();
+	store->priv->refresh_queue = g_ptr_array_new ();
+	store->priv->refresh_data = g_hash_table_new (g_str_hash, g_str_equal);
 
-	store->priv = priv;
+	store->priv->mutex = g_mutex_new ();
 
-	priv->attendees = g_ptr_array_new ();
+	store->priv->num_queries = 0;
 
-	priv->zone = calendar_config_get_icaltimezone ();
-
-	priv->fb_uri = calendar_config_get_free_busy_template ();
-
-	priv->refresh_queue = g_ptr_array_new ();
-	priv->refresh_data = g_hash_table_new (g_str_hash, g_str_equal);
-
-	priv->mutex = g_mutex_new ();
-
-	priv->num_queries = 0;
-}
-
-GType
-e_meeting_store_get_type (void)
-{
-	static GType ems_type = 0;
-
-	if (!ems_type) {
-		static const GTypeInfo ems_info = {
-				sizeof (EMeetingStoreClass),
-				NULL,           /* base_init */
-				NULL,           /* base_finalize */
-				(GClassInitFunc) ems_class_init,
-				NULL,           /* class_finalize */
-				NULL,           /* class_data */
-				sizeof (EMeetingStore),
-				0,
-				(GInstanceInitFunc) ems_init };
-
-		static const GInterfaceInfo tree_model_info = {
-				(GInterfaceInitFunc) ems_tree_model_init,
-				NULL,
-				NULL };
-
-		ems_type = g_type_register_static (GTK_TYPE_LIST_STORE,
-						   "EMeetingStore",
-						   &ems_info, 0);
-
-		g_type_add_interface_static (ems_type,
-					     GTK_TYPE_TREE_MODEL,
-					     &tree_model_info);
-	}
-
-	return ems_type;
+	e_extensible_load_extensions (E_EXTENSIBLE (store));
 }
 
 GObject *
@@ -628,24 +726,54 @@ e_meeting_store_new (void)
 }
 
 ECal *
-e_meeting_store_get_e_cal (EMeetingStore *store)
+e_meeting_store_get_client (EMeetingStore *store)
 {
+	g_return_val_if_fail (E_IS_MEETING_STORE (store), NULL);
+
 	return store->priv->client;
 }
 
 void
-e_meeting_store_set_e_cal (EMeetingStore *store, ECal *client)
+e_meeting_store_set_client (EMeetingStore *store,
+                            ECal *client)
 {
+	g_return_if_fail (E_IS_MEETING_STORE (store));
+
+	if (client != NULL) {
+		g_return_if_fail (E_IS_CAL (client));
+		g_object_ref (client);
+	}
+
 	if (store->priv->client != NULL)
 		g_object_unref (store->priv->client);
 
-	if (client != NULL)
-		g_object_ref (client);
 	store->priv->client = client;
+
+	g_object_notify (G_OBJECT (store), "client");
+}
+
+const gchar *
+e_meeting_store_get_free_busy_template (EMeetingStore *store)
+{
+	g_return_val_if_fail (E_IS_MEETING_STORE (store), NULL);
+
+	return store->priv->fb_uri;
+}
+
+void
+e_meeting_store_set_free_busy_template (EMeetingStore *store,
+                                        const gchar *free_busy_template)
+{
+	g_return_if_fail (E_IS_MEETING_STORE (store));
+
+	g_free (store->priv->fb_uri);
+	store->priv->fb_uri = g_strdup (free_busy_template);
+
+	g_object_notify (G_OBJECT (store), "free-busy-template");
 }
 
 icaltimezone *
-e_meeting_store_get_zone (EMeetingStore *store)
+e_meeting_store_get_timezone (EMeetingStore *store)
 {
 	g_return_val_if_fail (E_IS_MEETING_STORE (store), NULL);
 
@@ -653,28 +781,14 @@ e_meeting_store_get_zone (EMeetingStore *store)
 }
 
 void
-e_meeting_store_set_zone (EMeetingStore *store, icaltimezone *zone)
+e_meeting_store_set_timezone (EMeetingStore *store,
+                              icaltimezone *timezone)
 {
 	g_return_if_fail (E_IS_MEETING_STORE (store));
 
-	store->priv->zone = zone;
-}
+	store->priv->zone = timezone;
 
-gchar *
-e_meeting_store_get_fb_uri (EMeetingStore *store)
-{
-	g_return_val_if_fail (E_IS_MEETING_STORE (store), NULL);
-
-	return g_strdup (store->priv->fb_uri);
-}
-
-void
-e_meeting_store_set_fb_uri (EMeetingStore *store, const gchar *fb_uri)
-{
-	g_return_if_fail (E_IS_MEETING_STORE (store));
-
-	g_free (store->priv->fb_uri);
-	store->priv->fb_uri = g_strdup (fb_uri);
+	g_object_notify (G_OBJECT (store), "timezone");
 }
 
 static void
@@ -802,7 +916,9 @@ e_meeting_store_remove_all_attendees (EMeetingStore *store)
 }
 
 EMeetingAttendee *
-e_meeting_store_find_attendee (EMeetingStore *store, const gchar *address, gint *row)
+e_meeting_store_find_attendee (EMeetingStore *store,
+                               const gchar *address,
+                               gint *row)
 {
 	EMeetingAttendee *attendee;
 	gint i;
@@ -816,7 +932,9 @@ e_meeting_store_find_attendee (EMeetingStore *store, const gchar *address, gint 
 		attendee = g_ptr_array_index (store->priv->attendees, i);
 
 		attendee_address = e_meeting_attendee_get_address (attendee);
-		if (attendee_address && !g_ascii_strcasecmp (itip_strip_mailto (attendee_address), itip_strip_mailto (address))) {
+		if (attendee_address && !g_ascii_strcasecmp (
+			itip_strip_mailto (attendee_address),
+			itip_strip_mailto (address))) {
 			if (row != NULL)
 				*row = i;
 
@@ -1142,7 +1260,9 @@ freebusy_async (gpointer data)
 		 we should be able to get free busy asynchronously */
 		g_static_mutex_lock (&mutex);
 		priv->num_queries++;
-		e_cal_get_free_busy (fbd->client, fbd->users, fbd->startt, fbd->endt, &(fbd->fb_data), NULL);
+		e_cal_get_free_busy (
+			fbd->client, fbd->users, fbd->startt,
+			fbd->endt, &(fbd->fb_data), NULL);
 		priv->num_queries--;
 		g_static_mutex_unlock (&mutex);
 
@@ -1170,6 +1290,11 @@ freebusy_async (gpointer data)
 	/* Check for free busy info on the default server */
 	default_fb_uri = g_strdup (fbd->fb_uri);
 	fburi = g_strdup (e_meeting_attendee_get_fburi (attendee));
+
+	if (fburi && !*fburi) {
+		g_free (fburi);
+		fburi = NULL;
+	}
 
 	if (fburi) {
 		priv->num_queries++;
@@ -1219,7 +1344,9 @@ refresh_busy_periods (gpointer data)
 		attendee = g_ptr_array_index (priv->refresh_queue, i);
 		g_return_val_if_fail (attendee != NULL, FALSE);
 
-		qdata = g_hash_table_lookup (priv->refresh_data, itip_strip_mailto (e_meeting_attendee_get_address (attendee)));
+		qdata = g_hash_table_lookup (
+			priv->refresh_data, itip_strip_mailto (
+			e_meeting_attendee_get_address (attendee)));
 		if (!qdata)
 			continue;
 
@@ -1311,7 +1438,8 @@ refresh_queue_add (EMeetingStore *store, gint row,
 	priv = store->priv;
 
 	attendee = g_ptr_array_index (priv->attendees, row);
-	if ((attendee == NULL) || !strcmp (itip_strip_mailto (e_meeting_attendee_get_address (attendee)), ""))
+	if ((attendee == NULL) || !strcmp (itip_strip_mailto (
+		e_meeting_attendee_get_address (attendee)), ""))
 		return;
 
 	/* check the queue if the attendee is already in there*/
@@ -1319,12 +1447,16 @@ refresh_queue_add (EMeetingStore *store, gint row,
 		if (attendee == g_ptr_array_index (priv->refresh_queue, i))
 			return;
 
-		if (!strcmp (e_meeting_attendee_get_address (attendee), e_meeting_attendee_get_address (g_ptr_array_index (priv->refresh_queue, i))))
+		if (!strcmp (e_meeting_attendee_get_address (attendee),
+			e_meeting_attendee_get_address (
+			g_ptr_array_index (priv->refresh_queue, i))))
 			return;
 	}
 
 	g_mutex_lock (priv->mutex);
-	qdata = g_hash_table_lookup (priv->refresh_data, itip_strip_mailto (e_meeting_attendee_get_address (attendee)));
+	qdata = g_hash_table_lookup (
+		priv->refresh_data, itip_strip_mailto (
+		e_meeting_attendee_get_address (attendee)));
 
 	if (qdata == NULL) {
 		qdata = g_new0 (EMeetingStoreQueueData, 1);
@@ -1342,7 +1474,9 @@ refresh_queue_add (EMeetingStore *store, gint row,
 		g_ptr_array_add (qdata->call_backs, call_back);
 		g_ptr_array_add (qdata->data, data);
 
-		g_hash_table_insert (priv->refresh_data, (gpointer)itip_strip_mailto (e_meeting_attendee_get_address (attendee)), qdata);
+		g_hash_table_insert (
+			priv->refresh_data, (gpointer) itip_strip_mailto (
+			e_meeting_attendee_get_address (attendee)), qdata);
 	} else {
 		if (e_meeting_time_compare_times (start, &qdata->start) == -1)
 			qdata->start = *start;
@@ -1394,7 +1528,9 @@ async_read (GObject *source_object, GAsyncResult *res, gpointer data)
 		qdata->buffer[read] = '\0';
 		qdata->string = g_string_append (qdata->string, qdata->buffer);
 
-		g_input_stream_read_async (istream, qdata->buffer, BUF_SIZE - 1, G_PRIORITY_DEFAULT, NULL, async_read, qdata);
+		g_input_stream_read_async (
+			istream, qdata->buffer, BUF_SIZE - 1,
+			G_PRIORITY_DEFAULT, NULL, async_read, qdata);
 	}
 }
 
@@ -1426,7 +1562,9 @@ start_async_read (const gchar *uri, gpointer data)
 	if (!istream)
 		process_callbacks (qdata);
 	else
-		g_input_stream_read_async (istream, qdata->buffer, BUF_SIZE - 1, G_PRIORITY_DEFAULT, NULL, async_read, qdata);
+		g_input_stream_read_async (
+			istream, qdata->buffer, BUF_SIZE - 1,
+			G_PRIORITY_DEFAULT, NULL, async_read, qdata);
 }
 
 void

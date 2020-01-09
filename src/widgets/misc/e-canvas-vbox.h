@@ -34,9 +34,9 @@ G_BEGIN_DECLS
  *
  * name		type		read/write	description
  * --------------------------------------------------------------------------------
- * width        double          RW              width of the CanvasVbox
- * height       double          R               height of the CanvasVbox
- * spacing      double          RW              Spacing between items.
+ * width        gdouble          RW              width of the CanvasVbox
+ * height       gdouble          R               height of the CanvasVbox
+ * spacing      gdouble          RW              Spacing between items.
  */
 
 #define E_CANVAS_VBOX_TYPE			(e_canvas_vbox_get_type ())
@@ -55,10 +55,10 @@ struct _ECanvasVbox
 	/* item specific fields */
 	GList *items; /* Of type GnomeCanvasItem */
 
-	double width;
-	double minimum_width;
-	double height;
-	double spacing;
+	gdouble width;
+	gdouble minimum_width;
+	gdouble height;
+	gdouble spacing;
 };
 
 struct _ECanvasVboxClass
@@ -76,8 +76,8 @@ struct _ECanvasVboxClass
  * should also do an ECanvas parent CanvasVbox request if its size
  * changes.
  */
-void       e_canvas_vbox_add_item(ECanvasVbox *e_canvas_vbox, GnomeCanvasItem *item);
-void       e_canvas_vbox_add_item_start(ECanvasVbox *e_canvas_vbox, GnomeCanvasItem *item);
+void       e_canvas_vbox_add_item (ECanvasVbox *e_canvas_vbox, GnomeCanvasItem *item);
+void       e_canvas_vbox_add_item_start (ECanvasVbox *e_canvas_vbox, GnomeCanvasItem *item);
 GType      e_canvas_vbox_get_type (void);
 
 G_END_DECLS

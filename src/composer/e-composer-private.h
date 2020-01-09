@@ -27,15 +27,15 @@
 #include <glib/gi18n-lib.h>
 #include <glib/gstdio.h>
 
-#include <camel/camel-iconv.h>
-
 #include "e-composer-actions.h"
-#include "e-composer-autosave.h"
 #include "e-composer-header-table.h"
 #include "e-util/e-binding.h"
+#include "e-util/e-charset.h"
 #include "e-util/e-mktemp.h"
+#include "e-util/e-selection.h"
 #include "e-util/e-util.h"
 #include "e-util/gconf-bridge.h"
+#include "widgets/misc/e-attachment-icon-view.h"
 #include "widgets/misc/e-attachment-paned.h"
 #include "widgets/misc/e-attachment-store.h"
 
@@ -66,8 +66,6 @@
 	COMPOSER_GCONF_PREFIX "/request_receipt"
 #define COMPOSER_GCONF_TOP_SIGNATURE_KEY \
 	COMPOSER_GCONF_PREFIX "/top_signature"
-#define COMPOSER_GCONF_NO_SIGNATURE_DELIM_KEY \
-	COMPOSER_GCONF_PREFIX "/no_signature_delim"
 #define COMPOSER_GCONF_SEND_HTML_KEY \
 	COMPOSER_GCONF_PREFIX "/send_html"
 #define COMPOSER_GCONF_SPELL_LANGUAGES_KEY \
@@ -88,12 +86,15 @@ G_BEGIN_DECLS
 
 struct _EMsgComposerPrivate {
 
+	gpointer shell;  /* weak pointer */
+
 	/*** UI Management ***/
 
 	GtkWidget *html_editor;
 	GtkWidget *header_table;
 	GtkWidget *attachment_paned;
 
+	EFocusTracker *focus_tracker;
 	GtkWindowGroup *window_group;
 
 	GtkActionGroup *charset_actions;
@@ -112,7 +113,6 @@ struct _EMsgComposerPrivate {
 
 	gchar *mime_type, *mime_body, *charset;
 
-	guint32 attachment_bar_visible : 1;
 	guint32 is_alternative         : 1;
 	guint32 autosaved              : 1;
 	guint32 mode_post              : 1;
@@ -121,21 +121,16 @@ struct _EMsgComposerPrivate {
 
 	CamelMimeMessage *redirect;
 
-	guint notify_id;
-
-	/* This send option is available only for Novell GroupWise and
-	   Microsoft Exchange accounts */
-	gboolean send_invoked;
+	gboolean is_from_message;
 
 	/* The mail composed has been sent. This bit will be set when
-	  the mail passed sanity checking and is sent out, which
-	  indicates that the composer can be destroyed. This bit can
-	  be set/get by using API
-	  e_msg_composer_{set,get}_mail_sent(). */
+	 * the mail passed sanity checking and is sent out, which
+	 * indicates that the composer can be destroyed. This bit can
+	 * be set/get by using API e_msg_composer_{set,get}_mail_sent (). */
 	gboolean mail_sent;
 };
 
-void		e_composer_private_init		(EMsgComposer *composer);
+void		e_composer_private_constructed	(EMsgComposer *composer);
 void		e_composer_private_dispose	(EMsgComposer *composer);
 void		e_composer_private_finalize	(EMsgComposer *composer);
 
@@ -144,7 +139,11 @@ void		e_composer_private_finalize	(EMsgComposer *composer);
 void		e_composer_actions_init		(EMsgComposer *composer);
 gchar *		e_composer_find_data_file	(const gchar *basename);
 gchar *		e_composer_get_default_charset	(void);
+gboolean	e_composer_paste_html		(EMsgComposer *composer,
+						 GtkClipboard *clipboard);
 gboolean	e_composer_paste_image		(EMsgComposer *composer,
+						 GtkClipboard *clipboard);
+gboolean	e_composer_paste_text		(EMsgComposer *composer,
 						 GtkClipboard *clipboard);
 gboolean	e_composer_paste_uris		(EMsgComposer *composer,
 						 GtkClipboard *clipboard);

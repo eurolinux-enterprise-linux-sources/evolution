@@ -1,4 +1,5 @@
 /*
+ * e-account-combo-box.h
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,7 +23,7 @@
 #define E_ACCOUNT_COMBO_BOX_H
 
 #include <gtk/gtk.h>
-#include <camel/camel-session.h>
+#include <camel/camel.h>
 #include <libedataserver/e-account.h>
 #include <libedataserver/e-account-list.h>
 
@@ -76,6 +77,8 @@ const gchar *	e_account_combo_box_get_active_name
 gboolean	e_account_combo_box_set_active_name
 						(EAccountComboBox *combo_box,
 						 const gchar *account_name);
+gint		e_account_combo_box_count_displayed_accounts
+						(EAccountComboBox *combo_box);
 
 G_END_DECLS
 

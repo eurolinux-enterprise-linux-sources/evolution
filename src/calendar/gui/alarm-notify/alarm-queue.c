@@ -28,13 +28,12 @@
 
 #include <string.h>
 #include <glib.h>
-#include <bonobo-activation/bonobo-activation.h>
-#include <bonobo/bonobo-object.h>
-#include <bonobo/bonobo-exception.h>
-#include <bonobo/bonobo-main.h>
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
-#include <libgnome/gnome-sound.h>
+
+#ifdef HAVE_CANBERRA
+#include <canberra-gtk.h>
+#endif
 
 #include <libecal/e-cal-time-util.h>
 #include <libecal/e-cal-component.h>
@@ -43,15 +42,12 @@
 #include <libnotify/notify.h>
 #endif
 
-#include "evolution-calendar.h"
 #include "alarm.h"
 #include "alarm-notify-dialog.h"
 #include "alarm-queue.h"
 #include "alarm-notify.h"
 #include "config-data.h"
 #include "util.h"
-#include "e-util/e-popup.h"
-#include "e-util/e-error.h"
 
 #define d(x)
 
@@ -162,6 +158,7 @@ struct _Message {
 	MessageFunc func;
 };
 
+/*
 static void
 message_proxy (Message *msg)
 {
@@ -173,19 +170,40 @@ message_proxy (Message *msg)
 static gpointer
 create_thread_pool (void)
 {
-	/* once created, run forever */
 	return g_thread_pool_new ((GFunc) message_proxy, NULL, 1, FALSE, NULL);
-}
+}*/
 
 static void
 message_push (Message *msg)
 {
-	static GOnce once = G_ONCE_INIT;
-
-	g_once (&once, (GThreadFunc) create_thread_pool, NULL);
-
-	g_thread_pool_push ((GThreadPool *) once.retval, msg, NULL);
+	/* This used be pushed through the thread pool. This fix is made to work-around
+	the crashers in dbus due to threading. The threading is not completely removed as
+	its better to have alarm daemon running in a thread rather than blocking main thread.
+	 This is the reason the creation of thread pool is commented out */
+	msg->func (msg);
 }
+
+/*
+ * use a static ring-buffer so we can call this twice
+ * in a printf without getting nonsense results.
+ */
+d(#define DEBUGGING_ON)
+#ifdef DEBUGGING_ON
+static const gchar *
+e_ctime (const time_t *timep)
+{
+  static gchar *buffer[4] = { 0, };
+  static gint next = 0;
+  const gchar *ret;
+
+  g_free (buffer[next]);
+  ret = buffer[next++] = g_strdup (ctime (timep));
+  if (next >= G_N_ELEMENTS (buffer))
+	next = 0;
+
+  return ret;
+}
+#endif
 
 /* Queues an alarm trigger for midnight so that we can load the next day's worth
  * of alarms.
@@ -203,7 +221,7 @@ queue_midnight_refresh (void)
 	zone = config_data_get_timezone ();
 	midnight = time_day_end_with_zone (time (NULL), zone);
 
-	d(printf("%s:%d (queue_midnight_refresh) - Refresh at %s \n",__FILE__, __LINE__, ctime(&midnight)));
+	d(printf("%s:%d (queue_midnight_refresh) - Refresh at %s \n",__FILE__, __LINE__, e_ctime(&midnight)));
 
 	midnight_refresh_id = alarm_add (midnight, midnight_refresh_cb, NULL, NULL);
 	if (!midnight_refresh_id) {
@@ -216,11 +234,10 @@ queue_midnight_refresh (void)
 static void
 add_client_alarms_cb (gpointer key, gpointer value, gpointer data)
 {
-	ClientAlarms *ca = (ClientAlarms *)data;
+	ClientAlarms *ca = (ClientAlarms *) value;
 
 	d(printf("%s:%d (add_client_alarms_cb) - Adding %p\n",__FILE__, __LINE__, ca));
 
-	ca = value;
 	load_alarms_for_today (ca);
 }
 
@@ -476,7 +493,7 @@ add_component_alarms (ClientAlarms *ca, ECalComponentAlarms *alarms)
 
 		alarm_id = alarm_add (instance->trigger, alarm_trigger_cb, cqa, NULL);
 		if (!alarm_id) {
-			d(printf("%s:%d (add_component_alarms) - Could not schedule a trigger for %s. Discarding \n",__FILE__, __LINE__, ctime(&(instance->trigger))));
+			d(printf("%s:%d (add_component_alarms) - Could not schedule a trigger for %s. Discarding \n",__FILE__, __LINE__, e_ctime(&(instance->trigger))));
 			continue;
 		}
 
@@ -487,7 +504,7 @@ add_component_alarms (ClientAlarms *ca, ECalComponentAlarms *alarms)
 		qa->snooze = FALSE;
 
 		cqa->queued_alarms = g_slist_prepend (cqa->queued_alarms, qa);
-		d(printf("%s:%d (add_component_alarms) - Adding alarm %p %p at %s %s\n",__FILE__, __LINE__, qa, alarm_id, ctime (&(instance->trigger)), ctime(&tnow)));
+		d(printf("%s:%d (add_component_alarms) - Adding alarm %p %p at %s %s\n",__FILE__, __LINE__, qa, alarm_id, ctime (&(instance->trigger)), e_ctime(&tnow)));
 	}
 
 	id = e_cal_component_get_id (alarms->comp);
@@ -497,7 +514,6 @@ add_component_alarms (ClientAlarms *ca, ECalComponentAlarms *alarms)
 		e_cal_component_alarms_free (cqa->alarms);
 		cqa->alarms = NULL;
 		d(printf("%s:%d (add_component_alarms) - Failed to add all : %p\n",__FILE__, __LINE__, cqa));
-		g_message ("Failed to add all\n");
 		g_free (cqa);
 		return;
 	}
@@ -577,20 +593,21 @@ load_alarms_for_today (ClientAlarms *ca)
 	from = MAX (config_data_get_last_notification_time (ca->client) + 1, day_start);
 
 	day_end = time_day_end_with_zone (now, zone);
-	d(printf("%s:%d (load_alarms_for_today) - From %s to %s\n",__FILE__, __LINE__, ctime (&from), ctime(&day_end)));
+	d(printf("%s:%d (load_alarms_for_today) - From %s to %s\n",__FILE__, __LINE__,
+		 g_strdup (ctime (&from)), g_strdup (e_ctime(&day_end))));
 	load_alarms (ca, from, day_end);
 }
 
 /* Called when a calendar client finished loading; we load its alarms */
 static void
-cal_opened_cb (ECal *client, ECalendarStatus status, gpointer data)
+cal_opened_cb (ECal *client, const GError *error, gpointer data)
 {
 	ClientAlarms *ca;
 
 	ca = data;
 
-	d(printf("%s:%d (cal_opened_cb) - Opened Calendar %p (Status %d)\n",__FILE__, __LINE__, client, status==E_CALENDAR_STATUS_OK));
-	if (status != E_CALENDAR_STATUS_OK)
+	d(printf("%s:%d (cal_opened_cb) - Opened Calendar %p (Status %d%s%s%s)\n",__FILE__, __LINE__, client, error ? error->code : 0, error ? " (" : "", error ? error->message : "", error ? ")" : ""));
+	if (error)
 		return;
 
 	load_alarms_for_today (ca);
@@ -713,7 +730,7 @@ query_objects_changed_async (struct _query_msg *msg)
 
 	day_end = time_day_end_with_zone (time (NULL), zone);
 
-	d(printf("%s:%d (query_objects_changed_async) - Querying for object between %s to %s\n",__FILE__, __LINE__, ctime(&from), ctime(&day_end)));
+	d(printf("%s:%d (query_objects_changed_async) - Querying for object between %s to %s\n",__FILE__, __LINE__, e_ctime(&from), e_ctime(&day_end)));
 
 	for (l = objects; l != NULL; l = l->next) {
 		ECalComponentId *id;
@@ -777,7 +794,7 @@ query_objects_changed_async (struct _query_msg *msg)
 
 			alarm_id = alarm_add (instance->trigger, alarm_trigger_cb, cqa, NULL);
 			if (!alarm_id) {
-				d(printf("%s:%d (query_objects_changed_async) -Unable to schedule trigger for %s \n",__FILE__, __LINE__, ctime(&(instance->trigger))));
+				d(printf("%s:%d (query_objects_changed_async) -Unable to schedule trigger for %s \n",__FILE__, __LINE__, e_ctime(&(instance->trigger))));
 				continue;
 			}
 
@@ -875,63 +892,59 @@ create_snooze (CompQueuedAlarms *cqa, gpointer alarm_id, gint snooze_mins)
 
 	new_id = alarm_add (t, alarm_trigger_cb, cqa, NULL);
 	if (!new_id) {
-		d(printf("%s:%d (create_snooze) -Unable to schedule trigger for %s \n",__FILE__, __LINE__, ctime(&t)));
+		d(printf("%s:%d (create_snooze) -Unable to schedule trigger for %s \n",__FILE__, __LINE__, e_ctime(&t)));
 		return;
 	}
 
 	orig_qa->instance->trigger = t;
 	orig_qa->alarm_id = new_id;
 	orig_qa->snooze = TRUE;
-	d(printf("%s:%d (create_snooze) - Adding a alarm at %s\n",__FILE__, __LINE__, ctime(&t)));
+	d(printf("%s:%d (create_snooze) - Adding a alarm at %s\n",__FILE__, __LINE__, e_ctime(&t)));
 }
 
 /* Launches a component editor for a component */
 static void
 edit_component (ECal *client, ECalComponent *comp)
 {
-	const gchar *uid;
-	const gchar *uri;
-	ECalSourceType source_type;
-	CORBA_Environment ev;
-	GNOME_Evolution_Calendar_CompEditorFactory factory;
-	GNOME_Evolution_Calendar_CompEditorFactory_CompEditorMode corba_type;
+	ESource *source;
+	gchar *command_line;
+	const gchar *scheme;
+	const gchar *comp_uid;
+	const gchar *source_uid;
+	GError *error = NULL;
 
-	d(printf("%s:%d (edit_component) - Client %p\n",__FILE__, __LINE__, client));
+	/* XXX Don't we have a function to construct these URIs?
+	 *     How are other apps expected to know this stuff? */
 
-	e_cal_component_get_uid (comp, &uid);
+	source = e_cal_get_source (client);
+	source_uid = e_source_peek_uid (source);
 
-	uri = e_cal_get_uri (client);
-	source_type = e_cal_get_source_type (client);
+	e_cal_component_get_uid (comp, &comp_uid);
 
-	/* Get the factory */
-	CORBA_exception_init (&ev);
-	factory = bonobo_activation_activate_from_id (
-		(Bonobo_ActivationID) "OAFIID:GNOME_Evolution_Calendar_CompEditorFactory:" BASE_VERSION, 0, NULL, &ev);
-
-	if (BONOBO_EX (&ev)) {
-		e_error_run (NULL, "editor-error", bonobo_exception_get_text (&ev), NULL);
-		CORBA_exception_free (&ev);
-		return;
+	switch (e_cal_get_source_type (client)) {
+		case E_CAL_SOURCE_TYPE_EVENT:
+			scheme = "calendar:";
+			break;
+		case E_CAL_SOURCE_TYPE_TODO:
+			scheme = "task:";
+			break;
+		case E_CAL_SOURCE_TYPE_JOURNAL:
+			scheme = "memo:";
+			break;
+		default:
+			g_return_if_reached ();
 	}
 
-	/* Edit the component */
-	switch (source_type) {
-	case E_CAL_SOURCE_TYPE_TODO:
-		corba_type = GNOME_Evolution_Calendar_CompEditorFactory_EDITOR_MODE_TODO;
-		break;
-	default:
-		corba_type = GNOME_Evolution_Calendar_CompEditorFactory_EDITOR_MODE_EVENT;
+	command_line = g_strdup_printf (
+		"%s %s///?source-uid=%s&comp-uid=%s",
+		PACKAGE, scheme, source_uid, comp_uid);
+
+	if (!g_spawn_command_line_async (command_line, &error)) {
+		g_critical ("%s", error->message);
+		g_error_free (error);
 	}
 
-	GNOME_Evolution_Calendar_CompEditorFactory_editExisting (factory, uri, (gchar *) uid, corba_type, &ev);
-
-	if (BONOBO_EX (&ev))
-		e_error_run (NULL, "editor-error", bonobo_exception_get_text (&ev), NULL);
-
-	CORBA_exception_free (&ev);
-
-	/* Get rid of the factory */
-	bonobo_object_release_unref (factory, NULL);
+	g_free (command_line);
 }
 
 typedef struct {
@@ -1199,7 +1212,7 @@ notify_dialog_cb (AlarmNotifyResult result, gint snooze_mins, gpointer data)
 			GtkTreeIter iter;
 			GtkTreeModel *model = NULL;
 
-			/* We can` also use tray_data->iter */
+			/* We can also use tray_data->iter */
 			if (gtk_tree_selection_get_selected (selection, &model, &iter)) {
 				gtk_list_store_remove (GTK_LIST_STORE (model), &iter);
 				if (!gtk_tree_model_get_iter_first (model, &iter)) {
@@ -1377,9 +1390,9 @@ tray_icon_blink_cb (gpointer data)
 	tray_blink_state = !tray_blink_state;
 
 	if (tray_blink_state || tray_blink_countdown <= 0)
-		icon_name = "stock_appointment-reminder-excl";
+		icon_name = "appointment-missed";
 	else
-		icon_name = "stock_appointment-reminder";
+		icon_name = "appointment-soon";
 
 	if (tray_icon)
 		gtk_status_icon_set_from_icon_name (tray_icon, icon_name);
@@ -1466,7 +1479,7 @@ display_notification (time_t trigger, CompQueuedAlarms *cqa,
 	if (tray_icon == NULL) {
 		tray_icon = gtk_status_icon_new ();
 		gtk_status_icon_set_from_icon_name (
-			tray_icon, "stock_appointment-reminder");
+			tray_icon, "appointment-soon");
 		g_signal_connect (G_OBJECT (tray_icon), "activate",
 				  G_CALLBACK (icon_activated), NULL);
 		g_signal_connect (G_OBJECT (tray_icon), "popup-menu",
@@ -1523,7 +1536,9 @@ display_notification (time_t trigger, CompQueuedAlarms *cqa,
 	if (!config_data_get_notify_with_tray ()) {
 		tray_blink_id = -1;
 		open_alarm_dialog (tray_data);
-		gtk_window_stick (GTK_WINDOW (alarm_notifications_dialog->dialog));
+		if (alarm_notifications_dialog)
+			gtk_window_stick (GTK_WINDOW (
+				alarm_notifications_dialog->dialog));
 	} else {
 		if (tray_blink_id == -1) {
 			tray_blink_countdown = 30;
@@ -1631,13 +1646,25 @@ audio_notification (time_t trigger, CompQueuedAlarms *cqa,
 
 	if (attach && icalattach_get_is_url (attach)) {
 		const gchar *url;
+		gchar *filename;
+		GError *error = NULL;
 
 		url = icalattach_get_url (attach);
+		filename = g_filename_from_uri (url, NULL, &error);
 
-		if (url && *url && g_file_test (url, G_FILE_TEST_EXISTS)) {
+		if (error != NULL) {
+			g_warning ("%s: %s", G_STRFUNC, error->message);
+			g_error_free (error);
+		} else if (g_file_test (filename, G_FILE_TEST_EXISTS)) {
 			flag = 1;
-			gnome_sound_play (url); /* this sucks */
+#ifdef HAVE_CANBERRA
+			ca_context_play (
+				ca_gtk_context_get(), 0,
+				CA_PROP_MEDIA_FILENAME, filename, NULL);
+#endif
 		}
+
+		g_free (filename);
 	}
 
 	if (!flag)
@@ -1652,6 +1679,7 @@ audio_notification (time_t trigger, CompQueuedAlarms *cqa,
 static void
 mail_notification (time_t trigger, CompQueuedAlarms *cqa, gpointer alarm_id)
 {
+	GtkWidget *container;
 	GtkWidget *dialog;
 	GtkWidget *label;
 
@@ -1672,7 +1700,9 @@ mail_notification (time_t trigger, CompQueuedAlarms *cqa, gpointer alarm_id)
 				 "configured to send an email.  Evolution will display\n"
 				 "a normal reminder dialog box instead."));
 	gtk_widget_show (label);
-	gtk_box_pack_start (GTK_BOX (GTK_DIALOG (dialog)->vbox), label, TRUE, TRUE, 4);
+
+	container = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+	gtk_box_pack_start (GTK_BOX (container), label, TRUE, TRUE, 4);
 
 	gtk_dialog_run (GTK_DIALOG (dialog));
 	gtk_widget_destroy (dialog);
@@ -1682,7 +1712,10 @@ mail_notification (time_t trigger, CompQueuedAlarms *cqa, gpointer alarm_id)
 static gboolean
 procedure_notification_dialog (const gchar *cmd, const gchar *url)
 {
-	GtkWidget *dialog, *label, *checkbox;
+	GtkWidget *container;
+	GtkWidget *dialog;
+	GtkWidget *label;
+	GtkWidget *checkbox;
 	gchar *str;
 	gint btn;
 
@@ -1706,15 +1739,15 @@ procedure_notification_dialog (const gchar *cmd, const gchar *url)
 	gtk_label_set_line_wrap (GTK_LABEL (label), TRUE);
 	gtk_label_set_justify (GTK_LABEL (label), GTK_JUSTIFY_LEFT);
 	gtk_widget_show (label);
-	gtk_box_pack_start (GTK_BOX (GTK_DIALOG (dialog)->vbox),
-			    label, TRUE, TRUE, 4);
+
+	container = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+	gtk_box_pack_start (GTK_BOX (container), label, TRUE, TRUE, 4);
 	g_free (str);
 
 	checkbox = gtk_check_button_new_with_label
 		(_("Do not ask me about this program again."));
 	gtk_widget_show (checkbox);
-	gtk_box_pack_start (GTK_BOX (GTK_DIALOG (dialog)->vbox),
-			    checkbox, TRUE, TRUE, 4);
+	gtk_box_pack_start (GTK_BOX (container), checkbox, TRUE, TRUE, 4);
 
 	/* Run the dialog */
 	btn = gtk_dialog_run (GTK_DIALOG (dialog));
@@ -1830,8 +1863,8 @@ alarm_queue_init (gpointer data)
 	queue_midnight_refresh ();
 
 	if (config_data_get_last_notification_time (NULL) == -1) {
-		time_t tmval = time (NULL);
-		d(printf("%s:%d (alarm_queue_init) - Setting last notification time to %s\n",__FILE__, __LINE__, ctime(&tmval)));
+		time_t tmval = time_day_begin (time (NULL));
+		d(printf("%s:%d (alarm_queue_init) - Setting last notification time to %s\n",__FILE__, __LINE__, e_ctime(&tmval)));
 		config_data_set_last_notification_time (NULL, tmval);
 	}
 
@@ -1971,7 +2004,7 @@ alarm_queue_add_async (struct _alarm_client_msg *msg)
 	if (e_cal_get_load_state (client) == E_CAL_LOAD_LOADED) {
 		load_alarms_for_today (ca);
 	} else {
-		g_signal_connect (client, "cal_opened",
+		g_signal_connect (client, "cal_opened_ex",
 				  G_CALLBACK (cal_opened_cb),
 				  ca);
 	}
@@ -2137,7 +2170,7 @@ update_cqa (CompQueuedAlarms *cqa, ECalComponent *newcomp)
 	from = time_day_begin_with_zone (time (NULL), zone);
 	to = time_day_end_with_zone (time (NULL), zone);
 
-	d(printf("%s:%d (update_cqa) - Generating alarms between %s and %s\n",__FILE__, __LINE__, ctime(&from), ctime(&to)));
+	d(printf("%s:%d (update_cqa) - Generating alarms between %s and %s\n",__FILE__, __LINE__, e_ctime(&from), e_ctime(&to)));
 	alarms = e_cal_util_generate_alarms_for_comp (newcomp, from, to, omit,
 					e_cal_resolve_tzid_cb, cqa->parent_client->client, zone);
 

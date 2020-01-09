@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
 <!ENTITY appname "Evolution">
-<!ENTITY appversion "2.28">
+<!ENTITY appversion "2.30">
 <!ENTITY z-3rdParty "*">
 <!ENTITY z-SM "(SM)">
 <!ENTITY z-CM "(CM)">
@@ -19,8 +19,8 @@
    <date>2002-2009</date>
    <revhistory>
      <revision>
-       <revnumber>2.28</revnumber>
-       <date>September 2009</date>
+       <revnumber>2.30</revnumber>
+       <date>Σεπτέμβριος 2009</date>
        <revdescription>
 	 <para role="author">Akhil Laddha</para>
 	 <para role="publisher">Novell, Inc</para>
@@ -28,7 +28,7 @@
      </revision>
     <revision>
      <revnumber>2.28</revnumber>
-     <date>September 2009</date>
+     <date>Σεπτέμβριος 2009</date>
      <revdescription>
       <para role="author">Radhika PC</para>
       <para role="publisher">Novell, Inc</para>
@@ -68,22 +68,20 @@
      </revision>
    </revhistory>
 
-   <releaseinfo>
-     This manual describes version 2.28 of Evolution 
-   </releaseinfo>
+   <releaseinfo>Αυτός ο οδηγός περιγράφει την έκδοση 2.30 του Evolution.</releaseinfo>
    <abstract role="description">
      <para>Ένας οδηγός χρήστη για το Evolution που εξηγεί πώς να χρησιμοποιείτε την αλληλογραφία, το ημερολόγιο, το βιβλίο διευθύνσεων, και την λίστα εργασιών του.</para>
    </abstract>
    <productname class="trade">Evolution</productname>
-   <productnumber>2.28</productnumber>
+   <productnumber>2.30</productnumber>
    <invpartnumber>Φεβρουάριος 2008</invpartnumber>
-   <title>Evolution 2.28 User Guide</title>
+   <title>Οδηγός χρήστη για το Evolution 2.30</title>
  </bookinfo>
 
 
  <preface id="preface">
   <title>Περί αυτού του οδηγού</title>
-  <para>This guide describes how to use and manage <trademark>Evolution</trademark> 2.28 client software. This guide is intended for users and is divided into the following sections:</para>
+  <para>Αυτός ο οδηγός περιγράφει πώς να χρησιμοποιείτε και να διαχειρίζεστε το λογισμικό πελάτη <trademark>Evolution</trademark> 2.30. Αυτός ο οδηγός προορίζεται για χρήστες και χωρίζεται στις ακόλουθες ενότητες:</para>
   <itemizedlist>
    <listitem>
     <para><link linkend="usage-mainwindow">Ξεκινώντας</link></para>
@@ -1292,10 +1290,10 @@
      <para>Διαλέξτε αυτή την επιλογή για να περιορίσετε την ειδοποίηση σε αλληλογραφία που φτάνει στα Εισερχόμενα. Με αυτή την επιλογή ενεργοποιημένη, ειδοποιήστε για τη λήψη νέων μηνυμάτων στα Εισερχόμενα.</para>
     </formalpara>
     <formalpara>
-     <title>New Message Notification For Folders</title>
-     <para>This feature notifies you of new message arrival in any folder. A folder with new mail is identified by the unread icon.The icon is displayed as long as the folder is accessed.</para>
+     <title>Ειδοποίηση νέου μηνύματος για τους φακέλους</title>
+     <para>Αυτό το χαρακτηριστικό σας ειδοποιεί για την άφιξη νέου μηνύματος σε οποιοδήποτε φάκελο. Ένας φάκελος με καινούρια αλληλογραφία επισημαίνεται με το εικονίδιο μη αναγνωσμένου. Αυτό το εικονίδιο εμφανίζεται ενόσω υπάρχει πρόσβαση στο φάκελο.</para>
     </formalpara>
-    <para>In a collapsed folder tree, if a new message arrives in the parent folder, the folder name is displayed with a '+' plus sign beside the unread mail count. When a new message arrives in any child folders, the parent folder name turns bold.</para>
+    <para>Σε ένα αναπτυγμένο δένδρο φακέλων, αν φτάσει ένα μήνυμα στον γονικό φάκελο, ένα σύμβολο «+» εμφανίζεται δίπλα στον αριθμό μη αναγνωσμένων μηνυμάτων. Όταν ένα μήνυμα φτάσει σε θυγατρικό φάκελο, το όνομα του γονικού φακέλου εμφανίζεται με έντονα γράμματα.</para>
     <mediaobject><imageobject><imagedata format="PNG" fileref="figures/folder_plus.png"/></imageobject></mediaobject>
     <formalpara id="b1dl93cp">
      <title>Δημιουργία ενός μηνύματος D-Bus:</title>
@@ -1651,7 +1649,7 @@
     <para>Για να επισυνάψετε ένα αρχείο στο μήνυμα σας:</para>
     <orderedlist>
      <listitem id="bsfnwxr">
-      <para>Click the Attach button in the composer.</para>
+      <para>Πατήστε το κουμπί Επισύναψη στο συγγραφέα μηνυμάτων.</para>
      </listitem>
      <listitem id="bsfnx41">
       <para>Επιλέξτε το αρχείο που θέλετε να επισυνάψετε.</para>
@@ -2347,10 +2345,7 @@
     <para>Για να λάβετε δημόσια κλειδιά από ένα διακομιστή δημόσιων κλειδιών, πληκτρολογήστε την εντολή <command> gpg --recv-keys --keyserver wwwkeys.pgp.net <varname>keyid</varname></command>, αντικαθιστώντας το <varname>keyid</varname> με το ID του παραλήπτη. Θα χρειαστεί να εισάγετε το συνθηματικό σας, και το ID προστίθεται αυτόματα στο keyring σας.</para>
     <note>
      <para>Ο τομέας <quote><emphasis>wwwkeys.pgp.net</emphasis></quote> ανατίθεται σε πολλαπλά συστήματα σε διάφορα δίκτυα. Η εφαρμογή gpg προσπαθεί να συνδεθεί στο σε ένα σύστημα στο τρέχον δίκτυο, και αν εκείνο το συγκεκριμένο σύστημα δε λειτουργεί, τότε παρουσιάζει σφάλμα λήξης χρόνου.</para>
-     <para>To avoid this, type <command>$ host wwwkeys.pgp.net</command> in a terminal console and get the IP address of the hosts. 
-      You can ping each of them to find the one which is up and running. Now, you can replace wwwkeys.pgp.net in the gpg --recv-keys
-      --keyserver wwwkeys.pgp.net keyid command with that 
-      explicit IP number as returned by the host utility.</para> 
+     <para>Για να το αποφύγετε αυτό, πληκτρολογήστε <command>$ host wwwkeys.pgp.net</command> σε μια κονσόλα τερματικού και πάρτε τη διεύθυνση IP των συστημάτων. Μπορείτε να κάνετε ping σε καθέναν από αυτούς για να βρείτε εκείνον που λειτουργεί. Τώρα, μπορείτε να αντικαταστήσετε το wwwkeys.pgp.net στην εντολή gpg --recv-keys --keyserver wwwkeys.pgp.net keyid με εκείνον τον IP αριθμό όπως σας επιστράφηκε από την εφαρμογή στο σύστημα.</para> 
     </note>
     <para>Αν κάποιος σας στείλει ένα δημόσιο κλειδί απ' ευθείας, αποθηκεύστε το ως απλό αρχείο κειμένου και πληκτρολογήστε την εντολή <command>gpg <varname>--import</varname></command> για να το προσθέσετε στο keyring σας.</para>
    </section>
@@ -3984,7 +3979,7 @@
   
    <section id="b1a47igh">
     <title>Ημερολόγιο Google</title>
-    <para>Evolution allows you to access your Google calendar. You can view the Google calendar offline or create, modify, and delete the calendar items online. Google calendar uses the CalDAV interface.</para>
+    <para>Το Evolution σας επιτρέπει να έχετε πρόσβαση στο ημερολόγιό σας στο Google. Μπορείτε να δείτε το ημερολόγιο του Google εκτός σύνδεσης, ή να δημιουργήσετε, να επεξεργαστείτε και να διαγράψετε στοιχεία του ημερολογίου εντός σύνδεσης. Το ημερολόγιο του Google χρησιμοποιεί τη διεπαφή CalDAV.</para>
     <para>Για να ενσωματώσετε το ημερολόγιο του Google στο Evolution:</para>
     <mediaobject id="b1a4ahp1"><imageobject><imagedata format="PNG" fileref="figures/google_cal_view.png"/></imageobject></mediaobject>
     <orderedlist>
@@ -4084,7 +4079,7 @@
       <listitem id="bshlods">
        <para>Επιλέξτε Αρχείο &gt; Νέο &gt; Ραντεβού.</para>
        <para>ή</para>
-       <para>Click Calendars on the Switcher, then click File, then New &gt; Appointment.</para>
+       <para>Πατήστε στο Ημερολόγια στον Εναλλάκτη, και μετά επιλέξτε Αρχείο, και μετά Νέο &gt; Ραντεβού.</para>
        <para>ή</para>
        <para>Κάντε διπλό κλικ σε ένα άδειο χώρο στην προβολή ημερολογίου για να ανοίξετε ένα διάλογο Ραντεβού. Η συγκεκριμένη ώρα στην προβολή ημερολογίου πάνω στην οποία κάνατε διπλό κλικ θα προταθεί ως ώρα για το νέο ραντεβού.</para>
        <para>ή</para>
@@ -4192,7 +4187,7 @@
      <para>Για να δημιουργήσετε μια υπενθύμιση:</para>
      <orderedlist>
       <listitem id="bxmtait">
-       <para>To create an alarm for this appointment, click Alarms on the toolbar, or click Options, then Alarms.</para>
+       <para>Για να δημιουργήσετε μια ειδοποίηση για αυτό το ραντεβού, πατήστε Ειδοποιήσεις την εργαλειοθήκη, ή επιλέξτε Επιλογές, και μετά Ειδοποιήσεις.</para>
       </listitem>
       <listitem id="bzz2xh4">
        <para>Επιλέξτε Προσαρμογή για να προσθέσετε ή να αφαιρέσετε προσαρμοσμένες ειδοποιήσεις για το γεγονός.</para>
@@ -4594,36 +4589,36 @@
   </section>
 
   <section id="usage-calendar-multiple">
-   <title>Multiple Calendars, Web Calendars and CalDAV</title>
+   <title>Πολλαπλά ημερολόγια, δικτυακά ημερολόγια και CalDAV</title>
    <para>Για να δημιουργήσετε ένα νέο ημερολόγιο, επιλέξτε Αρχείο &gt; Νέο &gt; Ημερολόγιο. Αν σκοπεύετε να αποθηκεύετε τοπικά αυτό το ημερολόγιο, χρειάζεται μόνο να καθορίσετε το όνομα και το χρώμα. Αν είναι απομακρυσμένο ημερολόγιο, χρειάζεται να καθορίσετε το όνομα, το χρώμα, το URL και μια συχνότητα ανανέωσης. Η συχνότητα ανανέωσης καθορίζει πόσο συχνά το Evolution ελέγχει για να δει αν το ημερολόγιο έχει αλλάξει. Αν εργάζεστε με κάποιον που δημοσιεύει ένα δημόσιο ημερολόγιο, μπορεί να θέλετε να ελέγχετε για ενημερώσεις κάθε τριάντα λεπτά. Από την άλλη, αν έχετε ένα ημερολόγιο για μια ποδοσφαιρική ομάδα, ίσως δε χρειάζεται να το ανανεώνετε πιο συχνά από μια φορά την εβδομάδα.</para>
    <para>Ο <ulink url="http://icalshare.com">ιστότοπος icalshare.com</ulink> έχει μια εκτενή λίστα διαμοιρασμένων δικτυακών ημερολογίων, συμπεριλαμβανομένων εθνικών και θρησκευτικών γιορτών, φάσεων της σελήνης, αθλητικών, και τοπικών και περιφερειακών γεγονότων.</para>
    <para>Το Evolution σας επιτρέπει να βλέπετε και να διαχειρίζεστε ημερολόγια σε απομακρυσμένους διακομιστές CalDAV. Η διαδικασία για τη δημιουργία μιας πηγής ημερολογίου CalDAV είναι παρόμοια με εκείνη της δημιουργίας μιας απομακρυσμένης πηγής αλληλογραφίας. Μπορείτε να δείτε και να δημιουργήσετε γεγονότα στο ημερολόγιο σε λογαριασμούς CalDAV όπως και με τα άλλα ημερολόγια του Evolution.</para>
-   <para>You can view and manage local iCal or ics files in the Calendar view. Select the local iCal or ics files as calendar source to manage or view them in Evolution.</para>
-   <para>To access a local ics or iCal file in the Calendar view:</para>
+   <para>Στην προβολή Ημερολογίου μπορείτε να προβάλετε και να διαχειριστείτε τοπικά αρχεία iCal ή  ics. Επιλέξτε τα τοπικά αρχεία iCal ή ics ως την πηγή του ημερολογίου για να τα διαχειριστείτε ή να τα προβάλετε μέσα στο Evloution.</para>
+   <para>Για πρόσβαση σε ένα τοπικό αρχείo ics ή iCal στην προβολή Ημερολογίου:</para>
    <orderedlist>
      <listitem>
      <para>Επιλέξτε Νέο, μετά επιλέξτε Ημερολόγιο για να ανοίξει ο διάλογος Νέο ημερολόγιο.</para>
      </listitem>
      <listitem>
-     <para>Select On this computer from the Type drop-down list.</para>
+     <para>Επιλέξτε Σε αυτόν τον υπολογιστή από την αναδιπλούμενη λίστα Τύπος.</para>
      </listitem>	
      <listitem>
-     <para>In the Name field, specify a name for the local calendar.</para>
+     <para>Στο πεδίο Όνομα, καθορίστε ένα όνομα για το τοπικό ημερολόγιο.</para>
      </listitem>
      <listitem>
-     <para>Select customize options.</para>
+     <para>Τροποποιήστε τις επιλογές.</para>
      </listitem>
      <listitem> 
-     <para>In the File name field, give ics / ical file location as the calendar source.</para>
+     <para>Στο πεδίο Όνομα αρχείου, δώστε την τοποθεσία του αρχείου ics ή iCal ώς την πηγή του ημερολογίου.</para>
      </listitem>
      <listitem>
-     <para>In the Refresh field, choose refresh type from the drop-down list.</para>
+     <para>Στο πεδίο Ανανέωση, επιλέξτε τον τύπο ανανέωσης από την αναδιπλούμενη λίστα.</para>
      </listitem> 
      <listitem>
-     <para>Select the Force read only option if you want the calendar read-only.</para>
+     <para>Ενεργοποιήστε την επιλογή Μόνο για ανάγνωση αν θέλετε το ημερολόγιο να είναι μόνο για ανάγνωση.</para>
      </listitem> 
      <listitem>
-     <para>To set a color label for the calendar, click the Color tab, select the desired color, then click OK.</para>
+     <para>Για να ορίσετε μια χρωματιστή ετικέτα για το ημερολόγιο, επιλέξτε την καρτέλα Χρώμα, επιλέξτε το επιθυμητό χρώμα και πατήστε Εντάξει.</para>
     </listitem>
    </orderedlist>
     <mediaobject><imageobject><imagedata format="PNG" fileref="figures/local_ics_calendar.png"/></imageobject></mediaobject>
@@ -5180,7 +5175,7 @@
     <para><link linkend="full-advantage">Προγραμματισμός συναντήσεων με τη Διαθεσιμότητα</link></para>
    </listitem>
    <listitem>
-    <para><link linkend="mapi-features">Evolution MAPI Features</link></para>
+    <para><link linkend="mapi-features">Χαρακτηριστικά του Evolution MAPI</link></para>
    </listitem>
   </itemizedlist>
   <important>
@@ -5706,24 +5701,24 @@
   </section>
   
   <section id="mapi-features">
-   <title>Evolution MAPI Features</title>
-   <para>With Evolution MAPI providers, you can view the size of a selected folder.</para>
-   <para>You can view the folder size by using the following methods:</para>
+   <title>Χαρακτηριστικά του Evolution MAPI</title>
+   <para>Με τους παρόχους Evolution MAPI, μπορείτε να δείτε το μέγεθος ενός επιλεγμένου φακέλου.</para>
+   <para>Μπορείτε να δείτε το μέγεθος του φακέλου με τους εξής τρόπους:</para>
    <orderedlist>
     <listitem>
-     <para>Select Edit &gt; Preferences &gt; MAPI Account &gt; Edit.</para>
+     <para>Επιλέξτε Επεξεργασία &gt; Προτιμήσεις &gt; Λογαριασμός MAPI &gt; Επεξεργασία.</para>
     </listitem>
     <listitem>
-     <para>Select the Exchange settings tab.</para>
+     <para>Επιλέξτε την καρτέλα Επιλογές Exchange.</para>
     </listitem>
     <listitem>
-     <para>Select Folder size.</para>
+     <para>Επιλέξτε Μέγεθος φακέλου.</para>
      <mediaobject><imageobject><imagedata format="PNG" fileref="figures/folder_size_preference.png"/></imageobject></mediaobject>
     </listitem>
    </orderedlist>
-   <para>Alternatively, right-click the MAPI Account in the folder tree, then select folder size.</para>
+   <para>Εναλλακτικά, κάντε δεξί κλικ στον Λογαριασμό MAPI στο δένδρο φακέλων, και επιλέξτε μέγεθος φακέλου.</para>
    <mediaobject><imageobject><imagedata format="PNG" fileref="figures/folder_size_mapi.png"/></imageobject></mediaobject>
-   <para>A Folder dialog is displayed with details, such as folder name and their respective size. It also provides you the total mailbox size.</para>
+   <para>Εμφανίζεται ο διάλογος Φάκελος, με λεπτομέρειες όπως το όνομα του φακέλου και το μέγεθός του. Εμφανίζει επίσης το συνολικό μέγεθος του κουτιού αλληλογραφίας.</para>
   </section>
   
  </chapter>
@@ -5789,7 +5784,7 @@
        <para>Μπορείτε να στείλετε και να παραλάβετε αιτήσεις για ραντεβού και συναντήσεις. Επιτρέπεται στους χρήστες του Evolution να προγραμματίζουν συναντήσεις και να βλέπουν τη διαθεσιμότητα των παρευρισκομένων για άλλους χρήστες στο GroupWise.</para>
       </listitem>
       <listitem>
-       <para>You can resend meeting requests. Also, you can edit the fields, and add or delete participants.</para>
+       <para>Μπορείτε να στείλετε ξανά αιτήσεις για συναντήσεις. Επίσης, μπορείτε να επεξεργαστείτε τα πεδία, και να προσθέσετε ή να αφαιρέσετε συμμετέχοντες.</para>
       </listitem>
       <listitem>
        <para>Μπορείτε να λάβετε μια αίτηση για συνάντηση iCalendar και να την προσθέσετε στο ημερολόγιο του GroupWise.</para>
@@ -6018,7 +6013,7 @@
    <para>Για να στείλετε μια σημείωση υπενθύμισης,</para>
    <orderedlist>
     <listitem id="b15ijcgi">
-     <para>Click File, then New &gt; Shared Memo.</para>
+     <para>Επιλέξτε Αρχείο, μετά Νέο &gt; Κοινόχρηστο memo.</para>
     </listitem>
     <listitem id="b15ijcow">
      <para>Επιλέξτε το όνομα λογαριασμού του Διοργανωτή από την αναδιπλούμενη λίστα που δίνεται δίπλα από το πεδίο Διοργανωτής.</para>
@@ -6072,42 +6067,42 @@
 
 
   <section>
-   <title>Resending a GroupWise Meeting Request</title>
+   <title>Επανάληψη αποστολής μιας Αίτησης για συνάντηση τύπου GroupWise</title>
    <orderedlist>
     <listitem>
-     <para>Right-click an existing meeting that you have organized.</para>
+     <para>Κάντε δεξί κλικ σε μια υφιστάμενη συνάντηση που έχετε οργανώσει.</para>
     </listitem>
     <listitem>
-     <para>Select Resend meeting. A confirmation dialog is displayed.</para>
+     <para>Επιλέξτε Αποστολή ξανά της συνάντησης. Θα εμφανιστεί ένας διάλογος επιβεβαίωσης.</para>
     </listitem>
     <listitem>
-     <para>Click OK to resend the meeting.</para>
+     <para>Πατήστε Εντάξει για να στείλετε ξανά τη συνάντηση.</para>
      <mediaobject><imageobject><imagedata format="PNG" fileref="figures/groupwise_resend.png"/></imageobject></mediaobject>
     </listitem>
      <listitem>
-     <para>(Optional) Edit any of the fields: Duration, Summary, Description</para>
+     <para>(Προαιρετικό) Επεξεργαστείτε οποιοδήποτε από τα πεδία: Διάρκεια, Περίληψη, Περιγραφή</para>
     </listitem>
     <listitem>
-     <para>(Optional) Add attendees, either by entering their email addresses into the list, or by clicking the Invite Others button.</para>
+     <para>(Προαιρετικό) Προσθέστε παρευρισκόμενους, είτε εισάγοντας τη διεύθυνση αλληλογραφίας τους στη λίστα, είτε πατώντας το κουμπί Πρόσκληση άλλων.</para>
     </listitem>
     <listitem>
-     <para>To remove an attendee from the list, select the attendee and click Remove.</para>
+     <para>Για να αφαιρέσετε έναν παρευρισκόμενο από τη λίστα, επιλέξτε τον και πατήστε Αφαίρεση.</para>
     </listitem>
     <listitem>
      <para>Πατήστε Αποθήκευση για να αποθηκεύσετε τη συνάντηση.</para>
     </listitem>
     <listitem>
-     <para>A Dialog is displayed to check whether you want to retract the original item or not. Click OK to confirm. Click Cancel if you want to keep the original item in the recipients' calendar.</para>
+     <para>Εμφανίζεται ένας διάλογος όπου ελέγχεται αν θέλετε να αφαιρέσετε την αρχική καταχώρηση ή όχι. Πατήστε Ακύρωση αν θέλετε να κρατήσετε την αρχική καταχώρηση στο ημερολόγιο του παραλήπτη.</para>
      <mediaobject><imageobject><imagedata format="PNG" fileref="figures/groupwise_resend_retract.png"/></imageobject></mediaobject>
     </listitem>
    </orderedlist>
-   <para>An email is send to all the recipients to invite them to your updated event.</para>
+   <para>An email is sent to all the recipients to invite them to your updated event.</para>
   </section>
   
   
   <section>
-   <title>GroupWise support for header based threading enabled</title>
-   <para>There is no need to enable 'Fall back to threading by subject' from Edit &gt; Preferences &gt; Mail preferences &gt; General tab unless other wise you want messages to be threaded on subject basis.</para>
+   <title>Ενεργοποιημένη υποστήριξη για αλληλουχία βάσει κεφαλίδων στο GroupWise</title>
+   <para>Δε χρειάζεται να ενεργοποιήσετε την «Αλληλουχία μηνυμάτων κατά θέμα» από το μενού Επεξεργασία &gt; Προτιμήσεις &gt; Προτιμήσεις αλληλογραφίας &gt; καρτέλα Γενικά, εκτός και αν θέλετε να έχετε αλληλουχία βάσει θέματος.</para>
   </section>
   
   
@@ -6622,7 +6617,7 @@
   <section id="config-prefs-mail-identity">
    <title>Εργασία με τους λογαριασμούς αλληλογραφίας</title>
    <para>Το Evolution σας επιτρέπει να διατηρείτε πολλαπλούς λογαριασμούς ή ταυτότητες. Όταν γράφετε ένα μήνυμα αλληλογραφίας, μπορείτε να επιλέξετε ποιο λογαριασμό θα χρησιμοποιήσετε επιλέγοντας από την αναδιπλούμενη λίστα δίπλα στο πεδίο Από στπν επεξεργαστή μηνυμάτων.</para>
-   <para>Click Send/Receive to update all mail sources that are not disabled. If you don't want to check mail for a given account, select the account in Edit &gt; Preferences, then Mail Accounts page and click the Disable button.</para>
+   <para>Πατήστε Αποστολή/Λήψη για να ενημερώσετε όλες τις πηγές αλληλογραφίας που είναι απενεργοποιημένες. Αν δε θέλετε να ελέγχετε την αλληλογραφία ενός συγκεκριμένου λογαριασμού, επιλέξτε το λογαριασμό στο μενού Επεξεργασία &gt; Προτιμήσεις, μετά Λογαριασμοί αλληλογραφίας και πατήστε το κουμπί Απενεργοποίηση.</para>
    <para>Για να προσθέσετε ένα νέο λογαριασμό, πατήστε Προσθήκη για να ανοίξετε το βοηθό ρύθμισης του Evolution.</para>
    <para>Για να τροποποιήσετε ένα υφιστάμενο λογαριασμό, επιλέξτε τον από το παράθυρο Προτιμήσεις.</para>
    <para>Πατήστε Επεξεργασία για να ανοίξει ο Επεξεργαστής λογαριασμών.</para>
@@ -6835,8 +6830,8 @@
     <para>Από προεπιλογή αναζητά μόνο στο τοπικό βιβλίο διευθύνσεων το οποίο είναι ενεργοποιημένο για αυτόματη συμπλήρωση. Αν απενεργοποιήσετε την επιλογή <guilabel>Αναζήτηση της φωτογραφίας του αποστολέα μόνο σε τοπικά βιβλία διευθύνσεων</guilabel>, αναζητεί σε όλα τα βιβλία διευθύνσεων που είναι ενεργοποιημένα για αυτόματη συμπλήρωση. Αν υπάρχουν πολλαπλά ταιριάσματα για την ίδια επαφή, παίρνει πάντα το πρώτο. Υποθέστε ότι μια επαφή έχει πολλαπλά ταιριάσματα -το πρώτο χωρίς φωτογραφία και το δεύτερο με μια φωτογραφία. Εδώ, το Evolution παίρνει την πρώτη επαφή ασχέτως ότι δεν έχει φωτογραφία.</para>
     <para>Αυτό το χαρακτηριστικό είναι απενεργοποιημένο από προεπιλεγή γιατί προκαλεί καθυστερήσεις στη λήψη μηνυμάτων.</para>
     <formalpara>
-     <title>Configurable Date and Time Format</title>
-     <para>Although Evolution components have a set of predefined date and time formats, an advanced user can write acceptable strftime, with new tag %ad for an abbreviated date to show in tables and date headers.</para>
+     <title>Τροποποιήσιμη μορφή Ημερομηνίας και ώρας</title>
+     <para>Παρότι τα συστατικά του Evolution έχουν μια σειρά από προκαθορισμένες μορφές ημερομηνίας και ώρας, ένας προχωρημένος χρήστης μπορεί να γράψει ένα αποδεκτό strftime, με τη νέα ετικέτα %ad για μια σύντομα γραμμένη ημερομηνία που θα εμφανίζεται σε πίνακες και κεφαλίδες ημερομηνίας.</para>
     </formalpara>
     <mediaobject><imageobject><imagedata format="PNG" fileref="figures/evolution_mail_preference.png"/></imageobject></mediaobject>
    </section>
@@ -7023,7 +7018,7 @@
      <para>Διαλέξτε αυτή την επιλογή για να εμφανίζονται τα σαββατοκύριακα σε ένα κουτί αντί για δύο στην προβολή μήνα.</para>
     </formalpara>
     <formalpara id="bsbhw7p">
-     <title>Εμφάνιση αριθμών εβδομάδων στον περιηγητή ημερολογίου:</title>
+     <title>Show week numbers:</title>
      <para>Εμφανίζει τους αριθμούς των εβδομάδων δίπλα στις αντίστοιχες εβδομάδες στο Ημερολόγιο.</para>
     </formalpara>
     <formalpara id="bsbhwdz">
@@ -7867,7 +7862,7 @@
     <member>Η.Π.Α.</member>
     <member>www.novell.com</member>
    </simplelist>
-   <para id="Bktitle">Evolution 2.28 User Guide</para>
+   <para id="Bktitle">Οδηγός χρήστη για το Evolution 2.30</para>
    <para>Ιούλιος 2007</para>
    <simplelist>
     <member>Για να έχετε πρόσβαση στη διαδικτυακή τεκμηρίωση για αυτό και άλλα προϊόντα της Novell, και για να λάβετε ενημερώσεις, δείτε το www.novell.com/documentation</member>

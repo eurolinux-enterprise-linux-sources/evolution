@@ -28,18 +28,10 @@ G_BEGIN_DECLS
 #define CALENDAR_CONFIG_PREFIX "/apps/evolution/calendar"
 
 /* Display settings */
-#define CALENDAR_CONFIG_USE_SYSTEM_TIMEZONE CALENDAR_CONFIG_PREFIX "/display/use_system_timezone"
 #define CALENDAR_CONFIG_TIMEZONE CALENDAR_CONFIG_PREFIX "/display/timezone"
 #define CALENDAR_CONFIG_SELECTED_CALENDARS CALENDAR_CONFIG_PREFIX "/display/selected_calendars"
-#define CALENDAR_CONFIG_PRIMARY_CALENDAR CALENDAR_CONFIG_PREFIX "/display/primary_calendar"
 #define CALENDAR_CONFIG_24HOUR CALENDAR_CONFIG_PREFIX "/display/use_24hour_format"
 #define CALENDAR_CONFIG_SHOW_ATTENDEE CALENDAR_CONFIG_PREFIX "/display/show_attendee"
-#define CALENDAR_CONFIG_SHOW_ROLE CALENDAR_CONFIG_PREFIX "/display/show_role"
-#define CALENDAR_CONFIG_SHOW_STATUS CALENDAR_CONFIG_PREFIX "/display/show_status"
-#define CALENDAR_CONFIG_SHOW_TYPE CALENDAR_CONFIG_PREFIX "/display/show_type"
-#define CALENDAR_CONFIG_SHOW_RSVP CALENDAR_CONFIG_PREFIX "/display/show_rsvp"
-#define CALENDAR_CONFIG_SHOW_TIMEZONE CALENDAR_CONFIG_PREFIX "/display/show_timezone"
-#define CALENDAR_CONFIG_SHOW_CATEGORIES CALENDAR_CONFIG_PREFIX "/display/show_categories"
 #define CALENDAR_CONFIG_WEEK_START CALENDAR_CONFIG_PREFIX "/display/week_start_day"
 #define CALENDAR_CONFIG_DAY_START_HOUR CALENDAR_CONFIG_PREFIX "/display/day_start_hour"
 #define CALENDAR_CONFIG_DAY_START_MINUTE CALENDAR_CONFIG_PREFIX "/display/day_start_minute"
@@ -61,13 +53,10 @@ G_BEGIN_DECLS
 #define CALENDAR_CONFIG_COMPRESS_WEEKEND CALENDAR_CONFIG_PREFIX "/display/compress_weekend"
 #define CALENDAR_CONFIG_SHOW_EVENT_END CALENDAR_CONFIG_PREFIX "/display/show_event_end"
 #define CALENDAR_CONFIG_WORKING_DAYS CALENDAR_CONFIG_PREFIX "/display/working_days"
-#define CALENDAR_CONFIG_DV_WEEK_NUMBER CALENDAR_CONFIG_PREFIX "/display/day_view_show_week_number"
+#define CALENDAR_CONFIG_SHOW_WEEK_NUMBERS CALENDAR_CONFIG_PREFIX "/display/show_week_numbers"
 #define CALENDAR_CONFIG_DAY_SECOND_ZONE CALENDAR_CONFIG_PREFIX "/display/day_second_zone"
 #define CALENDAR_CONFIG_DAY_SECOND_ZONES_LIST CALENDAR_CONFIG_PREFIX "/display/day_second_zones"
 #define CALENDAR_CONFIG_DAY_SECOND_ZONES_MAX CALENDAR_CONFIG_PREFIX "/display/day_second_zones_max"
-
-/* Date navigator settings */
-#define CALENDAR_CONFIG_DN_SHOW_WEEK_NUMBERS CALENDAR_CONFIG_PREFIX "/date_navigator/show_week_numbers"
 
 /* Task display settings */
 #define CALENDAR_CONFIG_TASKS_SELECTED_TASKS CALENDAR_CONFIG_PREFIX "/tasks/selected_tasks"

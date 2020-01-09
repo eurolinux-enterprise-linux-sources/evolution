@@ -46,13 +46,14 @@
 #include <gtk/gtk.h>
 #include <libgnomecanvas/gnome-canvas-rect-ellipse.h>
 
-#include "a11y/e-text/gal-a11y-e-text.h"
+#include "gal-a11y-e-text.h"
 #include "misc/e-canvas.h"
 #include "misc/e-canvas-utils.h"
-#include "misc/e-unicode.h"
+#include "e-util/e-unicode.h"
 #include <glib/gi18n.h>
 #include "e-util/e-text-event-processor-emacs-like.h"
 #include "e-util/e-util.h"
+#include "e-util/gtk-compat.h"
 
 #include "e-text.h"
 
@@ -111,12 +112,18 @@ enum {
 	PROP_HANDLE_POPUP
 };
 
-static void e_text_command(ETextEventProcessor *tep, ETextEventProcessorCommand *command, gpointer data);
+static void	e_text_command			(ETextEventProcessor *tep,
+						 ETextEventProcessorCommand *command,
+						 gpointer data);
 
-static void e_text_text_model_changed(ETextModel *model, EText *text);
-static void e_text_text_model_reposition (ETextModel *model, ETextModelReposFn fn, gpointer repos_data, gpointer data);
+static void	e_text_text_model_changed	(ETextModel *model,
+						 EText *text);
+static void	e_text_text_model_reposition	(ETextModel *model,
+						 ETextModelReposFn fn,
+						 gpointer repos_data,
+						 gpointer data);
 
-static void _get_tep(EText *text);
+static void _get_tep (EText *text);
 
 static void calc_height (EText *text);
 
@@ -126,7 +133,8 @@ static void e_text_do_popup (EText *text, GdkEventButton *button, gint position)
 
 static void e_text_update_primary_selection (EText *text);
 static void e_text_paste (EText *text, GdkAtom selection);
-static void e_text_insert(EText *text, const gchar *string);
+static void e_text_insert (EText *text, const gchar *string);
+static void e_text_reset_im_context (EText *text);
 
 static void reset_layout_attrs (EText *text);
 
@@ -170,13 +178,23 @@ static GdkAtom clipboard_atom = GDK_NONE;
 
 
 
+static void
+disconnect_im_context (EText *text)
+{
+	if (!text || !text->im_context)
+		return;
+
+	g_signal_handlers_disconnect_matched (text->im_context, G_SIGNAL_MATCH_DATA, 0, 0, NULL, NULL, text);
+	text->im_context_signals_registered = FALSE;
+}
+
 /* Dispose handler for the text item */
 
 #if 0
 static void
 e_text_style_set (EText *text, GtkStyle *previous_style)
 {
-	if ( text->line_wrap ) {
+	if (text->line_wrap) {
 		text->needs_split_into_lines = 1;
 	} else {
 		text->needs_calc_height = 1;
@@ -195,10 +213,6 @@ e_text_dispose (GObject *object)
 
 	text = E_TEXT (object);
 
-	if (text->tooltip_owner)
-		e_canvas_hide_tooltip (E_CANVAS(GNOME_CANVAS_ITEM(text)->canvas));
-	text->tooltip_owner = 0;
-
 	if (text->model_changed_signal_id)
 		g_signal_handler_disconnect (text->model,
 					     text->model_changed_signal_id);
@@ -210,11 +224,11 @@ e_text_dispose (GObject *object)
 	text->model_repos_signal_id = 0;
 
 	if (text->model)
-		g_object_unref(text->model);
+		g_object_unref (text->model);
 	text->model = NULL;
 
 	if (text->tep_command_id)
-		g_signal_handler_disconnect(text->tep,
+		g_signal_handler_disconnect (text->tep,
 					    text->tep_command_id);
 	text->tep_command_id = 0;
 
@@ -230,27 +244,22 @@ e_text_dispose (GObject *object)
 	text->stipple = NULL;
 
 	if (text->timeout_id) {
-		g_source_remove(text->timeout_id);
+		g_source_remove (text->timeout_id);
 		text->timeout_id = 0;
 	}
 
 	if (text->timer) {
-		g_timer_stop(text->timer);
-		g_timer_destroy(text->timer);
+		g_timer_stop (text->timer);
+		g_timer_destroy (text->timer);
 		text->timer = NULL;
 	}
 
-	if ( text->tooltip_timeout ) {
-		g_source_remove (text->tooltip_timeout);
-		text->tooltip_timeout = 0;
-	}
-
-	if ( text->dbl_timeout ) {
+	if (text->dbl_timeout) {
 		g_source_remove (text->dbl_timeout);
 		text->dbl_timeout = 0;
 	}
 
-	if ( text->tpl_timeout ) {
+	if (text->tpl_timeout) {
 		g_source_remove (text->tpl_timeout);
 		text->tpl_timeout = 0;
 	}
@@ -261,10 +270,7 @@ e_text_dispose (GObject *object)
 	}
 
 	if (text->im_context) {
-		g_signal_handlers_disconnect_matched (text->im_context,
-						      G_SIGNAL_MATCH_DATA,
-						      0, 0, NULL,
-						      NULL, text);
+		disconnect_im_context (text);
 		g_object_unref (text->im_context);
 		text->im_context = NULL;
 	}
@@ -291,7 +297,7 @@ insert_preedit_text (EText *text)
 	if (text->layout == NULL || !GTK_IS_IM_CONTEXT (text->im_context))
 		return;
 
-	text->text = e_text_model_get_text(text->model);
+	text->text = e_text_model_get_text (text->model);
 	length = strlen (text->text);
 
 	g_string_prepend_len (tmp_string, text->text,length);
@@ -403,7 +409,9 @@ create_layout (EText *text)
 
 	text->layout = gtk_widget_create_pango_layout (GTK_WIDGET (item->canvas), text->text);
 	if (text->line_wrap)
-		pango_layout_set_width (text->layout, text->clip_width < 0 ? -1 : text->clip_width * PANGO_SCALE);
+		pango_layout_set_width (
+			text->layout, text->clip_width < 0
+			? -1 : text->clip_width * PANGO_SCALE);
 	reset_layout_attrs (text);
 }
 
@@ -418,22 +426,29 @@ reset_layout (EText *text)
 		create_layout (text);
 	}
 	else {
+		GtkStyle *style;
+
+		style = gtk_widget_get_style (GTK_WIDGET (item->canvas));
+
 		context = pango_layout_get_context (text->layout);
 
-		font_options = get_font_options();
+		font_options = get_font_options ();
 		pango_cairo_context_set_font_options (context, font_options);
 		cairo_font_options_destroy (font_options);
 		pango_layout_context_changed (text->layout);
 
+		if (text->font_desc) {
+			pango_font_description_free (text->font_desc);
+		}
 		text->font_desc = pango_font_description_new ();
-		if (!pango_font_description_get_size_is_absolute ((GTK_WIDGET (item->canvas))->style->font_desc))
+		if (!pango_font_description_get_size_is_absolute (style->font_desc))
 			pango_font_description_set_size (text->font_desc,
-				pango_font_description_get_size ((GTK_WIDGET (item->canvas))->style->font_desc));
+				pango_font_description_get_size (style->font_desc));
 		else
 			pango_font_description_set_absolute_size (text->font_desc,
-				pango_font_description_get_size ((GTK_WIDGET (item->canvas))->style->font_desc));
+				pango_font_description_get_size (style->font_desc));
 		pango_font_description_set_family (text->font_desc,
-			pango_font_description_get_family ((GTK_WIDGET (item->canvas))->style->font_desc));
+			pango_font_description_get_family (style->font_desc));
 		pango_layout_set_font_description (text->layout, text->font_desc);
 
 		pango_layout_set_text (text->layout, text->text, -1);
@@ -444,7 +459,9 @@ reset_layout (EText *text)
 		PangoRectangle strong_pos, weak_pos;
 		gchar *offs = g_utf8_offset_to_pointer (text->text, text->selection_start);
 
-		pango_layout_get_cursor_pos (text->layout, offs - text->text, &strong_pos, &weak_pos);
+		pango_layout_get_cursor_pos (
+			text->layout, offs - text->text,
+			&strong_pos, &weak_pos);
 
 		if (strong_pos.x != weak_pos.x ||
 		    strong_pos.y != weak_pos.y ||
@@ -460,7 +477,7 @@ static void
 e_text_text_model_changed (ETextModel *model, EText *text)
 {
 	gint model_len = e_text_model_get_text_length (model);
-	text->text = e_text_model_get_text(model);
+	text->text = e_text_model_get_text (model);
 
 	/* Make sure our selection doesn't extend past the bounds of our text. */
 	text->selection_start = CLAMP (text->selection_start, 0, model_len);
@@ -469,14 +486,17 @@ e_text_text_model_changed (ETextModel *model, EText *text)
 	text->needs_reset_layout = 1;
 	text->needs_split_into_lines = 1;
 	text->needs_redraw = 1;
-	e_canvas_item_request_reflow (GNOME_CANVAS_ITEM(text));
+	e_canvas_item_request_reflow (GNOME_CANVAS_ITEM (text));
 	gnome_canvas_item_request_update (GNOME_CANVAS_ITEM (text));
 
 	g_signal_emit (text, e_text_signals[E_TEXT_CHANGED], 0);
 }
 
 static void
-e_text_text_model_reposition (ETextModel *model, ETextModelReposFn fn, gpointer repos_data, gpointer user_data)
+e_text_text_model_reposition (ETextModel *model,
+                              ETextModelReposFn fn,
+                              gpointer repos_data,
+                              gpointer user_data)
 {
 	EText *text = E_TEXT (user_data);
 	gint model_len = e_text_model_get_text_length (model);
@@ -497,10 +517,10 @@ e_text_text_model_reposition (ETextModel *model, ETextModelReposFn fn, gpointer 
 }
 
 static void
-get_bounds (EText *text, double *px1, double *py1, double *px2, double *py2)
+get_bounds (EText *text, gdouble *px1, gdouble *py1, gdouble *px2, gdouble *py2)
 {
 	GnomeCanvasItem *item;
-	double wx, wy, clip_width, clip_height;
+	gdouble wx, wy, clip_width, clip_height;
 
 	item = GNOME_CANVAS_ITEM (text);
 
@@ -517,7 +537,7 @@ get_bounds (EText *text, double *px1, double *py1, double *px2, double *py2)
 	else
 		clip_width = text->clip_width;
 
-	if ( text->clip_height < 0 )
+	if (text->clip_height < 0)
 		clip_height = text->height;
 	else
 		clip_height = text->clip_height;
@@ -616,7 +636,7 @@ calc_height (EText *text)
 	text->width = width;
 
 	if (old_height != text->height || old_width != text->width)
-		e_canvas_item_request_parent_reflow(item);
+		e_canvas_item_request_parent_reflow (item);
 }
 
 static void
@@ -624,8 +644,9 @@ calc_ellipsis (EText *text)
 {
 /* FIXME: a pango layout per calc_ellipsis sucks */
 	gint width;
-	PangoLayout *layout = gtk_widget_create_pango_layout (GTK_WIDGET (GNOME_CANVAS_ITEM (text)->canvas),
-							      text->ellipsis ? text->ellipsis : "...");
+	PangoLayout *layout = gtk_widget_create_pango_layout (
+		GTK_WIDGET (GNOME_CANVAS_ITEM (text)->canvas),
+		text->ellipsis ? text->ellipsis : "...");
 	pango_layout_get_size (layout, &width, NULL);
 
 	text->ellipsis_width = width;
@@ -693,11 +714,11 @@ e_text_set_property (GObject *object,
 	switch (prop_id) {
 	case PROP_MODEL:
 
-		if ( text->model_changed_signal_id )
+		if (text->model_changed_signal_id)
 			g_signal_handler_disconnect (text->model,
 					     text->model_changed_signal_id);
 
-		if ( text->model_repos_signal_id )
+		if (text->model_repos_signal_id)
 			g_signal_handler_disconnect (text->model,
 						     text->model_repos_signal_id);
 
@@ -717,7 +738,7 @@ e_text_set_property (GObject *object,
 					  G_CALLBACK (e_text_text_model_reposition),
 					  text);
 
-		text->text = e_text_model_get_text(text->model);
+		text->text = e_text_model_get_text (text->model);
 		g_signal_emit (text, e_text_signals[E_TEXT_CHANGED], 0);
 
 		text->needs_split_into_lines = 1;
@@ -725,18 +746,18 @@ e_text_set_property (GObject *object,
 		break;
 
 	case PROP_EVENT_PROCESSOR:
-		if ( text->tep && text->tep_command_id )
-			g_signal_handler_disconnect(text->tep,
+		if (text->tep && text->tep_command_id)
+			g_signal_handler_disconnect (text->tep,
 						    text->tep_command_id);
-		if ( text->tep ) {
-			g_object_unref(text->tep);
+		if (text->tep) {
+			g_object_unref (text->tep);
 		}
-		text->tep = E_TEXT_EVENT_PROCESSOR(g_value_get_object (value));
-		g_object_ref(text->tep);
+		text->tep = E_TEXT_EVENT_PROCESSOR (g_value_get_object (value));
+		g_object_ref (text->tep);
 		text->tep_command_id =
-			g_signal_connect(text->tep,
+			g_signal_connect (text->tep,
 					 "command",
-					 G_CALLBACK(e_text_command),
+					 G_CALLBACK (e_text_command),
 					 text);
 		if (!text->allow_newlines)
 			g_object_set (text->tep,
@@ -745,7 +766,7 @@ e_text_set_property (GObject *object,
 		break;
 
 	case PROP_TEXT:
-		e_text_model_set_text(text->model, g_value_get_string (value));
+		e_text_model_set_text (text->model, g_value_get_string (value));
 		break;
 
 	case PROP_BOLD:
@@ -783,9 +804,11 @@ e_text_set_property (GObject *object,
 	case PROP_CLIP_WIDTH:
 		text->clip_width = fabs (g_value_get_double (value));
 		calc_ellipsis (text);
-		if ( text->line_wrap ) {
+		if (text->line_wrap) {
 			if (text->layout)
-				pango_layout_set_width (text->layout, text->clip_width < 0 ? -1 : text->clip_width * PANGO_SCALE);
+				pango_layout_set_width (
+					text->layout, text->clip_width < 0
+					? -1 : text->clip_width * PANGO_SCALE);
 			text->needs_split_into_lines = 1;
 		} else {
 			text->needs_calc_height = 1;
@@ -807,7 +830,7 @@ e_text_set_property (GObject *object,
 	case PROP_CLIP:
 		text->clip = g_value_get_boolean (value);
 		calc_ellipsis (text);
-		if ( text->line_wrap )
+		if (text->line_wrap)
 			text->needs_split_into_lines = 1;
 		else {
 			text->needs_calc_height = 1;
@@ -894,7 +917,9 @@ e_text_set_property (GObject *object,
 		text->line_wrap = g_value_get_boolean (value);
 		if (text->line_wrap) {
 			if (text->layout) {
-				pango_layout_set_width (text->layout, text->width < 0 ? -1 : text->width * PANGO_SCALE);
+				pango_layout_set_width (
+					text->layout, text->width < 0
+					? -1 : text->width * PANGO_SCALE);
 			}
 		}
 		text->needs_split_into_lines = 1;
@@ -902,12 +927,12 @@ e_text_set_property (GObject *object,
 		break;
 
 	case PROP_BREAK_CHARACTERS:
-		if ( text->break_characters ) {
-			g_free(text->break_characters);
+		if (text->break_characters) {
+			g_free (text->break_characters);
 			text->break_characters = NULL;
 		}
-		if ( g_value_get_string (value) )
-			text->break_characters = g_strdup( g_value_get_string (value) );
+		if (g_value_get_string (value))
+			text->break_characters = g_strdup ( g_value_get_string (value) );
 		text->needs_split_into_lines = 1;
 		needs_reflow = 1;
 		break;
@@ -921,9 +946,11 @@ e_text_set_property (GObject *object,
 	case PROP_WIDTH:
 		text->clip_width = fabs (g_value_get_double (value));
 		calc_ellipsis (text);
-		if ( text->line_wrap ) {
+		if (text->line_wrap) {
 			if (text->layout) {
-				pango_layout_set_width (text->layout, text->width < 0 ? -1 : text->width * PANGO_SCALE);
+				pango_layout_set_width (
+					text->layout, text->width < 0 ?
+					-1 : text->width * PANGO_SCALE);
 			}
 			text->needs_split_into_lines = 1;
 		}
@@ -959,7 +986,7 @@ e_text_set_property (GObject *object,
 
 	case PROP_ALLOW_NEWLINES:
 		text->allow_newlines = g_value_get_boolean (value);
-		_get_tep(text);
+		_get_tep (text);
 		g_object_set (text->tep,
 			      "allow_newlines", g_value_get_boolean (value),
 			      NULL);
@@ -977,14 +1004,16 @@ e_text_set_property (GObject *object,
 	}
 
 	case PROP_IM_CONTEXT:
-		if (text->im_context)
+		if (text->im_context) {
+			disconnect_im_context (text);
 			g_object_unref (text->im_context);
+		}
 
 		text->im_context = g_value_get_object (value);
 		if (text->im_context)
 			g_object_ref (text->im_context);
 
-		text->need_im_reset = FALSE;
+		text->need_im_reset = TRUE;
 		break;
 
 	case PROP_HANDLE_POPUP:
@@ -996,7 +1025,8 @@ e_text_set_property (GObject *object,
 	}
 
 	if (color_changed) {
-               GdkColormap *colormap = gtk_widget_get_colormap (GTK_WIDGET (item->canvas));
+               GdkColormap *colormap = gtk_widget_get_colormap (
+			GTK_WIDGET (item->canvas));
 
 	       text->color = color;
                gdk_rgb_find_color (colormap, &text->color);
@@ -1008,9 +1038,9 @@ e_text_set_property (GObject *object,
 	       needs_update = 1;
 	}
 
-	if ( needs_reflow )
+	if (needs_reflow)
 		e_canvas_item_request_reflow (item);
-	if ( needs_update )
+	if (needs_update)
 		gnome_canvas_item_request_update (item);
 }
 
@@ -1031,12 +1061,12 @@ e_text_get_property (GObject *object,
 		break;
 
 	case PROP_EVENT_PROCESSOR:
-		_get_tep(text);
+		_get_tep (text);
 		g_value_set_object (value, text->tep);
 		break;
 
 	case PROP_TEXT:
-		g_value_set_string (value, g_strdup (text->text));
+		g_value_set_string (value, text->text);
 		break;
 
 	case PROP_BOLD:
@@ -1108,7 +1138,7 @@ e_text_get_property (GObject *object,
 		break;
 
 	case PROP_ELLIPSIS:
-		g_value_set_string (value, g_strdup (text->ellipsis));
+		g_value_set_string (value, text->ellipsis);
 		break;
 
 	case PROP_LINE_WRAP:
@@ -1116,7 +1146,7 @@ e_text_get_property (GObject *object,
 		break;
 
 	case PROP_BREAK_CHARACTERS:
-		g_value_set_string (value, g_strdup (text->break_characters));
+		g_value_set_string (value, text->break_characters);
 		break;
 
 	case PROP_MAX_LINES:
@@ -1128,7 +1158,11 @@ e_text_get_property (GObject *object,
 		break;
 
 	case PROP_HEIGHT:
-		g_value_set_double (value, text->clip && text->clip_height != -1 ? text->clip_height : text->height / text->item.canvas->pixels_per_unit);
+		g_value_set_double (
+			value, text->clip &&
+			text->clip_height != -1 ?
+			text->clip_height : text->height /
+			text->item.canvas->pixels_per_unit);
 		break;
 
 	case PROP_DRAW_BORDERS:
@@ -1186,9 +1220,9 @@ e_text_reflow (GnomeCanvasItem *item, gint flags)
 		text->needs_calc_height = 1;
 	}
 
-	if ( text->needs_calc_height ) {
+	if (text->needs_calc_height) {
 		calc_height (text);
-		gnome_canvas_item_request_update(item);
+		gnome_canvas_item_request_update (item);
 		text->needs_calc_height = 0;
 		text->needs_recalc_bounds = 1;
 	}
@@ -1196,15 +1230,16 @@ e_text_reflow (GnomeCanvasItem *item, gint flags)
 
 /* Update handler for the text item */
 static void
-e_text_update (GnomeCanvasItem *item, double *affine, ArtSVP *clip_path, gint flags)
+e_text_update (GnomeCanvasItem *item, gdouble *affine, ArtSVP *clip_path, gint flags)
 {
 	EText *text;
-	double x1, y1, x2, y2;
+	gdouble x1, y1, x2, y2;
 
 	text = E_TEXT (item);
 
 	if (GNOME_CANVAS_ITEM_CLASS (e_text_parent_class)->update)
-		(* GNOME_CANVAS_ITEM_CLASS (e_text_parent_class)->update) (item, affine, clip_path, flags);
+		GNOME_CANVAS_ITEM_CLASS (e_text_parent_class)->update (
+			item, affine, clip_path, flags);
 
 	if ( text->needs_recalc_bounds
 	     || (flags & GNOME_CANVAS_UPDATE_AFFINE)) {
@@ -1229,7 +1264,7 @@ e_text_update (GnomeCanvasItem *item, double *affine, ArtSVP *clip_path, gint fl
 		}
 		text->needs_recalc_bounds = 0;
 	}
-	if ( text->needs_redraw ) {
+	if (text->needs_redraw) {
 		gnome_canvas_request_redraw (item->canvas, item->x1, item->y1, item->x2, item->y2);
 		text->needs_redraw = 0;
 	}
@@ -1240,6 +1275,7 @@ static void
 e_text_realize (GnomeCanvasItem *item)
 {
 	EText *text;
+	GdkWindow *bin_window;
 
 	text = E_TEXT (item);
 
@@ -1248,7 +1284,9 @@ e_text_realize (GnomeCanvasItem *item)
 
 	create_layout (text);
 
-	text->gc = gdk_gc_new (item->canvas->layout.bin_window);
+	bin_window = gtk_layout_get_bin_window (GTK_LAYOUT (item->canvas));
+	text->gc = gdk_gc_new (bin_window);
+
 /* FIXME: Color brokenness ... */
 #if 0
 	gdk_color_context_query_color (item->canvas->cc, &text->color);
@@ -1280,20 +1318,24 @@ e_text_unrealize (GnomeCanvasItem *item)
 }
 
 static void
-_get_tep(EText *text)
+_get_tep (EText *text)
 {
 	if (!text->tep) {
-		text->tep = e_text_event_processor_emacs_like_new();
+		text->tep = e_text_event_processor_emacs_like_new ();
 		text->tep_command_id =
-			g_signal_connect(text->tep,
+			g_signal_connect (text->tep,
 					 "command",
-					 G_CALLBACK(e_text_command),
+					 G_CALLBACK (e_text_command),
 					 text);
 	}
 }
 
 static void
-draw_pango_rectangle (GdkDrawable *drawable, GdkGC *gc, gint x1, gint y1, PangoRectangle rect)
+draw_pango_rectangle (GdkDrawable *drawable,
+                      GdkGC *gc,
+                      gint x1,
+                      gint y1,
+                      PangoRectangle rect)
 {
 	gint width = rect.width / PANGO_SCALE;
 	gint height = rect.height / PANGO_SCALE;
@@ -1380,13 +1422,19 @@ e_text_draw (GnomeCanvasItem *item, GdkDrawable *drawable,
 	GdkGC *main_gc;
 	GnomeCanvas *canvas;
 	GtkWidget *widget;
+	GdkWindow *window;
+	GtkStyle *style;
+	GtkStateType state;
 
 	text = E_TEXT (item);
-	canvas = GNOME_CANVAS_ITEM(text)->canvas;
-	widget = GTK_WIDGET(canvas);
+	canvas = GNOME_CANVAS_ITEM (text)->canvas;
+	widget = GTK_WIDGET (canvas);
+	state = gtk_widget_get_state (widget);
+	style = gtk_widget_get_style (widget);
+	window = gtk_widget_get_window (widget);
 
 	if (text->draw_background || text->draw_button) {
-		main_gc = widget->style->fg_gc[GTK_WIDGET_STATE (widget)];
+		main_gc = style->fg_gc[state];
 	} else {
 		main_gc = text->gc;
 	}
@@ -1395,16 +1443,16 @@ e_text_draw (GnomeCanvasItem *item, GdkDrawable *drawable,
 		gdouble thisx = item->x1 - x;
 		gdouble thisy = item->y1 - y;
 		gdouble thiswidth, thisheight;
-		widget = GTK_WIDGET(item->canvas);
+		widget = GTK_WIDGET (item->canvas);
 
-		g_object_get(text,
+		g_object_get (text,
 			     "width", &thiswidth,
 			     "height", &thisheight,
 			     NULL);
 
 		if (text->draw_borders) {
 
-			gtk_paint_shadow (widget->style, drawable,
+			gtk_paint_shadow (style, drawable,
 					  GTK_STATE_NORMAL, GTK_SHADOW_IN,
 					  NULL, widget, "entry",
 					  thisx, thisy, thiswidth, thisheight);
@@ -1412,47 +1460,56 @@ e_text_draw (GnomeCanvasItem *item, GdkDrawable *drawable,
 		}
 
 		if (text->draw_background) {
-			gtk_paint_flat_box (widget->style, drawable,
-					    GTK_WIDGET_STATE(widget), GTK_SHADOW_NONE,
+			gtk_paint_flat_box (style, drawable,
+					    state, GTK_SHADOW_NONE,
 					    NULL, widget, "entry_bg",
-					    thisx + widget->style->xthickness,
-					    thisy + widget->style->ythickness,
-					    thiswidth - widget->style->xthickness * 2,
-					    thisheight - widget->style->ythickness * 2);
+					    thisx + style->xthickness,
+					    thisy + style->ythickness,
+					    thiswidth - style->xthickness * 2,
+					    thisheight - style->ythickness * 2);
 		}
 	}
 	if (text->draw_button) {
+		GtkAllocation allocation;
 		gint xoff = item->x1 - x;
 		gint yoff = item->y1 - y;
 
 		widget = GTK_WIDGET (item->canvas);
+		gtk_widget_get_allocation (widget, &allocation);
 
-		xoff -= widget->allocation.x;
-		yoff -= widget->allocation.y;
+		xoff -= allocation.x;
+		yoff -= allocation.y;
 
-		widget = widget->parent;
+		widget = gtk_widget_get_parent (widget);
 
-		while (widget && !GTK_IS_BUTTON(widget)) {
-			if (!GTK_WIDGET_NO_WINDOW (widget)) {
+		while (widget && !GTK_IS_BUTTON (widget)) {
+			if (gtk_widget_get_has_window (widget)) {
 				widget = NULL;
 				break;
 			}
-			widget = widget->parent;
+			widget = gtk_widget_get_parent (widget);
 		}
 		if (widget) {
-			GtkButton *button = GTK_BUTTON (widget);
 			GtkShadowType shadow_type;
+			GtkAllocation allocation;
+			GtkReliefStyle relief;
+			guint border_width;
 			gint thisx, thisy, thisheight, thiswidth;
 			gint default_spacing;
 			GdkRectangle area;
+
 			area.x = 0;
 			area.y = 0;
 			area.width = width;
 			area.height = height;
 
+			gtk_widget_get_allocation (widget, &allocation);
+			relief = gtk_button_get_relief (GTK_BUTTON (widget));
+			border_width = gtk_container_get_border_width (GTK_CONTAINER (widget));
+
 #define DEFAULT_SPACING   7
 #if 0
-			default_spacing = gtk_style_get_prop_experimental (widget->style,
+			default_spacing = gtk_style_get_prop_experimental (style,
 									   "GtkButton::default_spacing",
 									   DEFAULT_SPACING);
 #endif
@@ -1460,56 +1517,57 @@ e_text_draw (GnomeCanvasItem *item, GdkDrawable *drawable,
 
 			thisx = 0;
 			thisy = 0;
-			thiswidth = widget->allocation.width - GTK_CONTAINER (widget)->border_width * 2;
-			thisheight = widget->allocation.height - GTK_CONTAINER (widget)->border_width * 2;
+			thiswidth = allocation.width - border_width * 2;
+			thisheight = allocation.height - border_width * 2;
 
-			if (GTK_WIDGET_HAS_DEFAULT (widget) &&
-			    GTK_BUTTON (widget)->relief == GTK_RELIEF_NORMAL)
+			if (gtk_widget_has_default (widget) &&
+			    relief == GTK_RELIEF_NORMAL)
 				{
-					gtk_paint_box (widget->style, drawable,
+					gtk_paint_box (style, drawable,
 						       GTK_STATE_NORMAL, GTK_SHADOW_IN,
 						       &area, widget, "buttondefault",
 						       thisx + xoff, thisy + yoff, thiswidth, thisheight);
 				}
 
-			if (GTK_WIDGET_CAN_DEFAULT (widget)) {
-				thisx += widget->style->xthickness;
-				thisy += widget->style->ythickness;
+			if (gtk_widget_get_can_default (widget)) {
+				thisx += style->xthickness;
+				thisy += style->ythickness;
 				thiswidth -= 2 * thisx + default_spacing;
 				thisheight -= 2 * thisy + default_spacing;
 				thisx += (1 + default_spacing) / 2;
 				thisy += (1 + default_spacing) / 2;
 			}
 
-			if (GTK_WIDGET_HAS_FOCUS (widget)) {
+			if (gtk_widget_has_focus (widget)) {
 				thisx += 1;
 				thisy += 1;
 				thiswidth -= 2;
 				thisheight -= 2;
 			}
 
-			if (GTK_WIDGET_STATE (widget) == GTK_STATE_ACTIVE)
+			if (state == GTK_STATE_ACTIVE)
 				shadow_type = GTK_SHADOW_IN;
 			else
 				shadow_type = GTK_SHADOW_OUT;
 
-			if ((button->relief != GTK_RELIEF_NONE) ||
-			    ((GTK_WIDGET_STATE(widget) != GTK_STATE_NORMAL) &&
-			     (GTK_WIDGET_STATE(widget) != GTK_STATE_INSENSITIVE)))
-			gtk_paint_box (widget->style, drawable,
-				       GTK_WIDGET_STATE (widget),
+			if ((relief != GTK_RELIEF_NONE) ||
+			    ((state != GTK_STATE_NORMAL) &&
+			     (state != GTK_STATE_INSENSITIVE)))
+			gtk_paint_box (style, drawable, state,
 				       shadow_type, &area, widget, "button",
-				       thisx + xoff, thisy + yoff, thiswidth, thisheight);
+				       thisx + xoff, thisy + yoff,
+				       thiswidth, thisheight);
 
-			if (GTK_WIDGET_HAS_FOCUS (widget)) {
+			if (gtk_widget_has_focus (widget)) {
 				thisx -= 1;
 				thisy -= 1;
 				thiswidth += 2;
 				thisheight += 2;
 
-				gtk_paint_focus (widget->style, widget->window, GTK_WIDGET_STATE (widget),
+				gtk_paint_focus (style, window, state,
 						 &area, widget, "button",
-						 thisx + xoff, thisy + yoff, thiswidth - 1, thisheight - 1);
+						 thisx + xoff, thisy + yoff,
+						 thiswidth - 1, thisheight - 1);
 			}
 		}
 	}
@@ -1568,15 +1626,15 @@ e_text_draw (GnomeCanvasItem *item, GdkDrawable *drawable,
 			end_index = MAX (text->selection_start, text->selection_end);
 
 			/* convert these into byte indices */
-			start_index = g_utf8_offset_to_pointer(text->text, start_index) - text->text;
-			end_index = g_utf8_offset_to_pointer(text->text, end_index) - text->text;
+			start_index = g_utf8_offset_to_pointer (text->text, start_index) - text->text;
+			end_index = g_utf8_offset_to_pointer (text->text, end_index) - text->text;
 
 			if (text->has_selection) {
-				selection_gc = widget->style->base_gc [GTK_STATE_SELECTED];
-				text_gc = widget->style->text_gc[GTK_STATE_SELECTED];
+				selection_gc = style->base_gc[GTK_STATE_SELECTED];
+				text_gc = style->text_gc[GTK_STATE_SELECTED];
 			} else {
-				selection_gc = widget->style->base_gc [GTK_STATE_ACTIVE];
-				text_gc = widget->style->text_gc[GTK_STATE_ACTIVE];
+				selection_gc = style->base_gc[GTK_STATE_ACTIVE];
+				text_gc = style->text_gc[GTK_STATE_ACTIVE];
 			}
 
 			gdk_gc_set_clip_rectangle (selection_gc, clip_rect);
@@ -1646,7 +1704,10 @@ e_text_draw (GnomeCanvasItem *item, GdkDrawable *drawable,
 				PangoRectangle strong_pos, weak_pos;
 				gchar *offs = g_utf8_offset_to_pointer (text->text, text->selection_start);
 
-				pango_layout_get_cursor_pos (text->layout, offs - text->text + text->preedit_len, &strong_pos, &weak_pos);
+				pango_layout_get_cursor_pos (
+					text->layout, offs - text->text +
+					text->preedit_len, &strong_pos,
+					&weak_pos);
 				draw_pango_rectangle (drawable, main_gc, xpos, ypos, strong_pos);
 				if (strong_pos.x != weak_pos.x ||
 				    strong_pos.y != weak_pos.y ||
@@ -1664,12 +1725,12 @@ e_text_draw (GnomeCanvasItem *item, GdkDrawable *drawable,
 
 /* Point handler for the text item */
 static double
-e_text_point (GnomeCanvasItem *item, double x, double y,
+e_text_point (GnomeCanvasItem *item, gdouble x, gdouble y,
 	      gint cx, gint cy, GnomeCanvasItem **actual_item)
 {
 	EText *text;
-	double clip_width;
-	double clip_height;
+	gdouble clip_width;
+	gdouble clip_height;
 
 	text = E_TEXT (item);
 
@@ -1686,7 +1747,7 @@ e_text_point (GnomeCanvasItem *item, double x, double y,
 	else
 		clip_width = text->clip_width;
 
-	if ( text->clip_height < 0 )
+	if (text->clip_height < 0)
 		clip_height = text->height;
 	else
 		clip_height = text->clip_height;
@@ -1714,10 +1775,14 @@ e_text_point (GnomeCanvasItem *item, double x, double y,
 
 /* Bounds handler for the text item */
 static void
-e_text_bounds (GnomeCanvasItem *item, double *x1, double *y1, double *x2, double *y2)
+e_text_bounds (GnomeCanvasItem *item,
+               gdouble *x1,
+               gdouble *y1,
+               gdouble *x2,
+               gdouble *y2)
 {
 	EText *text;
-	double width, height;
+	gdouble width, height;
 
 	text = E_TEXT (item);
 
@@ -1730,7 +1795,7 @@ e_text_bounds (GnomeCanvasItem *item, double *x1, double *y1, double *x2, double
 	if (text->clip) {
 		if (text->clip_width >= 0)
 			width = text->clip_width;
-		if ( text->clip_height >= 0 )
+		if (text->clip_height >= 0)
 			height = text->clip_height;
 	}
 
@@ -1801,7 +1866,9 @@ get_position_from_xy (EText *text, gint x, gint y)
 	x -= text->cx;
 	y -= text->cy;
 
-	pango_layout_xy_to_index (text->layout, x * PANGO_SCALE, y * PANGO_SCALE, &index, &trailing);
+	pango_layout_xy_to_index (
+		text->layout, x * PANGO_SCALE,
+		y * PANGO_SCALE, &index, &trailing);
 
 	return g_utf8_pointer_to_offset (text->text, text->text + index + trailing);
 }
@@ -1811,12 +1878,12 @@ get_position_from_xy (EText *text, gint x, gint y)
 static gboolean
 _blink_scroll_timeout (gpointer data)
 {
-	EText *text = E_TEXT(data);
+	EText *text = E_TEXT (data);
 	gulong current_time;
 	gboolean scroll = FALSE;
 	gboolean redraw = FALSE;
 
-	g_timer_elapsed(text->timer, &current_time);
+	g_timer_elapsed (text->timer, &current_time);
 
 	if (text->scroll_start + SCROLL_WAIT_TIME > 1000000) {
 		if (current_time > text->scroll_start - (1000000 - SCROLL_WAIT_TIME) &&
@@ -1865,8 +1932,8 @@ _blink_scroll_timeout (gpointer data)
 			e_tep_event.type = GDK_MOTION_NOTIFY;
 			e_tep_event.motion.state = text->last_state;
 			e_tep_event.motion.time = 0;
-			e_tep_event.motion.position = get_position_from_xy(text, text->lastx, text->lasty);
-			_get_tep(text);
+			e_tep_event.motion.position = get_position_from_xy (text, text->lastx, text->lasty);
+			_get_tep (text);
 			e_text_event_processor_handle_event (text->tep,
 							     &e_tep_event);
 			text->scroll_start = current_time;
@@ -1885,252 +1952,9 @@ _blink_scroll_timeout (gpointer data)
 	}
 	if (redraw) {
 		text->needs_redraw = 1;
-		gnome_canvas_item_request_update (GNOME_CANVAS_ITEM(text));
+		gnome_canvas_item_request_update (GNOME_CANVAS_ITEM (text));
 	}
 	return TRUE;
-}
-
-static gboolean
-tooltip_event(GtkWidget *tooltip, GdkEvent *event, EText *text)
-{
-	gint ret_val = FALSE;
-
-	if (!text->model)
-		return FALSE;
-
-	switch (event->type) {
-	case GDK_LEAVE_NOTIFY:
-		e_canvas_hide_tooltip (E_CANVAS(GNOME_CANVAS_ITEM(text)->canvas));
-		break;
-	case GDK_BUTTON_PRESS:
-	case GDK_BUTTON_RELEASE:
-		if (event->type == GDK_BUTTON_RELEASE) {
-			e_canvas_hide_tooltip (E_CANVAS(GNOME_CANVAS_ITEM(text)->canvas));
-		}
-		/* Forward events to the text item */
-		g_signal_emit_by_name (text, "event", event,
-				       &ret_val);
-		if (!ret_val)
-			gtk_propagate_event (GTK_WIDGET(GNOME_CANVAS_ITEM(text)->canvas), event);
-		ret_val = TRUE;
-	default:
-		break;
-	}
-	return ret_val;
-}
-
-static gboolean
-tooltip_ungrab (GtkWidget *tooltip, GdkEvent *event, EText *text)
-{
-	gdk_keyboard_ungrab(GDK_CURRENT_TIME);
-
-	e_canvas_hide_tooltip (E_CANVAS(GNOME_CANVAS_ITEM(text)->canvas));
-
-	gtk_propagate_event (GTK_WIDGET(GNOME_CANVAS_ITEM(text)->canvas), event);
-
-	return TRUE;
-}
-
-static void
-tooltip_destroy(gpointer data, GObject *where_object_was)
-{
-	EText *text = data;
-	text->tooltip_owner = FALSE;
-	g_object_unref (text);
-}
-
-static gboolean
-_do_tooltip (gpointer data)
-{
-/* FIXME: need to sort out tooltip stuff. */
-	EText *text = E_TEXT (data);
-	GtkWidget *canvas;
-	gint i;
-	gint max_width;
-	gboolean cut_off;
-	double i2c[6];
-	ArtPoint origin = {0, 0};
-	ArtPoint pixel_origin;
-	gint canvas_x, canvas_y;
-	GnomeCanvasItem *tooltip_text;
-	double tooltip_width;
-	double tooltip_height;
-	double tooltip_x;
-	double tooltip_y;
-#if 0
-	double x1, x2, y1, y2;
-#endif
-	GnomeCanvasItem *rect;
-	GtkWidget *tooltip_window;      /* GtkWindow for displaying the tooltip */
-
-	text->tooltip_count = 0;
-
-	if (E_CANVAS(GNOME_CANVAS_ITEM(text)->canvas)->tooltip_window || text->editing || !text->num_lines) {
-		text->tooltip_timeout = 0;
-		return FALSE;
-	}
-
-	cut_off = FALSE;
-	for ( i = 0; i < text->num_lines; i++ ) {
-		PangoLayoutLine *line = pango_layout_get_line (text->layout, i);
-		PangoRectangle pango_rect;
-
-		pango_layout_line_get_pixel_extents (line, &pango_rect, NULL);
-
-		if (pango_rect.width > text->clip_width) {
-			cut_off = TRUE;
-			break;
-		}
-	}
-	if ( ! cut_off ) {
-		text->tooltip_timeout = 0;
-		return FALSE;
-	}
-
-	gnome_canvas_item_i2c_affine(GNOME_CANVAS_ITEM(text), i2c);
-	art_affine_point (&pixel_origin, &origin, i2c);
-
-	gdk_window_get_origin (GTK_WIDGET(GNOME_CANVAS_ITEM(text)->canvas)->window, &canvas_x, &canvas_y);
-	pixel_origin.x += canvas_x;
-	pixel_origin.y += canvas_y;
-	pixel_origin.x -= (gint) gtk_layout_get_hadjustment(GTK_LAYOUT(GNOME_CANVAS_ITEM(text)->canvas))->value;
-	pixel_origin.y -= (gint) gtk_layout_get_vadjustment(GTK_LAYOUT(GNOME_CANVAS_ITEM(text)->canvas))->value;
-
-	tooltip_window = gtk_window_new (GTK_WINDOW_POPUP);
-	gtk_container_set_border_width (GTK_CONTAINER (tooltip_window), 1);
-	gtk_window_set_type_hint (GTK_WINDOW (tooltip_window), GDK_WINDOW_TYPE_HINT_TOOLTIP);
-
-	canvas = e_canvas_new ();
-
-	gtk_container_add (GTK_CONTAINER (tooltip_window), canvas);
-
-	/* Get the longest line length */
-	pango_layout_get_size (text->layout, &max_width, NULL);
-
-	rect = gnome_canvas_item_new (gnome_canvas_root (GNOME_CANVAS (canvas)),
-				      gnome_canvas_rect_get_type (),
-				      "x1", (double) 0,
-				      "y1", (double) 0,
-				      "x2", (double) max_width + 4,
-				      "y2", (double) text->height + 4,
-				      NULL);
-
-	tooltip_text = gnome_canvas_item_new (gnome_canvas_root (GNOME_CANVAS (canvas)),
-					      e_text_get_type (),
-					      "anchor", GTK_ANCHOR_NW,
-					      "bold", text->bold,
-					      "strikeout", text->strikeout,
-					      "text", text->text,
-					      "editable", FALSE,
-					      "clip_width", text->max_lines != 1 ? text->clip_width : max_width,
-					      "clip_height", text->max_lines != 1 ? -1 : (double)text->height,
-					      "clip", TRUE,
-					      "line_wrap", text->line_wrap,
-					      "justification", text->justification,
-					      NULL);
-
-	if (text->draw_borders)
-		e_canvas_item_move_absolute(tooltip_text, 1 + BORDER_INDENT, 1 + BORDER_INDENT);
-	else
-		e_canvas_item_move_absolute(tooltip_text, 1, 1);
-
-	create_layout (E_TEXT (tooltip_text));
-
-	split_into_lines (E_TEXT(tooltip_text));
-	calc_height (E_TEXT(tooltip_text));
-
-	gnome_canvas_item_set (tooltip_text,
-			       "clip_height", (double) E_TEXT(tooltip_text)->height,
-			       "clip_width", (double) E_TEXT(tooltip_text)->width,
-			       NULL);
-
-	tooltip_width = E_TEXT(tooltip_text)->width;
-	tooltip_height = E_TEXT(tooltip_text)->height;
-	tooltip_x = 0;
-	tooltip_y = 0;
-	switch (E_TEXT(tooltip_text)->justification) {
-	case GTK_JUSTIFY_CENTER:
-		tooltip_x = - tooltip_width / 2;
-		break;
-	case GTK_JUSTIFY_RIGHT:
-		tooltip_x = tooltip_width / 2;
-		break;
-	case GTK_JUSTIFY_FILL:
-	case GTK_JUSTIFY_LEFT:
-		tooltip_x = 0;
-		break;
-	}
-	switch (text->anchor) {
-	case GTK_ANCHOR_NW:
-	case GTK_ANCHOR_N:
-	case GTK_ANCHOR_NE:
-		break;
-
-	case GTK_ANCHOR_W:
-	case GTK_ANCHOR_CENTER:
-	case GTK_ANCHOR_E:
-		tooltip_y -= tooltip_height / 2.0;
-		break;
-
-	case GTK_ANCHOR_SW:
-	case GTK_ANCHOR_S:
-	case GTK_ANCHOR_SE:
-		tooltip_y -= tooltip_height;
-		break;
-	}
-	switch (E_TEXT(tooltip_text)->anchor) {
-	case GTK_ANCHOR_NW:
-	case GTK_ANCHOR_W:
-	case GTK_ANCHOR_SW:
-		break;
-
-	case GTK_ANCHOR_N:
-	case GTK_ANCHOR_CENTER:
-	case GTK_ANCHOR_S:
-		tooltip_x -= tooltip_width / 2.0;
-		break;
-
-	case GTK_ANCHOR_NE:
-	case GTK_ANCHOR_E:
-	case GTK_ANCHOR_SE:
-		tooltip_x -= tooltip_width;
-		break;
-	}
-
-	gnome_canvas_item_set(rect,
-			      "x2", (double) tooltip_width + 4 + (text->draw_borders ? BORDER_INDENT * 2 : 0),
-			      "y2", (double) tooltip_height + 4 + (text->draw_borders ? BORDER_INDENT * 2 : 0),
-			      NULL);
-
-	gtk_widget_show (canvas);
-	gtk_widget_realize (tooltip_window);
-
-	gtk_widget_set_size_request (tooltip_window,
-				     tooltip_width + 4 + (text->draw_borders ? BORDER_INDENT * 2 : 0),
-				     tooltip_height + 4 + (text->draw_borders ? BORDER_INDENT * 2 : 0));
-	gnome_canvas_set_scroll_region (GNOME_CANVAS(canvas), 0.0, 0.0,
-					tooltip_width + (text->draw_borders ? BORDER_INDENT * 2 : 0),
-					(double)tooltip_height + (text->draw_borders ? BORDER_INDENT * 2 : 0));
-	g_signal_connect (tooltip_window, "event",
-			  G_CALLBACK(tooltip_event), text);
-
-	g_object_weak_ref (G_OBJECT (tooltip_window),
-			   tooltip_destroy, text);
-	g_object_ref (text);
-
-	e_canvas_popup_tooltip (E_CANVAS(GNOME_CANVAS_ITEM(text)->canvas),
-				tooltip_window,
-				pixel_origin.x - 2 + tooltip_x,
-				pixel_origin.y - 2 + tooltip_y);
-	gdk_keyboard_grab (tooltip_window->window, FALSE, GDK_CURRENT_TIME);
-
-	g_signal_connect (tooltip_window, "key-press-event", G_CALLBACK (tooltip_ungrab), text);
-
-	text->tooltip_owner = TRUE;
-
-	text->tooltip_timeout = 0;
-
-	return FALSE;
 }
 
 static void
@@ -2139,13 +1963,20 @@ start_editing (EText *text)
 	if (text->editing)
 		return;
 
+	e_text_reset_im_context (text);
+
 	g_free (text->revert);
 	text->revert = g_strdup (text->text);
 
 	text->editing = TRUE;
 	if (text->pointer_in) {
+		GdkWindow *window;
+
+		window = gtk_widget_get_window (
+			GTK_WIDGET (GNOME_CANVAS_ITEM (text)->canvas));
+
 		if (text->default_cursor_shown && (!text->draw_borders)) {
-			gdk_window_set_cursor (GTK_WIDGET (GNOME_CANVAS_ITEM (text)->canvas)->window, text->i_cursor);
+			gdk_window_set_cursor (window, text->i_cursor);
 			text->default_cursor_shown = FALSE;
 		}
 	}
@@ -2153,10 +1984,10 @@ start_editing (EText *text)
 	text->xofs_edit = 0;
 	text->yofs_edit = 0;
 	if (text->timeout_id == 0)
-		text->timeout_id = g_timeout_add(10, _blink_scroll_timeout, text);
-	text->timer = g_timer_new();
-	g_timer_elapsed(text->timer, &(text->scroll_start));
-	g_timer_start(text->timer);
+		text->timeout_id = g_timeout_add (10, _blink_scroll_timeout, text);
+	text->timer = g_timer_new ();
+	g_timer_elapsed (text->timer, &(text->scroll_start));
+	g_timer_start (text->timer);
 }
 
 void
@@ -2169,22 +2000,30 @@ e_text_stop_editing (EText *text)
 	text->revert = NULL;
 
 	text->editing = FALSE;
-	if ( (!text->default_cursor_shown) && (!text->draw_borders) ) {
-		gdk_window_set_cursor (GTK_WIDGET (GNOME_CANVAS_ITEM (text)->canvas)->window, text->default_cursor);
+	if ((!text->default_cursor_shown) && (!text->draw_borders)) {
+		GdkWindow *window;
+
+		window = gtk_widget_get_window (
+			GTK_WIDGET (GNOME_CANVAS_ITEM (text)->canvas));
+		gdk_window_set_cursor (window, text->default_cursor);
 		text->default_cursor_shown = TRUE;
 	}
 	if (text->timer) {
-		g_timer_stop(text->timer);
-		g_timer_destroy(text->timer);
+		g_timer_stop (text->timer);
+		g_timer_destroy (text->timer);
 		text->timer = NULL;
 	}
+
+	text->need_im_reset = TRUE;
+	text->preedit_len = 0;
+	text->preedit_pos = 0;
 }
 
 void
 e_text_cancel_editing (EText *text)
 {
 	if (text->revert)
-		e_text_model_set_text(text->model, text->revert);
+		e_text_model_set_text (text->model, text->revert);
 	e_text_stop_editing (text);
 }
 
@@ -2198,15 +2037,15 @@ _click (gpointer data)
 static gint
 e_text_event (GnomeCanvasItem *item, GdkEvent *event)
 {
-	EText *text = E_TEXT(item);
+	EText *text = E_TEXT (item);
 	ETextEventProcessorEvent e_tep_event;
-
-	static EText *save_text = NULL;
-
+	GdkWindow *window;
 	gint return_val = 0;
 
 	if (!text->model)
 		return 0;
+
+	window = gtk_widget_get_window (GTK_WIDGET (item->canvas));
 
 	e_tep_event.type = event->type;
 	switch (event->type) {
@@ -2215,26 +2054,6 @@ e_text_event (GnomeCanvasItem *item, GdkEvent *event)
 			GdkEventFocus *focus_event;
 			focus_event = (GdkEventFocus *) event;
 			if (focus_event->in) {
-
-				/* Evil hack to disconnect the signal handlers for the previous Etext
-				 * which was not disconnected because of being in preedit mode.
-				 * In preedit mode the widget can go out of focus due to popups associated
-				 * with preedit.,but still the callbacks need to be connected.
-				 * Here when a new text widget comes into focus we can disconnect the
-				 * old one.Shouldn't hurt much, as in worst case, save_text which should
-				 * be disconnected will be overwritten and we will have signal
-				 * handlers connect to  multiple e-texts but with subsequent commit these
-				 * should go away.
-				 */
-
-				if (save_text && save_text->im_context) {
-					g_signal_handlers_disconnect_matched (save_text->im_context,
-									      G_SIGNAL_MATCH_DATA,
-                                                                             0, 0, NULL,
-                                                                             NULL, save_text);
-                                       save_text->im_context_signals_registered = FALSE;
-                                }
-
 				if (text->im_context) {
 					if (!text->im_context_signals_registered) {
 						g_signal_connect (text->im_context, "commit",
@@ -2247,38 +2066,32 @@ e_text_event (GnomeCanvasItem *item, GdkEvent *event)
 								  G_CALLBACK (e_text_delete_surrounding_cb), text);
 						text->im_context_signals_registered = TRUE;
 					}
+					gtk_im_context_focus_in (text->im_context);
 				}
+
 				start_editing (text);
 				text->show_cursor = FALSE; /* so we'll redraw and the cursor will be shown */
 			} else {
-				/* Incase we are not disconnecting the signals
-				 * for text, we are saving text for
-				 * disconnecting in the next focus_in.
-				 */
-				if (!text->preedit_len && text->im_context) {
-					g_signal_handlers_disconnect_matched (text->im_context,
-									      G_SIGNAL_MATCH_DATA,
-									      0, 0, NULL,
-									      NULL, text);
-					text->im_context_signals_registered = FALSE;
-				} else {
-					save_text = text;
+				if (text->im_context) {
+					gtk_im_context_focus_out (text->im_context);
+					disconnect_im_context (text);
+					text->need_im_reset = TRUE;
 				}
 
 				e_text_stop_editing (text);
 				if (text->timeout_id) {
-					g_source_remove(text->timeout_id);
+					g_source_remove (text->timeout_id);
 					text->timeout_id = 0;
 				}
 				if (text->show_cursor || text->draw_borders) {
 					text->show_cursor = FALSE;
 					text->needs_redraw = 1;
-					gnome_canvas_item_request_update (GNOME_CANVAS_ITEM(text));
+					gnome_canvas_item_request_update (GNOME_CANVAS_ITEM (text));
 				}
 			}
-			if ( text->line_wrap )
+			if (text->line_wrap)
 				text->needs_split_into_lines = 1;
-			e_canvas_item_request_reflow (GNOME_CANVAS_ITEM(text));
+			e_canvas_item_request_reflow (GNOME_CANVAS_ITEM (text));
 		}
 		return_val = 0;
 		break;
@@ -2303,20 +2116,12 @@ e_text_event (GnomeCanvasItem *item, GdkEvent *event)
 
 	case GDK_KEY_RELEASE:
 
-		if (text->tooltip_count > 0)
-			text->tooltip_count --;
-		if ( text->tooltip_count == 0 && text->clip) {
-			if ( text->tooltip_timeout ) {
-				g_source_remove (text->tooltip_timeout);
-				text->tooltip_timeout = 0;
-			}
-		}
-
 		if (text->editing) {
 			GdkEventKey key;
 			gint ret;
 
-			if (text->im_context && gtk_im_context_filter_keypress (text->im_context, (GdkEventKey*)event)) {
+			if (text->im_context &&
+				gtk_im_context_filter_keypress (text->im_context, (GdkEventKey*) event)) {
 				text->need_im_reset = TRUE;
 				return 1;
 			}
@@ -2331,14 +2136,16 @@ e_text_event (GnomeCanvasItem *item, GdkEvent *event)
 			e_tep_event.key.length = key.length;
 			e_tep_event.key.string = key.string;
 #else
-			e_tep_event.key.string = e_utf8_from_gtk_event_key (GTK_WIDGET (item->canvas), key.keyval, key.string);
+			e_tep_event.key.string = e_utf8_from_gtk_event_key (
+				GTK_WIDGET (item->canvas),
+				key.keyval, key.string);
 			if (e_tep_event.key.string != NULL) {
 				e_tep_event.key.length = strlen (e_tep_event.key.string);
 			} else {
 				e_tep_event.key.length = 0;
 			}
 #endif
-			_get_tep(text);
+			_get_tep (text);
 			ret = e_text_event_processor_handle_event (text->tep, &e_tep_event);
 
 			if (event->type == GDK_KEY_PRESS)
@@ -2353,11 +2160,6 @@ e_text_event (GnomeCanvasItem *item, GdkEvent *event)
 		break;
 	case GDK_BUTTON_PRESS: /* Fall Through */
 	case GDK_BUTTON_RELEASE:
-		if (text->tooltip_timeout) {
-			g_source_remove (text->tooltip_timeout);
-			text->tooltip_timeout = 0;
-		}
-		e_canvas_hide_tooltip (E_CANVAS(GNOME_CANVAS_ITEM(text)->canvas));
 #if 0
 		if ((!text->editing)
 		    && text->editable
@@ -2371,8 +2173,8 @@ e_text_event (GnomeCanvasItem *item, GdkEvent *event)
 			e_tep_event.button.time = button.time;
 			e_tep_event.button.state = button.state;
 			e_tep_event.button.button = button.button;
-			e_tep_event.button.position = get_position_from_xy(text, button.x, button.y);
-			_get_tep(text);
+			e_tep_event.button.position = get_position_from_xy (text, button.x, button.y);
+			_get_tep (text);
 			return_val = e_text_event_processor_handle_event (text->tep,
 									  &e_tep_event);
 			e_tep_event.type = GDK_BUTTON_RELEASE;
@@ -2422,8 +2224,8 @@ e_text_event (GnomeCanvasItem *item, GdkEvent *event)
 			e_tep_event.button.time = button.time;
 			e_tep_event.button.state = button.state;
 			e_tep_event.button.button = button.button;
-			e_tep_event.button.position = get_position_from_xy(text, button.x, button.y);
-			_get_tep(text);
+			e_tep_event.button.position = get_position_from_xy (text, button.x, button.y);
+			_get_tep (text);
 			return_val = e_text_event_processor_handle_event (text->tep,
 									  &e_tep_event);
 			if (event->button.button == 1) {
@@ -2442,8 +2244,8 @@ e_text_event (GnomeCanvasItem *item, GdkEvent *event)
 			GdkEventMotion motion = event->motion;
 			e_tep_event.motion.time = motion.time;
 			e_tep_event.motion.state = motion.state;
-			e_tep_event.motion.position = get_position_from_xy(text, motion.x, motion.y);
-			_get_tep(text);
+			e_tep_event.motion.position = get_position_from_xy (text, motion.x, motion.y);
+			_get_tep (text);
 			return_val = e_text_event_processor_handle_event (text->tep,
 								       &e_tep_event);
 			text->lastx = motion.x;
@@ -2452,36 +2254,19 @@ e_text_event (GnomeCanvasItem *item, GdkEvent *event)
 		}
 		break;
 	case GDK_ENTER_NOTIFY:
-		{
-				if ( text->tooltip_count == 0 && text->clip) {
-					if (!text->tooltip_timeout)
-						text->tooltip_timeout = g_timeout_add_seconds (2, _do_tooltip, text);
-				}
-				text->tooltip_count ++;
-		}
-
 		text->pointer_in = TRUE;
 		if (text->editing || text->draw_borders) {
-			if ( text->default_cursor_shown ) {
-				gdk_window_set_cursor(GTK_WIDGET(item->canvas)->window, text->i_cursor);
+			if (text->default_cursor_shown) {
+				gdk_window_set_cursor (window, text->i_cursor);
 				text->default_cursor_shown = FALSE;
 			}
 		}
 		break;
 	case GDK_LEAVE_NOTIFY:
-		if (text->tooltip_count > 0)
-			text->tooltip_count --;
-		if ( text->tooltip_count == 0 && text->clip) {
-			if ( text->tooltip_timeout ) {
-				g_source_remove (text->tooltip_timeout);
-				text->tooltip_timeout = 0;
-			}
-		}
-
 		text->pointer_in = FALSE;
 		if (text->editing || text->draw_borders) {
-			if ( ! text->default_cursor_shown ) {
-				gdk_window_set_cursor(GTK_WIDGET(item->canvas)->window, text->default_cursor);
+			if (!text->default_cursor_shown) {
+				gdk_window_set_cursor (window, text->default_cursor);
 				text->default_cursor_shown = TRUE;
 			}
 		}
@@ -2491,8 +2276,8 @@ e_text_event (GnomeCanvasItem *item, GdkEvent *event)
 	}
 	if (return_val)
 		return return_val;
-	if (GNOME_CANVAS_ITEM_CLASS(e_text_parent_class)->event)
-		return GNOME_CANVAS_ITEM_CLASS(e_text_parent_class)->event(item, event);
+	if (GNOME_CANVAS_ITEM_CLASS (e_text_parent_class)->event)
+		return GNOME_CANVAS_ITEM_CLASS (e_text_parent_class)->event (item, event);
 	else
 		return 0;
 }
@@ -2507,26 +2292,30 @@ e_text_copy_clipboard (EText *text)
 	selection_end_pos = MAX (text->selection_start, text->selection_end);
 
 	/* convert sel_start/sel_end to byte indices */
-	selection_start_pos = g_utf8_offset_to_pointer (text->text, selection_start_pos) - text->text;
-	selection_end_pos = g_utf8_offset_to_pointer (text->text, selection_end_pos) - text->text;
+	selection_start_pos = g_utf8_offset_to_pointer (
+		text->text, selection_start_pos) - text->text;
+	selection_end_pos = g_utf8_offset_to_pointer (
+		text->text, selection_end_pos) - text->text;
 
 	gtk_clipboard_set_text (
-				gtk_widget_get_clipboard (GTK_WIDGET (GNOME_CANVAS_ITEM (text)->canvas),
-							  GDK_SELECTION_CLIPBOARD),
-				text->text + selection_start_pos,
-				selection_end_pos - selection_start_pos);
+		gtk_widget_get_clipboard (
+		GTK_WIDGET (GNOME_CANVAS_ITEM (text)->canvas),
+		GDK_SELECTION_CLIPBOARD),
+		text->text + selection_start_pos,
+		selection_end_pos - selection_start_pos);
 }
 
 void
-e_text_delete_selection(EText *text)
+e_text_delete_selection (EText *text)
 {
 	gint sel_start, sel_end;
 
-	sel_start = MIN(text->selection_start, text->selection_end);
-	sel_end   = MAX(text->selection_start, text->selection_end);
+	sel_start = MIN (text->selection_start, text->selection_end);
+	sel_end   = MAX (text->selection_start, text->selection_end);
 
 	if (sel_start != sel_end)
-		e_text_model_delete(text->model, sel_start, sel_end - sel_start);
+		e_text_model_delete (text->model, sel_start, sel_end - sel_start);
+	text->need_im_reset = TRUE;
 }
 
 void
@@ -2545,7 +2334,7 @@ e_text_paste_clipboard (EText *text)
 	command.position = E_TEP_SELECTION;
 	command.string = "";
 	command.value = 0;
-	e_text_command(text->tep, &command, text);
+	e_text_command (text->tep, &command, text);
 }
 
 void
@@ -2557,7 +2346,7 @@ e_text_select_all (EText *text)
 	command.position = E_TEP_SELECT_ALL;
 	command.string = "";
 	command.value = 0;
-	e_text_command(text->tep, &command, text);
+	e_text_command (text->tep, &command, text);
 }
 
 static void
@@ -2569,8 +2358,8 @@ primary_get_cb (GtkClipboard     *clipboard,
 	EText *text = E_TEXT (data);
 	gint sel_start, sel_end;
 
-	sel_start = MIN(text->selection_start, text->selection_end);
-	sel_end   = MAX(text->selection_start, text->selection_end);
+	sel_start = MIN (text->selection_start, text->selection_end);
+	sel_end   = MAX (text->selection_start, text->selection_end);
 
 	/* convert sel_start/sel_end to byte indices */
 	sel_start = g_utf8_offset_to_pointer (text->text, sel_start) - text->text;
@@ -2589,7 +2378,8 @@ primary_clear_cb (GtkClipboard *clipboard,
 {
 #ifdef notyet
 	/* XXX */
-	gtk_editable_select_region (GTK_EDITABLE (entry), entry->current_pos, entry->current_pos);
+	gtk_editable_select_region (
+		GTK_EDITABLE (entry), entry->current_pos, entry->current_pos);
 #endif
 }
 
@@ -2605,7 +2395,9 @@ e_text_update_primary_selection (EText *text)
 	};
 	GtkClipboard *clipboard;
 
-	clipboard = gtk_widget_get_clipboard (GTK_WIDGET (GNOME_CANVAS_ITEM (text)->canvas), GDK_SELECTION_PRIMARY);
+	clipboard = gtk_widget_get_clipboard (
+		GTK_WIDGET (GNOME_CANVAS_ITEM (text)->canvas),
+		GDK_SELECTION_PRIMARY);
 
 	if (text->selection_start != text->selection_end) {
 		if (!gtk_clipboard_set_with_owner (clipboard, targets, G_N_ELEMENTS (targets),
@@ -2659,14 +2451,21 @@ popup_menu_detach (GtkWidget *attach_widget,
 }
 
 static void
-popup_menu_placement_cb (GtkMenu *menu, gint *x, gint *y, gboolean *push_in, gpointer user_data)
+popup_menu_placement_cb (GtkMenu *menu,
+                         gint *x,
+                         gint *y,
+                         gboolean *push_in,
+                         gpointer user_data)
 {
-	EText *text = E_TEXT(user_data);
+	EText *text = E_TEXT (user_data);
 	GnomeCanvasItem *item = &text->item;
 	GnomeCanvas *parent = item->canvas;
 
 	if (parent) {
-		gdk_window_get_origin (((GtkWidget*) parent)->window, x, y);
+		GdkWindow *window;
+
+		window = gtk_widget_get_window (GTK_WIDGET (parent));
+		gdk_window_get_origin (window, x, y);
 		*x += item->x1 + text->width / 2;
 		*y += item->y1 + text->height / 2;
 	}
@@ -2689,7 +2488,7 @@ popup_targets_received (GtkClipboard     *clipboard,
 	g_free (closure);
 
 	gtk_menu_attach_to_widget (GTK_MENU (popup_menu),
-				   GTK_WIDGET(GNOME_CANVAS_ITEM (text)->canvas),
+				   GTK_WIDGET (GNOME_CANVAS_ITEM (text)->canvas),
 				   popup_menu_detach);
 
 	/* cut menu item */
@@ -2698,7 +2497,9 @@ popup_targets_received (GtkClipboard     *clipboard,
 	gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menuitem);
 	g_signal_connect_swapped (menuitem, "activate",
 				  G_CALLBACK (e_text_cut_clipboard), text);
-	gtk_widget_set_sensitive (menuitem, text->editable && (text->selection_start != text->selection_end));
+	gtk_widget_set_sensitive (
+		menuitem, text->editable &&
+		(text->selection_start != text->selection_end));
 
 	/* copy menu item */
 	menuitem = gtk_image_menu_item_new_from_stock (GTK_STOCK_COPY, NULL);
@@ -2714,7 +2515,9 @@ popup_targets_received (GtkClipboard     *clipboard,
 	gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menuitem);
 	g_signal_connect_swapped (menuitem, "activate",
 				  G_CALLBACK (e_text_paste_clipboard), text);
-	gtk_widget_set_sensitive (menuitem, text->editable && gtk_selection_data_targets_include_text (data));
+	gtk_widget_set_sensitive (
+		menuitem, text->editable &&
+		gtk_selection_data_targets_include_text (data));
 
 	menuitem = gtk_menu_item_new_with_label (_("Select All"));
 	gtk_widget_show (menuitem);
@@ -2779,16 +2582,14 @@ e_text_do_popup (EText *text, GdkEventButton *button, gint position)
 					closure);
 }
 
-#if 0
 static void
 e_text_reset_im_context (EText *text)
 {
-	if (text->need_im_reset) {
-		text->need_im_reset = 0;
+	if (text->need_im_reset && text->im_context) {
+		text->need_im_reset = FALSE;
 		gtk_im_context_reset (text->im_context);
 	}
 }
-#endif
 
 /* fixme: */
 
@@ -2852,7 +2653,8 @@ find_offset_into_line (EText *text, gint offset_into_text, gchar **start_of_line
 }
 
 /* direction = TRUE (move forward), FALSE (move backward)
-   Any error shall return length(text->text) or 0 or text->selection_end (as deemed fit) */
+   Any error shall return length (text->text) or 0 or
+   text->selection_end (as deemed fit) */
 static gint
 _get_updated_position (EText *text, gboolean direction)
 {
@@ -2875,10 +2677,11 @@ _get_updated_position (EText *text, gboolean direction)
 		return 0;
 
 	/* check for validness of full text->text */
-	if (!g_utf8_validate(text->text, -1, NULL))
+	if (!g_utf8_validate (text->text, -1, NULL))
 		return text->selection_end;
 
-	/* get layout's PangoLogAttr to facilitate moving when moving across grapheme cluster as in indic langs */
+	/* get layout's PangoLogAttr to facilitate moving when
+	 * moving across grapheme cluster as in indic langs */
 	pango_layout_get_log_attrs (text->layout, &log_attrs, &n_attrs);
 
 	/* Fetch the current gchar index in the line & keep moving
@@ -2912,13 +2715,13 @@ _get_updated_position (EText *text, gboolean direction)
 	}
 
 	if (log_attrs)
-		g_free(log_attrs);
+		g_free (log_attrs);
 
 	return new_pos;
 }
 
 static gint
-_get_position(EText *text, ETextEventProcessorCommand *command)
+_get_position (EText *text, ETextEventProcessorCommand *command)
 {
 	gint length, obj_num;
 	gunichar unival;
@@ -2992,14 +2795,16 @@ _get_position(EText *text, ETextEventProcessorCommand *command)
 		if (text->selection_end >= length)
 			new_pos = length;
 		else
-			new_pos = _get_updated_position(text, TRUE);	/* get updated position to display cursor */
+			/* get updated position to display cursor */
+			new_pos = _get_updated_position (text, TRUE);
 
 		break;
 
 	case E_TEP_BACKWARD_CHARACTER:
 		new_pos = 0;
 		if (text->selection_end >= 1)
-			new_pos = _get_updated_position(text, FALSE);	/* get updated position to display cursor */
+			/* get updated position to display cursor */
+			new_pos = _get_updated_position (text, FALSE);
 
 		break;
 
@@ -3012,12 +2817,14 @@ _get_position(EText *text, ETextEventProcessorCommand *command)
 		if (text->selection_end >= 1) {
 			gint pos = text->selection_end;
 
-			p = g_utf8_find_prev_char (text->text, g_utf8_offset_to_pointer (text->text, text->selection_end));
-			pos --;
+			p = g_utf8_find_prev_char (
+				text->text, g_utf8_offset_to_pointer (
+				text->text, text->selection_end));
+			pos--;
 
 			if (p != text->text) {
 				p = g_utf8_find_prev_char (text->text, p);
-				pos --;
+				pos--;
 
 				while (p && p > text->text) {
 					unival = g_utf8_get_char (p);
@@ -3027,7 +2834,7 @@ _get_position(EText *text, ETextEventProcessorCommand *command)
 					}
 					else {
 						p = g_utf8_find_prev_char (text->text, p);
-						pos --;
+						pos--;
 					}
 				}
 			}
@@ -3057,7 +2864,7 @@ _get_position(EText *text, ETextEventProcessorCommand *command)
 			p = g_utf8_next_char (p);
 			while (offset_into_line > 0 && p && *p != '\n' && *p != '\0') {
 				p = g_utf8_next_char (p);
-				offset_into_line --;
+				offset_into_line--;
 			}
 		}
 
@@ -3081,7 +2888,7 @@ _get_position(EText *text, ETextEventProcessorCommand *command)
 				p = g_utf8_find_prev_char (text->text, p);
 				while (p > text->text) {
 					if (*p == '\n') {
-						p ++;
+						p++;
 						break;
 					}
 					p = g_utf8_find_prev_char (text->text, p);
@@ -3095,7 +2902,7 @@ _get_position(EText *text, ETextEventProcessorCommand *command)
 
 		while (offset_into_line > 0 && p && *p != '\n' && *p != '\0') {
 			p = g_utf8_next_char (p);
-			offset_into_line --;
+			offset_into_line--;
 		}
 
 		/* at this point, p points to the new location,
@@ -3138,7 +2945,9 @@ _get_position(EText *text, ETextEventProcessorCommand *command)
 		else
 			text->selection_start = g_utf8_pointer_to_offset (text->text, p);
 
-		text->selection_start = e_text_model_validate_position (text->model, text->selection_start);
+		text->selection_start =
+			e_text_model_validate_position (
+			text->model, text->selection_start);
 
 		length = g_utf8_strlen (text->text, -1);
 		if (text->selection_end >= length) {
@@ -3185,7 +2994,7 @@ _get_position(EText *text, ETextEventProcessorCommand *command)
 }
 
 static void
-e_text_insert(EText *text, const gchar *string)
+e_text_insert (EText *text, const gchar *string)
 {
 	gint len = strlen (string);
 
@@ -3197,7 +3006,7 @@ e_text_insert(EText *text, const gchar *string)
 			gchar *new_string = g_malloc (len + 1);
 			gchar *j = new_string;
 
-			for (i = string; *i; i = g_utf8_next_char(i)) {
+			for (i = string; *i; i = g_utf8_next_char (i)) {
 				if (*i != '\n') {
 					gunichar c;
 					gint charlen;
@@ -3209,12 +3018,12 @@ e_text_insert(EText *text, const gchar *string)
 				}
 			}
 			*j = 0;
-			e_text_model_insert_length(text->model, text->selection_start, new_string, utf8len);
+			e_text_model_insert_length (text->model, text->selection_start, new_string, utf8len);
 			g_free (new_string);
 		}
 		else {
 			utf8len = g_utf8_strlen (string, -1);
-			e_text_model_insert_length(text->model, text->selection_start, string, utf8len);
+			e_text_model_insert_length (text->model, text->selection_start, string, utf8len);
 		}
 	}
 }
@@ -3268,40 +3077,47 @@ capitalize (EText *text, gint start, gint end, ETextEventProcessorCaps type)
 }
 
 static void
-e_text_command(ETextEventProcessor *tep, ETextEventProcessorCommand *command, gpointer data)
+e_text_command (ETextEventProcessor *tep,
+                ETextEventProcessorCommand *command,
+                gpointer data)
 {
-	EText *text = E_TEXT(data);
+	EText *text = E_TEXT (data);
 	gboolean scroll = TRUE;
 	gboolean use_start = TRUE;
 
 	switch (command->action) {
 	case E_TEP_MOVE:
-		text->selection_start = _get_position(text, command);
+		text->selection_start = _get_position (text, command);
 		text->selection_end = text->selection_start;
 		if (text->timer) {
-			g_timer_reset(text->timer);
+			g_timer_reset (text->timer);
 		}
 
+		text->need_im_reset = TRUE;
 		use_start = TRUE;
 		break;
 	case E_TEP_SELECT:
-		text->selection_start = e_text_model_validate_position (text->model, text->selection_start); /* paranoia */
-		text->selection_end = _get_position(text, command);
+		text->selection_start =
+			e_text_model_validate_position (
+			text->model, text->selection_start); /* paranoia */
+		text->selection_end = _get_position (text, command);
 
 		e_text_update_primary_selection (text);
 
+		text->need_im_reset = TRUE;
 		use_start = FALSE;
 
 		break;
 	case E_TEP_DELETE:
 		if (text->selection_end == text->selection_start) {
-			text->selection_end = _get_position(text, command);
+			text->selection_end = _get_position (text, command);
 		}
-		e_text_delete_selection(text);
+		e_text_delete_selection (text);
 		if (text->timer) {
-			g_timer_reset(text->timer);
+			g_timer_reset (text->timer);
 		}
 
+		text->need_im_reset = TRUE;
 		use_start = FALSE;
 
 		break;
@@ -3309,27 +3125,29 @@ e_text_command(ETextEventProcessor *tep, ETextEventProcessorCommand *command, gp
 	case E_TEP_INSERT:
 		if (g_utf8_validate (command->string, command->value, NULL)) {
 			if (text->selection_end != text->selection_start) {
-				e_text_delete_selection(text);
+				e_text_delete_selection (text);
 			}
-			e_text_insert(text, command->string);
+			e_text_insert (text, command->string);
 			if (text->timer) {
-				g_timer_reset(text->timer);
+				g_timer_reset (text->timer);
 			}
+			text->need_im_reset = TRUE;
 		}
 		break;
 	case E_TEP_COPY:
 		e_text_copy_clipboard (text);
 
 		if (text->timer) {
-			g_timer_reset(text->timer);
+			g_timer_reset (text->timer);
 		}
 		scroll = FALSE;
 		break;
 	case E_TEP_PASTE:
 		e_text_paste (text, GDK_NONE);
 		if (text->timer) {
-			g_timer_reset(text->timer);
+			g_timer_reset (text->timer);
 		}
+		text->need_im_reset = TRUE;
 		break;
 	case E_TEP_GET_SELECTION:
 		e_text_paste (text, GDK_SELECTION_PRIMARY);
@@ -3337,15 +3155,15 @@ e_text_command(ETextEventProcessor *tep, ETextEventProcessorCommand *command, gp
 	case E_TEP_ACTIVATE:
 		g_signal_emit (text, e_text_signals[E_TEXT_ACTIVATE], 0);
 		if (text->timer) {
-			g_timer_reset(text->timer);
+			g_timer_reset (text->timer);
 		}
 		break;
 	case E_TEP_SET_SELECT_BY_WORD:
 		text->select_by_word = command->value;
 		break;
 	case E_TEP_GRAB:
-		e_canvas_item_grab (E_CANVAS (GNOME_CANVAS_ITEM(text)->canvas),
-				    GNOME_CANVAS_ITEM(text),
+		e_canvas_item_grab (E_CANVAS (GNOME_CANVAS_ITEM (text)->canvas),
+				    GNOME_CANVAS_ITEM (text),
 				    GDK_BUTTON_RELEASE_MASK | GDK_POINTER_MOTION_MASK,
 				    text->i_cursor,
 				    command->time,
@@ -3354,24 +3172,33 @@ e_text_command(ETextEventProcessor *tep, ETextEventProcessorCommand *command, gp
 		scroll = FALSE;
 		break;
 	case E_TEP_UNGRAB:
-		e_canvas_item_ungrab (E_CANVAS (GNOME_CANVAS_ITEM(text)->canvas),
-				      GNOME_CANVAS_ITEM(text),
+		e_canvas_item_ungrab (E_CANVAS (GNOME_CANVAS_ITEM (text)->canvas),
+				      GNOME_CANVAS_ITEM (text),
 				      command->time);
 		scroll = FALSE;
 		break;
 	case E_TEP_CAPS:
 		if (text->selection_start == text->selection_end) {
-			capitalize (text, text->selection_start, next_word (text, text->selection_start), command->value);
+			capitalize (
+				text, text->selection_start,
+				next_word (text, text->selection_start),
+				command->value);
 		} else {
-			gint selection_start = MIN (text->selection_start, text->selection_end);
-			gint selection_end = MAX (text->selection_start, text->selection_end);
-			capitalize (text, selection_start, selection_end, command->value);
+			gint selection_start = MIN (
+				text->selection_start, text->selection_end);
+			gint selection_end = MAX (
+				text->selection_start, text->selection_end);
+			capitalize (
+				text, selection_start,
+				selection_end, command->value);
 		}
 		break;
 	case E_TEP_NOP:
 		scroll = FALSE;
 		break;
 	}
+
+	e_text_reset_im_context (text);
 
 	/* it's possible to get here without ever having been realized
 	   by our canvas (if the e-text started completely obscured.)
@@ -3393,12 +3220,14 @@ e_text_command(ETextEventProcessor *tep, ETextEventProcessorCommand *command, gp
 		selection_index = use_start ? text->selection_start : text->selection_end;
 
 		/* convert to a byte index */
-		selection_index = g_utf8_offset_to_pointer (text->text, selection_index) - text->text;
+		selection_index = g_utf8_offset_to_pointer (
+			text->text, selection_index) - text->text;
 
 		do {
 			PangoLayoutLine *line = pango_layout_iter_get_line (iter);
 
-			if (selection_index >= line->start_index && selection_index <= line->start_index + line->length) {
+			if (selection_index >= line->start_index &&
+				selection_index <= line->start_index + line->length) {
 				/* found the line with the start of the selection */
 				cur_line = line;
 				break;
@@ -3408,11 +3237,12 @@ e_text_command(ETextEventProcessor *tep, ETextEventProcessorCommand *command, gp
 
 		if (cur_line) {
 			gint xpos, ypos;
-			double clip_width, clip_height;
+			gdouble clip_width, clip_height;
 			/* gboolean trailing = FALSE; */
 			PangoRectangle pango_pos;
 
-			if (selection_index > 0 && selection_index == cur_line->start_index + cur_line->length) {
+			if (selection_index > 0 && selection_index ==
+				cur_line->start_index + cur_line->length) {
 				selection_index--;
 				/* trailing = TRUE; */
 			}
@@ -3451,7 +3281,7 @@ e_text_command(ETextEventProcessor *tep, ETextEventProcessorCommand *command, gp
 				ypos = pango_pos.y + pango_pos.height;
 			}
 
-			if ( text->clip_height < 0 )
+			if (text->clip_height < 0)
 				clip_height = text->height;
 			else
 				clip_height = text->clip_height;
@@ -3472,7 +3302,7 @@ e_text_command(ETextEventProcessor *tep, ETextEventProcessorCommand *command, gp
 	}
 
 	text->needs_redraw = 1;
-	gnome_canvas_item_request_update (GNOME_CANVAS_ITEM(text));
+	gnome_canvas_item_request_update (GNOME_CANVAS_ITEM (text));
 }
 
 /* Class initialization function for the text item */
@@ -3538,241 +3368,239 @@ e_text_class_init (ETextClass *klass)
 
 	g_object_class_install_property (gobject_class, PROP_MODEL,
 					 g_param_spec_object ("model",
-							      _( "Model" ),
-							      _( "Model" ),
+							      "Model",
+							      "Model",
 							      E_TYPE_TEXT_MODEL,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_EVENT_PROCESSOR,
 					 g_param_spec_object ("event_processor",
-							      _( "Event Processor" ),
-							      _( "Event Processor" ),
+							      "Event Processor",
+							      "Event Processor",
 							      E_TEXT_EVENT_PROCESSOR_TYPE,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_TEXT,
 					 g_param_spec_string ("text",
-							      _( "Text" ),
-							      _( "Text" ),
+							      "Text",
+							      "Text",
 							      NULL,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_BOLD,
 					 g_param_spec_boolean ("bold",
-							       _( "Bold" ),
-							       _( "Bold" ),
+							       "Bold",
+							       "Bold",
 							       FALSE,
 							       G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_STRIKEOUT,
 					 g_param_spec_boolean ("strikeout",
-							       _( "Strikeout" ),
-							       _( "Strikeout" ),
+							       "Strikeout",
+							       "Strikeout",
 							       FALSE,
 							       G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_ANCHOR,
 					 g_param_spec_enum ("anchor",
-							    _( "Anchor" ),
-							    _( "Anchor" ),
+							    "Anchor",
+							    "Anchor",
 							    GTK_TYPE_ANCHOR_TYPE, GTK_ANCHOR_CENTER,
 							    G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_JUSTIFICATION,
 					 g_param_spec_enum ("justification",
-							    _( "Justification" ),
-							    _( "Justification" ),
+							    "Justification",
+							    "Justification",
 							    GTK_TYPE_JUSTIFICATION, GTK_JUSTIFY_LEFT,
 							    G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_CLIP_WIDTH,
 					 g_param_spec_double ("clip_width",
-							      _( "Clip Width" ),
-							      _( "Clip Width" ),
+							      "Clip Width",
+							      "Clip Width",
 							      0.0, G_MAXDOUBLE, 0.0,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_CLIP_HEIGHT,
 					 g_param_spec_double ("clip_height",
-							      _( "Clip Height" ),
-							      _( "Clip Height" ),
+							      "Clip Height",
+							      "Clip Height",
 							      0.0, G_MAXDOUBLE, 0.0,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_CLIP,
 					 g_param_spec_boolean ("clip",
-							       _( "Clip" ),
-							       _( "Clip" ),
+							       "Clip",
+							       "Clip",
 							       FALSE,
 							       G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_FILL_CLIP_RECTANGLE,
 					 g_param_spec_boolean ("fill_clip_rectangle",
-							       _( "Fill clip rectangle" ),
-							       _( "Fill clip rectangle" ),
+							       "Fill clip rectangle",
+							       "Fill clip rectangle",
 							       FALSE,
 							       G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_X_OFFSET,
 					 g_param_spec_double ("x_offset",
-							      _( "X Offset" ),
-							      _( "X Offset" ),
+							      "X Offset",
+							      "X Offset",
 							      0.0, G_MAXDOUBLE, 0.0,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_Y_OFFSET,
 					 g_param_spec_double ("y_offset",
-							      _( "Y Offset" ),
-							      _( "Y Offset" ),
+							      "Y Offset",
+							      "Y Offset",
 							      0.0, G_MAXDOUBLE, 0.0,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_FILL_COLOR,
 					 g_param_spec_string ("fill_color",
-							      _( "Fill color" ),
-							      _( "Fill color" ),
+							      "Fill color",
+							      "Fill color",
 							      NULL,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_FILL_COLOR_GDK,
 					 g_param_spec_boxed ("fill_color_gdk",
-							     _( "GDK fill color" ),
-							     _( "GDK fill color" ),
+							     "GDK fill color",
+							     "GDK fill color",
 							     GDK_TYPE_COLOR,
 							     G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_FILL_COLOR_RGBA,
 					 g_param_spec_uint ("fill_color_rgba",
-							    _( "GDK fill color" ),
-							    _( "GDK fill color" ),
+							    "GDK fill color",
+							    "GDK fill color",
 							    0, G_MAXUINT, 0,
 							    G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_FILL_STIPPLE,
 					 g_param_spec_object ("fill_stipple",
-							      _( "Fill stipple" ),
-							      _( "Fill stipple" ),
+							      "Fill stipple",
+							      "Fill stipple",
 							      GDK_TYPE_DRAWABLE,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_TEXT_WIDTH,
 					 g_param_spec_double ("text_width",
-							      _( "Text width" ),
-							      _( "Text width" ),
+							      "Text width",
+							      "Text width",
 							      0.0, G_MAXDOUBLE, 0.0,
 							      G_PARAM_READABLE));
 
 	g_object_class_install_property (gobject_class, PROP_TEXT_HEIGHT,
 					 g_param_spec_double ("text_height",
-							      _( "Text height" ),
-							      _( "Text height" ),
+							      "Text height",
+							      "Text height",
 							      0.0, G_MAXDOUBLE, 0.0,
 							      G_PARAM_READABLE));
 
 	g_object_class_install_property (gobject_class, PROP_EDITABLE,
 					 g_param_spec_boolean ("editable",
-							       _( "Editable" ),
-							       _( "Editable" ),
+							       "Editable",
+							       "Editable",
 							       FALSE,
 							       G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_USE_ELLIPSIS,
 					 g_param_spec_boolean ("use_ellipsis",
-							       _( "Use ellipsis" ),
-							       _( "Use ellipsis" ),
+							       "Use ellipsis",
+							       "Use ellipsis",
 							       FALSE,
 							       G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_ELLIPSIS,
 					 g_param_spec_string ("ellipsis",
-							      _( "Ellipsis" ),
-							      _( "Ellipsis" ),
+							      "Ellipsis",
+							      "Ellipsis",
 							      NULL,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_LINE_WRAP,
 					 g_param_spec_boolean ("line_wrap",
-							       _( "Line wrap" ),
-							       _( "Line wrap" ),
+							       "Line wrap",
+							       "Line wrap",
 							       FALSE,
 							       G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_BREAK_CHARACTERS,
 					 g_param_spec_string ("break_characters",
-							      _( "Break characters" ),
-							      _( "Break characters" ),
+							      "Break characters",
+							      "Break characters",
 							      NULL,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_MAX_LINES,
 					 g_param_spec_int ("max_lines",
-							   _( "Max lines" ),
-							   _( "Max lines" ),
+							   "Max lines",
+							   "Max lines",
 							   0, G_MAXINT, 0,
 							   G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_WIDTH,
 					 g_param_spec_double ("width",
-							      _( "Width" ),
-							      _( "Width" ),
+							      "Width",
+							      "Width",
 							      0.0, G_MAXDOUBLE, 0.0,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_HEIGHT,
 					 g_param_spec_double ("height",
-							      _( "Height" ),
-							      _( "Height" ),
+							      "Height",
+							      "Height",
 							      0.0, G_MAXDOUBLE, 0.0,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_DRAW_BORDERS,
 					 g_param_spec_boolean ("draw_borders",
-							       _( "Draw borders" ),
-							       _( "Draw borders" ),
+							       "Draw borders",
+							       "Draw borders",
 							       FALSE,
 							       G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_ALLOW_NEWLINES,
 					 g_param_spec_boolean ("allow_newlines",
-							       _( "Allow newlines" ),
-							       _( "Allow newlines" ),
+							       "Allow newlines",
+							       "Allow newlines",
 							       FALSE,
 							       G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_DRAW_BACKGROUND,
 					 g_param_spec_boolean ("draw_background",
-							       _( "Draw background" ),
-							       _( "Draw background" ),
+							       "Draw background",
+							       "Draw background",
 							       FALSE,
 							       G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_DRAW_BUTTON,
 					 g_param_spec_boolean ("draw_button",
-							       _( "Draw button" ),
-							       _( "Draw button" ),
+							       "Draw button",
+							       "Draw button",
 							       FALSE,
 							       G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_CURSOR_POS,
 					 g_param_spec_int ("cursor_pos",
-							   _( "Cursor position" ),
-							   _( "Cursor position" ),
+							   "Cursor position",
+							   "Cursor position",
 							   0, G_MAXINT, 0,
 							   G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_IM_CONTEXT,
 					 g_param_spec_object ("im_context",
-							      /* Translators: Input Method Context */
-							      _( "IM Context" ),
-							      /* Translators: Input Method Context */
-							      _( "IM Context" ),
+							      "IM Context",
+							      "IM Context",
 							      GTK_TYPE_IM_CONTEXT,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (gobject_class, PROP_HANDLE_POPUP,
 					 g_param_spec_boolean ("handle_popup",
-							       _( "Handle Popup" ),
-							       _( "Handle Popup" ),
+							       "Handle Popup",
+							       "Handle Popup",
 							       FALSE,
 							       G_PARAM_READWRITE));
 
@@ -3846,9 +3674,6 @@ e_text_init (EText *text)
 	text->line_wrap               = FALSE;
 	text->break_characters        = NULL;
 	text->max_lines               = -1;
-	text->tooltip_timeout         = 0;
-	text->tooltip_count           = 0;
-	text->tooltip_owner           = FALSE;
 	text->dbl_timeout             = 0;
 	text->tpl_timeout             = 0;
 
@@ -3861,7 +3686,6 @@ e_text_init (EText *text)
 	text->allow_newlines          = TRUE;
 
 	text->last_type_request       = -1;
-	d(g_print ("Setting last_type_request to %d at line %d\n", text->last_type_request, __LINE__));
 	text->last_time_request       = 0;
 	text->queued_requests         = NULL;
 
@@ -3871,7 +3695,7 @@ e_text_init (EText *text)
 
 	text->handle_popup            = FALSE;
 
-	e_canvas_item_set_reflow_callback(GNOME_CANVAS_ITEM(text), e_text_reflow);
+	e_canvas_item_set_reflow_callback (GNOME_CANVAS_ITEM (text), e_text_reflow);
 }
 
 /* IM Context Callbacks */
@@ -3900,7 +3724,8 @@ e_text_preedit_changed_cb (GtkIMContext *context,
 
 	cursor_pos = CLAMP (cursor_pos, 0, g_utf8_strlen (preedit_string, -1));
 	etext->preedit_len = strlen (preedit_string);
-	etext->preedit_pos = g_utf8_offset_to_pointer (preedit_string, cursor_pos) - preedit_string;
+	etext->preedit_pos = g_utf8_offset_to_pointer (
+		preedit_string, cursor_pos) - preedit_string;
 	g_free (preedit_string);
 
 	g_signal_emit (etext, e_text_signals[E_TEXT_KEYPRESS], 0, 0, 0);
@@ -3910,10 +3735,10 @@ static gboolean
 e_text_retrieve_surrounding_cb (GtkIMContext *context,
 				EText        *text)
 {
-	gtk_im_context_set_surrounding (context,
-					text->text,
-					strlen (text->text),
-					g_utf8_offset_to_pointer (text->text, MIN (text->selection_start, text->selection_end)) - text->text);
+	gtk_im_context_set_surrounding (
+		context, text->text, strlen (text->text),
+		g_utf8_offset_to_pointer (text->text, MIN (
+		text->selection_start, text->selection_end)) - text->text);
 
 	return TRUE;
 }

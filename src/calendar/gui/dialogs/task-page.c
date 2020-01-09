@@ -32,17 +32,13 @@
 #include <string.h>
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
-#include <glade/glade.h>
 #include <gdk/gdkkeysyms.h>
 #include <libedataserverui/e-category-completion.h>
 #include <libedataserverui/e-source-combo-box.h>
 #include <misc/e-dateedit.h>
+#include "misc/e-buffer-tagger.h"
 #include <e-util/e-dialog-utils.h>
 #include "common/authentication.h"
-#include "e-util/e-popup.h"
-#include "e-util/e-dialog-widgets.h"
-#include "e-util/e-categories-config.h"
-#include "e-util/e-util-private.h"
 #include "../e-timezone-entry.h"
 #include "../calendar-config.h"
 #include "comp-editor.h"
@@ -50,10 +46,14 @@
 #include "e-send-options-utils.h"
 #include "task-page.h"
 
+#include "e-util/e-util.h"
+#include "e-util/e-dialog-widgets.h"
+#include "e-util/e-categories-config.h"
+#include "e-util/e-util-private.h"
+
 #include "../e-meeting-attendee.h"
 #include "../e-meeting-store.h"
 #include "../e-meeting-list-view.h"
-#include "../e-cal-popup.h"
 
 #define TASK_PAGE_GET_PRIVATE(obj) \
 	(G_TYPE_INSTANCE_GET_PRIVATE \
@@ -61,10 +61,9 @@
 
 /* Private part of the TaskPage structure */
 struct _TaskPagePrivate {
-	/* Glade XML data */
-	GladeXML *xml;
+	GtkBuilder *builder;
 
-	/* Widgets from the Glade file */
+	/* Widgets from the UI file */
 	GtkWidget *main;
 
 	EAccountList *accounts;
@@ -161,9 +160,9 @@ task_page_dispose (GObject *object)
 		priv->main = NULL;
 	}
 
-	if (priv->xml != NULL) {
-		g_object_unref (priv->xml);
-		priv->xml = NULL;
+	if (priv->builder != NULL) {
+		g_object_unref (priv->builder);
+		priv->builder = NULL;
 	}
 
 	if (priv->sod != NULL) {
@@ -265,6 +264,7 @@ clear_widgets (TaskPage *tpage)
 	/* Summary, description */
 	e_dialog_editable_set (priv->summary, NULL);
 	gtk_text_buffer_set_text (gtk_text_view_get_buffer (GTK_TEXT_VIEW (priv->description)), "", 0);
+	e_buffer_tagger_update_tags (GTK_TEXT_VIEW (priv->description));
 
 	/* Start, due times */
 	e_date_edit_set_time (E_DATE_EDIT (priv->start_date), 0);
@@ -309,6 +309,49 @@ task_page_set_view_rsvp (TaskPage *page, gboolean state)
 	e_meeting_list_view_column_set_visible (priv->list_view, E_MEETING_STORE_RSVP_COL, state);
 }
 
+static gboolean
+date_in_past (TaskPage *tpage, EDateEdit *date)
+{
+	struct icaltimetype tt = icaltime_null_time ();
+
+	if (!e_date_edit_get_date (date, &tt.year, &tt.month, &tt.day))
+		return FALSE;
+
+	if (e_date_edit_get_time_of_day (date, &tt.hour, &tt.minute))
+		tt.zone = e_timezone_entry_get_timezone (E_TIMEZONE_ENTRY (tpage->priv->timezone));
+	else
+		tt.is_date = TRUE;
+
+	return comp_editor_test_time_in_the_past (tt);
+}
+
+/* returns whether changed info text */
+static gboolean
+check_starts_in_the_past (TaskPage *tpage)
+{
+	TaskPagePrivate *priv;
+	gboolean start_in_past, due_in_past;
+
+	if ((comp_editor_get_flags (comp_editor_page_get_editor (COMP_EDITOR_PAGE (tpage))) & COMP_EDITOR_NEW_ITEM) == 0)
+		return FALSE;
+
+	priv = tpage->priv;
+	start_in_past = date_in_past (tpage, E_DATE_EDIT (priv->start_date));
+	due_in_past = date_in_past (tpage, E_DATE_EDIT (priv->due_date));
+
+	if (start_in_past || due_in_past) {
+		gchar *tmp = g_strconcat ("<b>", start_in_past ? _("Task's start date is in the past") : "",
+			start_in_past && due_in_past ? "\n" : "", due_in_past ? _("Task's due date is in the past") : "", "</b>",
+			priv->subscriber_info_text ? "\n" : "", priv->subscriber_info_text, NULL);
+		task_page_set_info_string (tpage, GTK_STOCK_DIALOG_WARNING, tmp);
+		g_free (tmp);
+	} else {
+		task_page_set_info_string (tpage, priv->subscriber_info_text ? GTK_STOCK_DIALOG_INFO : NULL, priv->subscriber_info_text);
+	}
+
+	return TRUE;
+}
+
 static void
 sensitize_widgets (TaskPage *tpage)
 {
@@ -340,7 +383,7 @@ sensitize_widgets (TaskPage *tpage)
 		gchar *tmp = g_strconcat ("<b>", _("Task cannot be fully edited, because you are not the organizer"), "</b>", NULL);
 		task_page_set_info_string (tpage, GTK_STOCK_DIALOG_INFO, tmp);
 		g_free (tmp);
-	} else {
+	} else if (!check_starts_in_the_past (tpage)) {
 		task_page_set_info_string (tpage, priv->subscriber_info_text ? GTK_STOCK_DIALOG_INFO : NULL, priv->subscriber_info_text);
 	}
 
@@ -364,6 +407,9 @@ sensitize_widgets (TaskPage *tpage)
 	gtk_widget_set_sensitive (priv->remove, (!read_only &&  sens));
 	gtk_widget_set_sensitive (priv->invite, (!read_only &&  sens));
 	gtk_widget_set_sensitive (GTK_WIDGET (priv->list_view), !read_only);
+
+	action_group = comp_editor_get_action_group (editor, "editable");
+	gtk_action_group_set_sensitive (action_group, !read_only);
 
 	action_group = comp_editor_get_action_group (editor, "individual");
 	gtk_action_group_set_sensitive (action_group, sensitize);
@@ -455,6 +501,27 @@ get_current_account (TaskPage *page)
 	return NULL;
 }
 
+static void
+organizer_changed_cb (GtkEntry *entry, TaskPage *tpage)
+{
+	EAccount *account;
+
+	g_return_if_fail (entry != NULL);
+	g_return_if_fail (GTK_IS_ENTRY (entry));
+	g_return_if_fail (tpage != NULL);
+	g_return_if_fail (IS_TASK_PAGE (tpage));
+
+	if (!tpage->priv->ia)
+		return;
+
+	account = get_current_account (tpage);
+	if (!account || !account->id)
+		return;
+
+	e_meeting_attendee_set_address (tpage->priv->ia, g_strdup_printf ("MAILTO:%s", account->id->address));
+	e_meeting_attendee_set_cn (tpage->priv->ia, g_strdup (account->id->name));
+}
+
 /* fill_widgets handler for the task page */
 static gboolean
 task_page_fill_widgets (CompEditorPage *page, ECalComponent *comp)
@@ -466,12 +533,14 @@ task_page_fill_widgets (CompEditorPage *page, ECalComponent *comp)
 	ECalComponentClassification cl;
 	CompEditor *editor;
 	CompEditorFlags flags;
+	GtkAction *action;
 	ECal *client;
 	GSList *l;
 	icalcomponent *icalcomp;
 	const gchar *categories, *uid;
 	icaltimezone *zone, *default_zone;
 	gchar *backend_addr = NULL;
+	gboolean active;
 
 	tpage = TASK_PAGE (page);
 	priv = tpage->priv;
@@ -514,6 +583,7 @@ task_page_fill_widgets (CompEditorPage *page, ECalComponent *comp)
 					  "", 0);
 	}
 	e_cal_component_free_text_list (l);
+	e_buffer_tagger_update_tags (GTK_TEXT_VIEW (priv->description));
 
 	default_zone = calendar_config_get_icaltimezone ();
 
@@ -554,7 +624,10 @@ task_page_fill_widgets (CompEditorPage *page, ECalComponent *comp)
 
 	e_timezone_entry_set_timezone (E_TIMEZONE_ENTRY (priv->timezone),
 				       zone ? zone : default_zone);
-	task_page_set_show_timezone (tpage, calendar_config_get_show_timezone());
+
+	action = comp_editor_get_action (editor, "view-time-zone");
+	active = gtk_toggle_action_get_active (GTK_TOGGLE_ACTION (action));
+	task_page_set_show_timezone (tpage, active);
 
 	if (!(flags & COMP_EDITOR_NEW_ITEM) && !zone) {
 		GtkAction *action;
@@ -654,6 +727,8 @@ task_page_fill_widgets (CompEditorPage *page, ECalComponent *comp)
 				else
 					string = g_strdup (strip);
 
+				g_signal_handlers_block_by_func (gtk_bin_get_child (GTK_BIN (priv->organizer)), organizer_changed_cb, tpage);
+
 				if (!priv->user_org) {
 					gtk_list_store_clear (GTK_LIST_STORE (gtk_combo_box_get_model (GTK_COMBO_BOX (priv->organizer))));
 					gtk_combo_box_append_text (GTK_COMBO_BOX (priv->organizer), string);
@@ -662,6 +737,8 @@ task_page_fill_widgets (CompEditorPage *page, ECalComponent *comp)
 				} else {
 					gtk_entry_set_text (GTK_ENTRY (gtk_bin_get_child (GTK_BIN (priv->organizer))), string);
 				}
+
+				g_signal_handlers_unblock_by_func (gtk_bin_get_child (GTK_BIN (priv->organizer)), organizer_changed_cb, tpage);
 
 				g_free (string);
 				priv->existing = TRUE;
@@ -859,7 +936,7 @@ task_page_fill_component (CompEditorPage *page, ECalComponent *comp)
 
 	/* send options */
 	if (priv->sendoptions_shown && priv->sod)
-		e_sendoptions_utils_fill_component (priv->sod, comp);
+		e_send_options_utils_fill_component (priv->sod, comp);
 
 	/* Categories */
 	cat = e_dialog_editable_get (priv->categories);
@@ -933,7 +1010,7 @@ task_page_fill_component (CompEditorPage *page, ECalComponent *comp)
 				ECalComponentAttendee *ca;
 
 				/* Remove the duplicate user from the component if present */
-				if (e_meeting_attendee_is_set_delto (ia)) {
+				if (e_meeting_attendee_is_set_delfrom (ia) || e_meeting_attendee_is_set_delto (ia)) {
 					for (l = attendee_list; l; l = l->next) {
 						ECalComponentAttendee *a = l->data;
 
@@ -1140,15 +1217,10 @@ remove_clicked_cb (GtkButton *btn, TaskPage *page)
 }
 
 static void
-invite_cb (GtkWidget *widget, gpointer data)
+invite_cb (GtkWidget *widget,
+           TaskPage *page)
 {
-	TaskPage *page;
-	TaskPagePrivate *priv;
-
-	page = TASK_PAGE (data);
-	priv = page->priv;
-
-	e_meeting_list_view_invite_others_dialog (priv->list_view);
+	e_meeting_list_view_invite_others_dialog (page->priv->list_view);
 }
 
 static void
@@ -1170,121 +1242,21 @@ attendee_added_cb (EMeetingListView *emlv,
 		return;
 	}
 
-	if (existing_attendee (ia, priv->comp))
-		e_meeting_store_remove_attendee (priv->model, ia);
-	else {
-		if (!e_cal_get_static_capability (client, CAL_STATIC_CAPABILITY_DELEGATE_TO_MANY)) {
-			const gchar *delegator_id = e_meeting_attendee_get_delfrom (ia);
-			EMeetingAttendee *delegator;
+	/* do not remove here, it did EMeetingListView already */
+	e_meeting_attendee_set_delfrom (ia, g_strdup_printf ("MAILTO:%s", priv->user_add ? priv->user_add : ""));
 
-			delegator = e_meeting_store_find_attendee (priv->model, delegator_id, NULL);
+	if (!e_cal_get_static_capability (client, CAL_STATIC_CAPABILITY_DELEGATE_TO_MANY)) {
+		EMeetingAttendee *delegator;
 
-			g_return_if_fail (delegator != NULL);
+		gtk_widget_set_sensitive (priv->invite, FALSE);
+		gtk_widget_set_sensitive (priv->add, FALSE);
+		gtk_widget_set_sensitive (priv->edit, FALSE);
 
-			e_meeting_attendee_set_delto (delegator,
-				g_strdup (e_meeting_attendee_get_address (ia)));
+		delegator = e_meeting_store_find_attendee (priv->model, priv->user_add, NULL);
+		g_return_if_fail (delegator != NULL);
 
-			gtk_widget_set_sensitive (priv->invite, FALSE);
-			gtk_widget_set_sensitive (priv->add, FALSE);
-			gtk_widget_set_sensitive (priv->edit, FALSE);
-		}
+		e_meeting_attendee_set_delto (delegator, g_strdup (e_meeting_attendee_get_address (ia)));
 	}
-}
-
-/* Callbacks for list view*/
-static void
-popup_add_cb (EPopup *ep, EPopupItem *pitem, gpointer data)
-{
-	TaskPage *page = data;
-
-	add_clicked_cb (NULL, page);
-}
-
-static void
-popup_delete_cb (EPopup *ep, EPopupItem *pitem, gpointer data)
-{
-	TaskPage *page = data;
-
-	remove_clicked_cb (NULL, page);
-}
-
-enum {
-	ATTENDEE_CAN_DELEGATE = 1<<1,
-	ATTENDEE_CAN_DELETE = 1<<2,
-	ATTENDEE_CAN_ADD = 1<<3,
-	ATTENDEE_LAST = 1<<4
-};
-
-static EPopupItem context_menu_items[] = {
-	{ E_POPUP_ITEM, (gchar *) "10.delete", (gchar *) N_("_Remove"), popup_delete_cb, NULL, (gchar *) GTK_STOCK_REMOVE, ATTENDEE_CAN_DELETE },
-	{ E_POPUP_ITEM, (gchar *) "15.add", (gchar *) N_("_Add "), popup_add_cb, NULL, (gchar *) GTK_STOCK_ADD, ATTENDEE_CAN_ADD },
-};
-
-static void
-context_popup_free(EPopup *ep, GSList *items, gpointer data)
-{
-	g_slist_free(items);
-}
-
-static gint
-button_press_event (GtkWidget *widget, GdkEventButton *event, TaskPage *page)
-{
-	TaskPagePrivate *priv = page->priv;
-	CompEditor *editor;
-	CompEditorFlags flags;
-	GtkMenu *menu;
-	EMeetingAttendee *ia;
-	GtkTreePath *path;
-	GtkTreeIter iter;
-	gchar *address;
-	guint32 disable_mask = ~0;
-	GSList *menus = NULL;
-	ECalPopup *ep;
-	gint i;
-
-	/* only process right-clicks */
-	if (event->button != 3 || event->type != GDK_BUTTON_PRESS)
-		return FALSE;
-
-	editor = comp_editor_page_get_editor (COMP_EDITOR_PAGE (page));
-	flags = comp_editor_get_flags (editor);
-
-	/* only if we right-click on an attendee */
-	if (gtk_tree_view_get_path_at_pos (GTK_TREE_VIEW (priv->list_view), event->x, event->y, &path, NULL, NULL, NULL)) {
-		GtkTreeSelection *selection;
-
-		if (gtk_tree_model_get_iter (GTK_TREE_MODEL (priv->model), &iter, path)) {
-
-			gtk_tree_model_get (GTK_TREE_MODEL (priv->model), &iter, E_MEETING_STORE_ADDRESS_COL, &address, -1);
-			ia = e_meeting_store_find_attendee (priv->model, address, &priv->row);
-			g_free (address);
-
-			if (ia) {
-				selection = gtk_tree_view_get_selection ((GtkTreeView *) priv->list_view);
-				gtk_tree_selection_unselect_all (selection);
-				gtk_tree_selection_select_path (selection, path);
-
-				if (e_meeting_attendee_get_edit_level (ia) == E_MEETING_ATTENDEE_EDIT_FULL)
-					disable_mask &= ~ATTENDEE_CAN_DELETE;
-			}
-		}
-	}
-
-	if (GTK_WIDGET_IS_SENSITIVE(priv->add))
-		disable_mask &= ~ATTENDEE_CAN_ADD;
-	else if (flags & COMP_EDITOR_USER_ORG)
-		disable_mask &= ~ATTENDEE_CAN_ADD;
-
-	ep = e_cal_popup_new("org.gnome.evolution.calendar.task.popup");
-
-	for (i=0;i<sizeof(context_menu_items)/sizeof(context_menu_items[0]);i++)
-		menus = g_slist_prepend(menus, &context_menu_items[i]);
-
-	e_popup_add_items((EPopup *)ep, menus, NULL, context_popup_free, page);
-	menu = e_popup_create_menu_once((EPopup *)ep, NULL, disable_mask);
-	gtk_menu_popup (menu, NULL, NULL, NULL, NULL, event->button, event->time);
-
-	return TRUE;
 }
 
 static gboolean
@@ -1402,14 +1374,13 @@ get_widgets (TaskPage *tpage)
 	TaskPagePrivate *priv;
 	GSList *accel_groups;
 	GtkWidget *toplevel;
+	GtkWidget *parent;
 	GtkWidget *sw;
 	GtkTreeSelection *selection;
 
 	priv = tpage->priv;
 
-#define GW(name) glade_xml_get_widget (priv->xml, name)
-
-	priv->main = GW ("task-page");
+	priv->main = e_builder_get_widget (priv->builder, "task-page");
 	if (!priv->main)
 		return FALSE;
 
@@ -1421,39 +1392,41 @@ get_widgets (TaskPage *tpage)
 		page->accel_group = g_object_ref (accel_groups->data);
 
 	g_object_ref (priv->main);
-	gtk_container_remove (GTK_CONTAINER (priv->main->parent), priv->main);
+	parent = gtk_widget_get_parent (priv->main);
+	gtk_container_remove (GTK_CONTAINER (parent), priv->main);
 
-	priv->info_hbox = GW ("generic-info");
-	priv->info_icon = GW ("generic-info-image");
-	priv->info_string = GW ("generic-info-msgs");
+	priv->info_hbox = e_builder_get_widget (priv->builder, "generic-info");
+	priv->info_icon = e_builder_get_widget (priv->builder, "generic-info-image");
+	priv->info_string = e_builder_get_widget (priv->builder, "generic-info-msgs");
 
-	priv->summary = GW ("summary");
-	priv->summary_label = GW ("summary-label");
+	priv->summary = e_builder_get_widget (priv->builder, "summary");
+	priv->summary_label = e_builder_get_widget (priv->builder, "summary-label");
 
 	/* Glade's visibility flag doesn't seem to work for custom widgets */
-	priv->due_date = GW ("due-date");
+	priv->due_date = e_builder_get_widget (priv->builder, "due-date");
 	gtk_widget_show (priv->due_date);
-	priv->start_date = GW ("start-date");
+	priv->start_date = e_builder_get_widget (priv->builder, "start-date");
 	gtk_widget_show (priv->start_date);
 
-	priv->timezone = GW ("timezone");
-	priv->timezone_label = GW ("timezone-label");
-	priv->attendees_label = GW ("attendees-label");
-	priv->description = GW ("description");
-	priv->categories_btn = GW ("categories-button");
-	priv->categories = GW ("categories");
+	priv->timezone = e_builder_get_widget (priv->builder, "timezone");
+	priv->timezone_label = e_builder_get_widget (priv->builder, "timezone-label");
+	priv->attendees_label = e_builder_get_widget (priv->builder, "attendees-label");
+	priv->description = e_builder_get_widget (priv->builder, "description");
+	priv->categories_btn = e_builder_get_widget (priv->builder, "categories-button");
+	priv->categories = e_builder_get_widget (priv->builder, "categories");
 
-	priv->organizer = GW ("organizer");
+	priv->organizer = e_builder_get_widget (priv->builder, "organizer");
 	gtk_list_store_clear (GTK_LIST_STORE (gtk_combo_box_get_model (GTK_COMBO_BOX (priv->organizer))));
+	gtk_combo_box_entry_set_text_column (GTK_COMBO_BOX_ENTRY (priv->organizer), 0);
 
-	priv->invite = GW ("invite");
-	priv->add = GW ("add-attendee");
-	priv->edit = GW ("edit-attendee");
-	priv->remove = GW ("remove-attendee");
-	priv->list_box = GW ("list-box");
-	priv->calendar_label = GW ("group-label");
-	priv->attendee_box = GW ("attendee-box");
-	priv->org_cal_label = GW ("org-task-label");
+	priv->invite = e_builder_get_widget (priv->builder, "invite");
+	priv->add = e_builder_get_widget (priv->builder, "add-attendee");
+	priv->edit = e_builder_get_widget (priv->builder, "edit-attendee");
+	priv->remove = e_builder_get_widget (priv->builder, "remove-attendee");
+	priv->list_box = e_builder_get_widget (priv->builder, "list-box");
+	priv->calendar_label = e_builder_get_widget (priv->builder, "group-label");
+	priv->attendee_box = e_builder_get_widget (priv->builder, "attendee-box");
+	priv->org_cal_label = e_builder_get_widget (priv->builder, "org-task-label");
 
 	priv->list_view = e_meeting_list_view_new (priv->model);
 
@@ -1468,11 +1441,10 @@ get_widgets (TaskPage *tpage)
 	gtk_container_add (GTK_CONTAINER (sw), GTK_WIDGET (priv->list_view));
 	gtk_box_pack_start (GTK_BOX (priv->list_box), sw, TRUE, TRUE, 0);
 
-	priv->source_selector = GW ("source");
+	priv->source_selector = e_builder_get_widget (priv->builder, "source");
+	e_util_set_source_combo_box_list (priv->source_selector, "/apps/evolution/tasks/sources");
 
 	gtk_label_set_mnemonic_widget (GTK_LABEL (priv->calendar_label), priv->source_selector);
-
-#undef GW
 
 	completion = e_category_completion_new ();
 	gtk_entry_set_completion (GTK_ENTRY (priv->categories), completion);
@@ -1510,18 +1482,15 @@ summary_changed_cb (GtkEditable *editable,
  * other pages in the task editor, so they can update any labels.
  */
 static void
-date_changed_cb (EDateEdit *dedit, gpointer data)
+date_changed_cb (EDateEdit *dedit,
+                 TaskPage *tpage)
 {
-	TaskPage *tpage;
-	TaskPagePrivate *priv;
+	TaskPagePrivate *priv = tpage->priv;
 	CompEditorPageDates dates;
 	gboolean date_set, time_set;
 	ECalComponentDateTime start_dt, due_dt;
 	struct icaltimetype start_tt = icaltime_null_time();
 	struct icaltimetype due_tt = icaltime_null_time();
-
-	tpage = TASK_PAGE (data);
-	priv = tpage->priv;
 
 	if (comp_editor_page_get_updating (COMP_EDITOR_PAGE (tpage)))
 		return;
@@ -1576,36 +1545,29 @@ date_changed_cb (EDateEdit *dedit, gpointer data)
 	/* Notify upstream */
 	comp_editor_page_notify_dates_changed (COMP_EDITOR_PAGE (tpage),
 					       &dates);
+
+	check_starts_in_the_past (tpage);
 }
 
 static void
-timezone_changed_cb (EDateEdit *dedit, gpointer data)
+timezone_changed_cb (EDateEdit *dedit,
+                     TaskPage *tpage)
 {
-	TaskPage *tpage;
-	TaskPagePrivate *priv;
-
-	tpage = TASK_PAGE (data);
-	priv = tpage->priv;
-
-	date_changed_cb ((EDateEdit *) priv->start_date, tpage);
-	date_changed_cb ((EDateEdit *) priv->due_date, tpage);
+	date_changed_cb ((EDateEdit *) tpage->priv->start_date, tpage);
+	date_changed_cb ((EDateEdit *) tpage->priv->due_date, tpage);
 }
 
 /* Callback used when the categories button is clicked; we must bring up the
  * category list dialog.
  */
 static void
-categories_clicked_cb (GtkWidget *button, gpointer data)
+categories_clicked_cb (GtkWidget *button,
+                       TaskPage *tpage)
 {
-	TaskPage *tpage;
-	TaskPagePrivate *priv;
-	GtkWidget *entry;
+	GtkEntry *entry;
 
-	tpage = TASK_PAGE (data);
-	priv = tpage->priv;
-
-	entry = priv->categories;
-	e_categories_config_open_dialog_for_entry (GTK_ENTRY (entry));
+	entry = GTK_ENTRY (tpage->priv->categories);
+	e_categories_config_open_dialog_for_entry (entry);
 }
 
 static gboolean
@@ -1757,7 +1719,7 @@ source_changed_cb (ESourceComboBox *source_combo_box, TaskPage *tpage)
 	if (comp_editor_page_get_updating (COMP_EDITOR_PAGE (tpage)))
 		return;
 
-	client = auth_new_cal_from_source (source, E_CAL_SOURCE_TYPE_TODO);
+	client = e_auth_new_cal_from_source (source, E_CAL_SOURCE_TYPE_TODO);
 	if (client) {
 		icaltimezone *zone;
 
@@ -1823,18 +1785,17 @@ set_subscriber_info_string (TaskPage *tpage, const gchar *backend_address)
 		/* Translators: This string is used when we are creating a Task
 		   on behalf of some other user */
 		tpage->priv->subscriber_info_text = g_markup_printf_escaped (_("You are acting on behalf of %s"), backend_address);
-
-		task_page_set_info_string (tpage, GTK_STOCK_DIALOG_INFO, tpage->priv->subscriber_info_text);
 	} else {
 		g_free (tpage->priv->subscriber_info_text);
 		tpage->priv->subscriber_info_text = NULL;
-
-		task_page_set_info_string (tpage, NULL, NULL);
 	}
+
+	if (!check_starts_in_the_past (tpage))
+		task_page_set_info_string (tpage, tpage->priv->subscriber_info_text ? GTK_STOCK_DIALOG_INFO : NULL, tpage->priv->subscriber_info_text);
 }
 
 void
-task_page_sendoptions_clicked_cb (TaskPage *tpage)
+task_page_send_options_clicked_cb (TaskPage *tpage)
 {
 	TaskPagePrivate *priv = tpage->priv;
 	CompEditor *editor;
@@ -1846,30 +1807,35 @@ task_page_sendoptions_clicked_cb (TaskPage *tpage)
 	client = comp_editor_get_client (editor);
 
 	if (!priv->sod) {
-		priv->sod = e_sendoptions_dialog_new ();
+		priv->sod = e_send_options_dialog_new ();
 		priv->sod->data->initialized = TRUE;
 		source = e_source_combo_box_get_active (
 			E_SOURCE_COMBO_BOX (priv->source_selector));
-		e_sendoptions_utils_set_default_data (priv->sod, source, "task");
+		e_send_options_utils_set_default_data (priv->sod, source, "task");
 	}
 
 	if (e_cal_get_static_capability (client, CAL_STATIC_CAPABILITY_NO_GEN_OPTIONS)) {
-		e_sendoptions_set_need_general_options (priv->sod, FALSE);
+		e_send_options_set_need_general_options (priv->sod, FALSE);
 	}
 
 	toplevel = gtk_widget_get_toplevel (priv->main);
-	e_sendoptions_dialog_run (priv->sod, toplevel, E_ITEM_TASK);
+	e_send_options_dialog_run (priv->sod, toplevel, E_ITEM_TASK);
 }
 
 /* Hooks the widget signals */
 static gboolean
 init_widgets (TaskPage *tpage)
 {
+	CompEditor *editor;
 	TaskPagePrivate *priv;
+	GtkAction *action;
 	GtkTextBuffer *text_buffer;
 	icaltimezone *zone;
+	gboolean active;
 
 	priv = tpage->priv;
+
+	editor = comp_editor_page_get_editor (COMP_EDITOR_PAGE (tpage));
 
 	/* Make sure the EDateEdit widgets use our timezones to get the
 	   current time. */
@@ -1891,6 +1857,8 @@ init_widgets (TaskPage *tpage)
 	text_buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (priv->description));
 
 	gtk_text_view_set_wrap_mode (GTK_TEXT_VIEW (priv->description), GTK_WRAP_WORD);
+
+	e_buffer_tagger_connect (GTK_TEXT_VIEW (priv->description));
 
 	/* Dates */
 	g_signal_connect((priv->start_date), "changed",
@@ -1938,9 +1906,6 @@ init_widgets (TaskPage *tpage)
 		G_CALLBACK (comp_editor_page_changed), tpage);
 
 	g_signal_connect (
-		priv->list_view, "button_press_event",
-		G_CALLBACK (button_press_event), tpage);
-	g_signal_connect (
 		priv->list_view, "event",
 		G_CALLBACK (list_view_event), tpage);
 	g_signal_connect (
@@ -1966,15 +1931,36 @@ init_widgets (TaskPage *tpage)
 	zone = calendar_config_get_icaltimezone ();
 	e_timezone_entry_set_default_timezone (E_TIMEZONE_ENTRY (priv->timezone), zone);
 
-	task_page_set_show_timezone (tpage, calendar_config_get_show_timezone());
+	action = comp_editor_get_action (editor, "view-time-zone");
+	active = gtk_toggle_action_get_active (GTK_TOGGLE_ACTION (action));
+	task_page_set_show_timezone (tpage, active);
 
-	e_meeting_list_view_column_set_visible (priv->list_view, E_MEETING_STORE_ATTENDEE_COL, TRUE);
-	e_meeting_list_view_column_set_visible (priv->list_view, E_MEETING_STORE_ROLE_COL, calendar_config_get_show_role ());
-	e_meeting_list_view_column_set_visible (priv->list_view, E_MEETING_STORE_RSVP_COL, calendar_config_get_show_rsvp ());
-	e_meeting_list_view_column_set_visible (priv->list_view, E_MEETING_STORE_STATUS_COL, calendar_config_get_show_status ());
-	e_meeting_list_view_column_set_visible (priv->list_view, E_MEETING_STORE_TYPE_COL, calendar_config_get_show_type ());
+	e_meeting_list_view_column_set_visible (
+		priv->list_view, E_MEETING_STORE_ATTENDEE_COL, TRUE);
 
-	task_page_set_show_categories (tpage, calendar_config_get_show_categories());
+	action = comp_editor_get_action (editor, "view-role");
+	active = gtk_toggle_action_get_active (GTK_TOGGLE_ACTION (action));
+	e_meeting_list_view_column_set_visible (
+		priv->list_view, E_MEETING_STORE_ROLE_COL, active);
+
+	action = comp_editor_get_action (editor, "view-rsvp");
+	active = gtk_toggle_action_get_active (GTK_TOGGLE_ACTION (action));
+	e_meeting_list_view_column_set_visible (
+		priv->list_view, E_MEETING_STORE_RSVP_COL, active);
+
+	action = comp_editor_get_action (editor, "view-status");
+	active = gtk_toggle_action_get_active (GTK_TOGGLE_ACTION (action));
+	e_meeting_list_view_column_set_visible (
+		priv->list_view, E_MEETING_STORE_STATUS_COL, active);
+
+	action = comp_editor_get_action (editor, "view-type");
+	active = gtk_toggle_action_get_active (GTK_TOGGLE_ACTION (action));
+	e_meeting_list_view_column_set_visible (
+		priv->list_view, E_MEETING_STORE_TYPE_COL, active);
+
+	action = comp_editor_get_action (editor, "view-categories");
+	active = gtk_toggle_action_get_active (GTK_TOGGLE_ACTION (action));
+	task_page_set_show_categories (tpage, active);
 
 	return TRUE;
 }
@@ -2025,8 +2011,12 @@ task_page_select_organizer (TaskPage *tpage, const gchar *backend_address)
 
 	if (default_address) {
 		if (!priv->comp || !e_cal_component_has_organizer (priv->comp)) {
-			gtk_entry_set_text (GTK_ENTRY (gtk_bin_get_child (GTK_BIN (priv->organizer))), default_address);
+			GtkEntry *entry = GTK_ENTRY (gtk_bin_get_child (GTK_BIN (priv->organizer)));
+
+			g_signal_handlers_block_by_func (entry, organizer_changed_cb, tpage);
+			gtk_entry_set_text (entry, default_address);
 			gtk_widget_set_sensitive (priv->organizer, !subscribed_cal);
+			g_signal_handlers_unblock_by_func (entry, organizer_changed_cb, tpage);
 		}
 	} else
 		g_warning ("No potential organizers!");
@@ -2049,24 +2039,20 @@ task_page_construct (TaskPage *tpage, EMeetingStore *model, ECal *client)
 	TaskPagePrivate *priv;
 	EIterator *it;
 	EAccount *a;
-	gchar *gladefile;
 
 	priv = tpage->priv;
 	g_object_ref (model);
 	priv->model = model;
 	priv->client = client;
 
-	gladefile = g_build_filename (EVOLUTION_GLADEDIR,
-				      "task-page.glade",
-				      NULL);
-	priv->xml = glade_xml_new (gladefile, NULL, NULL);
-	g_free (gladefile);
+	/* Make sure our custom widget classes are registered with
+	 * GType before we load the GtkBuilder definition file. */
+	E_TYPE_DATE_EDIT;
+	E_TYPE_TIMEZONE_ENTRY;
+	E_TYPE_SOURCE_COMBO_BOX;
 
-	if (!priv->xml) {
-		g_message ("task_page_construct(): "
-			   "Could not load the Glade XML file!");
-		return NULL;
-	}
+	priv->builder = gtk_builder_new ();
+	e_load_ui_builder_definition (priv->builder, "task-page.ui");
 
 	if (!get_widgets (tpage)) {
 		g_message ("task_page_construct(): "
@@ -2100,6 +2086,8 @@ task_page_construct (TaskPage *tpage, EMeetingStore *model, ECal *client)
 			gtk_combo_box_append_text (GTK_COMBO_BOX (priv->organizer), l->data);
 
 		gtk_combo_box_set_active (GTK_COMBO_BOX (priv->organizer), 0);
+
+		g_signal_connect (gtk_bin_get_child (GTK_BIN (priv->organizer)), "changed", (GCallback) organizer_changed_cb, tpage);
 	} else
 		g_warning ("No potential organizers!");
 
@@ -2154,40 +2142,6 @@ task_page_get_cancel_comp (TaskPage *page)
 	return e_cal_component_clone (priv->comp);
 }
 
-GtkWidget *task_page_create_date_edit (void);
-
-GtkWidget *
-task_page_create_date_edit (void)
-{
-	GtkWidget *dedit;
-
-	dedit = comp_editor_new_date_edit (TRUE, TRUE, TRUE);
-	e_date_edit_set_allow_no_date_set (E_DATE_EDIT (dedit), TRUE);
-
-	return dedit;
-}
-
-GtkWidget *task_page_create_source_combo_box (void);
-
-GtkWidget *
-task_page_create_source_combo_box (void)
-{
-	GtkWidget   *combo_box;
-	GConfClient *gconf_client;
-	ESourceList *source_list;
-
-	gconf_client = gconf_client_get_default ();
-	source_list = e_source_list_new_for_gconf (
-		gconf_client, "/apps/evolution/tasks/sources");
-
-	combo_box = e_source_combo_box_new (source_list);
-	g_object_unref (source_list);
-	g_object_unref (gconf_client);
-
-	gtk_widget_show (combo_box);
-	return combo_box;
-}
-
 /**
  * task_page_add_attendee
  * Add attendee to meeting store and name selector.
@@ -2203,6 +2157,10 @@ task_page_add_attendee (TaskPage *tpage, EMeetingAttendee *attendee)
 	g_return_if_fail (IS_TASK_PAGE (tpage));
 
 	priv = tpage->priv;
+
+	if ((comp_editor_get_flags (comp_editor_page_get_editor (COMP_EDITOR_PAGE (tpage))) & COMP_EDITOR_DELEGATE) != 0) {
+		e_meeting_attendee_set_delfrom (attendee, g_strdup_printf ("MAILTO:%s", tpage->priv->user_add));
+	}
 
 	e_meeting_store_add_attendee (priv->model, attendee);
 	e_meeting_list_view_add_attendee_to_name_selector (E_MEETING_LIST_VIEW (priv->list_view), attendee);

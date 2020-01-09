@@ -1,0 +1,197 @@
+diff -up evolution-2.32.3/calendar/gui/alarm-notify/notify-main.c.killev-also-factories evolution-2.32.3/calendar/gui/alarm-notify/notify-main.c
+--- evolution-2.32.3/calendar/gui/alarm-notify/notify-main.c.killev-also-factories	2013-06-25 09:20:57.434802061 +0200
++++ evolution-2.32.3/calendar/gui/alarm-notify/notify-main.c	2013-06-25 09:21:17.371802042 +0200
+@@ -55,6 +55,30 @@
+ 
+ #include "e-util/e-util-private.h"
+ 
++#ifndef G_OS_WIN32
++static void
++quit_signal (gint sig)
++{
++	g_return_if_fail (sig == SIGQUIT);
++
++	g_print ("Received quit signal...\n");
++	gtk_main_quit ();
++}
++
++static void
++setup_quit_signal (void)
++{
++	struct sigaction sa, osa;
++
++	sigaction (SIGQUIT, NULL, &osa);
++
++	sa.sa_flags = 0;
++	sigemptyset (&sa.sa_mask);
++	sa.sa_handler = quit_signal;
++	sigaction (SIGQUIT, &sa, NULL);
++}
++#endif
++
+ gint
+ main (gint argc, gchar **argv)
+ {
+@@ -108,6 +132,10 @@ main (gint argc, gchar **argv)
+ 	if (unique_app_is_running (app))
+ 		goto exit;
+ 
++	#ifndef G_OS_WIN32
++	setup_quit_signal ();
++	#endif
++
+ 	alarm_notify_service = alarm_notify_new ();
+ 
+ 	/* FIXME Ideally we should not use camel libraries in calendar,
+diff -up evolution-2.32.3/shell/killev.c.killev-also-factories evolution-2.32.3/shell/killev.c
+--- evolution-2.32.3/shell/killev.c.killev-also-factories	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/shell/killev.c	2013-06-25 09:21:17.370802043 +0200
+@@ -94,6 +94,19 @@ exit:
+ 	return success;
+ }
+ 
++static void
++kill_factories (void)
++{
++	#ifdef KILL_PROCESS_CMD
++
++	system (KILL_PROCESS_CMD " -QUIT evolution 2> /dev/null");
++	system (KILL_PROCESS_CMD " -QUIT evolution-alarm-notify 2> /dev/null");
++	system (KILL_PROCESS_CMD " -QUIT e-calendar-factory 2> /dev/null");
++	system (KILL_PROCESS_CMD " -QUIT e-addressbook-factory 2> /dev/null");
++
++	#endif
++}
++
+ gint
+ main (gint argc, gchar **argv)
+ {
+@@ -116,17 +129,27 @@ main (gint argc, gchar **argv)
+ 
+ 	if (!get_evolution_pid (pid_file)) {
+ 		g_printerr ("Could not find Evolution's process ID\n");
++		kill_factories ();
+ 		exit (EXIT_FAILURE);
+ 	}
+ 
+-	/* Play it safe here and bail if something goes wrong.  We don't
+-	 * want to just skip to the killing if we can't ask Evolution to
+-	 * terminate gracefully.  Despite our name we actually want to
+-	 * -avoid- killing Evolution if at all possible. */
+-	if (!g_spawn_command_line_async ("evolution --quit", &error)) {
+-		g_printerr ("%s", error->message);
+-		g_error_free (error);
+-		exit (EXIT_FAILURE);
++	if (g_getenv ("DISPLAY") == NULL) {
++		#ifdef KILL_PROCESS_CMD
++
++		system (KILL_PROCESS_CMD " -QUIT evolution 2> /dev/null");
++
++		#endif
++	} else {
++		/* Play it safe here and bail if something goes wrong.  We don't
++		 * want to just skip to the killing if we can't ask Evolution to
++		 * terminate gracefully.  Despite our name we actually want to
++		 * -avoid- killing Evolution if at all possible. */
++		if (!g_spawn_command_line_async ("evolution --quit", &error)) {
++			g_printerr ("%s", error->message);
++			g_error_free (error);
++			kill_factories ();
++			exit (EXIT_FAILURE);
++		}
+ 	}
+ 
+ 	/* Now we set up a monitor on Evolution's .running file.
+@@ -136,6 +159,7 @@ main (gint argc, gchar **argv)
+ 	if (error != NULL) {
+ 		g_printerr ("%s", error->message);
+ 		g_error_free (error);
++		kill_factories ();
+ 		exit (EXIT_FAILURE);
+ 	}
+ 
+@@ -155,5 +179,7 @@ main (gint argc, gchar **argv)
+ 
+ 	g_object_unref (monitor);
+ 
++	kill_factories ();
++
+ 	return EXIT_SUCCESS;
+ }
+diff -up evolution-2.32.3/shell/main.c.killev-also-factories evolution-2.32.3/shell/main.c
+--- evolution-2.32.3/shell/main.c.killev-also-factories	2013-06-25 09:20:03.503802058 +0200
++++ evolution-2.32.3/shell/main.c	2013-06-25 09:20:03.597802058 +0200
+@@ -318,8 +318,36 @@ setup_segv_redirect (void)
+ 	g_static_mutex_lock (&segv_mutex);
+ }
+ 
++static void
++quit_signal (gint sig)
++{
++	EShell *shell;
++
++	g_return_if_fail (sig == SIGQUIT);
++
++	g_print ("Received quit signal...\n");
++
++	shell = e_shell_get_default ();
++	if (shell)
++		e_shell_quit (shell, E_SHELL_QUIT_OPTION);
++}
++
++static void
++setup_quit_signal (void)
++{
++	struct sigaction sa, osa;
++
++	sigaction (SIGQUIT, NULL, &osa);
++
++	sa.sa_flags = 0;
++	sigemptyset (&sa.sa_mask);
++	sa.sa_handler = quit_signal;
++	sigaction (SIGQUIT, &sa, NULL);
++}
++
+ #else
+ #define setup_segv_redirect() (void)0
++#define setup_quit_signal() (void)0
+ #endif
+ 
+ static GOptionEntry entries[] = {
+@@ -501,6 +529,17 @@ main (gint argc, gchar **argv)
+ 	bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
+ 	textdomain (GETTEXT_PACKAGE);
+ 
++	g_type_init ();
++	if (!g_thread_get_initialized ())
++		g_thread_init (NULL);
++
++	/* do not require Gtk+ for --force-shutdown */
++	if (argc == 2 && argv[1] && g_str_equal (argv[1], "--force-shutdown")) {
++		shell_force_shutdown ();
++
++		return 0;
++	}
++
+ #if HAVE_CLUTTER
+ 	gtk_clutter_init_with_args (
+ 		&argc, &argv,
+@@ -521,10 +560,6 @@ main (gint argc, gchar **argv)
+ 		exit (1);
+ 	}
+ 
+-	g_type_init ();
+-	if (!g_thread_get_initialized ())
+-		g_thread_init (NULL);
+-
+ 	/* this is to initialize threading for dbus-glib used by GConf */
+ 	dbus_g_thread_init ();
+ 
+@@ -609,6 +644,7 @@ main (gint argc, gchar **argv)
+ 	}
+ 
+ 	setup_segv_redirect ();
++	setup_quit_signal ();
+ 
+ 	if (evolution_debug_log) {
+ 		gint fd;

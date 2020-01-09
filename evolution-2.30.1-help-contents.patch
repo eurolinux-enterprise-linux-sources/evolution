@@ -1,0 +1,18 @@
+diff -up evolution-2.32.3/shell/e-shell-window-actions.c.help-contents evolution-2.32.3/shell/e-shell-window-actions.c
+--- evolution-2.32.3/shell/e-shell-window-actions.c.help-contents	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/shell/e-shell-window-actions.c	2013-05-29 14:30:15.662862795 +0200
+@@ -1982,6 +1982,14 @@ e_shell_window_actions_init (EShellWindo
+ 	if (path == NULL)
+ 		gtk_action_set_visible (ACTION (SUBMIT_BUG), FALSE);
+ 	g_free (path);
++
++	/* Viewing user documentation requires the evolution-help
++	 * Fedora package.  Look for one of the files it installs. */
++	path = g_build_filename (
++		EVOLUTION_DATADIR, "omf", PACKAGE, "evolution-C.omf", NULL);
++	if (!g_file_test (path, G_FILE_TEST_IS_REGULAR))
++		gtk_action_set_visible (ACTION (CONTENTS), FALSE);
++	g_free (path);
+ }
+ 
+ static GList *

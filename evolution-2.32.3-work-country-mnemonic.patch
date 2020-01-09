@@ -1,0 +1,12 @@
+diff -up evolution-2.32.3/addressbook/gui/contact-editor/contact-editor.ui.work-country-mnemonic evolution-2.32.3/addressbook/gui/contact-editor/contact-editor.ui
+--- evolution-2.32.3/addressbook/gui/contact-editor/contact-editor.ui.work-country-mnemonic	2013-06-10 15:07:06.331677290 +0200
++++ evolution-2.32.3/addressbook/gui/contact-editor/contact-editor.ui	2013-06-10 15:07:30.859677509 +0200
+@@ -1981,7 +1981,7 @@
+                                             <property name="ypad">4</property>
+                                             <property name="label" translatable="yes">_Country:</property>
+                                             <property name="use_underline">True</property>
+-                                            <property name="mnemonic_widget">entry-home-country</property>
++                                            <property name="mnemonic_widget">entry-work-country</property>
+                                           </object>
+                                           <packing>
+                                             <property name="left_attach">2</property>

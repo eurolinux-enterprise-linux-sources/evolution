@@ -35,11 +35,10 @@
 #include "e-minicard.h"
 #include "e-minicard-label.h"
 #include "e-minicard-view.h"
-#include "e-contact-editor.h"
 #include <e-util/e-html-utils.h>
 #include <e-util/e-icon-factory.h>
 #include <libebook/e-destination.h>
-#include "a11y/addressbook/ea-addressbook.h"
+#include "ea-addressbook.h"
 
 static void e_minicard_init		(EMinicard		 *card);
 static void e_minicard_class_init	(EMinicardClass	 *class);
@@ -86,6 +85,7 @@ enum {
 enum {
 	SELECTED,
 	DRAG_BEGIN,
+	OPEN_CONTACT,
 	STYLE_SET,
 	LAST_SIGNAL
 };
@@ -94,14 +94,14 @@ static struct {
 	const gchar *name;
 	const gchar *pretty_name;
 }
-common_location [] =
+common_location[] =
 {
 	{ "WORK",  N_ ("Work Email")  },
 	{ "HOME",  N_ ("Home Email")  },
 	{ "OTHER", N_ ("Other Email") }
 };
 
-static guint e_minicard_signals [LAST_SIGNAL] = {0, };
+static guint signals[LAST_SIGNAL] = {0, };
 
 GType
 e_minicard_get_type (void)
@@ -151,56 +151,56 @@ e_minicard_class_init (EMinicardClass *class)
 
 	g_object_class_install_property (object_class, PROP_WIDTH,
 					 g_param_spec_double ("width",
-							      _("Width"),
-							      /*_( */"XXX blurb" /*)*/,
+							      "Width",
+							      NULL,
 							      0.0, G_MAXDOUBLE, 10.0,
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_HEIGHT,
 					 g_param_spec_double ("height",
-							      _("Height"),
-							      /*_( */"XXX blurb" /*)*/,
+							      "Height",
+							      NULL,
 							      0.0, G_MAXDOUBLE, 10.0,
 							      G_PARAM_READABLE));
 
 	g_object_class_install_property (object_class, PROP_HAS_FOCUS,
 					 /* XXX should be _enum */
 					 g_param_spec_int ("has_focus",
-							   _("Has Focus"),
-							   /*_( */"XXX blurb" /*)*/,
+							   "Has Focus",
+							   NULL,
 							   E_MINICARD_FOCUS_TYPE_START, E_MINICARD_FOCUS_TYPE_END,
 							   E_MINICARD_FOCUS_TYPE_START,
 							   G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_SELECTED,
 					 g_param_spec_boolean ("selected",
-							       _("Selected"),
-							       /*_( */"XXX blurb" /*)*/,
+							       "Selected",
+							       NULL,
 							       FALSE,
 							       G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_HAS_CURSOR,
 					 g_param_spec_boolean ("has_cursor",
-							       _("Has Cursor"),
-							       /*_( */"XXX blurb" /*)*/,
+							       "Has Cursor",
+							       NULL,
 							       FALSE,
 							       G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_EDITABLE,
 					 g_param_spec_boolean ("editable",
-							       _("Editable"),
-							       /*_( */"XXX blurb" /*)*/,
+							       "Editable",
+							       NULL,
 							       FALSE,
 							       G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class, PROP_CONTACT,
 					 g_param_spec_object ("contact",
-							      _("Contact"),
-							      /*_( */"XXX blurb" /*)*/,
+							      "Contact",
+							      NULL,
 							      E_TYPE_CONTACT,
 							      G_PARAM_READWRITE));
 
-	e_minicard_signals [SELECTED] =
+	signals[SELECTED] =
 		g_signal_new ("selected",
 			      G_OBJECT_CLASS_TYPE (object_class),
 			      G_SIGNAL_RUN_LAST,
@@ -209,7 +209,7 @@ e_minicard_class_init (EMinicardClass *class)
 			      e_marshal_INT__POINTER,
 			      G_TYPE_INT, 1, G_TYPE_POINTER);
 
-	e_minicard_signals [DRAG_BEGIN] =
+	signals[DRAG_BEGIN] =
 		g_signal_new ("drag_begin",
 			      G_OBJECT_CLASS_TYPE (object_class),
 			      G_SIGNAL_RUN_LAST,
@@ -218,7 +218,17 @@ e_minicard_class_init (EMinicardClass *class)
 			      e_marshal_INT__POINTER,
 			      G_TYPE_INT, 1, G_TYPE_POINTER);
 
-	e_minicard_signals [STYLE_SET] =
+	signals[OPEN_CONTACT] =
+		g_signal_new ("open-contact",
+			      G_OBJECT_CLASS_TYPE (object_class),
+			      G_SIGNAL_RUN_LAST,
+			      G_STRUCT_OFFSET (EMinicardClass, open_contact),
+			      NULL, NULL,
+			      g_cclosure_marshal_VOID__OBJECT,
+			      G_TYPE_NONE, 1,
+			      E_TYPE_CONTACT);
+
+	signals[STYLE_SET] =
 		g_signal_new ("style_set",
 			      G_TYPE_FROM_CLASS (object_class),
 			      G_SIGNAL_RUN_FIRST,
@@ -249,8 +259,6 @@ e_minicard_init (EMinicard *minicard)
 	minicard->list_icon_pixbuf = e_icon_factory_get_icon (LIST_ICON_NAME, GTK_ICON_SIZE_MENU);
 	minicard->list_icon_size   = gdk_pixbuf_get_height (minicard->list_icon_pixbuf);
 
-	minicard->editor           = NULL;
-
 	minicard->changed          = FALSE;
 
 	e_canvas_item_set_reflow_callback(GNOME_CANVAS_ITEM(minicard), e_minicard_reflow);
@@ -259,26 +267,31 @@ e_minicard_init (EMinicard *minicard)
 static void
 set_selected (EMinicard *minicard, gboolean selected)
 {
-	GtkWidget *canvas = GTK_WIDGET(GNOME_CANVAS_ITEM(minicard)->canvas);
+	GnomeCanvas *canvas;
+	GtkStyle *style;
+
+	canvas = GNOME_CANVAS_ITEM (minicard)->canvas;
+	style = gtk_widget_get_style (GTK_WIDGET (canvas));
+
 	if (selected) {
 		gnome_canvas_item_set (minicard->rect,
-				       "outline_color_gdk", &canvas->style->bg[GTK_STATE_ACTIVE],
+				       "outline_color_gdk", &style->bg[GTK_STATE_ACTIVE],
 				       NULL);
 		gnome_canvas_item_set (minicard->header_rect,
-				       "fill_color_gdk", &canvas->style->bg[GTK_STATE_SELECTED],
+				       "fill_color_gdk", &style->bg[GTK_STATE_SELECTED],
 				       NULL);
 		gnome_canvas_item_set (minicard->header_text,
-				       "fill_color_gdk", &canvas->style->text[GTK_STATE_SELECTED],
+				       "fill_color_gdk", &style->text[GTK_STATE_SELECTED],
 				       NULL);
 	} else {
 		gnome_canvas_item_set (minicard->rect,
 				       "outline_color", NULL,
 				       NULL);
 		gnome_canvas_item_set (minicard->header_rect,
-				       "fill_color_gdk", &canvas->style->bg[GTK_STATE_NORMAL],
+				       "fill_color_gdk", &style->bg[GTK_STATE_NORMAL],
 				       NULL);
 		gnome_canvas_item_set (minicard->header_text,
-				       "fill_color_gdk", &canvas->style->text[GTK_STATE_NORMAL],
+				       "fill_color_gdk", &style->text[GTK_STATE_NORMAL],
 				       NULL);
 	}
 	minicard->selected = selected;
@@ -308,7 +321,7 @@ e_minicard_set_property  (GObject *object, guint prop_id, const GValue *value, G
 		if (e_minicard->width != g_value_get_double (value)) {
 			e_minicard->width = g_value_get_double (value);
 			e_minicard_resize_children(e_minicard);
-			if ( GTK_OBJECT_FLAGS( e_minicard ) & GNOME_CANVAS_ITEM_REALIZED )
+			if (item->flags & GNOME_CANVAS_ITEM_REALIZED)
 				e_canvas_item_request_reflow(item);
 		}
 	  break;
@@ -319,7 +332,7 @@ e_minicard_set_property  (GObject *object, guint prop_id, const GValue *value, G
 				gnome_canvas_item_set(E_MINICARD_FIELD(e_minicard->fields->data)->label,
 						      "has_focus", g_value_get_int (value),
 						      NULL);
-			} else if ( g_value_get_int (value) == E_FOCUS_END ) {
+			} else if (g_value_get_int (value) == E_FOCUS_END) {
 				gnome_canvas_item_set(E_MINICARD_FIELD(g_list_last(e_minicard->fields)->data)->label,
 						      "has_focus", g_value_get_int (value),
 						      NULL);
@@ -454,7 +467,9 @@ e_minicard_finalize (GObject *object)
 static void
 e_minicard_style_set (EMinicard *minicard, GtkStyle *previous_style)
 {
-	if ( (GTK_OBJECT_FLAGS( minicard ) & GNOME_CANVAS_ITEM_REALIZED) )
+	GnomeCanvasItem *item = GNOME_CANVAS_ITEM (minicard);
+
+	if ((item->flags & GNOME_CANVAS_ITEM_REALIZED))
 		set_selected (minicard, minicard->selected);
 }
 
@@ -463,11 +478,14 @@ e_minicard_realize (GnomeCanvasItem *item)
 {
 	EMinicard *e_minicard;
 	GnomeCanvasGroup *group;
-	GtkWidget *canvas;
+	GnomeCanvas *canvas;
+	GtkStyle *style;
 
 	e_minicard = E_MINICARD (item);
-	group = GNOME_CANVAS_GROUP( item );
-	canvas = GTK_WIDGET (GNOME_CANVAS_ITEM (item)->canvas);
+	group = GNOME_CANVAS_GROUP (item);
+
+	canvas = GNOME_CANVAS_ITEM (item)->canvas;
+	style = gtk_widget_get_style (GTK_WIDGET (canvas));
 
 	if (GNOME_CANVAS_ITEM_CLASS(parent_class)->realize)
 		(* GNOME_CANVAS_ITEM_CLASS(parent_class)->realize) (item);
@@ -489,7 +507,7 @@ e_minicard_realize (GnomeCanvasItem *item)
 				 "y1", (double) 2,
 				 "x2", (double) MAX (e_minicard->width - 3, 0),
 				 "y2", (double) MAX (e_minicard->height - 3, 0),
-				 "fill_color_gdk", &canvas->style->bg[GTK_STATE_NORMAL],
+				 "fill_color_gdk", &style->bg[GTK_STATE_NORMAL],
 				 NULL );
 
 	e_minicard->header_text =
@@ -499,7 +517,7 @@ e_minicard_realize (GnomeCanvasItem *item)
 				 "width", (double) MAX( e_minicard->width - 12, 0 ),
 				 "clip", TRUE,
 				 "use_ellipsis", TRUE,
-				 "fill_color_gdk", &canvas->style->fg[GTK_STATE_NORMAL],
+				 "fill_color_gdk", &style->fg[GTK_STATE_NORMAL],
 				 "text", "",
 				 "draw_background", FALSE,
 				 NULL );
@@ -525,50 +543,12 @@ e_minicard_unrealize (GnomeCanvasItem *item)
 		(* GNOME_CANVAS_ITEM_CLASS(parent_class)->unrealize) (item);
 }
 
-/* Callback used when the contact editor is closed */
-static void
-editor_closed_cb (GtkObject *editor, gpointer data)
+void
+e_minicard_activate_editor (EMinicard *minicard)
 {
-	EMinicard *minicard = data;
-	g_object_unref (editor);
-	minicard->editor = NULL;
-}
+	g_return_if_fail (E_IS_MINICARD (minicard));
 
-gboolean
-e_minicard_activate_editor(EMinicard *minicard)
-{
-	GnomeCanvasItem *item = (GnomeCanvasItem *)minicard;
-
-	if (minicard->editor) {
-		eab_editor_raise (minicard->editor);
-	}
-	else {
-		EBook *book = NULL;
-		if (E_IS_MINICARD_VIEW(item->parent)) {
-			g_object_get(item->parent, "book", &book, NULL);
-		}
-
-		if (book != NULL) {
-			if (e_contact_get (minicard->contact, E_CONTACT_IS_LIST)) {
-				EContactListEditor *editor = eab_show_contact_list_editor (book, minicard->contact,
-											   FALSE, e_book_is_writable (book));
-				minicard->editor = EAB_EDITOR (editor);
-			}
-			else {
-				EContactEditor *editor = eab_show_contact_editor (book, minicard->contact,
-										  FALSE, e_book_is_writable (book));
-				minicard->editor = EAB_EDITOR (editor);
-			}
-
-			g_object_ref (minicard->editor);
-			g_signal_connect (minicard->editor, "editor_closed",
-							G_CALLBACK (editor_closed_cb), minicard);
-
-			g_object_unref (book);
-		}
-	}
-
-	return TRUE;
+	g_signal_emit (minicard, signals[OPEN_CONTACT], 0, minicard->contact);
 }
 
 static gboolean
@@ -578,7 +558,7 @@ e_minicard_event (GnomeCanvasItem *item, GdkEvent *event)
 
 	e_minicard = E_MINICARD (item);
 
-	switch ( event->type ) {
+	switch (event->type) {
 	case GDK_FOCUS_CHANGE:
 		{
 			GdkEventFocus *focus_event = (GdkEventFocus *) event;
@@ -630,7 +610,7 @@ e_minicard_event (GnomeCanvasItem *item, GdkEvent *event)
 			e_minicard->button_x = -1;
 			e_minicard->button_y = -1;
 
-			if (GTK_WIDGET_HAS_GRAB (GNOME_CANVAS_ITEM (e_minicard)->canvas)) {
+			if (gtk_widget_has_grab (GTK_WIDGET (GNOME_CANVAS_ITEM (e_minicard)->canvas))) {
 				gtk_grab_remove (GTK_WIDGET (GNOME_CANVAS_ITEM (e_minicard)->canvas));
 				gnome_canvas_item_ungrab (GNOME_CANVAS_ITEM (e_minicard), event->button.time);
 			}
@@ -652,7 +632,8 @@ e_minicard_event (GnomeCanvasItem *item, GdkEvent *event)
 		break;
 	case GDK_2BUTTON_PRESS:
 		if (event->button.button == 1 && E_IS_MINICARD_VIEW (item->parent)) {
-			return e_minicard_activate_editor (e_minicard);
+			e_minicard_activate_editor (e_minicard);
+			return TRUE;
 		}
 		break;
 	case GDK_KEY_PRESS:
@@ -722,7 +703,8 @@ e_minicard_event (GnomeCanvasItem *item, GdkEvent *event)
 		}
 		else if (event->key.keyval == GDK_Return ||
 				event->key.keyval == GDK_KP_Enter) {
-				return e_minicard_activate_editor (e_minicard);
+			e_minicard_activate_editor (e_minicard);
+			return TRUE;
 		}
 		break;
 	default:
@@ -752,7 +734,7 @@ e_minicard_resize_children( EMinicard *e_minicard )
 					    e_minicard->width - e_minicard->list_icon_size - 3,
 					    3);
 	}
-	for ( list = e_minicard->fields; list; list = g_list_next( list ) ) {
+	for (list = e_minicard->fields; list; list = g_list_next( list )) {
 		gnome_canvas_item_set( E_MINICARD_FIELD( list->data )->label,
 				       "width", (double) e_minicard->width - 4.0,
 				       NULL );
@@ -818,8 +800,8 @@ get_email_location (EVCardAttribute *attr)
 	gint i;
 
 	for (i = 0; i < G_N_ELEMENTS (common_location); i++) {
-		if (e_vcard_attribute_has_type (attr, common_location [i].name))
-			return _(common_location [i].pretty_name);
+		if (e_vcard_attribute_has_type (attr, common_location[i].name))
+			return _(common_location[i].pretty_name);
 	}
 
 	return _("Other Email");
@@ -930,9 +912,12 @@ get_left_width (EMinicard *e_minicard, gboolean is_list)
 static void
 remodel( EMinicard *e_minicard )
 {
+	GnomeCanvasItem *item = GNOME_CANVAS_ITEM (e_minicard);
 	gint count = 0;
-	if ( !(GTK_OBJECT_FLAGS( e_minicard ) & GNOME_CANVAS_ITEM_REALIZED) )
+
+	if (!(item->flags & GNOME_CANVAS_ITEM_REALIZED))
 		return;
+
 	if (e_minicard->contact) {
 		EContactField field;
 		GList *list;
@@ -988,7 +973,7 @@ remodel( EMinicard *e_minicard )
 					g_object_set(minicard_field->label,
 						     "field", string,
 						     NULL);
-					count ++;
+					count++;
 				} else {
 					e_minicard_field_destroy(minicard_field);
 				}
@@ -1011,7 +996,6 @@ remodel( EMinicard *e_minicard )
 						count = 5;
 					else
 						count = count + g_list_length (email);
-					is_email=FALSE;
 					g_list_free (email);
 				} else {
 					string = e_contact_get(e_minicard->contact, field);
@@ -1033,7 +1017,8 @@ static void
 e_minicard_reflow(GnomeCanvasItem *item, gint flags)
 {
 	EMinicard *e_minicard = E_MINICARD(item);
-	if (GTK_OBJECT_FLAGS (e_minicard) & GNOME_CANVAS_ITEM_REALIZED) {
+
+	if (item->flags & GNOME_CANVAS_ITEM_REALIZED) {
 		GList *list;
 		gdouble text_height;
 		gint old_height;
@@ -1149,7 +1134,7 @@ e_minicard_drag_begin (EMinicard *minicard, GdkEvent *event)
 	gint ret_val = 0;
 	GnomeCanvasItem *parent;
 	g_signal_emit (minicard,
-		       e_minicard_signals[DRAG_BEGIN], 0,
+		       signals[DRAG_BEGIN], 0,
 		       event, &ret_val);
 
 	parent = GNOME_CANVAS_ITEM (minicard)->parent;

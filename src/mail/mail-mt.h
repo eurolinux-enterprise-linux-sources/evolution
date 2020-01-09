@@ -23,9 +23,7 @@
 #ifndef _MAIL_MT
 #define _MAIL_MT
 
-#include "camel/camel-exception.h"
-#include "camel/camel-object.h"
-#include "camel/camel-operation.h"
+#include <camel/camel.h>
 
 typedef struct _MailMsg MailMsg;
 typedef struct _MailMsgInfo MailMsgInfo;
@@ -43,7 +41,7 @@ struct _MailMsg {
 	guint seq;	/* seq number for synchronisation */
 	gint priority;		/* priority (default = 0) */
 	CamelOperation *cancel;	/* a cancellation/status handle */
-	CamelException ex;	/* an initialised camel exception, upto the caller to use this */
+	GError *error;		/* up to the caller to use this */
 	MailMsgPrivate *priv;
 };
 
@@ -87,11 +85,6 @@ void mail_msg_set_cancelable (gpointer msg, gboolean status);
 gchar *mail_get_password (CamelService *service, const gchar *prompt,
 			 gboolean secret, gboolean *cache);
 
-/* present information and get an ok (or possibly cancel)
- * "type" is as for gnome_message_box_new();
- */
-gboolean mail_user_message (const gchar *type, const gchar *prompt, gboolean allow_cancel);
-
 /* asynchronous event proxies */
 typedef struct _MailAsyncEvent {
 	GMutex *lock;
@@ -108,9 +101,11 @@ typedef void (*MailAsyncFunc)(gpointer , gpointer , gpointer );
 /* create a new async event handler */
 MailAsyncEvent *mail_async_event_new(void);
 /* forward a camel event (or other call) to the gui thread */
-gint mail_async_event_emit(MailAsyncEvent *ea, mail_async_event_t type, MailAsyncFunc func, gpointer , gpointer , gpointer );
+guint mail_async_event_emit(MailAsyncEvent *ea, mail_async_event_t type, MailAsyncFunc func, gpointer , gpointer , gpointer );
 /* wait for all outstanding async events to complete */
 gint mail_async_event_destroy(MailAsyncEvent *ea);
+
+void mail_mt_set_backend (gchar *backend);
 
 /* Call a function in the gui thread, wait for it to return, type is the marshaller to use */
 typedef enum {
@@ -126,12 +121,8 @@ typedef gpointer (*MailMainFunc)();
 
 gpointer mail_call_main(mail_call_t type, MailMainFunc func, ...);
 
-/* use with caution.  only works with active message's anyway */
-void mail_enable_stop(void);
-void mail_disable_stop(void);
-
 /* A generic proxy event for anything that can be proxied during the life of the mailer (almost nothing) */
 /* Note that almost all objects care about the lifecycle of their events, so this cannot be used */
 extern MailAsyncEvent *mail_async_event;
 
-#endif /* ! _MAIL_MT */
+#endif /* _MAIL_MT */

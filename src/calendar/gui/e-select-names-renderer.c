@@ -46,7 +46,7 @@ enum {
 	LAST_SIGNAL
 };
 
-static gint signals [LAST_SIGNAL];
+static gint signals[LAST_SIGNAL];
 
 G_DEFINE_TYPE (ESelectNamesRenderer, e_select_names_renderer, GTK_TYPE_CELL_RENDERER_TEXT)
 
@@ -54,11 +54,13 @@ static void
 e_select_names_renderer_editing_done (GtkCellEditable *editable, ESelectNamesRenderer *cell)
 {
 	GList *addresses = NULL, *names = NULL, *a, *n;
+	gboolean editing_canceled;
 
 	/* We don't need to listen for the focus out event any more */
 	g_signal_handlers_disconnect_matched (editable, G_SIGNAL_MATCH_DATA, 0, 0, NULL, NULL, cell);
 
-	if (GTK_ENTRY (editable)->editing_canceled) {
+	g_object_get (editable, "editing-canceled", &editing_canceled, NULL);
+	if (editing_canceled) {
 		gtk_cell_renderer_stop_editing (GTK_CELL_RENDERER (cell), TRUE);
 		goto cleanup;
 	}
@@ -83,7 +85,7 @@ e_select_names_renderer_editing_done (GtkCellEditable *editable, ESelectNamesRen
 		}
 	}
 
-	g_signal_emit (cell, signals [CELL_EDITED], 0, cell->priv->path, addresses, names);
+	g_signal_emit (cell, signals[CELL_EDITED], 0, cell->priv->path, addresses, names);
 
 	g_list_foreach (addresses, (GFunc)g_free, NULL);
 	g_list_foreach (names, (GFunc)g_free, NULL);
@@ -103,13 +105,20 @@ e_select_names_renderer_start_editing (GtkCellRenderer *cell, GdkEvent *event, G
 	ESelectNamesRenderer *sn_cell = E_SELECT_NAMES_RENDERER (cell);
 	GtkCellRendererText *text_cell = GTK_CELL_RENDERER_TEXT (cell);
 	ESelectNamesEditable *editable;
+	gboolean is_editable;
+	gfloat xalign;
 
-	if (!text_cell->editable)
+	g_object_get (
+		text_cell,
+		"editable", &is_editable,
+		"xalign", &xalign, NULL);
+
+	if (!is_editable)
 		return NULL;
 
 	editable = E_SELECT_NAMES_EDITABLE (e_select_names_editable_new ());
 	gtk_entry_set_has_frame (GTK_ENTRY (editable), FALSE);
-	gtk_entry_set_alignment (GTK_ENTRY (editable), cell->xalign);
+	gtk_entry_set_alignment (GTK_ENTRY (editable), xalign);
 	if (sn_cell->priv->email && *sn_cell->priv->email)
 		e_select_names_editable_set_address (editable, sn_cell->priv->name, sn_cell->priv->email);
 	gtk_widget_show (GTK_WIDGET (editable));

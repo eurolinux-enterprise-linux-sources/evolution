@@ -31,12 +31,10 @@
 #include <libedataserverui/e-source-selector.h>
 #include <libecal/e-cal.h>
 #include <libecal/e-cal-util.h>
-#include <calendar/gui/e-cal-popup.h>
 #include <calendar/common/authentication.h>
 #include <string.h>
 
 #include "format-handler.h"
-#include "e-util/e-error.h"
 
 static void
 display_error_message (GtkWidget *parent, const gchar *message)
@@ -84,7 +82,7 @@ append_tz_to_comp (gpointer key, gpointer value, icalcomponent *toplevel)
 }
 
 static void
-do_save_calendar_ical (FormatHandler *handler, EPlugin *ep, ECalPopupTargetSource *target, ECalSourceType type, gchar *dest_uri)
+do_save_calendar_ical (FormatHandler *handler, ESourceSelector *selector, ECalSourceType type, gchar *dest_uri)
 {
 	ESource *primary_source;
 	ECal *source_client;
@@ -92,15 +90,15 @@ do_save_calendar_ical (FormatHandler *handler, EPlugin *ep, ECalPopupTargetSourc
 	GList *objects;
 	icalcomponent *top_level = NULL;
 
-	primary_source = e_source_selector_peek_primary_selection (target->selector);
+	primary_source = e_source_selector_peek_primary_selection (selector);
 
 	if (!dest_uri)
 		return;
 
 	/* open source client */
-	source_client = (ECal*) auth_new_cal_from_source (primary_source, type);
+	source_client = (ECal*) e_auth_new_cal_from_source (primary_source, type);
 	if (!e_cal_open (source_client, TRUE, &error)) {
-		display_error_message (gtk_widget_get_toplevel (GTK_WIDGET (target->selector)), error->message);
+		display_error_message (gtk_widget_get_toplevel (GTK_WIDGET (selector)), error->message);
 		g_object_unref (source_client);
 		g_error_free (error);
 		return;
@@ -133,7 +131,7 @@ do_save_calendar_ical (FormatHandler *handler, EPlugin *ep, ECalPopupTargetSourc
 		tdata.zones = NULL;
 
 		/* save the file */
-		stream = open_for_writing (GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (target->selector))), dest_uri, &error);
+		stream = open_for_writing (GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (selector))), dest_uri, &error);
 
 		if (stream) {
 			gchar *ical_str = icalcomponent_as_ical_string_r (top_level);
@@ -147,7 +145,7 @@ do_save_calendar_ical (FormatHandler *handler, EPlugin *ep, ECalPopupTargetSourc
 	}
 
 	if (error) {
-		display_error_message (gtk_widget_get_toplevel (GTK_WIDGET (target->selector)), error->message);
+		display_error_message (gtk_widget_get_toplevel (GTK_WIDGET (selector)), error->message);
 		g_error_free (error);
 	}
 

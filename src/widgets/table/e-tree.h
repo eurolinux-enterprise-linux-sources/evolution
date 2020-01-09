@@ -64,12 +64,12 @@ typedef struct {
 	void        (*cursor_activated)   (ETree *et, gint row, ETreePath path);
 	void        (*selection_change)   (ETree *et);
 	void        (*double_click)       (ETree *et, gint row, ETreePath path, gint col, GdkEvent *event);
-	gint        (*right_click)        (ETree *et, gint row, ETreePath path, gint col, GdkEvent *event);
-	gint        (*click)              (ETree *et, gint row, ETreePath path, gint col, GdkEvent *event);
-	gint        (*key_press)          (ETree *et, gint row, ETreePath path, gint col, GdkEvent *event);
-	gint        (*start_drag)         (ETree *et, gint row, ETreePath path, gint col, GdkEvent *event);
-	gint        (*state_change)       (ETree *et);
-	gint        (*white_space_event)  (ETree *et, GdkEvent *event);
+	gboolean    (*right_click)        (ETree *et, gint row, ETreePath path, gint col, GdkEvent *event);
+	gboolean    (*click)              (ETree *et, gint row, ETreePath path, gint col, GdkEvent *event);
+	gboolean    (*key_press)          (ETree *et, gint row, ETreePath path, gint col, GdkEvent *event);
+	gboolean    (*start_drag)         (ETree *et, gint row, ETreePath path, gint col, GdkEvent *event);
+	void        (*state_change)       (ETree *et);
+	gboolean    (*white_space_event)  (ETree *et, GdkEvent *event);
 
 	void  (*set_scroll_adjustments)   (ETree	 *tree,
 					   GtkAdjustment *hadjustment,
@@ -173,6 +173,8 @@ void            e_tree_set_state_object           (ETree                *e_tree,
 						   ETableState          *state);
 void            e_tree_load_state                 (ETree                *e_tree,
 						   const gchar          *filename);
+void		e_tree_show_cursor_after_reflow   (ETree *e_tree);
+
 void            e_tree_set_cursor                 (ETree                *e_tree,
 						   ETreePath             path);
 
@@ -307,9 +309,9 @@ gboolean        e_tree_find_next                  (ETree                *et,
 /* This function is only needed in single_selection_mode. */
 void            e_tree_right_click_up             (ETree                *et);
 
-ETableItem *	e_tree_get_item(ETree * et);
+ETableItem *	e_tree_get_item (ETree * et);
 
-GnomeCanvasItem * e_tree_get_header_item(ETree * et);
+GnomeCanvasItem * e_tree_get_header_item (ETree * et);
 
 void e_tree_set_info_message (ETree *tree, const gchar *info_message);
 

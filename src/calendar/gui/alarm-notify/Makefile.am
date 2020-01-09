@@ -1,37 +1,32 @@
-CORBA_GENERATED_H =				\
-	evolution-calendar.h
-CORBA_GENERATED_C =				\
-	evolution-calendar-common.c		\
-	evolution-calendar-skels.c		\
-	evolution-calendar-stubs.c
-CORBA_GENERATED = $(CORBA_GENERATED_C) $(CORBA_GENERATED_H)
-
-idls = $(top_srcdir)/calendar/idl/evolution-calendar.idl
-idl_flags = $(IDL_INCLUDES) 
-
-$(CORBA_GENERATED_H): $(idls)
-	$(ORBIT_IDL) $(idl_flags) $(top_srcdir)/calendar/idl/evolution-calendar.idl
-$(CORBA_GENERATED_C): $(CORBA_GENERATED_H)
-
-
+if OS_WIN32
+bin_PROGRAMS = evolution-alarm-notify
+else
 privlibexec_PROGRAMS = evolution-alarm-notify
+endif
 
+if HAVE_WINDRES
+EVOLUTIONALARMNOTIFYICON = evolution-alarm-notify-icon.o
+endif
 
-AM_CPPFLAGS = 						\
+evolution_alarm_notify_CPPFLAGS = 			\
+	$(AM_CPPFLAGS)					\
 	-DG_LOG_DOMAIN=\"evolution-alarm-notify\"	\
 	-I$(top_srcdir)					\
 	-I$(top_srcdir)/widgets				\
 	-I$(top_srcdir)/calendar			\
-	-DEVOLUTION_GLADEDIR=\""$(gladedir)"\"		\
+	-DEVOLUTION_UIDIR=\""$(uidir)"\"		\
+	-DEVOLUTION_ICONDIR=\""$(icondir)"\"		\
 	-DEVOLUTION_LOCALEDIR=\""$(localedir)"\"	\
 	-DEVOLUTION_LIBEXECDIR=\""$(privlibexecdir)"\"	\
-	$(EVOLUTION_CALENDAR_CFLAGS)
+	$(GNOME_PLATFORM_CFLAGS)			\
+	$(CAMEL_CFLAGS)					\
+	$(EVOLUTION_CALENDAR_CFLAGS)			\
+	$(CANBERRA_CFLAGS)
 
-glade_DATA =		\
-	alarm-notify.glade
+ui_DATA =		\
+	alarm-notify.ui
 
 evolution_alarm_notify_SOURCES =	\
-	$(CORBA_GENERATED)		\
 	alarm.c				\
 	alarm.h				\
 	alarm-notify.c			\
@@ -51,25 +46,21 @@ evolution_alarm_notify_LDADD =						\
 	$(top_builddir)/widgets/misc/libemiscwidgets.la			\
 	$(top_builddir)/calendar/common/libevolution-calendarprivate.la	\
 	$(CAMEL_LIBS)							\
-	$(EVOLUTION_CALENDAR_LIBS)
+	$(EVOLUTION_CALENDAR_LIBS)					\
+	$(CANBERRA_LIBS)						\
+	$(GNOME_PLATFORM_LIBS)						\
+	$(EVOLUTIONALARMNOTIFYICON)
 
 if OS_WIN32
 evolution_alarm_notify_LDFLAGS = -mwindows
 endif
 
-server_in_files = GNOME_Evolution_Calendar_AlarmNotify.server.in.in
-server_DATA = $(server_in_files:.server.in.in=.server)
-@EVO_SERVER_RULE@
-@INTLTOOL_SERVER_RULE@
+EXTRA_DIST = $(ui_DATA) \
+	evolution-alarm-notify-icon.rc			\
+	evolution-alarm-notify.ico
 
-EXTRA_DIST =			\
-	$(server_in_files)	\
-	$(glade_DATA)
 
-BUILT_SOURCES = $(CORBA_GENERATED) $(server_DATA)
-CLEANFILES = $(BUILT_SOURCES)
-
-dist-hook:
-	cd $(distdir); rm -f $(BUILT_SOURCES)
+evolution-alarm-notify-icon.o: evolution-alarm-notify.ico evolution-alarm-notify-icon.rc
+	$(WINDRES) evolution-alarm-notify-icon.rc evolution-alarm-notify-icon.o
 
 -include $(top_srcdir)/git.mk

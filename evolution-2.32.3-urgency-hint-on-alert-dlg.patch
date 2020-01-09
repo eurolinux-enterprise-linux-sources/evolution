@@ -1,0 +1,44 @@
+diff -up evolution-2.32.3/e-util/e-alert-dialog.c.urgency-hint-on-alert-dlg evolution-2.32.3/e-util/e-alert-dialog.c
+--- evolution-2.32.3/e-util/e-alert-dialog.c.urgency-hint-on-alert-dlg	2011-03-29 20:38:47.000000000 +0200
++++ evolution-2.32.3/e-util/e-alert-dialog.c	2013-06-24 20:14:05.286962502 +0200
+@@ -300,15 +300,40 @@ e_alert_dialog_new_for_args (GtkWindow *
+ 	return d;
+ }
+ 
++static gboolean
++dialog_focus_in_event_cb (GtkWindow *dialog,
++			  GdkEvent *event,
++			  GtkWindow *parent)
++{
++	gtk_window_set_urgency_hint (parent, FALSE);
++
++	return FALSE;
++}
++
+ gint
+ e_alert_run_dialog (GtkWindow *parent, EAlert *alert)
+ {
+ 	GtkWidget *dialog;
+ 	gint res;
++	gulong signal_id = 0;
+ 
+ 	dialog = e_alert_dialog_new (parent, alert);
+ 
++	if (parent) {
++		gtk_window_set_urgency_hint (parent, TRUE);
++		signal_id = g_signal_connect (dialog, "focus-in-event", G_CALLBACK (dialog_focus_in_event_cb), parent);
++	} else {
++		gtk_window_set_urgency_hint (GTK_WINDOW (dialog), TRUE);
++	}
++
+ 	res = gtk_dialog_run ((GtkDialog *)dialog);
++
++	if (parent) {
++		gtk_window_set_urgency_hint (parent, FALSE);
++		if (signal_id)
++			g_signal_handler_disconnect (dialog, signal_id);
++	}
++
+ 	gtk_widget_destroy (dialog);
+ 
+ 	return res;

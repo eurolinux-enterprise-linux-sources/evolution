@@ -23,9 +23,6 @@
 #ifndef __E_CONTACT_EDITOR_H__
 #define __E_CONTACT_EDITOR_H__
 
-#include <bonobo/bonobo-ui-component.h>
-#include <glade/glade.h>
-
 #include "addressbook/gui/contact-editor/eab-editor.h"
 
 #include <libebook/e-book.h>
@@ -62,10 +59,7 @@ struct _EContactEditor
 	EBook *target_book;
 	EContact *contact;
 
-	/* UI handler */
-	BonoboUIComponent *uic;
-
-	GladeXML *gui;
+	GtkBuilder *builder;
 	GtkWidget *app;
 
 	GtkWidget *file_selector;
@@ -90,13 +84,14 @@ struct _EContactEditor
 	/* Whether an image is changed */
 	guint image_changed : 1;
 
+	/* Whether to try to reduce space used */
+	guint compress_ui : 1;
+
 	EList *writable_fields;
 
 	EList *required_fields;
 
-	/* ID for async load_source call */
-	guint  load_source_id;
-	EBook *load_book;
+	GCancellable *cancellable;
 
 	/* signal ids for "writable_status" */
 	gint target_editable_id;
@@ -110,11 +105,12 @@ struct _EContactEditorClass
 	EABEditorClass parent_class;
 };
 
-EContactEditor *e_contact_editor_new                (EBook          *book,
-						     EContact       *contact,
-						     gboolean        is_new_contact,
-						     gboolean        editable);
-GType           e_contact_editor_get_type           (void);
+GType		e_contact_editor_get_type	(void);
+EABEditor	*e_contact_editor_new		(EShell *shell,
+						 EBook *book,
+						 EContact *contact,
+						 gboolean is_new_contact,
+						 gboolean editable);
 
 G_END_DECLS
 

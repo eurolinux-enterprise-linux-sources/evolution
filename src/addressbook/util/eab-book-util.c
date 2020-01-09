@@ -48,18 +48,18 @@ escape (const gchar *str)
 		else
 			g_string_append_c (s, *p);
 
-		p ++;
+		p++;
 	}
 
 	return g_string_free (s, FALSE);
 }
 
 guint
-eab_name_and_email_query (EBook *book,
-			  const gchar *name,
-			  const gchar *email,
-			  EBookListCallback cb,
-			  gpointer closure)
+eab_name_and_email_query (EBook                  *book,
+			  const gchar            *name,
+			  const gchar            *email,
+			  EBookListAsyncCallback  cb,
+			  gpointer                closure)
 {
 	gchar *email_query=NULL, *name_query=NULL;
 	EBookQuery *query;
@@ -119,7 +119,7 @@ eab_name_and_email_query (EBook *book,
 	else
 		return 0;
 
-	tag = e_book_async_get_contacts (book, query, cb, closure);
+	tag = e_book_get_contacts_async (book, query, cb, closure);
 
 	g_free (email_query);
 	g_free (name_query);
@@ -134,10 +134,10 @@ eab_name_and_email_query (EBook *book,
  * Simple nickname query
  */
 guint
-eab_nickname_query (EBook                 *book,
+eab_nickname_query (EBook                  *book,
 		    const gchar            *nickname,
-		    EBookListCallback      cb,
-		    gpointer               closure)
+		    EBookListAsyncCallback  cb,
+		    gpointer                closure)
 {
 	EBookQuery *query;
 	gchar *query_string;
@@ -147,14 +147,14 @@ eab_nickname_query (EBook                 *book,
 	g_return_val_if_fail (nickname != NULL, 0);
 
 	/* The empty-string case shouldn't generate a warning. */
-	if (! *nickname)
+	if (!*nickname)
 		return 0;
 
 	query_string = g_strdup_printf ("(is \"nickname\" \"%s\")", nickname);
 
 	query = e_book_query_from_string (query_string);
 
-	retval = e_book_async_get_contacts (book, query, cb, closure);
+	retval = e_book_get_contacts_async (book, query, cb, closure);
 
 	g_free (query_string);
 	e_book_query_unref (query);
@@ -214,9 +214,9 @@ eab_contact_list_from_string (const gchar *str)
 		p++;
 	}
 
-	q = p = str_stripped = g_string_free (gstr, FALSE);
+	p = str_stripped = g_string_free (gstr, FALSE);
 
-	/* Note: The VCard standard says
+	/* Note: The vCard standard says
 	 *
 	 * vcard = "BEGIN" [ws] ":" [ws] "VCARD" [ws] 1*CRLF
 	 *         items *CRLF "END" [ws] ":" [ws] "VCARD"

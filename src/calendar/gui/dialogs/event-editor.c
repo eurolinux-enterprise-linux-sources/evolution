@@ -30,13 +30,13 @@
 #endif
 
 #include <string.h>
-#include <glade/glade.h>
 #include <glib/gi18n.h>
 
 #include <misc/e-dateedit.h>
+#include <e-util/e-binding.h>
 #include <e-util/e-plugin-ui.h>
 #include <e-util/e-util-private.h>
-#include <evolution-shell-component-utils.h>
+#include <e-util/e-ui-manager.h>
 
 #include "event-page.h"
 #include "recurrence-page.h"
@@ -90,16 +90,27 @@ static const gchar *ui =
 "    </menu>"
 "  </menubar>"
 "  <toolbar name='main-toolbar'>"
-"    <toolitem action='alarms'/>"
-"    <toolitem action='show-time-busy'/>"
-"    <toolitem action='recurrence'/>"
-"    <toolitem action='all-day-event'/>"
-"    <toolitem action='free-busy'/>"
+"    <placeholder name='content'>\n"
+"#if !EXPRESS\n"
+"      <toolitem action='alarms'/>\n"
+"#endif\n"
+"      <toolitem action='show-time-busy'/>\n"
+"#if !EXPRESS\n"
+"      <toolitem action='recurrence'/>\n"
+"#endif\n"
+"      <toolitem action='all-day-event'/>\n"
+"#if !EXPRESS\n"
+"      <toolitem action='free-busy'/>\n"
+"#endif\n"
+"    </placeholder>"
 "  </toolbar>"
 "</ui>";
 
-static void event_editor_edit_comp (CompEditor *editor, ECalComponent *comp);
-static gboolean event_editor_send_comp (CompEditor *editor, ECalComponentItipMethod method, gboolean strip_alarms);
+static void	event_editor_edit_comp		(CompEditor *editor,
+						 ECalComponent *comp);
+static gboolean	event_editor_send_comp		(CompEditor *editor,
+						 ECalComponentItipMethod method,
+						 gboolean strip_alarms);
 
 G_DEFINE_TYPE (EventEditor, event_editor, TYPE_COMP_EDITOR)
 
@@ -109,12 +120,16 @@ create_schedule_page (CompEditor *editor)
 	EventEditorPrivate *priv;
 	ENameSelector *name_selector;
 	CompEditorPage *page;
+	GtkWidget *content_area;
 
 	priv = EVENT_EDITOR_GET_PRIVATE (editor);
 
 	priv->sched_window = gtk_dialog_new_with_buttons (
 		_("Free/Busy"), GTK_WINDOW (editor), GTK_DIALOG_DESTROY_WITH_PARENT,
 		GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, NULL);
+
+	content_area =
+		gtk_dialog_get_content_area (GTK_DIALOG (priv->sched_window));
 
 	g_signal_connect (
 		priv->sched_window, "response",
@@ -126,7 +141,7 @@ create_schedule_page (CompEditor *editor)
 	priv->sched_page = schedule_page_new (priv->model, editor);
 	page = COMP_EDITOR_PAGE (priv->sched_page);
 	gtk_container_add (
-		GTK_CONTAINER (GTK_DIALOG (priv->sched_window)->vbox),
+		GTK_CONTAINER (content_area),
 		comp_editor_page_get_widget (page));
 
 	name_selector = event_page_get_name_selector (priv->event_page);
@@ -182,7 +197,7 @@ static void
 action_send_options_cb (GtkAction *action,
                         EventEditor *editor)
 {
-	event_page_sendoptions_clicked_cb (editor->priv->event_page);
+	event_page_send_options_clicked_cb (editor->priv->event_page);
 }
 
 static void
@@ -195,7 +210,7 @@ action_show_time_busy_cb (GtkToggleAction *action,
 	event_page_set_show_time_busy (editor->priv->event_page, active);
 }
 
-static GtkActionEntry event_entries[] = {
+static GtkActionEntry editable_entries[] = {
 
 	{ "alarms",
 	  "appointment-soon",
@@ -203,6 +218,20 @@ static GtkActionEntry event_entries[] = {
 	  NULL,
 	  N_("Click here to set or unset alarms for this event"),
 	  G_CALLBACK (action_alarms_cb) },
+};
+
+static GtkToggleActionEntry editable_toggle_entries[] = {
+
+	{ "show-time-busy",
+	  GTK_STOCK_DIALOG_ERROR,
+	  N_("Show Time as _Busy"),
+	  NULL,
+	  N_("Toggles whether to show time as busy"),
+	  G_CALLBACK (action_show_time_busy_cb),
+	  FALSE }
+};
+
+static GtkActionEntry event_entries[] = {
 
 	{ "recurrence",
 	  "stock_task-recurring",
@@ -228,14 +257,6 @@ static GtkToggleActionEntry event_toggle_entries[] = {
 	  N_("Toggles whether to have All Day Event"),
 	  G_CALLBACK (action_all_day_event_cb),
 	  FALSE },
-
-	{ "show-time-busy",
-	  GTK_STOCK_DIALOG_ERROR,
-	  N_("Show Time as _Busy"),
-	  NULL,
-	  N_("Toggles whether to show time as busy"),
-	  G_CALLBACK (action_show_time_busy_cb),
-	  FALSE }
 };
 
 static GtkActionEntry meeting_entries[] = {
@@ -247,15 +268,6 @@ static GtkActionEntry meeting_entries[] = {
 	  N_("Query free / busy information for the attendees"),
 	  G_CALLBACK (action_free_busy_cb) }
 };
-
-static void
-event_editor_client_changed_cb (EventEditor *ee)
-{
-	ECal *client;
-
-	client = comp_editor_get_client (COMP_EDITOR (ee));
-	e_meeting_store_set_e_cal (ee->priv->model, client);
-}
 
 static void
 event_editor_model_changed_cb (EventEditor *ee)
@@ -277,8 +289,12 @@ event_editor_constructor (GType type,
 	CompEditorPage *page;
 	EventEditorPrivate *priv;
 	GtkActionGroup *action_group;
+	GtkWidget *content_area;
+	EShell *shell;
 	ECal *client;
 	gboolean is_meeting;
+	GtkWidget *alarm_page;
+	GtkWidget *attendee_page;
 
 	/* Chain up to parent's constructor() method. */
 	object = G_OBJECT_CLASS (event_editor_parent_class)->constructor (
@@ -286,6 +302,8 @@ event_editor_constructor (GType type,
 
 	editor = COMP_EDITOR (object);
 	priv = EVENT_EDITOR_GET_PRIVATE (object);
+
+	shell = comp_editor_get_shell (editor);
 
 	client = comp_editor_get_client (editor);
 	flags = comp_editor_get_flags (editor);
@@ -298,7 +316,7 @@ event_editor_constructor (GType type,
 	priv->event_page = event_page_new (priv->model, editor);
 	comp_editor_append_page (
 		editor, COMP_EDITOR_PAGE (priv->event_page),
-		_("Appoint_ment"), TRUE);
+		_("Appointment"), TRUE);
 
 	priv->recur_window = gtk_dialog_new_with_buttons (
 		_("Recurrence"), GTK_WINDOW (editor), GTK_DIALOG_MODAL,
@@ -310,13 +328,41 @@ event_editor_constructor (GType type,
 		priv->recur_window, "delete-event",
 		G_CALLBACK(gtk_widget_hide_on_delete), NULL);
 
+	content_area =
+		gtk_dialog_get_content_area (GTK_DIALOG (priv->recur_window));
+
 	priv->recur_page = recurrence_page_new (editor);
 	page = COMP_EDITOR_PAGE (priv->recur_page);
-	gtk_container_add (
-		GTK_CONTAINER ((GTK_DIALOG (priv->recur_window)->vbox)),
-		comp_editor_page_get_widget (page));
-	gtk_widget_show_all (gtk_bin_get_child (GTK_BIN (priv->recur_window)));
-	comp_editor_append_page (editor, page, NULL, FALSE);
+	if (!e_shell_get_express_mode (shell)) {
+		gtk_container_add (
+			GTK_CONTAINER (content_area),
+			comp_editor_page_get_widget (page));
+		gtk_widget_show_all (gtk_bin_get_child (GTK_BIN (priv->recur_window)));
+		comp_editor_append_page (editor, page, NULL, FALSE);
+	} else {
+		comp_editor_append_page (editor, page, _("Recurrence"), TRUE);
+	}
+
+	if (e_shell_get_express_mode (shell)) {
+		ENameSelector *name_selector;
+
+		priv->sched_page = schedule_page_new (priv->model, editor);
+		page = COMP_EDITOR_PAGE (priv->sched_page);
+
+		name_selector = event_page_get_name_selector (priv->event_page);
+		schedule_page_set_name_selector (priv->sched_page, name_selector);
+
+		comp_editor_append_page (editor, page, _("Free/Busy"), TRUE);
+		schedule_page_update_free_busy (priv->sched_page);
+
+		e_binding_new (action_group, "visible", comp_editor_page_get_widget (page), "visible");
+
+		/* Alarm page */
+		alarm_page = event_page_get_alarm_page (priv->event_page);
+		comp_editor_append_widget (editor, alarm_page, _("Alarm"), TRUE);
+		g_object_unref(alarm_page);
+
+	}
 
 	if (is_meeting) {
 
@@ -324,7 +370,9 @@ event_editor_constructor (GType type,
 			event_page_show_options (priv->event_page);
 
 		comp_editor_set_group_item (editor, TRUE);
-		if (!((flags & COMP_EDITOR_USER_ORG) || (flags & COMP_EDITOR_DELEGATE)|| (flags & COMP_EDITOR_NEW_ITEM))) {
+		if (!((flags & COMP_EDITOR_USER_ORG) ||
+			(flags & COMP_EDITOR_DELEGATE) ||
+			(flags & COMP_EDITOR_NEW_ITEM))) {
 			GtkAction *action;
 
 			action = comp_editor_get_action (editor, "free-busy");
@@ -333,6 +381,12 @@ event_editor_constructor (GType type,
 
 		event_page_set_meeting (priv->event_page, TRUE);
 		priv->meeting_shown=TRUE;
+
+		if (e_shell_get_express_mode (shell)) {
+			attendee_page = event_page_get_attendee_page (priv->event_page);
+			comp_editor_append_widget (editor, attendee_page, _("Attendees"), TRUE);
+			g_object_unref(attendee_page);
+		}
 	}
 
 	return object;
@@ -361,12 +415,26 @@ event_editor_dispose (GObject *object)
 	}
 
 	if (priv->model) {
+		g_signal_handlers_disconnect_by_func (
+			priv->model, event_editor_model_changed_cb, object);
 		g_object_unref (priv->model);
 		priv->model = NULL;
 	}
 
 	/* Chain up to parent's dispose() method. */
 	G_OBJECT_CLASS (event_editor_parent_class)->dispose (object);
+}
+
+static void
+event_editor_constructed (GObject *object)
+{
+	EventEditorPrivate *priv;
+
+	priv = EVENT_EDITOR_GET_PRIVATE (object);
+
+	e_binding_new (
+		object, "client",
+		priv->model, "client");
 }
 
 static void
@@ -446,6 +514,7 @@ event_editor_class_init (EventEditorClass *class)
 	object_class = G_OBJECT_CLASS (class);
 	object_class->constructor = event_editor_constructor;
 	object_class->dispose = event_editor_dispose;
+	object_class->constructed = event_editor_constructed;
 
 	editor_class = COMP_EDITOR_CLASS (class);
 	editor_class->help_section = "usage-calendar-apts";
@@ -466,6 +535,7 @@ event_editor_init (EventEditor *ee)
 	GtkUIManager *ui_manager;
 	GtkActionGroup *action_group;
 	GtkAction *action;
+	const gchar *id;
 	GError *error = NULL;
 
 	ee->priv = EVENT_EDITOR_GET_PRIVATE (ee);
@@ -481,27 +551,37 @@ event_editor_init (EventEditor *ee)
 		action_group, event_toggle_entries,
 		G_N_ELEMENTS (event_toggle_entries), ee);
 
+	action_group = comp_editor_get_action_group (editor, "editable");
+	gtk_action_group_add_actions (
+		action_group, editable_entries,
+		G_N_ELEMENTS (editable_entries), ee);
+	gtk_action_group_add_toggle_actions (
+		action_group, editable_toggle_entries,
+		G_N_ELEMENTS (editable_toggle_entries), ee);
+
 	action_group = comp_editor_get_action_group (editor, "coordinated");
 	gtk_action_group_add_actions (
 		action_group, meeting_entries,
 		G_N_ELEMENTS (meeting_entries), ee);
 
 	ui_manager = comp_editor_get_ui_manager (editor);
-	gtk_ui_manager_add_ui_from_string (ui_manager, ui, -1, &error);
-	e_plugin_ui_register_manager ("event-editor", ui_manager, ee);
+	e_ui_manager_add_ui_from_string (E_UI_MANAGER (ui_manager), ui, &error);
+
+	id = "org.gnome.evolution.event-editor";
+	e_plugin_ui_register_manager (ui_manager, id, ee);
+	e_plugin_ui_enable_manager (ui_manager, id);
 
 	if (error != NULL) {
 		g_critical ("%s: %s", G_STRFUNC, error->message);
 		g_error_free (error);
 	}
 
+	action = comp_editor_get_action (editor, "print");
+	gtk_action_set_tooltip (action, _("Print this event"));
+
 	/* Hide send options. */
 	action = comp_editor_get_action (editor, "send-options");
 	gtk_action_set_visible (action, FALSE);
-
-	g_signal_connect (
-		ee, "notify::client",
-		G_CALLBACK (event_editor_client_changed_cb), NULL);
 
 	g_signal_connect_swapped (
 		ee->priv->model, "row_changed",
@@ -562,7 +642,8 @@ event_editor_edit_comp (CompEditor *editor, ECalComponent *comp)
 			gtk_action_set_visible (action, TRUE);
 		}
 
-		if (!(delegate && e_cal_get_static_capability (client, CAL_STATIC_CAPABILITY_DELEGATE_TO_MANY))) {
+		if (!(delegate && e_cal_get_static_capability (
+			client, CAL_STATIC_CAPABILITY_DELEGATE_TO_MANY))) {
 			event_page_remove_all_attendees (priv->event_page);
 
 			for (l = attendees; l != NULL; l = l->next) {
@@ -572,11 +653,15 @@ event_editor_edit_comp (CompEditor *editor, ECalComponent *comp)
 				if (delegate &&	!g_str_equal (itip_strip_mailto (ca->value), user_email))
 					continue;
 
-				ia = E_MEETING_ATTENDEE (e_meeting_attendee_new_from_e_cal_component_attendee (ca));
+				ia = E_MEETING_ATTENDEE (
+					e_meeting_attendee_new_from_e_cal_component_attendee (ca));
 
-				/* If we aren't the organizer or the attendee is just delegated, don't allow editing */
-				if (!comp_editor_get_user_org (editor) || e_meeting_attendee_is_set_delto (ia))
-					e_meeting_attendee_set_edit_level (ia,  E_MEETING_ATTENDEE_EDIT_NONE);
+				/* If we aren't the organizer or the attendee
+				 * is just delegated, don't allow editing. */
+				if (!comp_editor_get_user_org (editor) ||
+					e_meeting_attendee_is_set_delto (ia))
+					e_meeting_attendee_set_edit_level (
+						ia,  E_MEETING_ATTENDEE_EDIT_NONE);
 
 				event_page_add_attendee (priv->event_page, ia);
 
@@ -590,7 +675,9 @@ event_editor_edit_comp (CompEditor *editor, ECalComponent *comp)
 				EIterator *it;
 
 				accounts = itip_addresses_get ();
-				for (it = e_list_get_iterator((EList *)accounts);e_iterator_is_valid(it);e_iterator_next(it)) {
+				for (it = e_list_get_iterator((EList *)accounts);
+					e_iterator_is_valid(it);
+					e_iterator_next(it)) {
 					EMeetingAttendee *ia;
 
 					account = (EAccount*)e_iterator_get(it);
@@ -611,16 +698,21 @@ event_editor_edit_comp (CompEditor *editor, ECalComponent *comp)
 
 		event_page_set_meeting (priv->event_page, TRUE);
 		priv->meeting_shown = TRUE;
+		g_free (user_email);
 	}
 	e_cal_component_free_attendee_list (attendees);
 
-	comp_editor_set_needs_send (editor, priv->meeting_shown && (itip_organizer_is_user (comp, client) || itip_sentby_is_user (comp, client)));
+	comp_editor_set_needs_send (
+		editor, priv->meeting_shown && (itip_organizer_is_user (
+		comp, client) || itip_sentby_is_user (comp, client)));
 
 	priv->updating = FALSE;
 }
 
 static gboolean
-event_editor_send_comp (CompEditor *editor, ECalComponentItipMethod method, gboolean strip_alarms)
+event_editor_send_comp (CompEditor *editor,
+                        ECalComponentItipMethod method,
+                        gboolean strip_alarms)
 {
 	EventEditorPrivate *priv;
 	ECalComponent *comp = NULL;
@@ -637,7 +729,7 @@ event_editor_send_comp (CompEditor *editor, ECalComponentItipMethod method, gboo
 		ECal *client;
 		gboolean result;
 
-		client = e_meeting_store_get_e_cal (priv->model);
+		client = e_meeting_store_get_client (priv->model);
 		result = itip_send_comp (E_CAL_COMPONENT_METHOD_CANCEL, comp,
 				client, NULL, NULL, NULL, strip_alarms, FALSE);
 		g_object_unref (comp);
@@ -648,7 +740,8 @@ event_editor_send_comp (CompEditor *editor, ECalComponentItipMethod method, gboo
 
  parent:
 	if (COMP_EDITOR_CLASS (event_editor_parent_class)->send_comp)
-		return COMP_EDITOR_CLASS (event_editor_parent_class)->send_comp (editor, method, strip_alarms);
+		return COMP_EDITOR_CLASS (event_editor_parent_class)->
+			send_comp (editor, method, strip_alarms);
 
 	return FALSE;
 }
@@ -663,13 +756,16 @@ event_editor_send_comp (CompEditor *editor, ECalComponentItipMethod method, gboo
  * editor could not be created.
  **/
 CompEditor *
-event_editor_new (ECal *client, CompEditorFlags flags)
+event_editor_new (ECal *client,
+                  EShell *shell,
+                  CompEditorFlags flags)
 {
 	g_return_val_if_fail (E_IS_CAL (client), NULL);
+	g_return_val_if_fail (E_IS_SHELL (shell), NULL);
 
 	return g_object_new (
 		TYPE_EVENT_EDITOR,
-		"flags", flags, "client", client, NULL);
+		"client", client, "flags", flags, "shell", shell, NULL);
 }
 
 void

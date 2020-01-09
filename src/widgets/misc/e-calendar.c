@@ -97,7 +97,10 @@ static void e_calendar_start_auto_move	(ECalendar	*cal,
 static gboolean e_calendar_auto_move_handler	(gpointer	 data);
 static void e_calendar_stop_auto_move	(ECalendar	*cal);
 
-G_DEFINE_TYPE (ECalendar, e_calendar, E_CANVAS_TYPE)
+G_DEFINE_TYPE (
+	ECalendar,
+	e_calendar,
+	E_TYPE_CANVAS)
 
 static void
 e_calendar_class_init (ECalendarClass *class)
@@ -241,12 +244,16 @@ e_calendar_destroy		(GtkObject *object)
 static void
 e_calendar_realize (GtkWidget *widget)
 {
+	GtkStyle *style;
+	GdkWindow *window;
+
 	(*GTK_WIDGET_CLASS (e_calendar_parent_class)->realize) (widget);
 
 	/* Set the background of the canvas window to the normal color,
 	   or the arrow buttons are not displayed properly. */
-	gdk_window_set_background (GTK_LAYOUT (widget)->bin_window,
-				   &widget->style->bg[GTK_STATE_NORMAL]);
+	style = gtk_widget_get_style (widget);
+	window = gtk_layout_get_bin_window (GTK_LAYOUT (widget));
+	gdk_window_set_background (window, &style->bg[GTK_STATE_NORMAL]);
 }
 
 static void
@@ -255,16 +262,21 @@ e_calendar_style_set		(GtkWidget	*widget,
 {
 	ECalendar *e_calendar;
 
-	e_calendar = E_CALENDAR(widget);
+	e_calendar = E_CALENDAR (widget);
 	if (GTK_WIDGET_CLASS (e_calendar_parent_class)->style_set)
 		(*GTK_WIDGET_CLASS (e_calendar_parent_class)->style_set) (widget,
 							       previous_style);
 
 	/* Set the background of the canvas window to the normal color,
 	   or the arrow buttons are not displayed properly. */
-	if (GTK_WIDGET_REALIZED (widget->parent))
-		gdk_window_set_background (GTK_LAYOUT (widget)->bin_window,
-					   &widget->style->bg[GTK_STATE_NORMAL]);
+	if (gtk_widget_get_realized (widget)) {
+		GtkStyle *style;
+		GdkWindow *window;
+
+		style = gtk_widget_get_style (widget);
+		window = gtk_layout_get_bin_window (GTK_LAYOUT (widget));
+		gdk_window_set_background (window, &style->bg[GTK_STATE_NORMAL]);
+	}
 	e_calendar_item_style_set (widget, e_calendar->calitem);
 }
 
@@ -277,9 +289,9 @@ e_calendar_size_request		(GtkWidget      *widget,
 	gint col_width, row_height, width, height;
 
 	cal = E_CALENDAR (widget);
-	style = GTK_WIDGET (cal)->style;
+	style = gtk_widget_get_style (GTK_WIDGET (cal));
 
-	g_object_get((cal->calitem),
+	g_object_get ((cal->calitem),
 			"row_height", &row_height,
 			"column_width", &col_width,
 			NULL);
@@ -296,6 +308,8 @@ e_calendar_size_allocate	(GtkWidget	*widget,
 				 GtkAllocation	*allocation)
 {
 	ECalendar *cal;
+	GtkStyle *style;
+	GtkAllocation old_allocation;
 	PangoFontDescription *font_desc;
 	PangoContext *pango_context;
 	PangoFontMetrics *font_metrics;
@@ -303,8 +317,9 @@ e_calendar_size_allocate	(GtkWidget	*widget,
 	gdouble xthickness, ythickness, arrow_button_size;
 
 	cal = E_CALENDAR (widget);
-	xthickness = widget->style->xthickness;
-	ythickness = widget->style->ythickness;
+	style = gtk_widget_get_style (widget);
+	xthickness = style->xthickness;
+	ythickness = style->ythickness;
 
 	(*GTK_WIDGET_CLASS (e_calendar_parent_class)->size_allocate) (widget, allocation);
 
@@ -317,8 +332,9 @@ e_calendar_size_allocate	(GtkWidget	*widget,
 	/* Set the scroll region to its allocated size, if changed. */
 	gnome_canvas_get_scroll_region (GNOME_CANVAS (cal),
 					NULL, NULL, &old_x2, &old_y2);
-	new_x2 = widget->allocation.width - 1;
-	new_y2 = widget->allocation.height - 1;
+	gtk_widget_get_allocation (widget, &old_allocation);
+	new_x2 = old_allocation.width - 1;
+	new_y2 = old_allocation.height - 1;
 	if (old_x2 != new_x2 || old_y2 != new_y2)
 		gnome_canvas_set_scroll_region (GNOME_CANVAS (cal),
 						0, 0, new_x2, new_y2);
@@ -412,7 +428,7 @@ e_calendar_get_border_size	(ECalendar	*cal,
 
 	g_return_if_fail (E_IS_CALENDAR (cal));
 
-	style = GTK_WIDGET (cal)->style;
+	style = gtk_widget_get_style (GTK_WIDGET (cal));
 
 	if (style) {
 		*top    = style->ythickness;
@@ -543,10 +559,10 @@ e_calendar_button_has_focus (ECalendar	*cal)
 
 	g_return_val_if_fail (E_IS_CALENDAR (cal), FALSE);
 
-	prev_widget = GNOME_CANVAS_WIDGET(cal->prev_item)->widget;
-	next_widget = GNOME_CANVAS_WIDGET(cal->next_item)->widget;
-	ret_val = GTK_WIDGET_HAS_FOCUS (prev_widget) ||
-		GTK_WIDGET_HAS_FOCUS (next_widget);
+	prev_widget = GNOME_CANVAS_WIDGET (cal->prev_item)->widget;
+	next_widget = GNOME_CANVAS_WIDGET (cal->next_item)->widget;
+	ret_val = gtk_widget_has_focus (prev_widget) ||
+		gtk_widget_has_focus (next_widget);
 	return ret_val;
 }
 
@@ -565,7 +581,7 @@ e_calendar_focus (GtkWidget *widget, GtkDirectionType direction)
 	cal = E_CALENDAR (widget);
 	canvas = GNOME_CANVAS (widget);
 
-	if (!GTK_WIDGET_CAN_FOCUS (widget))
+	if (!gtk_widget_get_can_focus (widget))
 		return FALSE;
 
 	children[0] = GNOME_CANVAS_ITEM (cal->calitem);
@@ -573,8 +589,11 @@ e_calendar_focus (GtkWidget *widget, GtkDirectionType direction)
 	children[2] = cal->next_item;
 
 	/* get current focused item, if e-calendar has had focus */
-	if (GTK_WIDGET_HAS_FOCUS (widget) || e_calendar_button_has_focus (cal))
-		for (index = 0; canvas->focused_item && index < E_CALENDAR_FOCUS_CHILDREN_NUM; ++index) {
+	if (gtk_widget_has_focus (widget) || e_calendar_button_has_focus (cal))
+		for (index = 0; index < E_CALENDAR_FOCUS_CHILDREN_NUM; ++index) {
+			if (canvas->focused_item == NULL)
+				break;
+
 			if (children[index] == canvas->focused_item) {
 				focused_index = index;
 				break;
@@ -607,26 +626,29 @@ e_calendar_focus (GtkWidget *widget, GtkDirectionType direction)
 void
 e_calendar_set_focusable (ECalendar *cal, gboolean focusable)
 {
+	GtkWidget *widget;
 	GtkWidget *prev_widget, *next_widget;
+	GtkWidget *toplevel;
 
 	g_return_if_fail (E_IS_CALENDAR (cal));
 
-	prev_widget = GNOME_CANVAS_WIDGET(cal->prev_item)->widget;
-	next_widget = GNOME_CANVAS_WIDGET(cal->next_item)->widget;
+	widget = GTK_WIDGET (cal);
+	prev_widget = GNOME_CANVAS_WIDGET (cal->prev_item)->widget;
+	next_widget = GNOME_CANVAS_WIDGET (cal->next_item)->widget;
 
 	if (focusable) {
-		GTK_WIDGET_SET_FLAGS (cal, GTK_CAN_FOCUS);
-		GTK_WIDGET_SET_FLAGS (prev_widget, GTK_CAN_FOCUS);
-		GTK_WIDGET_SET_FLAGS (next_widget, GTK_CAN_FOCUS);
+		gtk_widget_set_can_focus (widget, TRUE);
+		gtk_widget_set_can_focus (prev_widget, TRUE);
+		gtk_widget_set_can_focus (next_widget, TRUE);
 	}
 	else {
-		if (GTK_WIDGET_HAS_FOCUS (cal) || e_calendar_button_has_focus (cal)) {
-			GtkWidget *toplevel = gtk_widget_get_toplevel (GTK_WIDGET (cal));
+		if (gtk_widget_has_focus (GTK_WIDGET (cal)) || e_calendar_button_has_focus (cal)) {
+			toplevel = gtk_widget_get_toplevel (widget);
 			if (toplevel)
 				gtk_widget_grab_focus (toplevel);
 		}
-		GTK_WIDGET_UNSET_FLAGS (cal, GTK_CAN_FOCUS);
-		GTK_WIDGET_UNSET_FLAGS (prev_widget, GTK_CAN_FOCUS);
-		GTK_WIDGET_UNSET_FLAGS (next_widget, GTK_CAN_FOCUS);
+		gtk_widget_set_can_focus (widget, FALSE);
+		gtk_widget_set_can_focus (prev_widget, FALSE);
+		gtk_widget_set_can_focus (next_widget, FALSE);
 	}
 }

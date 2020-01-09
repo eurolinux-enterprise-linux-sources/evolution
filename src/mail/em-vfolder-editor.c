@@ -30,41 +30,51 @@
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
 
+#include "e-util/e-util.h"
 #include "e-util/e-util-private.h"
+#include "e-util/gconf-bridge.h"
 
 #include "em-vfolder-editor.h"
 #include "em-vfolder-rule.h"
 
-#define d(x)
+static gpointer parent_class;
 
-static FilterRule *create_rule (RuleEditor *re);
-
-static RuleEditorClass *parent_class = NULL;
-
-static void
-em_vfolder_editor_finalise (GObject *obj)
+static EFilterRule *
+vfolder_editor_create_rule (ERuleEditor *rule_editor)
 {
-        G_OBJECT_CLASS (parent_class)->finalize (obj);
+	EFilterRule *rule;
+	EFilterPart *part;
+
+	/* create a rule with 1 part in it */
+	rule = (EFilterRule *) em_vfolder_rule_new ();
+	part = e_rule_context_next_part (rule_editor->context, NULL);
+	e_filter_rule_add_part (rule, e_filter_part_clone (part));
+
+	return rule;
 }
 
 static void
-em_vfolder_editor_class_init (EMVFolderEditorClass *klass)
+vfolder_editor_class_init (EMVFolderEditorClass *class)
 {
-	GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
-	RuleEditorClass *re_class = (RuleEditorClass *) klass;
+	ERuleEditorClass *rule_editor_class;
 
-	parent_class = g_type_class_ref (rule_editor_get_type ());
+	parent_class = g_type_class_peek_parent (class);
 
-	gobject_class->finalize = em_vfolder_editor_finalise;
-
-	/* override methods */
-	re_class->create_rule = create_rule;
+	rule_editor_class = E_RULE_EDITOR_CLASS (class);
+	rule_editor_class->create_rule = vfolder_editor_create_rule;
 }
 
 static void
-em_vfolder_editor_init (EMVFolderEditor *ve)
+vfolder_editor_init (EMVFolderEditor *vfolder_editor)
 {
-	;
+	GConfBridge *bridge;
+	const gchar *key_prefix;
+
+	bridge = gconf_bridge_get ();
+	key_prefix = "/apps/evolution/mail/vfolder_editor";
+
+	gconf_bridge_bind_window_size (
+		bridge, key_prefix, GTK_WINDOW (vfolder_editor));
 }
 
 GType
@@ -72,20 +82,22 @@ em_vfolder_editor_get_type (void)
 {
 	static GType type = 0;
 
-	if (!type) {
-		static const GTypeInfo info = {
+	if (G_UNLIKELY (type == 0)) {
+		static const GTypeInfo type_info = {
 			sizeof (EMVFolderEditorClass),
-			NULL, /* base_class_init */
-			NULL, /* base_class_finalize */
-			(GClassInitFunc) em_vfolder_editor_class_init,
-			NULL, /* class_finalize */
-			NULL, /* class_data */
+			(GBaseInitFunc) NULL,
+			(GBaseFinalizeFunc) NULL,
+			(GClassInitFunc) vfolder_editor_class_init,
+			(GClassFinalizeFunc) NULL,
+			NULL,  /* class_data */
 			sizeof (EMVFolderEditor),
-			0,    /* n_preallocs */
-			(GInstanceInitFunc) em_vfolder_editor_init,
+			0,     /* n_preallocs */
+			(GInstanceInitFunc) vfolder_editor_init,
+			NULL   /* value_table */
 		};
 
-		type = g_type_register_static (RULE_TYPE_EDITOR, "EMVFolderEditor", &info, 0);
+		type = g_type_register_static (
+			E_TYPE_RULE_EDITOR, "EMVFolderEditor", &type_info, 0);
 	}
 
 	return type;
@@ -98,37 +110,23 @@ em_vfolder_editor_get_type (void)
  *
  * Return value: A new #EMVFolderEditor object.
  **/
-EMVFolderEditor *
+GtkWidget *
 em_vfolder_editor_new (EMVFolderContext *vc)
 {
-	EMVFolderEditor *ve = (EMVFolderEditor *) g_object_new (em_vfolder_editor_get_type(), NULL);
-	GladeXML *gui;
-	gchar *gladefile;
+	EMVFolderEditor *ve;
+	GtkBuilder *builder;
 
-	gladefile = g_build_filename (EVOLUTION_GLADEDIR,
-				      "filter.glade",
-				      NULL);
-	gui = glade_xml_new (gladefile, "rule_editor", NULL);
-	g_free (gladefile);
+	ve = g_object_new (EM_TYPE_VFOLDER_EDITOR, NULL);
 
-	rule_editor_construct ((RuleEditor *) ve, (RuleContext *) vc, gui, "incoming", _("Search _Folders"));
-	gtk_widget_hide (glade_xml_get_widget (gui, "label17"));
-	gtk_widget_hide (glade_xml_get_widget (gui, "filter_source_combobox"));
-	g_object_unref (gui);
+	builder = gtk_builder_new ();
+	e_load_ui_builder_definition (builder, "filter.ui");
 
-	return ve;
-}
+	e_rule_editor_construct (
+		(ERuleEditor *) ve, (ERuleContext *) vc,
+		builder, "incoming", _("Search _Folders"));
+	gtk_widget_hide (e_builder_get_widget (builder, "label17"));
+	gtk_widget_hide (e_builder_get_widget (builder, "filter_source_combobox"));
+	g_object_unref (builder);
 
-static FilterRule *
-create_rule (RuleEditor *re)
-{
-	FilterRule *rule = filter_rule_new ();
-	FilterPart *part;
-
-	/* create a rule with 1 part in it */
-	rule = (FilterRule *) em_vfolder_rule_new ();
-	part = rule_context_next_part (re->context, NULL);
-	filter_rule_add_part (rule, filter_part_clone (part));
-
-	return rule;
+	return GTK_WIDGET (ve);
 }

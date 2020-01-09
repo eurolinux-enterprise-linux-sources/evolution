@@ -4,8 +4,10 @@ errordir = $(privdatadir)/errors
 # provides error rule
 @EVO_PLUGIN_RULE@
 
-noinst_LTLIBRARIES = libcomposer.la
+privsolib_LTLIBRARIES = libcomposer.la
+
 libcomposerincludedir = $(privincludedir)/composer
+
 libcomposerinclude_HEADERS = 			\
 	e-composer-header.h			\
 	e-composer-header-table.h		\
@@ -16,10 +18,10 @@ libcomposerinclude_HEADERS = 			\
 	e-composer-text-header.h		\
 	e-composer-common.h			\
 	e-composer-actions.h			\
-	e-composer-autosave.h			\
 	e-msg-composer.h
 
-AM_CPPFLAGS =								\
+libcomposer_la_CPPFLAGS =						\
+	$(AM_CPPFLAGS)							\
 	-I$(top_srcdir)							\
 	-I$(top_builddir)						\
 	-I$(top_builddir)/composer					\
@@ -30,19 +32,16 @@ AM_CPPFLAGS =								\
 	-I$(top_builddir)/shell						\
 	-I$(top_srcdir)/shell						\
 	-DEVOLUTION_DATADIR=\"$(datadir)\"				\
-	-DEVOLUTION_IMAGESDIR=\"$(imagesdir)\"                          \
-	-DEVOLUTION_UIDIR=\"$(evolutionuidir)\"				\
-	-DEVOLUTION_GLADEDIR=\"$(gladedir)\"				\
+	-DEVOLUTION_IMAGESDIR=\"$(imagesdir)\"				\
+	-DEVOLUTION_UIDIR=\"$(uidir)\"					\
 	-DPREFIX=\"$(prefix)\"						\
 	-DG_LOG_DOMAIN=\"composer\"					\
+	$(GNOME_PLATFORM_CFLAGS)					\
 	$(EVOLUTION_MAIL_CFLAGS)
 
 libcomposer_la_SOURCES = 			\
-	$(IDL_GENERATED)			\
-	$(HTML_EDITOR_GENERATED)		\
 	$(libcomposerinclude_HEADERS)		\
 	e-composer-actions.c			\
-	e-composer-autosave.c			\
 	e-composer-header.c			\
 	e-composer-header-table.c		\
 	e-composer-from-header.c		\
@@ -52,16 +51,25 @@ libcomposer_la_SOURCES = 			\
 	e-composer-text-header.c		\
 	e-msg-composer.c
 
+libcomposer_la_LDFLAGS = $(NO_UNDEFINED)
 
-uidir = $(evolutionuidir)
+libcomposer_la_LIBADD =					\
+	$(top_builddir)/e-util/libeutil.la		\
+	$(top_builddir)/widgets/misc/libemiscwidgets.la	\
+	$(top_builddir)/shell/libeshell.la		\
+	$(top_builddir)/em-format/libemformat.la	\
+	$(top_builddir)/addressbook/gui/contact-editor/libecontacteditor.la		\
+	$(top_builddir)/addressbook/gui/contact-list-editor/libecontactlisteditor.la	\
+	$(EVOLUTION_MAIL_LIBS)				\
+	$(GNOME_PLATFORM_LIBS)
+
 ui_DATA = evolution-composer.ui
 
 EXTRA_DIST =					\
 	$(ui_DATA)				\
-	mail-composer.error.xml			\
-	ChangeLog.pre-1-4
+	mail-composer.error.xml
 
-BUILT_SOURCES = $(IDL_GENERATED) $(HTML_EDITOR_GENERATED) $(error_DATA)
+BUILT_SOURCES = $(error_DATA)
 CLEANFILES = $(BUILT_SOURCES)
 
 dist-hook:

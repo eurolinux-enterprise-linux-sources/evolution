@@ -23,6 +23,15 @@
 	(G_TYPE_INSTANCE_GET_PRIVATE \
 	((obj), E_TYPE_ONLINE_BUTTON, EOnlineButtonPrivate))
 
+#define ONLINE_TOOLTIP \
+	_("Evolution is currently online.  Click this button to work offline.")
+
+#define OFFLINE_TOOLTIP \
+	_("Evolution is currently offline.  Click this button to work online.")
+
+#define NETWORK_UNAVAILABLE_TOOLTIP \
+	_("Evolution is currently offline because the network is unavailable.")
+
 struct _EOnlineButtonPrivate {
 	GtkWidget *image;
 	gboolean online;
@@ -33,7 +42,25 @@ enum {
 	PROP_ONLINE
 };
 
-static gpointer parent_class;
+G_DEFINE_TYPE (
+	EOnlineButton,
+	e_online_button,
+	GTK_TYPE_BUTTON)
+
+static void
+online_button_update_tooltip (EOnlineButton *button)
+{
+	const gchar *tooltip;
+
+	if (e_online_button_get_online (button))
+		tooltip = ONLINE_TOOLTIP;
+	else if (gtk_widget_get_sensitive (GTK_WIDGET (button)))
+		tooltip = OFFLINE_TOOLTIP;
+	else
+		tooltip = NETWORK_UNAVAILABLE_TOOLTIP;
+
+	gtk_widget_set_tooltip_text (GTK_WIDGET (button), tooltip);
+}
 
 static void
 online_button_set_property (GObject *object,
@@ -82,15 +109,14 @@ online_button_dispose (GObject *object)
 	}
 
 	/* Chain up to parent's dispose() method. */
-	G_OBJECT_CLASS (parent_class)->dispose (object);
+	G_OBJECT_CLASS (e_online_button_parent_class)->dispose (object);
 }
 
 static void
-online_button_class_init (EOnlineButtonClass *class)
+e_online_button_class_init (EOnlineButtonClass *class)
 {
 	GObjectClass *object_class;
 
-	parent_class = g_type_class_peek_parent (class);
 	g_type_class_add_private (class, sizeof (EOnlineButtonPrivate));
 
 	object_class = G_OBJECT_CLASS (class);
@@ -103,53 +129,35 @@ online_button_class_init (EOnlineButtonClass *class)
 		PROP_ONLINE,
 		g_param_spec_boolean (
 			"online",
-			_("Online"),
-			_("The button state is online"),
+			"Online",
+			"The button state is online",
 			TRUE,
 			G_PARAM_READWRITE |
 			G_PARAM_CONSTRUCT));
 }
 
 static void
-online_button_init (EOnlineButton *button)
+e_online_button_init (EOnlineButton *button)
 {
 	GtkWidget *widget;
 
 	button->priv = E_ONLINE_BUTTON_GET_PRIVATE (button);
 
-	GTK_WIDGET_UNSET_FLAGS (button, GTK_CAN_FOCUS);
+	gtk_widget_set_can_focus (GTK_WIDGET (button), FALSE);
 	gtk_button_set_relief (GTK_BUTTON (button), GTK_RELIEF_NONE);
 
 	widget = gtk_image_new ();
 	gtk_container_add (GTK_CONTAINER (button), widget);
 	button->priv->image = g_object_ref (widget);
 	gtk_widget_show (widget);
-}
 
-GType
-e_online_button_get_type (void)
-{
-	static GType type = 0;
+	g_signal_connect (
+		button, "notify::online",
+		G_CALLBACK (online_button_update_tooltip), NULL);
 
-	if (G_UNLIKELY (type == 0)) {
-		const GTypeInfo type_info = {
-			sizeof (EOnlineButtonClass),
-			(GBaseInitFunc) NULL,
-			(GBaseFinalizeFunc) NULL,
-			(GClassInitFunc) online_button_class_init,
-			(GClassFinalizeFunc) NULL,
-			NULL,  /* class_data */
-			sizeof (EOnlineButton),
-			0,     /* n_preallocs */
-			(GInstanceInitFunc) online_button_init,
-			NULL   /* value_table */
-		};
-
-		type = g_type_register_static (
-			GTK_TYPE_BUTTON, "EOnlineButton", &type_info, 0);
-	}
-
-	return type;
+	g_signal_connect (
+		button, "notify::sensitive",
+		G_CALLBACK (online_button_update_tooltip), NULL);
 }
 
 GtkWidget *

@@ -31,13 +31,8 @@
 
 #include <gtk/gtk.h>
 
-#include <libedataserver/e-account.h>
-#include <libedataserver/e-account-list.h>
-
-#include <camel/camel-url.h>
-#include <camel/camel-exception.h>
-
-#include <glade/glade.h>
+#include <e-util/e-util.h>
+#include <e-util/e-account-utils.h>
 
 #include <glib/gi18n.h>
 
@@ -64,6 +59,13 @@ static EPImapFeaturesData *ui = NULL;
 void imap_headers_abort (EPlugin *efp, EConfigHookItemFactoryData *data);
 void imap_headers_commit (EPlugin *efp, EConfigHookItemFactoryData *data);
 GtkWidget * org_gnome_imap_headers (EPlugin *epl, EConfigHookItemFactoryData *data);
+gint e_plugin_lib_enable (EPlugin *ep, gint enable);
+
+gint
+e_plugin_lib_enable (EPlugin *ep, gint enable)
+{
+	return 0;
+}
 
 void
 imap_headers_abort (EPlugin *efp, EConfigHookItemFactoryData *data)
@@ -84,9 +86,8 @@ imap_headers_commit (EPlugin *efp, EConfigHookItemFactoryData *data)
 	if (g_str_has_prefix (account->source->url, "imap://") ||
 			(use_imap && g_str_has_prefix (account->source->url, "groupwise://"))) {
 		EAccount *temp = NULL;
-		EAccountList *accounts = mail_config_get_accounts ();
+		EAccountList *accounts = e_get_account_list ();
 		CamelURL *url = NULL;
-		CamelException ex;
 		GtkTreeModel *model;
 		GtkTreeIter iter;
 		GString *str;
@@ -96,7 +97,7 @@ imap_headers_commit (EPlugin *efp, EConfigHookItemFactoryData *data)
 
 		temp = mail_config_get_account_by_source_url (account->source->url);
 
-		url = camel_url_new (e_account_get_string(account, E_ACCOUNT_SOURCE_URL), &ex);
+		url = camel_url_new (e_account_get_string(account, E_ACCOUNT_SOURCE_URL), NULL);
 
 		model = gtk_tree_view_get_model (ui->custom_headers_tree);
 		if (gtk_tree_model_get_iter_first(model, &iter)) {
@@ -259,9 +260,7 @@ org_gnome_imap_headers (EPlugin *epl, EConfigHookItemFactoryData *data)
 	EAccount *account;
 	GtkWidget *vbox;
 	CamelURL *url = NULL;
-	CamelException ex;
-	gchar *gladefile;
-	GladeXML *gladexml;
+	GtkBuilder *builder;
 	GtkCellRenderer *renderer;
 	GtkTreeViewColumn *column;
 	GtkTreeIter iter;
@@ -276,21 +275,20 @@ org_gnome_imap_headers (EPlugin *epl, EConfigHookItemFactoryData *data)
 	if (!g_str_has_prefix (account->source->url, "imap://") && !(use_imap && g_str_has_prefix (account->source->url, "groupwise://")))
 		return NULL;
 
-	gladefile = g_build_filename (EVOLUTION_GLADEDIR, "imap-headers.glade", NULL);
-	gladexml = glade_xml_new (gladefile, "vbox2", NULL);
-	g_free (gladefile);
+	builder = gtk_builder_new ();
+	e_load_ui_builder_definition (builder, "imap-headers.ui");
 
-	vbox = glade_xml_get_widget (gladexml, "vbox2");
-	ui->all_headers = glade_xml_get_widget (gladexml, "allHeaders");
-	ui->basic_headers = glade_xml_get_widget (gladexml, "basicHeaders");
-	ui->mailing_list_headers = glade_xml_get_widget (gladexml, "mailingListHeaders");
-	ui->custom_headers_box = glade_xml_get_widget (gladexml, "custHeaderHbox");
-	ui->custom_headers_tree = GTK_TREE_VIEW(glade_xml_get_widget (gladexml, "custHeaderTree"));
-	ui->add_header = GTK_BUTTON(glade_xml_get_widget (gladexml, "addHeader"));
-	ui->remove_header = GTK_BUTTON(glade_xml_get_widget (gladexml, "removeHeader"));
-	ui->entry_header = GTK_ENTRY (glade_xml_get_widget (gladexml, "customHeaderEntry"));
+	vbox = e_builder_get_widget (builder, "vbox2");
+	ui->all_headers = e_builder_get_widget (builder, "allHeaders");
+	ui->basic_headers = e_builder_get_widget (builder, "basicHeaders");
+	ui->mailing_list_headers = e_builder_get_widget (builder, "mailingListHeaders");
+	ui->custom_headers_box = e_builder_get_widget (builder, "custHeaderHbox");
+	ui->custom_headers_tree = GTK_TREE_VIEW(e_builder_get_widget (builder, "custHeaderTree"));
+	ui->add_header = GTK_BUTTON(e_builder_get_widget (builder, "addHeader"));
+	ui->remove_header = GTK_BUTTON(e_builder_get_widget (builder, "removeHeader"));
+	ui->entry_header = GTK_ENTRY (e_builder_get_widget (builder, "customHeaderEntry"));
 
-	url = camel_url_new (e_account_get_string(account, E_ACCOUNT_SOURCE_URL), &ex);
+	url = camel_url_new (e_account_get_string(account, E_ACCOUNT_SOURCE_URL), NULL);
 
 	ui->store = gtk_tree_store_new (1, G_TYPE_STRING);
 	gtk_tree_view_set_model (ui->custom_headers_tree, GTK_TREE_MODEL(ui->store));

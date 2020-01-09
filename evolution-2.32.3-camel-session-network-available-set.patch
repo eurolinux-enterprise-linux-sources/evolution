@@ -1,0 +1,11 @@
+diff -up evolution-2.32.3/mail/e-mail-backend.c.camel-session-network-available-set evolution-2.32.3/mail/e-mail-backend.c
+--- evolution-2.32.3/mail/e-mail-backend.c.camel-session-network-available-set	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/mail/e-mail-backend.c	2013-06-27 11:12:54.399305071 +0200
+@@ -135,6 +135,7 @@ mail_backend_prepare_for_online_cb (EShe
+                                     EActivity *activity,
+                                     EMailBackend *backend)
+ {
++	camel_session_set_network_available (session, TRUE);
+ 	camel_session_set_online (session, TRUE);
+ 
+ 	e_mail_store_foreach (

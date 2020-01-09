@@ -24,18 +24,31 @@
 #define _MESSAGE_LIST_H_
 
 #include <gtk/gtk.h>
-#include <camel/camel-folder-thread.h>
+#include <camel/camel.h>
 
-#include <table/e-table-simple.h>
-#include <table/e-tree-scrolled.h>
+#include <table/e-tree.h>
+#include <shell/e-shell-backend.h>
+
+/* Standard GObject macros */
+#define MESSAGE_LIST_TYPE \
+	(message_list_get_type ())
+#define MESSAGE_LIST(obj) \
+	(G_TYPE_CHECK_INSTANCE_CAST \
+	((obj), MESSAGE_LIST_TYPE, MessageList))
+#define MESSAGE_LIST_CLASS(cls) \
+	(G_TYPE_CHECK_CLASS_CAST \
+	((cls), MESSAGE_LIST_TYPE, MessageListClass))
+#define IS_MESSAGE_LIST(obj) \
+	(G_TYPE_CHECK_INSTANCE_TYPE \
+	((obj), MESSAGE_LIST_TYPE))
+#define IS_MESSAGE_LIST_CLASS(cls) \
+	(G_TYPE_CHECK_CLASS_TYPE \
+	((cls), MESSAGE_LIST_TYPE))
+#define MESSAGE_LIST_GET_CLASS(obj) \
+	(G_TYPE_INSTANCE_GET_CLASS \
+	((obj), MESSAGE_LIST_TYPE, MessageListClass))
 
 G_BEGIN_DECLS
-
-#define MESSAGE_LIST_TYPE        (message_list_get_type ())
-#define MESSAGE_LIST(o)          (G_TYPE_CHECK_INSTANCE_CAST ((o), MESSAGE_LIST_TYPE, MessageList))
-#define MESSAGE_LIST_CLASS(k)    (G_TYPE_CHECK_CLASS_CAST ((k), MESSAGE_LIST_TYPE, MessageListClass))
-#define IS_MESSAGE_LIST(o)       (G_TYPE_CHECK_INSTANCE_TYPE ((o), MESSAGE_LIST_TYPE))
-#define IS_MESSAGE_LIST_CLASS(k) (G_TYPE_CHECK_CLASS_TYPE ((k), MESSAGE_LIST_TYPE))
 
 enum {
 	COL_MESSAGE_STATUS,
@@ -77,21 +90,17 @@ enum {
 #define MESSAGE_LIST_COLUMN_IS_ACTIVE(col) (col == COL_MESSAGE_STATUS || \
 					    col == COL_FLAGGED)
 
-#define ML_HIDE_NONE_START (0)
-#define ML_HIDE_NONE_END (2147483647)
-/* dont change */
-#define ML_HIDE_SAME (2147483646)
-
 typedef struct _MessageList MessageList;
+typedef struct _MessageListClass MessageListClass;
+typedef struct _MessageListPrivate MessageListPrivate;
 
 struct _MessageList {
-	ETreeScrolled parent;
+	ETree parent;
 
-	struct _MessageListPrivate *priv;
+	MessageListPrivate *priv;
 
 	/* The table */
 	ETreeModel   *model;
-	ETree        *tree;
 	ETreePath     tree_root;
 	ETableExtras *extras;
 
@@ -102,13 +111,6 @@ struct _MessageList {
 	GHashTable *uid_nodemap; /* uid (from info) -> tree node mapping */
 
 	GHashTable *normalised_hash;
-
-	/* UID's to hide.  Keys in the mempool */
-	/* IMPORTANT: You MUST have obtained the hide lock, to operate on this data */
-	GHashTable	 *hidden;
-	struct _EMemPool *hidden_pool;
-	gint hide_unhidden;           /* total length, before hiding */
-	gint hide_before, hide_after; /* hide ranges of messages */
 
 	/* Current search string, or %NULL */
 	gchar *search;
@@ -144,13 +146,12 @@ struct _MessageList {
 	/* Row-selection and seen-marking timers */
 	guint idle_id, seen_id;
 
-	/* locks */
-	GMutex *hide_lock;	/* for any 'hide' info above */
-
 	/* list of outstanding regeneration requests */
 	GList *regen;
 	GMutex *regen_lock; /* when writing to the regen, guard with this lock too */
-	gchar *pending_select_uid; /* set if we were busy regnerating while we had a select come in */
+	gchar *pending_select_uid;	/* set if we were busy regnerating
+					 * while we had a select come in */
+	gboolean pending_select_fallback;
 	guint regen_timeout_id;
 	gpointer regen_timeout_msg;
 
@@ -163,14 +164,14 @@ struct _MessageList {
 	struct _MailAsyncEvent *async_event;
 };
 
-typedef struct {
-	ETreeScrolledClass parent_class;
+struct _MessageListClass {
+	ETreeClass parent_class;
 
 	/* signals - select a message */
-	void (*message_selected) (MessageList *ml, const gchar *uid);
-	void (*message_list_built) (MessageList *ml);
-	void (*message_list_scrolled) (MessageList *ml);
-} MessageListClass;
+	void (*message_selected) (MessageList *message_list, const gchar *uid);
+	void (*message_list_built) (MessageList *message_list);
+	void (*message_list_scrolled) (MessageList *message_list);
+};
 
 typedef enum {
 	MESSAGE_LIST_SELECT_NEXT = 0,
@@ -179,61 +180,56 @@ typedef enum {
 	MESSAGE_LIST_SELECT_WRAP = 1<<1 /* option bit */
 } MessageListSelectDirection;
 
-GType          message_list_get_type   (void);
-GtkWidget     *message_list_new        (void);
-void           message_list_set_folder (MessageList *message_list, CamelFolder *camel_folder, const gchar *uri, gboolean outgoing);
-
-void	       message_list_freeze(MessageList *ml);
-void	       message_list_thaw(MessageList *ml);
-
-GPtrArray     *message_list_get_uids(MessageList *message_list);
-GPtrArray     *message_list_get_selected(MessageList *ml);
-void           message_list_set_selected(MessageList *ml, GPtrArray *uids);
-void	       message_list_free_uids(MessageList *ml, GPtrArray *uids);
-
-/* select next/prev message helpers */
-gboolean       message_list_select     (MessageList *message_list,
-					MessageListSelectDirection direction,
-					guint32 flags,
-					guint32 mask);
-gboolean message_list_can_select(MessageList *ml, MessageListSelectDirection direction, guint32 flags, guint32 mask);
-
-void           message_list_select_uid (MessageList *message_list,
-					const gchar *uid);
-
-void           message_list_select_next_thread (MessageList *ml);
-
-/* selection manipulation */
-void           message_list_select_all (MessageList *ml);
-void           message_list_select_thread (MessageList *ml);
-void           message_list_select_subthread (MessageList *ml);
-void           message_list_invert_selection (MessageList *ml);
-
-/* clipboard stuff */
-void	       message_list_copy(MessageList *ml, gboolean cut);
-void           message_list_paste (MessageList *ml);
-
-/* info */
-guint   message_list_length (MessageList *ml);
-guint   message_list_hidden (MessageList *ml);
-
-/* hide specific messages */
-void	       message_list_hide_add (MessageList *ml, const gchar *expr, guint lower, guint upper);
-void	       message_list_hide_uids (MessageList *ml, GPtrArray *uids);
-void	       message_list_hide_clear (MessageList *ml);
-
-void	       message_list_set_threaded (MessageList *ml, gboolean threaded);
-void           message_list_set_threaded_expand_all (MessageList *ml);
-void           message_list_set_threaded_collapse_all (MessageList *ml);
-
-void	       message_list_set_hidedeleted (MessageList *ml, gboolean hidedeleted);
-void	       message_list_set_search (MessageList *ml, const gchar *search);
-void	       message_list_ensure_message (MessageList *ml, const gchar *uid);
-
-void           message_list_save_state (MessageList *ml);
-
-gdouble         message_list_get_scrollbar_position (MessageList *ml);
-void           message_list_set_scrollbar_position (MessageList *ml, double pos);
+GType		message_list_get_type		(void);
+GtkWidget *	message_list_new		(EShellBackend *shell_backend);
+EShellBackend *	message_list_get_shell_backend	(MessageList *message_list);
+void		message_list_set_folder		(MessageList *message_list,
+						 CamelFolder *camel_folder,
+						 const gchar *uri,
+						 gboolean outgoing);
+GtkTargetList *	message_list_get_copy_target_list
+						(MessageList *message_list);
+GtkTargetList *	message_list_get_paste_target_list
+						(MessageList *message_list);
+void		message_list_freeze		(MessageList *message_list);
+void		message_list_thaw		(MessageList *message_list);
+GPtrArray *	message_list_get_uids		(MessageList *message_list);
+GPtrArray *	message_list_get_selected	(MessageList *message_list);
+void		message_list_set_selected	(MessageList *message_list,
+						 GPtrArray *uids);
+gboolean	message_list_select		(MessageList *message_list,
+						 MessageListSelectDirection direction,
+						 guint32 flags,
+						 guint32 mask);
+gboolean	message_list_can_select		(MessageList *message_list,
+						 MessageListSelectDirection direction,
+						 guint32 flags,
+						 guint32 mask);
+void		message_list_select_uid		(MessageList *message_list,
+						 const gchar *uid,
+						 gboolean with_fallback);
+void		message_list_select_next_thread	(MessageList *message_list);
+void		message_list_select_all		(MessageList *message_list);
+void		message_list_select_thread	(MessageList *message_list);
+void		message_list_select_subthread	(MessageList *message_list);
+void		message_list_invert_selection	(MessageList *message_list);
+void		message_list_copy		(MessageList *message_list,
+						 gboolean cut);
+void		message_list_paste		(MessageList *message_list);
+guint		message_list_count		(MessageList *message_list);
+void		message_list_set_threaded	(MessageList *message_list,
+						 gboolean threaded);
+void		message_list_set_threaded_expand_all
+						(MessageList *message_list);
+void		message_list_set_threaded_collapse_all
+						(MessageList *message_list);
+void		message_list_set_hidedeleted	(MessageList *message_list,
+						 gboolean hidedeleted);
+void		message_list_set_search		(MessageList *message_list,
+						 const gchar *search);
+void		message_list_ensure_message	(MessageList *message_list,
+						 const gchar *uid);
+void		message_list_save_state		(MessageList *message_list);
 
 #define MESSAGE_LIST_LOCK(m, l) g_mutex_lock(((MessageList *)m)->l)
 #define MESSAGE_LIST_UNLOCK(m, l) g_mutex_unlock(((MessageList *)m)->l)

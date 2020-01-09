@@ -203,7 +203,7 @@ e_meeting_time_selector_item_realize (GnomeCanvasItem *item)
 	mts_item = E_MEETING_TIME_SELECTOR_ITEM (item);
 
 	canvas = item->canvas;
-	window = GTK_WIDGET (canvas)->window;
+	window = gtk_widget_get_window (GTK_WIDGET (canvas));
 
 	mts_item->main_gc = gdk_gc_new (window);
 	mts_item->stipple_gc = gdk_gc_new (window);
@@ -485,9 +485,9 @@ e_meeting_time_selector_item_paint_day_top (EMeetingTimeSelectorItem *mts_item,
 	hour_y = mts->row_height + 4 - scroll_y;
 	while (hour < mts->last_hour_shown) {
 		if (calendar_config_get_24_hour_format ())
-			pango_layout_set_text (layout, EMeetingTimeSelectorHours [hour], -1);
+			pango_layout_set_text (layout, EMeetingTimeSelectorHours[hour], -1);
 		else
-			pango_layout_set_text (layout, EMeetingTimeSelectorHours12 [hour], -1);
+			pango_layout_set_text (layout, EMeetingTimeSelectorHours12[hour], -1);
 
 		gdk_draw_layout (drawable, gc,
 				 hour_x,
@@ -508,7 +508,6 @@ static void
 e_meeting_time_selector_item_paint_all_attendees_busy_periods (EMeetingTimeSelectorItem *mts_item, GdkDrawable *drawable, GDate *date, gint x, gint scroll_y, gint width, gint height)
 {
 	EMeetingTimeSelector *mts;
-	EMeetingAttendee *ia;
 	EMeetingFreeBusyType busy_type;
 	gint row, y;
 	GdkGC *gc;
@@ -526,11 +525,8 @@ e_meeting_time_selector_item_paint_all_attendees_busy_periods (EMeetingTimeSelec
 
 	/* Get the first visible busy periods for all the attendees. */
 	first_periods = g_new (gint, e_meeting_store_count_actual_attendees (mts->model));
-	for (row = 0; row < e_meeting_store_count_actual_attendees (mts->model); row++) {
-		/* This is never used */
-		ia = e_meeting_store_find_attendee_at_row (mts->model, row);
+	for (row = 0; row < e_meeting_store_count_actual_attendees (mts->model); row++)
 		first_periods[row] = e_meeting_time_selector_item_find_first_busy_period (mts_item, date, row);
-	}
 
 	for (busy_type = 0;
 	     busy_type < E_MEETING_FREE_BUSY_LAST;
@@ -713,11 +709,9 @@ e_meeting_time_selector_item_paint_attendee_busy_periods (EMeetingTimeSelectorIt
 	EMeetingAttendee *ia;
 	const GArray *busy_periods;
 	EMeetingFreeBusyPeriod *period;
-	GdkGC *gc;
 	gint period_num, x1, x2, x2_within_day, x2_within_col;
 
 	mts = mts_item->mts;
-	gc = mts_item->main_gc;
 
 	ia = e_meeting_store_find_attendee_at_row (mts->model, row);
 
@@ -982,8 +976,14 @@ e_meeting_time_selector_item_motion_notify (EMeetingTimeSelectorItem *mts_item,
 
 	/* Only set the cursor if it is different to the last one we set. */
 	if (mts_item->last_cursor_set != cursor) {
+		GdkWindow *window;
+		GnomeCanvas *canvas;
+
 		mts_item->last_cursor_set = cursor;
-		gdk_window_set_cursor (GTK_WIDGET (GNOME_CANVAS_ITEM (mts_item)->canvas)->window, cursor);
+
+		canvas = GNOME_CANVAS_ITEM (mts_item)->canvas;
+		window = gtk_widget_get_window (GTK_WIDGET (canvas));
+		gdk_window_set_cursor (window, cursor);
 	}
 
 	return FALSE;
@@ -1049,7 +1049,12 @@ e_meeting_time_selector_item_calculate_busy_range (EMeetingTimeSelector *mts,
 void
 e_meeting_time_selector_item_set_normal_cursor (EMeetingTimeSelectorItem *mts_item)
 {
+	GnomeCanvas *canvas;
+	GdkWindow *window;
+
 	g_return_if_fail (IS_E_MEETING_TIME_SELECTOR_ITEM (mts_item));
 
-	gdk_window_set_cursor (GTK_WIDGET (GNOME_CANVAS_ITEM (mts_item)->canvas)->window, mts_item->normal_cursor);
+	canvas = GNOME_CANVAS_ITEM (mts_item)->canvas;
+	window = gtk_widget_get_window (GTK_WIDGET (canvas));
+	gdk_window_set_cursor (window, mts_item->normal_cursor);
 }

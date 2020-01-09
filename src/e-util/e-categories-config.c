@@ -20,12 +20,15 @@
  *
  */
 
+#include "e-categories-config.h"
+
 #include <string.h>
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
 #include <libedataserver/e-categories.h>
 #include <libedataserverui/e-categories-dialog.h>
-#include "e-categories-config.h"
+
+#include "e-util/e-util.h"
 
 static GHashTable *pixbufs_cache = NULL;
 
@@ -51,6 +54,8 @@ free_pixbuf_cb (gpointer ptr)
  * @pixbuf: A pointer to where the pixbuf will be returned.
  *
  * Returns the icon configured for the given category.
+ *
+ * Returns: the icon configured for the given category
  */
 gboolean
 e_categories_config_get_icon_for (const gchar *category, GdkPixbuf **pixbuf)
@@ -62,7 +67,8 @@ e_categories_config_get_icon_for (const gchar *category, GdkPixbuf **pixbuf)
 
 	if (!pixbufs_cache) {
 		pixbufs_cache = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, free_pixbuf_cb);
-		e_categories_register_change_listener (G_CALLBACK (categories_changed_cb), NULL);
+		e_categories_add_change_hook (
+			(GHookFunc) categories_changed_cb, NULL);
 	} else {
 		gpointer key = NULL, value = NULL;
 
@@ -89,7 +95,7 @@ e_categories_config_get_icon_for (const gchar *category, GdkPixbuf **pixbuf)
 
 /**
  * e_categories_config_open_dialog_for_entry:
- * entry: A GtkEntry on which to get/set the categories list.
+ * @entry: a #GtkEntry on which to get/set the categories list
  *
  * This is a self-contained function that lets you open a popup dialog for
  * the user to select a list of categories.
@@ -112,7 +118,7 @@ e_categories_config_open_dialog_for_entry (GtkEntry *entry)
 	text = gtk_entry_get_text (GTK_ENTRY (entry));
 	dialog = GTK_DIALOG (e_categories_dialog_new (text));
 
-	gtk_window_set_transient_for (GTK_WINDOW (dialog), GTK_WINDOW(gtk_widget_get_toplevel (GTK_WIDGET (entry))));
+	gtk_window_set_transient_for (GTK_WINDOW (dialog), GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (entry))));
 
 	/* run the dialog */
 	result = gtk_dialog_run (dialog);

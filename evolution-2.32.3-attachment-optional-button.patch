@@ -1,0 +1,48 @@
+diff -up evolution-2.32.3/mail/em-format-html-display.c.attachment-optional-button evolution-2.32.3/mail/em-format-html-display.c
+--- evolution-2.32.3/mail/em-format-html-display.c.attachment-optional-button	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/mail/em-format-html-display.c	2013-06-11 22:27:12.801366858 +0200
+@@ -973,12 +974,13 @@ efhd_attachment_optional(EMFormatHTML *e
+ {
+ 	struct _attach_puri *info;
+ 	GtkWidget *hbox, *vbox, *button, *mainbox, *scroll, *label, *img;
+-	AtkObject *a11y;
+ 	GtkWidget *view;
+ 	GtkAllocation allocation;
+ 	GtkTextBuffer *buffer;
+ 	GByteArray *byte_array;
+ 	EWebView *web_view;
++	EAttachmentView *attach_view;
++	EAttachmentStore *attach_store;
+ 
+ 	/* FIXME: handle default shown case */
+ 	d(printf("adding attachment button/content for optional rendering\n"));
+@@ -1012,19 +1014,17 @@ efhd_attachment_optional(EMFormatHTML *e
+ 	vbox = gtk_vbox_new (FALSE, 0);
+ 	gtk_box_pack_start(GTK_BOX (mainbox), button, FALSE, FALSE, 6);
+ 
+-	button = gtk_button_new();
+-	hbox = gtk_hbox_new (FALSE, 0);
+-	img = gtk_image_new_from_stock (
+-		GTK_STOCK_OPEN, GTK_ICON_SIZE_BUTTON);
+-	label = gtk_label_new_with_mnemonic(_("O_pen With"));
+-	gtk_box_pack_start (GTK_BOX (hbox), img, TRUE, TRUE, 2);
+-	gtk_box_pack_start (GTK_BOX (hbox), label, TRUE, TRUE, 2);
+-	gtk_box_pack_start (GTK_BOX (hbox), gtk_arrow_new(GTK_ARROW_DOWN, GTK_SHADOW_NONE), TRUE, TRUE, 2);
+-	gtk_widget_show_all (hbox);
+-	gtk_container_add (GTK_CONTAINER (button), GTK_WIDGET (hbox));
++	e_attachment_set_shown (info->attachment, FALSE);
++	e_attachment_set_signed (info->attachment, info->sign);
++	e_attachment_set_encrypted (info->attachment, info->encrypt);
++	e_attachment_set_can_show (info->attachment, FALSE);
++
++	attach_view = em_format_html_display_get_attachment_view ((EMFormatHTMLDisplay *) efh);
++	attach_store = e_attachment_view_get_store (attach_view);
++	e_attachment_store_add_attachment (attach_store, info->attachment);
+ 
+-	a11y = gtk_widget_get_accessible (button);
+-	atk_object_set_name (a11y, _("Attachment"));
++	button = e_attachment_button_new (attach_view);
++	e_attachment_button_set_attachment (E_ATTACHMENT_BUTTON (button), info->attachment);
+ 
+ 	gtk_box_pack_start(GTK_BOX (mainbox), button, FALSE, FALSE, 6);
+ 

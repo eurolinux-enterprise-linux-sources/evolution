@@ -24,7 +24,7 @@
 #define MAIL_CONFIG_H
 
 #include <gtk/gtk.h>
-#include <camel/camel-provider.h>
+#include <camel/camel.h>
 #include <libedataserver/e-account.h>
 #include <libedataserver/e-account-list.h>
 
@@ -32,14 +32,6 @@
 #include <e-util/e-signature-list.h>
 
 G_BEGIN_DECLS
-
-typedef struct _MailConfigSignature {
-	gint id;
-	gchar *name;
-	gchar *filename;
-	gchar *script;
-	gboolean html;
-} MailConfigSignature;
 
 typedef enum {
 	MAIL_CONFIG_HTTP_NEVER,
@@ -74,83 +66,41 @@ typedef enum {
 	MAIL_CONFIG_XMAILER_RUPERT_APPROVED = 4
 } MailConfigXMailerDisplayStyle;
 
-/* Configuration */
-void mail_config_init (void);
-void mail_config_clear (void);
-void mail_config_write (void);
-void mail_config_write_on_exit (void);
+GType		evolution_mail_config_get_type	(void);
 
-GConfClient *mail_config_get_gconf_client (void);
+/* Configuration */
+void		mail_config_init		(void);
+void		mail_config_write		(void);
+
+GConfClient *	mail_config_get_gconf_client	(void);
 
 /* General Accessor functions */
-gboolean mail_config_is_configured            (void);
-gboolean mail_config_is_corrupt               (void);
 
-GSList *mail_config_get_labels (void);
-
-const gchar **mail_config_get_allowable_mime_types (void);
-
-void mail_config_service_set_save_passwd (EAccountService *service, gboolean save_passwd);
+void		mail_config_service_set_save_passwd
+						(EAccountService *service,
+						 gboolean save_passwd);
 
 /* accounts */
-gboolean mail_config_find_account (EAccount *account);
-EAccount *mail_config_get_default_account (void);
-EAccount *mail_config_get_account_by_name (const gchar *account_name);
-EAccount *mail_config_get_account_by_uid (const gchar *uid);
-EAccount *mail_config_get_account_by_source_url (const gchar *url);
-EAccount *mail_config_get_account_by_transport_url (const gchar *url);
+EAccount *	mail_config_get_account_by_source_url
+						(const gchar *url);
+EAccount *	mail_config_get_account_by_transport_url
+						(const gchar *url);
 
-EAccountList *mail_config_get_accounts (void);
-void mail_config_add_account (EAccount *account);
-void mail_config_remove_account (EAccount *account);
-void mail_config_set_default_account (EAccount *account);
-gint mail_config_get_address_count (void);
-gint mail_config_get_message_limit (void);
-gboolean mail_config_get_enable_magic_spacebar (void);
+gint		mail_config_get_address_count	(void);
 
-void mail_config_remove_account_proxies (EAccount *account);
-void mail_config_prune_proxies (void);
-gint mail_config_has_proxies (EAccount *account);
-
-EAccountIdentity *mail_config_get_default_identity (void);
-EAccountService  *mail_config_get_default_transport (void);
-
-void mail_config_save_accounts (void);
-
-/* signatures */
-ESignature *mail_config_signature_new (const gchar *filename, gboolean script, gboolean html);
-ESignature *mail_config_get_signature_by_uid (const gchar *uid);
-ESignature *mail_config_get_signature_by_name (const gchar *name);
-
-ESignatureList *mail_config_get_signatures (void);
-void mail_config_add_signature (ESignature *signature);
-void mail_config_remove_signature (ESignature *signature);
-
-void mail_config_save_signatures (void);
-
-gchar *mail_config_signature_run_script (const gchar *script);
-
-/* uri's got changed by the store, etc */
-void mail_config_uri_renamed (GCompareFunc uri_cmp, const gchar *old, const gchar *new);
-void mail_config_uri_deleted (GCompareFunc uri_cmp, const gchar *uri);
+EAccountService *
+		mail_config_get_default_transport (void);
 
 /* static utility functions */
-gchar *mail_config_folder_to_cachename (CamelFolder *folder, const gchar *prefix);
-gchar *mail_config_folder_to_safe_url (CamelFolder *folder);
-guint mail_config_get_error_timeout  (void);
-guint mail_config_get_error_level  (void);
+gchar *		mail_config_folder_to_cachename	(CamelFolder *folder,
+						 const gchar *prefix);
+gchar *		mail_config_folder_to_safe_url	(CamelFolder *folder);
 
-gint mail_config_get_sync_timeout (void);
+gint		mail_config_get_sync_timeout	(void);
 
-void mail_config_reload_junk_headers (void);
-gboolean mail_config_get_lookup_book (void);
-gboolean mail_config_get_lookup_book_local_only (void);
-
-gboolean mail_config_scripts_disabled (void);
-
-GType evolution_mail_config_get_type (void);
-
-gboolean evolution_mail_config_factory_init (void);
+void		mail_config_reload_junk_headers	(void);
+gboolean	mail_config_get_lookup_book	(void);
+gboolean	mail_config_get_lookup_book_local_only (void);
 
 G_END_DECLS
 

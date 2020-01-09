@@ -24,6 +24,7 @@
 #include <gtk/gtk.h>
 #include <glib/gi18n-lib.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "gconf-bridge.h"
 
@@ -70,7 +71,7 @@ typedef struct {
 
         GtkWindow *window;
         gulong configure_event_id;
-	gulong window_state_event_id;
+        gulong window_state_event_id;
         gulong unmap_id;
         guint sync_timeout_id;
 } WindowBinding;
@@ -450,7 +451,7 @@ prop_binding_object_destroyed (gpointer user_data,
 
         binding = (PropBinding *) user_data;
         binding->object = NULL; /* Don't do anything with the object
-                                   at unbind() */
+                                 * at unbind() */
 
         g_hash_table_remove (bridge->bindings,
                              GUINT_TO_POINTER (binding->id));
@@ -550,6 +551,58 @@ gconf_bridge_bind_property_full (GConfBridge *bridge,
         return binding->id;
 }
 
+static void
+prop_binding_block_cb (gpointer hkey,
+                       PropBinding *binding,
+                       const gchar *key)
+{
+        g_return_if_fail (binding != NULL);
+        g_return_if_fail (key != NULL);
+
+        if (binding->type == BINDING_PROP && binding->key &&
+                g_ascii_strcasecmp (binding->key, key) == 0)
+                g_signal_handler_block (
+                        binding->object, binding->prop_notify_id);
+}
+
+static void
+prop_binding_unblock_cb (gpointer hkey,
+                         PropBinding *binding,
+                         const gchar *key)
+{
+        g_return_if_fail (binding != NULL);
+        g_return_if_fail (key != NULL);
+
+        if (binding->type == BINDING_PROP && binding->key &&
+                g_ascii_strcasecmp (binding->key, key) == 0)
+                g_signal_handler_unblock (
+                        binding->object, binding->prop_notify_id);
+}
+
+void
+gconf_bridge_block_property_bindings (GConfBridge  *bridge,
+                                      const gchar *key)
+{
+        g_return_if_fail (bridge != NULL);
+        g_return_if_fail (key != NULL);
+
+        g_hash_table_foreach (
+                bridge->bindings, (GHFunc)
+                prop_binding_block_cb, (gpointer)key);
+}
+
+void
+gconf_bridge_unblock_property_bindings (GConfBridge  *bridge,
+                                        const gchar *key)
+{
+        g_return_if_fail (bridge != NULL);
+        g_return_if_fail (key != NULL);
+
+        g_hash_table_foreach (
+                bridge->bindings, (GHFunc)
+                prop_binding_unblock_cb, (gpointer)key);
+}
+
 /* Unbinds a property binding */
 static void
 prop_binding_unbind (PropBinding *binding)
@@ -596,8 +649,10 @@ window_binding_perform_scheduled_sync (WindowBinding *binding)
                 gint width, height;
                 gchar *key;
                 GdkWindowState state;
+                GdkWindow *window;
 
-                state = gdk_window_get_state (GTK_WIDGET (binding->window)->window);
+                window = gtk_widget_get_window (GTK_WIDGET (binding->window));
+                state = gdk_window_get_state (window);
 
                 if (state & GDK_WINDOW_STATE_MAXIMIZED) {
                         key = g_strconcat (binding->key_prefix, "_maximized", NULL);
@@ -649,16 +704,16 @@ window_binding_configure_event_cb (GtkWindow         *window,
                                    GdkEventConfigure *event,
                                    WindowBinding     *binding)
 {
-	/* re-postpone by cancel of the previous request */
-	if (binding->sync_timeout_id > 0)
-		g_source_remove (binding->sync_timeout_id);
+        /* re-postpone by cancel of the previous request */
+        if (binding->sync_timeout_id > 0)
+                g_source_remove (binding->sync_timeout_id);
 
-	/* Schedule a sync */
-	binding->sync_timeout_id = g_timeout_add_seconds (WINDOW_BINDING_SYNC_DELAY,
-		(GSourceFunc) window_binding_perform_scheduled_sync,
-		binding);
+        /* Schedule a sync */
+        binding->sync_timeout_id = g_timeout_add_seconds (WINDOW_BINDING_SYNC_DELAY,
+                (GSourceFunc) window_binding_perform_scheduled_sync,
+                binding);
 
-	return FALSE;
+        return FALSE;
 }
 
 /* Called when the window state is being changed */
@@ -684,6 +739,10 @@ window_binding_unmap_cb (GtkWindow     *window,
         if (binding->sync_timeout_id > 0)
                 g_source_remove (binding->sync_timeout_id);
 
+        /* XXX It's too late to record the window position.
+         *     gtk_window_get_position() will report (0, 0). */
+        binding->bind_pos = FALSE;
+
         window_binding_perform_scheduled_sync (binding);
 
         return FALSE;
@@ -698,7 +757,7 @@ window_binding_window_destroyed (gpointer user_data,
 
         binding = (WindowBinding *) user_data;
         binding->window = NULL; /* Don't do anything with the window
-                                   at unbind() */
+                                 * at unbind() */
 
         if (binding->sync_timeout_id > 0)
                 g_source_remove (binding->sync_timeout_id);
@@ -859,7 +918,7 @@ window_binding_unbind (WindowBinding *binding)
                 g_signal_handler_disconnect (binding->window,
                                              binding->configure_event_id);
                 g_signal_handler_disconnect (binding->window,
-					     binding->window_state_event_id);
+                                             binding->window_state_event_id);
                 g_signal_handler_disconnect (binding->window,
                                              binding->unmap_id);
 
@@ -1001,7 +1060,7 @@ list_store_binding_store_destroyed (gpointer user_data,
 
         binding = (ListStoreBinding *) user_data;
         binding->list_store = NULL; /* Don't do anything with the store
-                                       at unbind() */
+                                     * at unbind() */
 
         g_hash_table_remove (bridge->bindings,
                              GUINT_TO_POINTER (binding->id));
@@ -1083,17 +1142,17 @@ gconf_bridge_bind_string_list_store (GConfBridge  *bridge,
                                           (list_store_binding_store_changed_cb),
                                           binding);
         binding->row_changed_id =
-                g_signal_connect_swapped (list_store, "row-inserted",
+                g_signal_connect_swapped (list_store, "row-changed",
                                           G_CALLBACK
                                           (list_store_binding_store_changed_cb),
                                           binding);
         binding->row_deleted_id =
-                g_signal_connect_swapped (list_store, "row-inserted",
+                g_signal_connect_swapped (list_store, "row-deleted",
                                           G_CALLBACK
                                           (list_store_binding_store_changed_cb),
                                           binding);
         binding->rows_reordered_id =
-                g_signal_connect_swapped (list_store, "row-inserted",
+                g_signal_connect_swapped (list_store, "rows-reordered",
                                           G_CALLBACK
                                           (list_store_binding_store_changed_cb),
                                           binding);
@@ -1238,7 +1297,7 @@ error_handler (GConfClient *client,
                 gtk_widget_destroy (dlg);
 
                 shown_dialog = TRUE;
-	}
+        }
 }
 
 /**

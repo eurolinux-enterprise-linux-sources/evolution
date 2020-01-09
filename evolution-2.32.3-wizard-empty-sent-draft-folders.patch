@@ -1,0 +1,79 @@
+diff -up evolution-2.32.3/mail/e-mail-local.c.wizard-empty-sent-draft-folders evolution-2.32.3/mail/e-mail-local.c
+--- evolution-2.32.3/mail/e-mail-local.c.wizard-empty-sent-draft-folders	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/mail/e-mail-local.c	2013-06-20 16:32:01.741998644 +0200
+@@ -43,20 +43,24 @@ static struct {
+ };
+ 
+ static CamelStore *local_store;
++static gboolean mail_local_initialized = FALSE;
+ 
+ void
+ e_mail_local_init (const gchar *data_dir)
+ {
+-	static gboolean initialized = FALSE;
+ 	CamelService *service;
+ 	CamelURL *url;
+ 	gchar *temp;
+ 	gint ii;
+ 	GError *local_error = NULL;
+ 
+-	g_return_if_fail (!initialized);
++	if (mail_local_initialized)
++		return;
++
+ 	g_return_if_fail (data_dir != NULL);
+ 
++	mail_local_initialized = TRUE;
++
+ 	url = camel_url_new ("mbox:", NULL);
+ 	temp = g_build_filename (data_dir, "local", NULL);
+ 	camel_url_set_path (url, temp);
+@@ -106,6 +110,7 @@ fail:
+ CamelFolder *
+ e_mail_local_get_folder (EMailLocalFolder type)
+ {
++	g_return_val_if_fail (mail_local_initialized, NULL);
+ 	g_return_val_if_fail (CHECK_LOCAL_FOLDER_TYPE (type), NULL);
+ 
+ 	return default_local_folders[type].folder;
+@@ -114,6 +119,7 @@ e_mail_local_get_folder (EMailLocalFolde
+ const gchar *
+ e_mail_local_get_folder_uri (EMailLocalFolder type)
+ {
++	g_return_val_if_fail (mail_local_initialized, NULL);
+ 	g_return_val_if_fail (CHECK_LOCAL_FOLDER_TYPE (type), NULL);
+ 
+ 	return default_local_folders[type].folder_uri;
+@@ -122,6 +128,7 @@ e_mail_local_get_folder_uri (EMailLocalF
+ CamelStore *
+ e_mail_local_get_store (void)
+ {
++	g_return_val_if_fail (mail_local_initialized, NULL);
+ 	g_return_val_if_fail (CAMEL_IS_STORE (local_store), NULL);
+ 
+ 	return local_store;
+diff -up evolution-2.32.3/modules/startup-wizard/evolution-startup-wizard.c.wizard-empty-sent-draft-folders evolution-2.32.3/modules/startup-wizard/evolution-startup-wizard.c
+--- evolution-2.32.3/modules/startup-wizard/evolution-startup-wizard.c.wizard-empty-sent-draft-folders	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/modules/startup-wizard/evolution-startup-wizard.c	2013-06-20 16:32:01.740998644 +0200
+@@ -25,6 +25,7 @@
+ #include <e-util/e-extension.h>
+ #include <e-util/e-import.h>
+ 
++#include <mail/e-mail-local.h>
+ #include <mail/em-account-editor.h>
+ #include <capplet/settings/mail-capplet-shell.h>
+ #include <calendar/gui/calendar-config.h>
+@@ -429,6 +430,13 @@ startup_wizard_new_assistant (EStartupWi
+ 	EConfigItem *config_item;
+ 	GtkWidget *widget;
+ 	GSList *items = NULL;
++	EShell *shell;
++	EShellBackend *shell_backend;
++
++	shell = startup_wizard_get_shell (extension);
++	shell_backend = e_shell_get_backend_by_name (shell, "mail");
++
++	e_mail_local_init (e_shell_backend_get_data_dir (shell_backend));
+ 
+ 	emae = em_account_editor_new (
+ 		NULL, EMAE_ASSISTANT,

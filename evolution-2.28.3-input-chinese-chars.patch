@@ -1,8 +1,7 @@
-Index: evolution-2.28.3/widgets/table/e-cell-text.c
-===================================================================
---- evolution-2.28.3/widgets/table/e-cell-text.c	(revision 1)
-+++ evolution-2.28.3/widgets/table/e-cell-text.c	(working copy)
-@@ -933,47 +933,8 @@ ect_event (ECellView *ecell_view, GdkEve
+diff -up evolution-2.32.3/widgets/table/e-cell-text.c.input-chinese-chars evolution-2.32.3/widgets/table/e-cell-text.c
+--- evolution-2.32.3/widgets/table/e-cell-text.c.input-chinese-chars	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/widgets/table/e-cell-text.c	2013-05-29 11:39:40.395612275 +0200
+@@ -913,47 +913,8 @@ ect_event (ECellView *ecell_view, GdkEve
  		break;
  	case GDK_KEY_PRESS: /* Fall Through */
  		if (edit_display) {
@@ -50,8 +49,8 @@ Index: evolution-2.28.3/widgets/table/e-cell-text.c
  			ect_stop_editing (text_view, TRUE);
  		}
  		return_val = TRUE;
-@@ -1225,6 +1186,19 @@ ect_enter_edit (ECellView *ecell_view, g
- 	e_cell_text_free_text(ect, temp);
+@@ -1211,6 +1172,19 @@ ect_enter_edit (ECellView *ecell_view, g
+ 	e_cell_text_free_text (ect, temp);
  	edit->text = g_strdup (edit->old_text);
  
 +	if (edit->im_context) {
@@ -66,11 +65,11 @@ Index: evolution-2.28.3/widgets/table/e-cell-text.c
 +		}
 +		gtk_im_context_focus_in (edit->im_context);
 +	}
-+	
++
  #if 0
  	if (edit->pointer_in) {
  		if (edit->default_cursor_shown) {
-@@ -1248,6 +1222,14 @@ ect_leave_edit (ECellView *ecell_view, g
+@@ -1234,6 +1208,14 @@ ect_leave_edit (ECellView *ecell_view, g
  	CellEdit *edit = text_view->edit;
  
  	if (edit) {

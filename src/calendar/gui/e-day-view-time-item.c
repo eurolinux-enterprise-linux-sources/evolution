@@ -28,7 +28,6 @@
 #include <string.h>
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
-#include <misc/e-gui-utils.h>
 #include "e-day-view-time-item.h"
 #include "calendar-config.h"
 #include <libecal/e-cal-time-util.h>
@@ -55,12 +54,24 @@
 #define E_DVTMI_LARGE_HOUR_Y_PAD	1
 #define E_DVTMI_SMALL_FONT_Y_PAD	1
 
-static void e_day_view_time_item_set_property (GObject *object,
-                                               guint property_id,
-                                               const GValue *value,
-                                               GParamSpec *pspec);
+#define E_DAY_VIEW_TIME_ITEM_GET_PRIVATE(obj) \
+	(G_TYPE_INSTANCE_GET_PRIVATE \
+	((obj), E_TYPE_DAY_VIEW_TIME_ITEM, EDayViewTimeItemPrivate))
 
-static void e_day_view_time_item_finalize (GObject *object);
+struct _EDayViewTimeItemPrivate {
+	/* The parent EDayView widget. */
+	EDayView *day_view;
+
+	/* The width of the time column. */
+	gint column_width;
+
+	/* TRUE if we are currently dragging the selection times. */
+	gboolean dragging_selection;
+
+	/* The second timezone if shown, or else NULL. */
+	guint second_zone_changed_id;
+	icaltimezone *second_zone;
+};
 
 static void e_day_view_time_item_update (GnomeCanvasItem *item,
 					 double *affine,
@@ -78,37 +89,107 @@ static gint e_day_view_time_item_event (GnomeCanvasItem *item,
 static void e_day_view_time_item_increment_time	(gint	*hour,
 						 gint	*minute,
 						 gint	 mins_per_row);
-static void e_day_view_time_item_show_popup_menu (EDayViewTimeItem *dvtmitem,
+static void e_day_view_time_item_show_popup_menu (EDayViewTimeItem *time_item,
 						  GdkEvent *event);
 static void e_day_view_time_item_on_set_divisions (GtkWidget *item,
-						   EDayViewTimeItem *dvtmitem);
-static void e_day_view_time_item_on_button_press (EDayViewTimeItem *dvtmitem,
+						   EDayViewTimeItem *time_item);
+static void e_day_view_time_item_on_button_press (EDayViewTimeItem *time_item,
 						  GdkEvent *event);
-static void e_day_view_time_item_on_button_release (EDayViewTimeItem *dvtmitem,
+static void e_day_view_time_item_on_button_release (EDayViewTimeItem *time_item,
 						    GdkEvent *event);
-static void e_day_view_time_item_on_motion_notify (EDayViewTimeItem *dvtmitem,
+static void e_day_view_time_item_on_motion_notify (EDayViewTimeItem *time_item,
 						   GdkEvent *event);
-static gint e_day_view_time_item_convert_position_to_row (EDayViewTimeItem *dvtmitem,
+static gint e_day_view_time_item_convert_position_to_row (EDayViewTimeItem *time_item,
 							  gint y);
 
 static void  edvti_second_zone_changed_cb (GConfClient *client, guint cnxn_id, GConfEntry *entry, gpointer user_data);
-/* The arguments we take */
+
 enum {
 	PROP_0,
 	PROP_DAY_VIEW
 };
 
-G_DEFINE_TYPE (EDayViewTimeItem, e_day_view_time_item, GNOME_TYPE_CANVAS_ITEM)
+static gpointer parent_class;
 
 static void
-e_day_view_time_item_class_init (EDayViewTimeItemClass *class)
+day_view_time_item_set_property (GObject *object,
+                                 guint property_id,
+                                 const GValue *value,
+                                 GParamSpec *pspec)
 {
-	GObjectClass  *object_class;
+	switch (property_id) {
+		case PROP_DAY_VIEW:
+			e_day_view_time_item_set_day_view (
+				E_DAY_VIEW_TIME_ITEM (object),
+				g_value_get_object (value));
+			return;
+	}
+
+	G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+}
+
+static void
+day_view_time_item_get_property (GObject *object,
+                                 guint property_id,
+                                 GValue *value,
+                                 GParamSpec *pspec)
+{
+	switch (property_id) {
+		case PROP_DAY_VIEW:
+			g_value_set_object (
+				value, e_day_view_time_item_get_day_view (
+				E_DAY_VIEW_TIME_ITEM (object)));
+			return;
+	}
+
+	G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+}
+
+static void
+day_view_time_item_dispose (GObject *object)
+{
+	EDayViewTimeItemPrivate *priv;
+
+	priv = E_DAY_VIEW_TIME_ITEM_GET_PRIVATE (object);
+
+	if (priv->day_view != NULL) {
+		g_object_unref (priv->day_view);
+		priv->day_view = NULL;
+	}
+
+	/* Chain up to parent's dispose() method. */
+	G_OBJECT_CLASS (parent_class)->dispose (object);
+}
+
+static void
+day_view_time_item_finalize (GObject *object)
+{
+	EDayViewTimeItem *time_item;
+
+	time_item = E_DAY_VIEW_TIME_ITEM (object);
+
+	if (time_item->priv->second_zone_changed_id)
+		calendar_config_remove_notification (time_item->priv->second_zone_changed_id);
+	time_item->priv->second_zone_changed_id = 0;
+
+	/* Chain up to parent's dispose() method. */
+	G_OBJECT_CLASS (parent_class)->finalize (object);
+}
+
+static void
+day_view_time_item_class_init (EDayViewTimeItemClass *class)
+{
+	GObjectClass *object_class;
 	GnomeCanvasItemClass *item_class;
 
+	parent_class = g_type_class_peek_parent (class);
+	g_type_class_add_private (class, sizeof (EDayViewTimeItemPrivate));
+
 	object_class = G_OBJECT_CLASS (class);
-	object_class->set_property = e_day_view_time_item_set_property;
-	object_class->finalize = e_day_view_time_item_finalize;
+	object_class->set_property = day_view_time_item_set_property;
+	object_class->get_property = day_view_time_item_get_property;
+	object_class->dispose = day_view_time_item_dispose;
+	object_class->finalize = day_view_time_item_finalize;
 
 	item_class = GNOME_CANVAS_ITEM_CLASS (class);
 	item_class->update = e_day_view_time_item_update;
@@ -119,64 +200,60 @@ e_day_view_time_item_class_init (EDayViewTimeItemClass *class)
 	g_object_class_install_property (
 		object_class,
 		PROP_DAY_VIEW,
-		g_param_spec_pointer (
-			"day_view",
+		g_param_spec_object (
+			"day-view",
+			"Day View",
 			NULL,
-			NULL,
-			G_PARAM_WRITABLE));
+			E_TYPE_DAY_VIEW,
+			G_PARAM_READWRITE));
 }
 
 static void
-e_day_view_time_item_init (EDayViewTimeItem *dvtmitem)
+day_view_time_item_init (EDayViewTimeItem *time_item)
 {
 	gchar *last;
 
-	dvtmitem->dragging_selection = FALSE;
-	dvtmitem->second_zone = NULL;
+	time_item->priv = E_DAY_VIEW_TIME_ITEM_GET_PRIVATE (time_item);
+
+	time_item->priv->dragging_selection = FALSE;
+	time_item->priv->second_zone = NULL;
 
 	last = calendar_config_get_day_second_zone ();
 
 	if (last) {
 		if (*last)
-			dvtmitem->second_zone = icaltimezone_get_builtin_timezone (last);
+			time_item->priv->second_zone = icaltimezone_get_builtin_timezone (last);
 		g_free (last);
 	}
 
-	dvtmitem->second_zone_changed_id = calendar_config_add_notification_day_second_zone (edvti_second_zone_changed_cb, dvtmitem);
+	time_item->priv->second_zone_changed_id = calendar_config_add_notification_day_second_zone (edvti_second_zone_changed_cb, time_item);
 }
 
-static void
-e_day_view_time_item_set_property (GObject *object,
-                                   guint property_id,
-                                   const GValue *value,
-                                   GParamSpec *pspec)
+GType
+e_day_view_time_item_get_type (void)
 {
-	EDayViewTimeItem *dvtmitem;
+	static GType type = 0;
 
-	dvtmitem = E_DAY_VIEW_TIME_ITEM (object);
+	if (G_UNLIKELY (type == 0)) {
+		const GTypeInfo type_info = {
+			sizeof (EDayViewTimeItemClass),
+			(GBaseInitFunc) NULL,
+			(GBaseFinalizeFunc) NULL,
+			(GClassInitFunc) day_view_time_item_class_init,
+			(GClassFinalizeFunc) NULL,
+			NULL,  /* class_data */
+			sizeof (EDayViewTimeItem),
+			0,     /* n_preallocs */
+			(GInstanceInitFunc) day_view_time_item_init,
+			NULL   /* value_table */
+		};
 
-	switch (property_id) {
-	case PROP_DAY_VIEW:
-		dvtmitem->day_view = g_value_get_pointer (value);
-		return;
+		type = g_type_register_static (
+			GNOME_TYPE_CANVAS_ITEM, "EDayViewTimeItem",
+			&type_info, 0);
 	}
 
-	G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-}
-
-static void
-e_day_view_time_item_finalize (GObject *object)
-{
-	EDayViewTimeItem *dvtmitem;
-
-	dvtmitem = E_DAY_VIEW_TIME_ITEM (object);
-
-	if (dvtmitem->second_zone_changed_id)
-		calendar_config_remove_notification (dvtmitem->second_zone_changed_id);
-	dvtmitem->second_zone_changed_id = 0;
-
-	if (G_OBJECT_CLASS (e_day_view_time_item_parent_class)->finalize)
-		G_OBJECT_CLASS (e_day_view_time_item_parent_class)->finalize (object);
+	return type;
 }
 
 static void
@@ -185,83 +262,14 @@ e_day_view_time_item_update (GnomeCanvasItem *item,
 			    ArtSVP *clip_path,
 			    gint flags)
 {
-	if (GNOME_CANVAS_ITEM_CLASS (e_day_view_time_item_parent_class)->update)
-		(* GNOME_CANVAS_ITEM_CLASS (e_day_view_time_item_parent_class)->update) (item, affine, clip_path, flags);
+	if (GNOME_CANVAS_ITEM_CLASS (parent_class)->update)
+		(* GNOME_CANVAS_ITEM_CLASS (parent_class)->update) (item, affine, clip_path, flags);
 
 	/* The item covers the entire canvas area. */
 	item->x1 = 0;
 	item->y1 = 0;
 	item->x2 = INT_MAX;
 	item->y2 = INT_MAX;
-}
-
-/* Returns the minimum width needed for the column, by adding up all the
-   maximum widths of the strings. The string widths are all calculated in
-   the style_set handlers of EDayView and EDayViewTimeCanvas. */
-gint
-e_day_view_time_item_get_column_width (EDayViewTimeItem *dvtmitem)
-{
-	EDayView *day_view;
-	GtkStyle *style;
-	gint digit, large_digit_width, max_large_digit_width = 0;
-	gint max_suffix_width, max_minute_or_suffix_width;
-	gint column_width_default, column_width_60_min_rows;
-
-	day_view = dvtmitem->day_view;
-	g_return_val_if_fail (day_view != NULL, 0);
-
-	style = gtk_widget_get_style (GTK_WIDGET (day_view));
-	g_return_val_if_fail (style != NULL, 0);
-
-	/* Find the maximum width a digit can have. FIXME: We could use pango's
-	 * approximation function, but I worry it won't be precise enough. Also
-	 * it needs a language tag that I don't know where to get. */
-	for (digit = '0'; digit <= '9'; digit++) {
-		PangoLayout *layout;
-		gchar digit_str [2];
-
-		digit_str [0] = digit;
-		digit_str [1] = '\0';
-
-		layout = gtk_widget_create_pango_layout (GTK_WIDGET (day_view), digit_str);
-		pango_layout_set_font_description (layout, day_view->large_font_desc);
-		pango_layout_get_pixel_size (layout, &large_digit_width, NULL);
-
-		g_object_unref (layout);
-
-		max_large_digit_width = MAX (max_large_digit_width,
-					     large_digit_width);
-	}
-
-	/* Calculate the width of each time column, using the maximum of the
-	   default format with large hour numbers, and the 60-min divisions
-	   format which uses small text. */
-	max_suffix_width = MAX (day_view->am_string_width,
-				day_view->pm_string_width);
-
-	max_minute_or_suffix_width = MAX (max_suffix_width,
-					  day_view->max_minute_width);
-
-	column_width_default = max_large_digit_width * 2
-		+ max_minute_or_suffix_width
-		+ E_DVTMI_MIN_X_PAD * 2
-		+ E_DVTMI_HOUR_L_PAD
-		+ E_DVTMI_HOUR_R_PAD
-		+ E_DVTMI_TIME_GRID_X_PAD * 2;
-
-	column_width_60_min_rows = day_view->max_small_hour_width
-		+ day_view->colon_width
-		+ max_minute_or_suffix_width
-		+ E_DVTMI_60_MIN_X_PAD * 2
-		+ E_DVTMI_TIME_GRID_X_PAD * 2;
-
-	dvtmitem->column_width = MAX (column_width_default,
-				      column_width_60_min_rows);
-
-	if (dvtmitem->second_zone)
-		return (2 * dvtmitem->column_width) - E_DVTMI_TIME_GRID_X_PAD;
-
-	return dvtmitem->column_width;
 }
 
 /*
@@ -278,7 +286,8 @@ edvti_draw_zone (GnomeCanvasItem   *canvas_item,
 		icaltimezone       *use_zone)
 {
 	EDayView *day_view;
-	EDayViewTimeItem *dvtmitem;
+	EDayViewTimeItem *time_item;
+	ECalModel *model;
 	GtkStyle *style;
 	const gchar *suffix;
 	gchar buffer[64], *midnight_day = NULL, *midnight_month = NULL;
@@ -298,9 +307,11 @@ edvti_draw_zone (GnomeCanvasItem   *canvas_item,
 
 	cr = gdk_cairo_create (drawable);
 
-	dvtmitem = E_DAY_VIEW_TIME_ITEM (canvas_item);
-	day_view = dvtmitem->day_view;
+	time_item = E_DAY_VIEW_TIME_ITEM (canvas_item);
+	day_view = e_day_view_time_item_get_day_view (time_item);
 	g_return_if_fail (day_view != NULL);
+
+	model = e_calendar_view_get_model (E_CALENDAR_VIEW (day_view));
 
 	style = gtk_widget_get_style (GTK_WIDGET (day_view));
 	small_font_desc = style->font_desc;
@@ -316,7 +327,7 @@ edvti_draw_zone (GnomeCanvasItem   *canvas_item,
 
 	/* The start and end of the long horizontal line between hours. */
 	long_line_x1 = (use_zone ? 0 : E_DVTMI_TIME_GRID_X_PAD) - x + x_offset;
-	long_line_x2 = dvtmitem->column_width - E_DVTMI_TIME_GRID_X_PAD - x - (use_zone ? E_DVTMI_TIME_GRID_X_PAD : 0) + x_offset;
+	long_line_x2 = time_item->priv->column_width - E_DVTMI_TIME_GRID_X_PAD - x - (use_zone ? E_DVTMI_TIME_GRID_X_PAD : 0) + x_offset;
 
 	if (day_view->mins_per_row == 60) {
 		/* The right edge of the complete time string in 60-min
@@ -410,7 +421,7 @@ edvti_draw_zone (GnomeCanvasItem   *canvas_item,
 			   E_DVTMI_LARGE_HOUR_Y_PAD);
 
 	/* Draw the Marcus Bains Line first, so it appears under other elements. */
-	if (e_day_view_get_show_marcus_bains (day_view)) {
+	if (e_day_view_marcus_bains_get_show_line (day_view)) {
 		struct icaltimetype time_now;
 		gint marcus_bains_y;
 
@@ -485,7 +496,7 @@ edvti_draw_zone (GnomeCanvasItem   *canvas_item,
 				strcpy (buffer, midnight_day);
 				strcat (buffer, " ");
 				strcat (buffer, midnight_month);
-			} else if (e_calendar_view_get_use_24_hour_format (E_CALENDAR_VIEW (day_view))) {
+			} else if (e_cal_model_get_use_24_hour_format (model)) {
 				g_snprintf (buffer, sizeof (buffer), "%i:%02i",
 					    display_hour, minute);
 			} else {
@@ -565,7 +576,7 @@ edvti_draw_zone (GnomeCanvasItem   *canvas_item,
 				if (show_midnight_date)
 					strcpy (buffer, midnight_month);
 				else if (minute == 0
-				    && !e_calendar_view_get_use_24_hour_format (E_CALENDAR_VIEW (day_view))) {
+				    && !e_cal_model_get_use_24_hour_format (model)) {
 					strcpy (buffer, suffix);
 				} else {
 					g_snprintf (buffer, sizeof (buffer),
@@ -610,15 +621,15 @@ e_day_view_time_item_draw (GnomeCanvasItem *canvas_item,
 			   gint		    width,
 			   gint		    height)
 {
-	EDayViewTimeItem *dvtmitem;
+	EDayViewTimeItem *time_item;
 
-	dvtmitem = E_DAY_VIEW_TIME_ITEM (canvas_item);
-	g_return_if_fail (dvtmitem != NULL);
+	time_item = E_DAY_VIEW_TIME_ITEM (canvas_item);
+	g_return_if_fail (time_item != NULL);
 
 	edvti_draw_zone (canvas_item, drawable, x, y, width, height, 0, NULL);
 
-	if (dvtmitem->second_zone)
-		edvti_draw_zone (canvas_item, drawable, x, y, width, height, dvtmitem->column_width, dvtmitem->second_zone);
+	if (time_item->priv->second_zone)
+		edvti_draw_zone (canvas_item, drawable, x, y, width, height, time_item->priv->column_width, time_item->priv->second_zone);
 }
 
 /* Increment the time by the 5/10/15/30/60 minute interval.
@@ -651,27 +662,27 @@ static gint
 e_day_view_time_item_event (GnomeCanvasItem *item,
 			    GdkEvent *event)
 {
-	EDayViewTimeItem *dvtmitem;
+	EDayViewTimeItem *time_item;
 
-	dvtmitem = E_DAY_VIEW_TIME_ITEM (item);
+	time_item = E_DAY_VIEW_TIME_ITEM (item);
 
 	switch (event->type) {
 	case GDK_BUTTON_PRESS:
 		if (event->button.button == 1) {
-			e_day_view_time_item_on_button_press (dvtmitem, event);
+			e_day_view_time_item_on_button_press (time_item, event);
 		} else if (event->button.button == 3) {
-			e_day_view_time_item_show_popup_menu (dvtmitem, event);
+			e_day_view_time_item_show_popup_menu (time_item, event);
 			return TRUE;
 		}
 		break;
 	case GDK_BUTTON_RELEASE:
 		if (event->button.button == 1)
-			e_day_view_time_item_on_button_release (dvtmitem,
+			e_day_view_time_item_on_button_release (time_item,
 								event);
 		break;
 
 	case GDK_MOTION_NOTIFY:
-		e_day_view_time_item_on_motion_notify (dvtmitem, event);
+		e_day_view_time_item_on_motion_notify (time_item, event);
 		break;
 
 	default:
@@ -684,28 +695,30 @@ e_day_view_time_item_event (GnomeCanvasItem *item,
 static void
 edvti_second_zone_changed_cb (GConfClient *client, guint cnxn_id, GConfEntry *entry, gpointer user_data)
 {
-	EDayViewTimeItem *dvtmitem = user_data;
+	EDayViewTimeItem *time_item = user_data;
+	EDayView *day_view;
 	gchar *location;
 
 	g_return_if_fail (user_data != NULL);
-	g_return_if_fail (E_IS_DAY_VIEW_TIME_ITEM (dvtmitem));
+	g_return_if_fail (E_IS_DAY_VIEW_TIME_ITEM (time_item));
 
 	location = calendar_config_get_day_second_zone ();
-	dvtmitem->second_zone = location ? icaltimezone_get_builtin_timezone (location) : NULL;
+	time_item->priv->second_zone = location ? icaltimezone_get_builtin_timezone (location) : NULL;
 	g_free (location);
 
-	gtk_widget_set_size_request (dvtmitem->day_view->time_canvas, e_day_view_time_item_get_column_width (dvtmitem), -1);
-	gtk_widget_queue_draw (dvtmitem->day_view->time_canvas);
+	day_view = e_day_view_time_item_get_day_view (time_item);
+	gtk_widget_set_size_request (day_view->time_canvas, e_day_view_time_item_get_column_width (time_item), -1);
+	gtk_widget_queue_draw (day_view->time_canvas);
 }
 
 static void
-edvti_on_select_zone (GtkWidget *item, EDayViewTimeItem *dvtmitem)
+edvti_on_select_zone (GtkWidget *item, EDayViewTimeItem *time_item)
 {
 	calendar_config_select_day_second_zone ();
 }
 
 static void
-edvti_on_set_zone (GtkWidget *item, EDayViewTimeItem *dvtmitem)
+edvti_on_set_zone (GtkWidget *item, EDayViewTimeItem *time_item)
 {
 	if (!gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM (item)))
 		return;
@@ -714,19 +727,18 @@ edvti_on_set_zone (GtkWidget *item, EDayViewTimeItem *dvtmitem)
 }
 
 static void
-e_day_view_time_item_show_popup_menu (EDayViewTimeItem *dvtmitem,
+e_day_view_time_item_show_popup_menu (EDayViewTimeItem *time_item,
 				      GdkEvent *event)
 {
 	static gint divisions[] = { 60, 30, 15, 10, 5 };
 	EDayView *day_view;
-	gint num_divisions = sizeof (divisions) / sizeof (divisions[0]);
 	GtkWidget *menu, *item, *submenu;
 	gchar buffer[256];
 	GSList *group = NULL, *recent_zones, *s;
 	gint current_divisions, i;
 	icaltimezone *zone;
 
-	day_view = dvtmitem->day_view;
+	day_view = e_day_view_time_item_get_day_view (time_item);
 	g_return_if_fail (day_view != NULL);
 
 	current_divisions = e_day_view_get_mins_per_row (day_view);
@@ -738,7 +750,7 @@ e_day_view_time_item_show_popup_menu (EDayViewTimeItem *dvtmitem,
 		menu, "selection-done",
 		G_CALLBACK (gtk_widget_destroy), NULL);
 
-	for (i = 0; i < num_divisions; i++) {
+	for (i = 0; i < G_N_ELEMENTS (divisions); i++) {
 		g_snprintf (buffer, sizeof (buffer),
 		/* TO TRANSLATORS: %02i is the number of minutes; this is a context menu entry
 		 * to change the length of the time division in the calendar day view, e.g.
@@ -757,7 +769,7 @@ e_day_view_time_item_show_popup_menu (EDayViewTimeItem *dvtmitem,
 				   GINT_TO_POINTER (divisions[i]));
 
 		g_signal_connect (item, "toggled",
-				  G_CALLBACK (e_day_view_time_item_on_set_divisions), dvtmitem);
+				  G_CALLBACK (e_day_view_time_item_on_set_divisions), time_item);
 	}
 
 	item = gtk_separator_menu_item_new ();
@@ -782,12 +794,12 @@ e_day_view_time_item_show_popup_menu (EDayViewTimeItem *dvtmitem,
 	gtk_menu_shell_append (GTK_MENU_SHELL (submenu), item);
 
 	group = NULL;
-	item = gtk_radio_menu_item_new_with_label (group, _("None"));
+	item = gtk_radio_menu_item_new_with_label (group, C_("cal-second-zone", "None"));
 	group = gtk_radio_menu_item_get_group (GTK_RADIO_MENU_ITEM (item));
-	if (!dvtmitem->second_zone)
+	if (!time_item->priv->second_zone)
 		gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), TRUE);
 	gtk_menu_shell_append (GTK_MENU_SHELL (submenu), item);
-	g_signal_connect (item, "toggled", G_CALLBACK (edvti_on_set_zone), dvtmitem);
+	g_signal_connect (item, "toggled", G_CALLBACK (edvti_on_set_zone), time_item);
 
 	recent_zones = calendar_config_get_day_second_zones ();
 	for (s = recent_zones; s != NULL; s = s->next) {
@@ -798,11 +810,11 @@ e_day_view_time_item_show_popup_menu (EDayViewTimeItem *dvtmitem,
 		item = gtk_radio_menu_item_new_with_label (group, icaltimezone_get_display_name (zone));
 		group = gtk_radio_menu_item_get_group (GTK_RADIO_MENU_ITEM (item));
 		/* both comes from builtin, thus no problem to compare pointers */
-		if (zone == dvtmitem->second_zone)
+		if (zone == time_item->priv->second_zone)
 			gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), TRUE);
 		gtk_menu_shell_append (GTK_MENU_SHELL (submenu), item);
 		g_object_set_data_full (G_OBJECT (item), "timezone", g_strdup (s->data), g_free);
-		g_signal_connect (item, "toggled", G_CALLBACK (edvti_on_set_zone), dvtmitem);
+		g_signal_connect (item, "toggled", G_CALLBACK (edvti_on_set_zone), time_item);
 	}
 	calendar_config_free_day_second_zones (recent_zones);
 
@@ -810,7 +822,7 @@ e_day_view_time_item_show_popup_menu (EDayViewTimeItem *dvtmitem,
 	gtk_menu_shell_append (GTK_MENU_SHELL (submenu), item);
 
 	item = gtk_menu_item_new_with_label (_("Select..."));
-	g_signal_connect (item, "activate", G_CALLBACK (edvti_on_select_zone), dvtmitem);
+	g_signal_connect (item, "activate", G_CALLBACK (edvti_on_select_zone), time_item);
 	gtk_menu_shell_append (GTK_MENU_SHELL (submenu), item);
 
 	gtk_widget_show_all (submenu);
@@ -821,12 +833,12 @@ e_day_view_time_item_show_popup_menu (EDayViewTimeItem *dvtmitem,
 
 static void
 e_day_view_time_item_on_set_divisions (GtkWidget *item,
-				       EDayViewTimeItem *dvtmitem)
+				       EDayViewTimeItem *time_item)
 {
 	EDayView *day_view;
 	gint divisions;
 
-	day_view = dvtmitem->day_view;
+	day_view = e_day_view_time_item_get_day_view (time_item);
 	g_return_if_fail (day_view != NULL);
 
 	if (!gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM (item)))
@@ -838,56 +850,59 @@ e_day_view_time_item_on_set_divisions (GtkWidget *item,
 }
 
 static void
-e_day_view_time_item_on_button_press (EDayViewTimeItem *dvtmitem,
+e_day_view_time_item_on_button_press (EDayViewTimeItem *time_item,
 				      GdkEvent *event)
 {
+	GdkWindow *window;
 	EDayView *day_view;
 	GnomeCanvas *canvas;
 	gint row;
 
-	day_view = dvtmitem->day_view;
+	day_view = e_day_view_time_item_get_day_view (time_item);
 	g_return_if_fail (day_view != NULL);
 
-	canvas = GNOME_CANVAS_ITEM (dvtmitem)->canvas;
+	canvas = GNOME_CANVAS_ITEM (time_item)->canvas;
 
-	row = e_day_view_time_item_convert_position_to_row (dvtmitem,
+	row = e_day_view_time_item_convert_position_to_row (time_item,
 							    event->button.y);
 
 	if (row == -1)
 		return;
 
-	if (!GTK_WIDGET_HAS_FOCUS (day_view))
+	if (!gtk_widget_has_focus (GTK_WIDGET (day_view)))
 		gtk_widget_grab_focus (GTK_WIDGET (day_view));
 
-	if (gdk_pointer_grab (GTK_LAYOUT (canvas)->bin_window, FALSE,
+	window = gtk_layout_get_bin_window (GTK_LAYOUT (canvas));
+
+	if (gdk_pointer_grab (window, FALSE,
 			      GDK_POINTER_MOTION_MASK
 			      | GDK_BUTTON_RELEASE_MASK,
 			      NULL, NULL, event->button.time) == 0) {
 		e_day_view_start_selection (day_view, -1, row);
-		dvtmitem->dragging_selection = TRUE;
+		time_item->priv->dragging_selection = TRUE;
 	}
 }
 
 static void
-e_day_view_time_item_on_button_release (EDayViewTimeItem *dvtmitem,
+e_day_view_time_item_on_button_release (EDayViewTimeItem *time_item,
 					GdkEvent *event)
 {
 	EDayView *day_view;
 
-	day_view = dvtmitem->day_view;
+	day_view = e_day_view_time_item_get_day_view (time_item);
 	g_return_if_fail (day_view != NULL);
 
-	if (dvtmitem->dragging_selection) {
+	if (time_item->priv->dragging_selection) {
 		gdk_pointer_ungrab (event->button.time);
 		e_day_view_finish_selection (day_view);
 		e_day_view_stop_auto_scroll (day_view);
 	}
 
-	dvtmitem->dragging_selection = FALSE;
+	time_item->priv->dragging_selection = FALSE;
 }
 
 static void
-e_day_view_time_item_on_motion_notify (EDayViewTimeItem *dvtmitem,
+e_day_view_time_item_on_motion_notify (EDayViewTimeItem *time_item,
 				       GdkEvent *event)
 {
 	EDayView *day_view;
@@ -895,16 +910,16 @@ e_day_view_time_item_on_motion_notify (EDayViewTimeItem *dvtmitem,
 	gdouble window_y;
 	gint y, row;
 
-	if (!dvtmitem->dragging_selection)
+	if (!time_item->priv->dragging_selection)
 		return;
 
-	day_view = dvtmitem->day_view;
+	day_view = e_day_view_time_item_get_day_view (time_item);
 	g_return_if_fail (day_view != NULL);
 
-	canvas = GNOME_CANVAS_ITEM (dvtmitem)->canvas;
+	canvas = GNOME_CANVAS_ITEM (time_item)->canvas;
 
 	y = event->motion.y;
-	row = e_day_view_time_item_convert_position_to_row (dvtmitem, y);
+	row = e_day_view_time_item_convert_position_to_row (time_item, y);
 
 	if (row != -1) {
 		gnome_canvas_world_to_window (canvas, 0, event->motion.y,
@@ -916,13 +931,13 @@ e_day_view_time_item_on_motion_notify (EDayViewTimeItem *dvtmitem,
 
 /* Returns the row corresponding to the y position, or -1. */
 static gint
-e_day_view_time_item_convert_position_to_row (EDayViewTimeItem *dvtmitem,
+e_day_view_time_item_convert_position_to_row (EDayViewTimeItem *time_item,
 					      gint y)
 {
 	EDayView *day_view;
 	gint row;
 
-	day_view = dvtmitem->day_view;
+	day_view = e_day_view_time_item_get_day_view (time_item);
 	g_return_val_if_fail (day_view != NULL, -1);
 
 	if (y < 0)
@@ -933,4 +948,105 @@ e_day_view_time_item_convert_position_to_row (EDayViewTimeItem *dvtmitem,
 		return -1;
 
 	return row;
+}
+
+EDayView *
+e_day_view_time_item_get_day_view (EDayViewTimeItem *time_item)
+{
+	g_return_val_if_fail (E_IS_DAY_VIEW_TIME_ITEM (time_item), NULL);
+
+	return time_item->priv->day_view;
+}
+
+void
+e_day_view_time_item_set_day_view (EDayViewTimeItem *time_item,
+                                   EDayView *day_view)
+{
+	g_return_if_fail (E_IS_DAY_VIEW_TIME_ITEM (time_item));
+	g_return_if_fail (E_IS_DAY_VIEW (day_view));
+
+	if (time_item->priv->day_view != NULL)
+		g_object_unref (time_item->priv->day_view);
+
+	time_item->priv->day_view = g_object_ref (day_view);
+
+	g_object_notify (G_OBJECT (time_item), "day-view");
+}
+
+/* Returns the minimum width needed for the column, by adding up all the
+   maximum widths of the strings. The string widths are all calculated in
+   the style_set handlers of EDayView and EDayViewTimeCanvas. */
+gint
+e_day_view_time_item_get_column_width (EDayViewTimeItem *time_item)
+{
+	EDayView *day_view;
+	GtkStyle *style;
+	gint digit, large_digit_width, max_large_digit_width = 0;
+	gint max_suffix_width, max_minute_or_suffix_width;
+	gint column_width_default, column_width_60_min_rows;
+
+	day_view = e_day_view_time_item_get_day_view (time_item);
+	g_return_val_if_fail (day_view != NULL, 0);
+
+	style = gtk_widget_get_style (GTK_WIDGET (day_view));
+	g_return_val_if_fail (style != NULL, 0);
+
+	/* Find the maximum width a digit can have. FIXME: We could use pango's
+	 * approximation function, but I worry it won't be precise enough. Also
+	 * it needs a language tag that I don't know where to get. */
+	for (digit = '0'; digit <= '9'; digit++) {
+		PangoLayout *layout;
+		gchar digit_str[2];
+
+		digit_str[0] = digit;
+		digit_str[1] = '\0';
+
+		layout = gtk_widget_create_pango_layout (GTK_WIDGET (day_view), digit_str);
+		pango_layout_set_font_description (layout, day_view->large_font_desc);
+		pango_layout_get_pixel_size (layout, &large_digit_width, NULL);
+
+		g_object_unref (layout);
+
+		max_large_digit_width = MAX (max_large_digit_width,
+					     large_digit_width);
+	}
+
+	/* Calculate the width of each time column, using the maximum of the
+	   default format with large hour numbers, and the 60-min divisions
+	   format which uses small text. */
+	max_suffix_width = MAX (day_view->am_string_width,
+				day_view->pm_string_width);
+
+	max_minute_or_suffix_width = MAX (max_suffix_width,
+					  day_view->max_minute_width);
+
+	column_width_default = max_large_digit_width * 2
+		+ max_minute_or_suffix_width
+		+ E_DVTMI_MIN_X_PAD * 2
+		+ E_DVTMI_HOUR_L_PAD
+		+ E_DVTMI_HOUR_R_PAD
+		+ E_DVTMI_TIME_GRID_X_PAD * 2;
+
+	column_width_60_min_rows = day_view->max_small_hour_width
+		+ day_view->colon_width
+		+ max_minute_or_suffix_width
+		+ E_DVTMI_60_MIN_X_PAD * 2
+		+ E_DVTMI_TIME_GRID_X_PAD * 2;
+
+	time_item->priv->column_width =
+		MAX (column_width_default, column_width_60_min_rows);
+
+	if (time_item->priv->second_zone)
+		return (2 * time_item->priv->column_width) -
+			E_DVTMI_TIME_GRID_X_PAD;
+
+	return time_item->priv->column_width;
+}
+
+icaltimezone *
+e_day_view_time_item_get_second_zone (EDayViewTimeItem *time_item)
+{
+	g_return_val_if_fail (E_IS_DAY_VIEW_TIME_ITEM (time_item), NULL);
+
+	return time_item->priv->second_zone;
 }

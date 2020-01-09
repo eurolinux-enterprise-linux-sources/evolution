@@ -23,10 +23,7 @@
 #define E_ATTACHMENT_H
 
 #include <gtk/gtk.h>
-#include <camel/camel-cipher-context.h>
-#include <camel/camel-mime-part.h>
-#include <camel/camel-mime-message.h>
-#include <camel/camel-multipart.h>
+#include <camel/camel.h>
 
 /* Standard GObject macros */
 #define E_TYPE_ATTACHMENT \
@@ -81,6 +78,9 @@ GFile *		e_attachment_get_file		(EAttachment *attachment);
 void		e_attachment_set_file		(EAttachment *attachment,
 						 GFile *file);
 GFileInfo *	e_attachment_get_file_info	(EAttachment *attachment);
+void		e_attachment_set_file_info	(EAttachment *attachment,
+						 GFileInfo *file_info);
+GIcon *		e_attachment_get_icon		(EAttachment *attachment);
 gboolean	e_attachment_get_loading	(EAttachment *attachment);
 CamelMimePart *	e_attachment_get_mime_part	(EAttachment *attachment);
 void		e_attachment_set_mime_part	(EAttachment *attachment,

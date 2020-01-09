@@ -1,0 +1,49 @@
+diff -up evolution-2.32.3/plugins/itip-formatter/itip-formatter.c.skip-readonly-cals evolution-2.32.3/plugins/itip-formatter/itip-formatter.c
+--- evolution-2.32.3/plugins/itip-formatter/itip-formatter.c.skip-readonly-cals	2013-06-10 14:24:34.205677816 +0200
++++ evolution-2.32.3/plugins/itip-formatter/itip-formatter.c	2013-06-10 14:30:19.112677799 +0200
+@@ -636,6 +636,7 @@ find_cal_opened_cb (ECal *ecal, const GE
+ 	ECalSourceType source_type;
+ 	icalcomponent *icalcomp;
+ 	GList *objects = NULL;
++	gboolean read_only = FALSE;
+ 
+ 	source_type = e_cal_get_source_type (ecal);
+ 	source = e_cal_get_source (ecal);
+@@ -660,6 +661,17 @@ find_cal_opened_cb (ECal *ecal, const GE
+ 		goto cleanup;
+ 	}
+ 
++	/* skip read-only calendars */
++	if (!e_cal_is_read_only (ecal, &read_only, NULL) || read_only) {
++		if (pitip->current_ecal == ecal) {
++			pitip->current_ecal = NULL;
++			itip_view_set_buttons_sensitive (ITIP_VIEW (pitip->view), FALSE);
++		}
++
++		g_hash_table_remove (pitip->ecals[source_type], e_source_peek_uid (source));
++		goto cleanup;
++	}
++
+ 	/* Check for conflicts */
+ 	/* If the query fails, we'll just ignore it */
+ 	/* FIXME What happens for recurring conflicts? */
+@@ -852,6 +864,9 @@ find_server (struct _itip_puri *pitip, E
+ 
+ 		group = l->data;
+ 
++		if (e_source_group_get_readonly (group))
++			continue;
++
+ 		sources = e_source_group_peek_sources (group);
+ 		for (m = sources; m; m = m->next) {
+                         gchar *source_uri = NULL;
+@@ -894,6 +909,9 @@ find_server (struct _itip_puri *pitip, E
+ 	for (; l != NULL; l = l->next) {
+ 		source = l->data;
+ 
++		if (e_source_get_readonly (source))
++			continue;
++
+ 		if (!fd) {
+ 			gchar *start = NULL, *end = NULL;
+ 

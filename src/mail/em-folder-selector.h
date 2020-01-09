@@ -25,24 +25,38 @@
 #define EM_FOLDER_SELECTOR_H
 
 #include <gtk/gtk.h>
+#include <mail/em-folder-tree.h>
 
-#define EM_TYPE_FOLDER_SELECTOR			(em_folder_selector_get_type ())
-#define EM_FOLDER_SELECTOR(obj)			(G_TYPE_CHECK_INSTANCE_CAST ((obj), EM_TYPE_FOLDER_SELECTOR, EMFolderSelector))
-#define EM_FOLDER_SELECTOR_CLASS(klass)		(G_TYPE_CHECK_CLASS_CAST ((klass), EM_TYPE_FOLDER_SELECTOR, EMFolderSelectorClass))
-#define EM_IS_FOLDER_SELECTOR(obj)		(G_TYPE_CHECK_INSTANCE_TYPE ((obj), EM_TYPE_FOLDER_SELECTOR))
-#define EM_IS_FOLDER_SELECTOR_CLASS(klass)	(G_TYPE_CHECK_CLASS_TYPE ((obj), EM_TYPE_FOLDER_SELECTOR))
+/* Standard GObject macros */
+#define EM_TYPE_FOLDER_SELECTOR \
+	(em_folder_selector_get_type ())
+#define EM_FOLDER_SELECTOR(obj) \
+	(G_TYPE_CHECK_INSTANCE_CAST \
+	((obj), EM_TYPE_FOLDER_SELECTOR, EMFolderSelector))
+#define EM_FOLDER_SELECTOR_CLASS(cls) \
+	(G_TYPE_CHECK_CLASS_CAST \
+	((cls), EM_TYPE_FOLDER_SELECTOR, EMFolderSelectorClass))
+#define EM_IS_FOLDER_SELECTOR(obj) \
+	(G_TYPE_CHECK_INSTANCE_TYPE \
+	((obj), EM_TYPE_FOLDER_SELECTOR))
+#define EM_IS_FOLDER_SELECTOR_CLASS(cls) \
+	(G_TYPE_CHECK_CLASS_TYPE \
+	((cls), EM_TYPE_FOLDER_SELECTOR))
+#define EM_FOLDER_SELECTOR_GET_CLASS(obj) \
+	(G_TYPE_INSTANCE_GET_CLASS \
+	((obj), EM_TYPE_FOLDER_SELECTOR, EMFolderSelectorClass))
 
 G_BEGIN_DECLS
 
-typedef struct _EMFolderSelector        EMFolderSelector;
+typedef struct _EMFolderSelector EMFolderSelector;
+typedef struct _EMFolderSelectorClass EMFolderSelectorClass;
 typedef struct _EMFolderSelectorPrivate EMFolderSelectorPrivate;
-typedef struct _EMFolderSelectorClass   EMFolderSelectorClass;
 
 struct _EMFolderSelector {
 	GtkDialog parent;
 
 	guint32 flags;
-	struct _EMFolderTree *emft;
+	EMFolderTree *emft;
 
 	GtkEntry *name_entry;
 	gchar *selected_path;
@@ -65,24 +79,37 @@ enum {
 	EM_FOLDER_SELECTOR_RESPONSE_NEW = 1
 };
 
-GType em_folder_selector_get_type (void);
-
-void em_folder_selector_construct (EMFolderSelector *emfs, struct _EMFolderTree *emft, guint32 flags, const gchar *title, const gchar *text, const gchar *oklabel);
-
-/* for selecting folders */
-GtkWidget *em_folder_selector_new (struct _EMFolderTree *emft, guint32 flags, const gchar *title, const gchar *text, const gchar *oklabel);
-
-/* for creating folders */
-GtkWidget *em_folder_selector_create_new (struct _EMFolderTree *emft, guint32 flags, const gchar *title, const gchar *text);
-
-void em_folder_selector_set_selected (EMFolderSelector *emfs, const gchar *uri);
-void em_folder_selector_set_selected_list (EMFolderSelector *emfs, GList *list);
-
-const gchar *em_folder_selector_get_selected_uri (EMFolderSelector *emfs);
-const gchar *em_folder_selector_get_selected_path (EMFolderSelector *emfs);
-
-GList *em_folder_selector_get_selected_uris (EMFolderSelector *emfs);
-GList *em_folder_selector_get_selected_paths (EMFolderSelector *emfs);
+GType		em_folder_selector_get_type	(void);
+void		em_folder_selector_construct	(EMFolderSelector *emfs,
+						 EMFolderTree *emft,
+						 guint32 flags,
+						 const gchar *title,
+						 const gchar *text,
+						 const gchar *oklabel);
+GtkWidget *	em_folder_selector_new		(GtkWindow *parent,
+						 EMFolderTree *emft,
+						 guint32 flags,
+						 const gchar *title,
+						 const gchar *text,
+						 const gchar *oklabel);
+GtkWidget *	em_folder_selector_create_new	(GtkWindow *parent,
+						 EMFolderTree *emft,
+						 guint32 flags,
+						 const gchar *title,
+						 const gchar *text);
+void		em_folder_selector_set_selected	(EMFolderSelector *emfs,
+						 const gchar *uri);
+void		em_folder_selector_set_selected_list
+						(EMFolderSelector *emfs,
+						 GList *list);
+const gchar *	em_folder_selector_get_selected_uri
+						(EMFolderSelector *emfs);
+const gchar *	em_folder_selector_get_selected_path
+						(EMFolderSelector *emfs);
+GList *		em_folder_selector_get_selected_uris
+						(EMFolderSelector *emfs);
+GList *		em_folder_selector_get_selected_paths
+						(EMFolderSelector *emfs);
 
 G_END_DECLS
 

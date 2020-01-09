@@ -1,4 +1,5 @@
 /*
+ * e-signature-combo-box.c
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,8 +46,12 @@ struct _ESignatureComboBoxPrivate {
 	GHashTable *index;
 };
 
-static gpointer parent_class;
 static guint signal_ids[LAST_SIGNAL];
+
+G_DEFINE_TYPE (
+	ESignatureComboBox,
+	e_signature_combo_box,
+	GTK_TYPE_COMBO_BOX)
 
 static void
 signature_combo_box_refresh_cb (ESignatureList *signature_list,
@@ -71,7 +76,7 @@ signature_combo_box_refresh_cb (ESignatureList *signature_list,
 	gtk_list_store_append (store, &tree_iter);
 	gtk_list_store_set (
 		store, &tree_iter,
-		COLUMN_STRING, _("None"),
+		COLUMN_STRING, C_("mail-signature", "None"),
 		COLUMN_SIGNATURE, NULL, -1);
 
 	if (signature_list == NULL)
@@ -96,7 +101,7 @@ signature_combo_box_refresh_cb (ESignatureList *signature_list,
 		GtkTreePath *path;
 		const gchar *string;
 
-		signature = iter->data;
+		signature = E_SIGNATURE (iter->data);
 		string = e_signature_get_name (signature);
 
 		gtk_list_store_append (store, &tree_iter);
@@ -110,6 +115,8 @@ signature_combo_box_refresh_cb (ESignatureList *signature_list,
 		g_hash_table_insert (index, signature, reference);
 		gtk_tree_path_free (path);
 	}
+
+	g_list_free (list);
 
 skip:
 	/* Restore the previously selected signature. */
@@ -133,7 +140,8 @@ signature_combo_box_constructor (GType type,
 	GtkCellRenderer *renderer;
 
 	/* Chain up to parent's constructor() method. */
-	object = G_OBJECT_CLASS (parent_class)->constructor (
+	object = G_OBJECT_CLASS (
+		e_signature_combo_box_parent_class)->constructor (
 		type, n_construct_properties, construct_properties);
 
 	renderer = gtk_cell_renderer_text_new ();
@@ -167,7 +175,7 @@ signature_combo_box_dispose (GObject *object)
 	g_hash_table_remove_all (priv->index);
 
 	/* Chain up to parent's dispose() method. */
-	G_OBJECT_CLASS (parent_class)->dispose (object);
+	G_OBJECT_CLASS (e_signature_combo_box_parent_class)->dispose (object);
 }
 
 static void
@@ -180,15 +188,14 @@ signature_combo_box_finalize (GObject *object)
 	g_hash_table_destroy (priv->index);
 
 	/* Chain up to parent's finalize() method. */
-	G_OBJECT_CLASS (parent_class)->finalize (object);
+	G_OBJECT_CLASS (e_signature_combo_box_parent_class)->finalize (object);
 }
 
 static void
-signature_combo_box_class_init (ESignatureComboBoxClass *class)
+e_signature_combo_box_class_init (ESignatureComboBoxClass *class)
 {
 	GObjectClass *object_class;
 
-	parent_class = g_type_class_peek_parent (class);
 	g_type_class_add_private (class, sizeof (ESignatureComboBoxPrivate));
 
 	object_class = G_OBJECT_CLASS (class);
@@ -206,7 +213,7 @@ signature_combo_box_class_init (ESignatureComboBoxClass *class)
 }
 
 static void
-signature_combo_box_init (ESignatureComboBox *combo_box)
+e_signature_combo_box_init (ESignatureComboBox *combo_box)
 {
 	GHashTable *index;
 
@@ -218,33 +225,6 @@ signature_combo_box_init (ESignatureComboBox *combo_box)
 
 	combo_box->priv = E_SIGNATURE_COMBO_BOX_GET_PRIVATE (combo_box);
 	combo_box->priv->index = index;
-}
-
-GType
-e_signature_combo_box_get_type (void)
-{
-	static GType type = 0;
-
-	if (G_UNLIKELY (type == 0)) {
-		static const GTypeInfo type_info = {
-			sizeof (ESignatureComboBoxClass),
-			(GBaseInitFunc) NULL,
-			(GBaseFinalizeFunc) NULL,
-			(GClassInitFunc) signature_combo_box_class_init,
-			(GClassFinalizeFunc) NULL,
-			NULL,  /* class_data */
-			sizeof (ESignatureComboBox),
-			0,     /* n_preallocs */
-			(GInstanceInitFunc) signature_combo_box_init,
-			NULL  /* value_table */
-		};
-
-		type = g_type_register_static (
-			GTK_TYPE_COMBO_BOX, "ESignatureComboBox",
-			&type_info, 0);
-	}
-
-	return type;
 }
 
 GtkWidget *

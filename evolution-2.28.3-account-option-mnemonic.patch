@@ -1,15 +1,8 @@
-commit 1f6420cfd26294f42ed427a967a313d01fceed27
-Author: Matthew Barnes <mbarnes@redhat.com>
-Date:   Mon Jan 10 00:12:47 2011 -0500
-
-    evolution-2.28.3-account-option-mnemonic.patch
-
-diff --git a/mail/em-account-editor.c b/mail/em-account-editor.c
-index f7418dd..8034bd9 100644
---- a/mail/em-account-editor.c
-+++ b/mail/em-account-editor.c
-@@ -2076,8 +2076,10 @@ emae_option_checkspin (EMAccountEditorService *service, CamelURL *url, const gch
- 	check = g_object_new (gtk_check_button_get_type (), "label", pre, "use_underline", TRUE, "active", enable, NULL);
+diff -up evolution-2.32.3/mail/em-account-editor.c.account-option-mnemonic evolution-2.32.3/mail/em-account-editor.c
+--- evolution-2.32.3/mail/em-account-editor.c.account-option-mnemonic	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/mail/em-account-editor.c	2013-05-29 09:31:21.450613687 +0200
+@@ -2427,8 +2427,10 @@ emae_option_checkspin (EMAccountEditorSe
+ 	check = g_object_new (gtk_check_button_get_type (), "label", pre, "use_underline", TRUE, "active", on, NULL);
  
  	spin = gtk_spin_button_new ((GtkAdjustment *)gtk_adjustment_new (def, min, max, 1, 1, 0), 1, 0);
 -	if (post)

@@ -29,21 +29,14 @@
 #include <stdio.h>
 #include <gtk/gtk.h>
 
-#include "camel/camel-store.h"
-#include "camel/camel-folder.h"
-#include "camel/camel-medium.h"
-#include "camel/camel-mime-message.h"
-#include "mail/em-popup.h"
-#include <mail/em-folder-view.h>
+#include <mail/e-mail-reader.h>
+#include <mail/message-list.h>
+
 #include <e-gw-connection.h>
-#include "mail/em-account-editor.h"
-#include "libedataserver/e-account.h"
-#include "mail/em-config.h"
+
+#include "gw-ui.h"
 #include "share-folder.h"
 #include "junk-settings.h"
-
-void
-org_gnome_junk_settings(EPlugin *ep, EMPopupTargetSelect *t);
 
 static void
 abort_changes (JunkSettings *js)
@@ -65,17 +58,26 @@ junk_dialog_response (GtkWidget *dialog, gint response, JunkSettings *js)
 
 }
 
-static void
-junk_mail_settings (EPopup *ep, EPopupItem *item, gpointer data)
+void
+gw_junk_mail_settings_cb (GtkAction *action, EShellView *shell_view)
 {
 	GtkWidget *dialog ,*w, *notebook, *box;
+	GtkWidget *content_area;
 	JunkSettings *junk_tab;
 	gint page_count =0;
 	EGwConnection *cnc;
 	gchar *msg;
-	CamelFolder *folder = (CamelFolder *)data;
-	CamelStore *store = folder->parent_store;
-	cnc = get_cnc (store);
+	EShellContent *shell_content;
+	EMailReader *reader;
+	CamelFolder *folder;
+
+	shell_content = e_shell_view_get_shell_content (shell_view);
+
+	reader = E_MAIL_READER (shell_content);
+	folder = e_mail_reader_get_folder (reader);
+	g_return_if_fail (folder != NULL);
+
+	cnc = get_cnc (camel_folder_get_parent_store (folder));
 
 	dialog =  gtk_dialog_new_with_buttons (_("Junk Settings"),
 			NULL,
@@ -85,9 +87,10 @@ junk_mail_settings (EPopup *ep, EPopupItem *item, gpointer data)
 			GTK_STOCK_OK,
 			GTK_RESPONSE_ACCEPT,
 			NULL);
+	content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
 	gtk_window_set_default_size ((GtkWindow *) dialog, 292, 260);
 	gtk_widget_ensure_style (dialog);
-	gtk_container_set_border_width ((GtkContainer *) ((GtkDialog *) dialog)->vbox, 12);
+	gtk_container_set_border_width (GTK_CONTAINER (content_area), 12);
 	box = gtk_vbox_new (FALSE, 6);
 	w = gtk_label_new ("");
 	msg = g_strdup_printf("<b>%s</b>", _("Junk Mail Settings"));
@@ -99,53 +102,18 @@ junk_mail_settings (EPopup *ep, EPopupItem *item, gpointer data)
 	w = (GtkWidget *)junk_tab->vbox;
 	gtk_box_pack_start ((GtkBox *) box, w, FALSE, FALSE, 6);
 
-	/*We might have to add more options for settings i.e. more pages*/
+	/* We might have to add more options for settings i.e. more pages */
 	while (page_count > 0 ) {
 		notebook = gtk_notebook_new ();
 		gtk_notebook_append_page ((GtkNotebook *)notebook, box, NULL);
-		gtk_box_pack_start ((GtkBox *) ((GtkDialog *) dialog)->vbox, notebook, TRUE, TRUE, 0);
+		gtk_box_pack_start (
+			GTK_BOX (content_area), notebook, TRUE, TRUE, 0);
 	}
 
 	if (page_count == 0)
-		gtk_box_pack_start ((GtkBox *) ((GtkDialog *) dialog)->vbox, box, TRUE, TRUE, 0);
+		gtk_box_pack_start (
+			GTK_BOX (content_area), box, TRUE, TRUE, 0);
 
 	g_signal_connect (dialog, "response", G_CALLBACK (junk_dialog_response), junk_tab);
 	gtk_widget_show_all (dialog);
 }
-
-static EPopupItem popup_items[] = {
-	{ E_POPUP_ITEM, (gchar *) "50.emfv.05", (gchar *) N_("Junk Mail Settings..."), junk_mail_settings, NULL, NULL, 0, EM_POPUP_SELECT_MANY|EM_FOLDER_VIEW_SELECT_LISTONLY}
-};
-
-static void
-popup_free (EPopup *ep, GSList *items, gpointer data)
-{
-g_slist_free (items);
-}
-
-void
-org_gnome_junk_settings(EPlugin *ep, EMPopupTargetSelect *t)
-{
-	GSList *menus = NULL;
-
-	gint i = 0;
-	static gint first = 0;
-
-	if (! g_strrstr (t->uri, "groupwise://"))
-		return;
-
-	/* for translation*/
-	if (!first) {
-		popup_items[0].label =  _(popup_items[0].label);
-
-	}
-
-	first++;
-
-	for (i = 0; i < sizeof (popup_items) / sizeof (popup_items[0]); i++)
-		menus = g_slist_prepend (menus, &popup_items[i]);
-
-	e_popup_add_items (t->target.popup, menus, NULL, popup_free, t->folder);
-
-}
-

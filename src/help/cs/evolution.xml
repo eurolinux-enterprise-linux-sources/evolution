@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
 <!ENTITY appname "Evolution">
-<!ENTITY appversion "2.28">
+<!ENTITY appversion "2.30">
 <!ENTITY z-3rdParty "*">
 <!ENTITY z-SM "(SM)">
 <!ENTITY z-CM "(CM)">
@@ -19,8 +19,8 @@
    <date>2002-2009</date>
    <revhistory>
      <revision>
-       <revnumber>2.28</revnumber>
-       <date>September 2009</date>
+       <revnumber>2.30</revnumber>
+       <date>Září 2009</date>
        <revdescription>
 	 <para role="author">Akhil Laddha</para>
 	 <para role="publisher">Novell, Inc</para>
@@ -28,7 +28,7 @@
      </revision>
     <revision>
      <revnumber>2.28</revnumber>
-     <date>September 2009</date>
+     <date>Září 2009</date>
      <revdescription>
       <para role="author">Radhika PC</para>
       <para role="publisher">Novell, Inc</para>
@@ -69,21 +69,21 @@
    </revhistory>
 
    <releaseinfo>
-     This manual describes version 2.28 of Evolution 
+     This manual describes version 2.30 of Evolution 
    </releaseinfo>
    <abstract role="description">
      <para>Uživatelská příručka aplikace Evolution, která vysvětluje, jak používat její funkce pro elekronickou poštu, kalendář, adresář a seznam úkolů.</para>
    </abstract>
    <productname class="trade">Evolution</productname>
-   <productnumber>2.28</productnumber>
+   <productnumber>2.30</productnumber>
    <invpartnumber>Únor 2008</invpartnumber>
-   <title>Evolution 2.28 User Guide</title>
- <copyright><year>2008, 2009.</year><holder>Jiří Eischmann (jiri@eischmann.cz)</holder></copyright></bookinfo>
+   <title>Evolution 2.30 User Guide</title>
+ <copyright><year>2008, 2009, 2010</year><holder>Jiří Eischmann (jiri@eischmann.cz)</holder></copyright></bookinfo>
 
 
  <preface id="preface">
   <title>O této příručce</title>
-  <para>This guide describes how to use and manage <trademark>Evolution</trademark> 2.28 client software. This guide is intended for users and is divided into the following sections:</para>
+  <para>This guide describes how to use and manage <trademark>Evolution</trademark> 2.30 client software. This guide is intended for users and is divided into the following sections:</para>
   <itemizedlist>
    <listitem>
     <para><link linkend="usage-mainwindow">Začínáme</link></para>
@@ -424,7 +424,7 @@
        <listitem id="bsthmhx">
         <para>Vyberte Automaticky synchronizovat vzdálenou poštu lokálně, abyste stáhli zprávy do vašeho lokálního systému.</para>
         <para>Evolution ve výchozím nastavení stahuje informace v hlavičce jako Od, Předmět, Datum. Tělo zprávy a přílohy jsou staženy pouze, když kliknete na zprávu. Takže můžete šetřit čas a zatížení sítě. Toto je užitečné, když nečtete všechny právy, které dostanete.</para>
-        <para>Pokud zatrhnete tuto volbu, Evolution bude stahovat jak hlavičky tak tělo zprávy zároveň. V tomto případě zabere otevření zprávy méně času. K tomu můžete stahovat e-maily pro off-line čtení v případě, že zatrhnete tuto volbu.</para>
+        <para>Pokud zatrhnete tuto volbu, Evolution bude stahovat jak hlavičky tak tělo zprávy zároveň. V tomto případě zabere otevření zprávy méně času. K tomu můžete stahovat e-maily pro čtení při odpojení v případě, že zatrhnete tuto volbu.</para>
        </listitem>
        <listitem id="bsthnab">
         <para>Napište váš port SOAP pro Post Office Agent do pole Port SOAP pro Post Office.</para>
@@ -606,7 +606,7 @@
        <listitem id="bstgje2">
         <para>Vyberte Automaticky synchronizovat vzdálenou poštu lokálně, abyste stáhli zprávy do vašeho lokálního systému.</para>
         <para>Evolution ve výchozím nastavení stahuje informace v hlavičce jako Od, Předmět, Datum. Tělo zprávy a přílohy jsou staženy pouze, když kliknete na zprávu. Takže můžete šetřit čas a zatížení sítě. Toto je užitečné, když nečtete všechny právy, které dostanete.</para>
-        <para>Pokud zatrhnete tuto volbu, Evolution bude stahovat jak hlavičky tak tělo zprávy zároveň. V tomto případě zabere otevření zprávy méně času. K tomu můžete stahovat e-maily pro off-line čtení v případě, že zatrhnete tuto volbu.</para>
+        <para>Pokud zatrhnete tuto volbu, Evolution bude stahovat jak hlavičky tak tělo zprávy zároveň. V tomto případě zabere otevření zprávy méně času. K tomu můžete stahovat e-maily pro čtení při odpojení v případě, že zatrhnete tuto volbu.</para>
        </listitem>
        <listitem id="bstgjlq">
         <para>Klikněte na Vpřed.</para>
@@ -867,8 +867,8 @@
     <para>Seznam složek vám dává seznam všech dostupných složek v jednotlivých účtech. Pokud chcete vidět obsah složky, klikněte na jméno složky a obsah se zobrazí v seznamu zpráv.</para>
    </formalpara>
    <formalpara id="b17s9nvy">
-    <title>Lišta nástrojů:</title>
-    <para>Lišta nástrojů vám umožňuje rychlý přístup k často používaným funkcím jednotlivých komponent.</para>
+    <title>Nástrojová lišta:</title>
+    <para>Nástrojová lišta vám umožňuje rychlý přístup k často používaným funkcím jednotlivých komponent.</para>
    </formalpara>
    <formalpara id="b17s9o2z">
     <title>Nástroj hledání:</title>
@@ -888,7 +888,7 @@
    </formalpara>
    <formalpara id="b17s9ol7">
     <title>Stavový řádek:</title>
-    <para>Stavový řádek pravidelně ukazuje zprávu nebo vám ukazuje průběh úlohy. To se nejčastěji stává, když kontrolujete nebo odesíláte poštu. Tyto průběhy jsou zobrazeny na předchozím obrázku. Indikátor online/offline režimu je zde také, v levé dolní části okna.</para>
+    <para>Stavový řádek pravidelně ukazuje zprávu nebo vám ukazuje průběh úlohy. To se nejčastěji stává, když kontrolujete nebo odesíláte poštu. Tyto průběhy jsou zobrazeny na předchozím obrázku. Indikátor režimu připojení/odpojení je zde také, v levé dolní části okna.</para>
    </formalpara>
    <formalpara id="b17s9or8">
     <title>Panel náhledu:</title>
@@ -920,7 +920,7 @@
     </formalpara>
     <formalpara id="bs7g3bu">
      <title>Hledat:</title>
-     <para>Umožňuje vám vyhledávat zprávy nebo fráze ve zprávách. Taktéž se můžete podívat na předchozí vyhledávání, které jste provedli. Kromě nabídky Hledat, je zde ještě pole pro vložení textu v liště nástrojů, které můžete používat pro hledání zpráv. Taktéž si můžete z hledání vytvořit složku hledání.</para>
+     <para>Umožňuje vám vyhledávat zprávy nebo fráze ve zprávách. Taktéž se můžete podívat na předchozí vyhledávání, které jste provedli. Kromě nabídky Hledat, je zde ještě pole pro vložení textu v nástrojové liště, které můžete používat pro hledání zpráv. Taktéž si můžete z hledání vytvořit složku hledání.</para>
     </formalpara>
     <formalpara id="bs7g3gq">
      <title>Nápověda:</title>
@@ -965,8 +965,8 @@
       <para>Zobrazí tlačítka s popisky bez ikon.</para>
      </formalpara>
      <formalpara id="b13cfibm">
-      <title>Styl lišty nástrojů:</title>
-      <para>Zobrazí tlačítka využívající nastavení systémové lišty nástrojů.</para>
+      <title>Styl nástrojové lišty:</title>
+      <para>Zobrazí tlačítka využívající nastavení systémové nástrojové lišty.</para>
     </formalpara>
     <formalpara id="b13cfifx">
      <title>Skrýt tlačítka:</title>
@@ -1007,7 +1007,7 @@
      </formalpara>
      <formalpara id="bs7fdja">
       <title>Vlastnosti:</title>
-      <para>Kontroluje počet všech zpráv a nepřečtených zpráv ve složce a ve vzdálených složkách vám umožňuje vybrat, zda kopírovat složku do lokálního systému pro offline operace.</para>
+      <para>Kontroluje počet všech zpráv a nepřečtených zpráv ve složce a ve vzdálených složkách vám umožňuje vybrat, zda kopírovat složku do lokálního systému pro operace při odpojení.</para>
      </formalpara>
      <para>Můžete také složky a zprávy přeskupovat uchopením a přesunutím. </para>
      <para>Kdykoliv přijde do složky nová pošta, popis složky se zobrazí tučně s počtem novým zpráv ve složce.</para>
@@ -1043,7 +1043,7 @@
     </formalpara>
     <para>Pokud vám přijde panel náhledů příliš malý, můžete změnit velikost panelu, zvětšit celé okno nebo poklikat na zprávu v seznamu zpráv, která se poté otevře v novém okně. Velikost panelu změníte tak, že táhnete dělící lištu mezi dvěma panely.</para>
     <para>Stejně jako u složek můžete kliknout pravým tlačítkem na zprávy v seznamu práv a dostanete nabídku možných akcí, včetně přesouvání nebo ostranění, vytváření filtrů nebo složek hledání a označování zpráv jako nevyžádanou poštu.</para>
-    <para>Většina akcí týkajících se pošty, které chcete provádět, je v nabídce Zpráva a Složka v liště nabídky. Ty nejpoužívanější jako Odpovědět a Přeposlat se nachází také jako tlačítka na liště nástrojů. Většina z nich je také umístěná v kontextové nabídce a jako klávesové zkratky.</para>
+    <para>Většina akcí týkajících se pošty, které chcete provádět, je v nabídce Zpráva a Složka v liště nabídky. Ty nejpoužívanější jako Odpovědět a Přeposlat se nachází také jako tlačítka na nástrojové liště. Většina z nich je také umístěná v kontextové nabídce a jako klávesové zkratky.</para>
     <para>Hlubšího průvodce poštovními schopnostmi Evolutionu naleznete v <link linkend="usage-mail">Posílání a přijímání e-mailů</link>.</para>
    </section>
 
@@ -1073,7 +1073,7 @@
     <mediaobject id="usage-contact-fig"><imageobject><imagedata format="PNG" fileref="figures/contacts_mainwindow_a.png"/></imageobject></mediaobject>
     <para>Další výhodou kontaktů Evolutionu je jejich integrace se zbytkem aplikací. Např. můžete kliknout pravým tlačítkem na e-mailovou adresu v poště Evolutionu a ihned vytvořit záznam v kontaktech.</para>
     <para><emphasis>Seznam kontaktů</emphasis></para>
-    <para>Největší část kontaktů zobrazuje seznam jednotlivé kontakty. Můžete také vyhledávat kontakty stejným způsobem jako e-maily, pomocí vyhledávacího nástroje v pravé části lišty nástrojů. </para>
+    <para>Největší část kontaktů zobrazuje seznam jednotlivé kontakty. Můžete také vyhledávat kontakty stejným způsobem jako e-maily, pomocí vyhledávacího nástroje v pravé části nástrojové lišty. </para>
     <para>Detailnější informace o tom, jak používat adresář naleznete v <link linkend="usage-contact">Kontakty Evolution: adresář</link> </para>
    </section>
   </section>
@@ -1143,7 +1143,7 @@
         <para>evolution --offline</para>
        </entry>
        <entry colname="2">
-        <para>Zapne Evolution v režimu off-line.</para>
+        <para>Zapne Evolution v režimu odpojení.</para>
        </entry>
       </row>
       <row id="b17xmf5w">
@@ -1275,7 +1275,7 @@
 
    <section id="b13qb7i4">
     <title>Kontrola nové pošty</title>
-    <para>Chcete-li zkontrolovat poštu, klikněte na Odeslat/přijmout v liště nástrojů. Pokud jste dosud žádný poštovní účet nevytvořili, asistent nastavení vás požádá o informace, které potřebuje k tomu, aby mohl poštu zkontrolovat. Více informací o vytváření poštovních účtů naleznete v <link linkend="usage-mainwindow-starting">Začínáme poprvé s Evolutionem</link>.</para>
+    <para>Chcete-li zkontrolovat poštu, klikněte na Odeslat/přijmout v nástrojové liště. Pokud jste dosud žádný poštovní účet nevytvořili, asistent nastavení vás požádá o informace, které potřebuje k tomu, aby mohl poštu zkontrolovat. Více informací o vytváření poštovních účtů naleznete v <link linkend="usage-mainwindow-starting">Začínáme poprvé s Evolutionem</link>.</para>
     <para>Pokud je to vaše první kontrola pošty nebo jste ještě Evolution nepožádali o uložení hesla, budete vyzváni, abyste zadali heslo. Chcete-li poštu stáhnout, zadejte vaše heslo.</para>
     <para>Pokud místo pošty dostanete chybovou hlášku, budete muset pravděpodobně zkontrolovat nastavení vaší sítě. Jak to udělat, se dozvíte v <link linkend="mail-prefs-headers">Nastavení hlavičky e-mailu</link></para>
    </section>
@@ -1292,10 +1292,10 @@
      <para>Vyberte tuto možnost, pokud chcete upozornění na novou poštu omezit pouze na Příchozí. Povolením této možnosti budete upozorňováni na každou novou zprávu, která dorazí do složky Příchozí.</para>
     </formalpara>
     <formalpara>
-     <title>New Message Notification For Folders</title>
-     <para>This feature notifies you of new message arrival in any folder. A folder with new mail is identified by the unread icon.The icon is displayed as long as the folder is accessed.</para>
+     <title>Upozornění na novou poštu ve složkách</title>
+     <para>Tato funkce upozorňuje na příchod nových zpráv v jakékoliv složce. Složka s novou poštou je označena ikonou značící nepřečtené zprávy. Tato ikona je zobrazena, dokud není složka otevřena.</para>
     </formalpara>
-    <para>In a collapsed folder tree, if a new message arrives in the parent folder, the folder name is displayed with a '+' plus sign beside the unread mail count. When a new message arrives in any child folders, the parent folder name turns bold.</para>
+    <para>Ve sbaleném stromu složek, když nová zpráva přijde do rodičovské složky, název složky je zobrazený s '+' vedle počtu nepřečtených zpráv. Když nová zpráva přijde do podsložky, název rodičovské složky tučně zvýrazní.</para>
     <mediaobject><imageobject><imagedata format="PNG" fileref="figures/folder_plus.png"/></imageobject></mediaobject>
     <formalpara id="b1dl93cp">
      <title>Vytvořit zprávu D-Bus:</title>
@@ -1492,7 +1492,7 @@
 
    <section id="usage-mail-getnsend-delete">
     <title>Mazání pošty</title>
-    <para>Evolution vám umožňuje odstranit nepotřebné zprávy. Chcete-li odstranit zprávu, vyberte ji a stiskněte klávesu Delete nebo klikněte na tlačítko Odstranit v liště nástrojů, stikněte Ctrl+D, nebo klikněte pravým tlačítkem na zprávu a vyberte Odstranit.</para>
+    <para>Evolution vám umožňuje odstranit nepotřebné zprávy. Chcete-li odstranit zprávu, vyberte ji a stiskněte klávesu Delete nebo klikněte na tlačítko Odstranit v nástrojové liště, stikněte Ctrl+D, nebo klikněte pravým tlačítkem na zprávu a vyberte Odstranit.</para>
     <para>Když stisknete Odstranit nebo kliknete na složku Koše, e-mail není opravdu smazaný, ale označený pro odstranění. E-mail je obnovitelný, dokud e-mail nevyčistíte. Když vyčistíte složku, odstraníte všechny zprávy, které byly označeny pro odstranění. Chcete-li zobrazit odstraněné zprávy, odškrtněte volbu Skrýt odstraněné zprávy v nabídce Zobrazit. Můžete podívat na zprávy vyškrtnuté pro pozdější odstranění. Také můžete nalézt odstraněné zprávy ve složce Koš.</para>
     <para>Pro trvalé vymazání všech odstraněných zpráv ve složce, klikněte na Složka &gt; Vyčistit nebo stiskněte Ctrl+E.</para>
     <para>Složky Koše v GroupWise, místních a IMAP účtech jsou ve skutečnosti virtuální složky hledání, které zobrazují všechny zprávy, které jste označili pro pozdější ostranění. Z tohoto důvodu vyprázdnění Koše narozdíl od vyčištění odstraněných e-mailů ze všech složek nic nezpůsobí.</para>
@@ -1508,7 +1508,7 @@
 
   <section id="usage-mail-getnsend-send">
    <title>Vytváření novým e-mailových zpráv</title>
-   <para>Můžete začít psát zprávu kliknutím na Soubor &gt; Nový &gt; Zpráva, stisknutím Ctrl+N, když se nacházíte v poště, nebo kliknutím na Nový v liště nástrojů.</para>
+   <para>Můžete začít psát zprávu kliknutím na Soubor &gt; Nový &gt; Zpráva, stisknutím Ctrl+N, když se nacházíte v poště, nebo kliknutím na Nový v nástrojové liště.</para>
    <para>Vložte adresu do pole Komu. Pokud chcete vložit více adres, pište adresy oddělené čárkami. Pro poslání zpráv více příjemcům můžete využít také seznam kontaktů. Vložte předmět do pole Předmět a zprávu do čtverce ve spodní části okna. Poté, co máte zprávu napsanou, klikněte na Poslat.</para>
    <para>Okno nové zprávy vypadá takto:</para>
    <mediaobject id="usage-mail-newmsg-fig"><imageobject><imagedata format="PNG" fileref="figures/evo_newmess_a.png"/></imageobject></mediaobject>
@@ -1521,7 +1521,7 @@
      <para><link linkend="usage-mail-getnsend-send-delay">Odeslání vytvořených zpráv později</link></para>
     </listitem>
     <listitem>
-     <para><link linkend="usage-mail-getnsend-offline">Práce off-line</link></para>
+     <para><link linkend="usage-mail-getnsend-offline">Práce při odpojení</link></para>
     </listitem>
     <listitem>
      <para><link linkend="usage-mail-getnsend-send-compose">Přílohy</link></para>
@@ -1592,7 +1592,7 @@
     <para>Evolution normálně posílá poštu ihned, jak kliknete na Poslat. Nicméně umí zprávu uložit a odeslat později:</para>
     <itemizedlist>
      <listitem>
-      <para>Pokud jste off-line a kliknete na Poslat, Evolution přidá vaši zprávu do řady K Odeslání. Příště, až se připojíte k internetu a dáte odeslat nebo přijmout poštu, zpráva bude odeslána.</para>
+      <para>Pokud jste odpojení a kliknete na Poslat, Evolution přidá vaši zprávu do řady Odeslání. Příště, až se připojíte k internetu a dáte odeslat nebo přijmout poštu, zpráva bude odeslána.</para>
      </listitem>
      <listitem>
       <para>Pokud chcete uložit zprávu pro pozdější revizi ve složce Koncepty,  klikněte na Soubor &gt; Uložit koncept.</para>
@@ -1604,10 +1604,10 @@
    </section>
 
    <section id="usage-mail-getnsend-offline">
-    <title>Práce off-line</title>
-    <para>Režim off-line vám pomáhá komunikovat se vzdálenými systémy pro uložení pošty jako <trademark class="registered">GroupWise</trademark>, IMAP nebo Exchange v situacích, kdy nejste pořád připojení do sítě. Evolution uchovává místní kopii jedné nebo více složek, aby vám umožnil vytvářet zprávy a ukládat je do složky K Odeslání do té doby, než budete připojeni. </para>
-    <para>POP stahuje všechny zprávy do lokálního systému, ale ostatní připojení stahují pouze hlavičky a zbytek, pouze když chcete zprávu číst. Před tím, než jdete do off-line režimu, Evolution stáhne nepřečtené zprávy ze složek, které jste vybrali pro ukládání.</para>
-    <para>Chcete-li zprávu označit pro použití off-line,</para>
+    <title>Práce při odpojení</title>
+    <para>Režim odpojení vám pomáhá komunikovat se vzdálenými systémy pro uložení pošty jako <trademark class="registered">GroupWise</trademark>, IMAP nebo Exchange v situacích, kdy nejste pořád připojení do sítě. Evolution uchovává místní kopii jedné nebo více složek, aby vám umožnil vytvářet zprávy a ukládat je do složky K Odeslání do té doby, než budete připojeni. </para>
+    <para>POP stahuje všechny zprávy do lokálního systému, ale ostatní připojení stahují pouze hlavičky a zbytek, pouze když chcete zprávu číst. Před tím, než jdete do režimu odpojení, Evolution stáhne nepřečtené zprávy ze složek, které jste vybrali pro ukládání.</para>
+    <para>Chcete-li zprávu označit pro použití při odpojení,</para>
     <orderedlist>
      <listitem id="b17rcycf">
       <para>Klikněte pravým tlačítkem na složku a potom na Vlastnosti.</para>
@@ -1616,7 +1616,7 @@
       <para>Klikněte na Zkopírovat obsah složky lokálně pro práci při odpojení.</para>
      </listitem>
     </orderedlist>
-    <para>Váš stav připojení je zobrazen malou ikonou vlevo dole v hlavním okně Evolutionu. Když jste on-line, zobrazuje dva spojené kabely. Když jste off-line, kabely jsou rozpojené.</para>
+    <para>Váš stav připojení je zobrazen malou ikonou vlevo dole v hlavním okně Evolutionu. Když jste on-line, zobrazuje dva spojené kabely. Když jste odpojení, kabely jsou rozpojené.</para>
     <para>Chcete-li vybrané složky uložit to cache a odpojit se od sítě,</para>
     <orderedlist>
      <listitem id="b17rcz0t">
@@ -1642,7 +1642,7 @@
 
     <section id="b101llnc">
      <title>Automatické reakce na stav sítě</title>
-     <para>Evolution automaticky rozpoznává stav sítě a podle toho reaguje. Např. přepíná do řežimu off-line, když síť spadne a automaticky se vrací zpět, když síť opět funguje. Ujistěte se, že máte nainstalovaný Network Manager, aby tato funkce mohla fungovat.</para>
+     <para>Evolution automaticky rozpoznává stav sítě a podle toho reaguje. Např. přepíná do řežimu odpojení, když síť spadne a automaticky se vrací zpět, když síť opět funguje. Ujistěte se, že máte nainstalovaný Network Manager, aby tato funkce mohla fungovat.</para>
     </section>
    </section>
 
@@ -1651,7 +1651,7 @@
     <para>Chcete-li připojit soubor k e-mailu:</para>
     <orderedlist>
      <listitem id="bsfnwxr">
-      <para>Click the Attach button in the composer.</para>
+      <para>Klikněte na tlačítko Přidat přílohu v editoru zpráv.</para>
      </listitem>
      <listitem id="bsfnx41">
       <para>Vyberte soubor, který chcete přiložit.</para>
@@ -1721,14 +1721,14 @@
    <section id="usage-mail-getnsend-send-to">
     <title>Rychlé vybírání příjemců</title>
     <para>Automatické dokončování adres je v Evolutionu ve výchozím stavu zapnuto, když vytvoříte kontakty. Evolution vám usnadňuje rychlé vyplňování adres, aniž byste si museli pamatovat e-mailové adresy příjemců. Můžete psát přezdívky nebo části dat adresy do pole pro adresu a Evolution zobrazí rozbalovací seznam možných adres z vašich kontaktů. Pokud napíšete jméno nebo přezdívku, která odpovídá více než jedné kartě, Evolution otevře dialogovou nabídku, kde se vás zeptá, kterou osobu jste měli na mysli.</para>
-    <para>Pokud Evolution nedoplňuje adresy automaticky, klikněte na Upravit &gt; Nastavení, potom na Automatické dokončování. Zde vyberte adresář, který chcete pro automatické dokončování používat.</para>
+    <para>Pokud Evolution nedoplňuje adresy automaticky, klikněte na Upravit &gt; Nastavení, potom na Automatické doplňování. Zde vyberte adresář, který chcete pro automatické dokončování používat.</para>
     <para>Obdobně můžete kliknout na tlačítka Komu:, Kopie:, Skrytá kopie: a získáte seznam e-mailových adres ve vašich kontaktech. Vyberte adresy a klikněte na šipky pro přidání do příslušného sloupce adres.</para>
     <para>Více informací o používání e-mailu spolu se správcem kontaktů a kalendářem naleznete v <link linkend="contact-automation-basic">Pošli mi kartu: Rychlé přidávání nových karet</link> a <link linkend="usage-calendar-apts">Plánování s Kalendářem Evolution</link>.</para>
    </section>
 
    <section id="usage-mail-getnsend-send-reply">
     <title>Odpovídání na e-mailové zprávy</title>
-    <para>Chcete-li odpovědět na zprávu, klikněte na zprávu, na kterou chcete reagovat, a potom na Odpovědět v liště nástrojů nebo klikněte pravým tlačítkem ve zprávě a vyberte Odpovědět odesílateli. Tohle otevře editor zpráv. Pole Komu: a Předmět: jsou již vyplněny, můžete je avšak změnit, pokud chcete. Navíc je celý text původní zprávy vložen do zprávy nové. Je buď šedý s modrou čárou na straně (pro HTML) nebo se znakem &gt; na začátku každého řádku (v režimu prostého textu), což signalizuje, že se jedná o původní zprávu.</para>
+    <para>Chcete-li odpovědět na zprávu, klikněte na zprávu, na kterou chcete reagovat, a potom na Odpovědět v nástrojové liště nebo klikněte pravým tlačítkem ve zprávě a vyberte Odpovědět odesílateli. Tohle otevře editor zpráv. Pole Komu: a Předmět: jsou již vyplněny, můžete je avšak změnit, pokud chcete. Navíc je celý text původní zprávy vložen do zprávy nové. Je buď šedý s modrou čárou na straně (pro HTML) nebo se znakem &gt; na začátku každého řádku (v režimu prostého textu), což signalizuje, že se jedná o původní zprávu.</para>
     <para>Pokud čtete zprávu s několika příjemci, můžete použít Odpovědět všem místo Odpovědět. Pokud je v polích Kopie: a Komu: velké množství lidí, tohle vám ušetří značné množství času.</para>
 
     <section id="bsfo4jl">
@@ -1823,11 +1823,11 @@
      <title>Základní HTML formátování</title>
      <para>Můžete změnit formátování e-mailové zprávy z prostého textu na HTML zvolením Formát &gt; HTML z lišty nástrojů.</para>
      <para>Chcete-li posílat všechny vaše e-maily implicitně jako HTML,  nastavte formátování zpráv v dialogovém okně nastavení editoru. Více informací v <link linkend="config-prefs-mail-composer">Nastavení editoru</link>.</para>
-     <para>Nástroje HTML formátování jsou umístěny v liště nástrojů přímo nad prostorem, kde tvoříte zprávu. Taktéž se jsou v nabídce Vložit a Formát.</para>
-     <para>Ikony v liště nástrojů jsou vysvětleny v <link linkend="tooltip">nástrojových tipech</link>, které se objevují, když podržíte kurzor myši nad tlačítkem. Tlačítka spadají do pěti kategorií:</para>
+     <para>Nástroje HTML formátování jsou umístěny v nástrojové liště přímo nad prostorem, kde tvoříte zprávu. Taktéž se jsou v nabídce Vložit a Formát.</para>
+     <para>Ikony v nástrojové liště jsou vysvětleny v <link linkend="tooltip">nástrojových tipech</link>, které se objevují, když podržíte kurzor myši nad tlačítkem. Tlačítka spadají do pěti kategorií:</para>
      <formalpara id="bsai70c">
       <title>Záhlaví a seznamy:</title>
-      <para>Na levé straně lišty nástrojů můžete vybrat Normální pro výchozí formátování textu nebo Header 1 až Header 6 pro různé velikost záhlaví od velkého (1) po malé (6). Ostatní styly obsahují předformátované (použití HTML značek pro předformátované bloky textu) a tři druhy odrážek pro seznamy.</para>
+      <para>Na levé straně nástrojové liště můžete vybrat Normální pro výchozí formátování textu nebo Header 1 až Header 6 pro různé velikost záhlaví od velkého (1) po malé (6). Ostatní styly obsahují předformátované (použití HTML značek pro předformátované bloky textu) a tři druhy odrážek pro seznamy.</para>
      </formalpara>
      <para>Například místo používání hvězdiček k označení seznamu s odrážkami můžete použít styl Bulleted List z vysouvací nabídky. Evolution používá různé styly odrážek, zalamování slov a několik úrovní odsazení.</para>
      <formalpara id="bsai86c">
@@ -2070,7 +2070,7 @@
     <para>Pro přeposlání zprávy, kterou čtete:</para>
     <orderedlist>
      <listitem id="b10fnnjq">
-      <para>Klikněte na Přeposlat v liště nástrojů.</para>
+      <para>Klikněte na Přeposlat v nástrojové liště.</para>
       <para>nebo</para>
       <para>Pokud dáváte přednost přeposílání zprávy <link linkend="inline">vložené</link> místo přiložené, klikněte v nabídce na Zpráva &gt; Přeposlat jako &gt; Vložené.</para>
      </listitem>
@@ -2326,7 +2326,7 @@
       <para>Pro vygenerování hesla pohybujte náhodně myší.</para>
      </listitem>
     </orderedlist>
-    <para>Poté, co jsou klíče vygenerovány, si můžete informace o vašich klíčích prohlednout vložením <command>gpg --list-keys</command>. Měli byste vidět něco podobné tomuto: <computeroutput> /home/you/.gnupg/pubring.gpg ----------------------------  pub 1024D/32j38dk2 2001-06-20 you &lt;you@example.com&gt;  sub 1024g/289sklj3 2001-06-20 [expires: 2002-11-14]  </computeroutput></para>
+    <para>Poté, co jsou klíče vygenerovány, si můžete informace o svých klíčích prohlédnout vložením <command>gpg --list-keys</command>. Měli byste vidět něco podobné tomuto: <computeroutput> /home/you/.gnupg/pubring.gpg ----------------------------  pub 1024D/32j38dk2 2001-06-20 you &lt;you@example.com&gt;  sub 1024g/289sklj3 2001-06-20 [expires: 2002-11-14]  </computeroutput></para>
     <para>GPG vytvoří jeden seznam (nebo klíčenku) pro vaše veřejné klíče a jeden pro vaše pro vaše privátní klíče. Všechny veřejné klíče, které znáte, jsou uloženy v souboru ~/.gnupg/pubring.gpg. Pokud chcete dát ostatním lidem váš klíč, pošlete jim tento soubor.</para>
     <para>Pokud chcete, můžete nahrát vaše klíče na server klíčů.</para>
     <orderedlist>
@@ -2347,10 +2347,7 @@
     <para>Pro získání veřejných klíčů ze serveru veřejných klíčů, vložte příkaz <command> gpg --recv-keys --keyserver wwwkeys.pgp.net <varname>keyid</varname></command> s tím, že nahradíte <varname>keyid</varname> ID vašeho příjemce. Musíte vložit vaše heslo a ID se automaticky přidá do vaší klíčenky.</para>
     <note>
      <para>Doména <quote><emphasis>wwwkeys.pgp.net</emphasis></quote> je přidělená více hostům v různých sítích. Nástroj gpg se zkouší připojit k jednomu z nich v aktuální síti a pokud je určitý host nedostupný, selže vypršením časového limitu.</para>
-     <para>To avoid this, type <command>$ host wwwkeys.pgp.net</command> in a terminal console and get the IP address of the hosts. 
-      You can ping each of them to find the one which is up and running. Now, you can replace wwwkeys.pgp.net in the gpg --recv-keys
-      --keyserver wwwkeys.pgp.net keyid command with that 
-      explicit IP number as returned by the host utility.</para> 
+     <para>Abyste se tomuto vyhli, napište do terminálu <command>$ host wwwkeys.pgp.net</command> a dostanete IP adresy hostů. Můžete poslat ping na každý z nich a zjistit, který z nich běží. Nyní můžete nahradit wwwkeys.pgp.net v příkazu gpg --recv-keys --keyserver wwwkeys.pgp.net explicitním číslem IP, které vám vrátil host.</para> 
     </note>
     <para>Pokud vám někdo pošle veřejný klíč napřímo, uložte jej jako textový soubor a vložte příkaz <command>gpg <varname>--import</varname></command> pro jeho přidání do klíčenky.</para>
    </section>
@@ -3371,7 +3368,7 @@
    <title>Zastavení nevyžádáné pošty (spamu)</title>
    <para>Evolution vám může kontrolovat nevyžádanou poštu. Ke kontrole spamu Evolution používá SpamAssassin a/nebo Bogofilter s bayesiánským filtrem, který je schopný se učit. Když software odhalí zprávu, která se jeví jako nevyžádaná, označí ji a skryje ji před vaším pohledem. Zprávy, kterou jsou označeny jako nevyžádaná pošta jsou zobrazeny pouze ve složce Nevyžádaná pošta.</para>
    <para>Filtr nevyžádané pošty se umí učit, který typ pošty je v pořádku a který není, pokud ho učit necháte. Když začnete poprvé používat blokování nevyžádané pošty, kontrolujte si složku Nevyžádaná pošta, abyste se ujistili, že pošta, která je v pořádku, není označena jako spam. Pokud je dobrá pošta nesprávně označena, odstraňte ji ze složky Nevyžádaná pošta kliknutím pravým tlačítkem a zvolením Označit, že není nevyžádaná nebo stisknutím Shift+Ctrl+J. Pokud Evolutionu spam proklouzne, klikněte pravým tlačítkem na zprávu a potom klikněte na Označit jako nevyžádaná nebo stiskněte Ctrl+J. Když provedete opravu, filtr bude umět v budoucnu rozpoznat podobné zprávy a bude postupně přesnější.</para>
-   <para>Každý filtr se potřebuje naučit aspoň 100 spamů a 100 hamů, aby začal pracovat. Proto musíte ručně označit každou zprávu kliknutím na tlačítko <emphasis>Není nevyžádané</emphasis> v liště nástrojů, aby se naučil, že jde o ham.  Tlačítko <emphasis>Nevyžádaná pošta</emphasis> naopak učí, že jde o spam. </para>
+   <para>Každý filtr se potřebuje naučit aspoň 100 spamů a 100 hamů, aby začal pracovat. Proto musíte ručně označit každou zprávu kliknutím na tlačítko <emphasis>Není nevyžádané</emphasis> v nástrojové liště, aby se naučil, že jde o ham.  Tlačítko <emphasis>Nevyžádaná pošta</emphasis> naopak učí, že jde o spam. </para>
    <para>Chcete-li změnit nastavení filtrování nevyžádané pošty, klikněte na Upravit &gt; Nastavení, potom na Nastavení pošty.</para>
    <para>Více informací o nevyžádané poště se dozvíte v <link linkend="mail-prefs-junk">Nastavení nevyžádané pošty</link>.</para>
    <para>Informace o dalším nastavení nevyžádané pošty naleznete v <link linkend="more-mail-options">Možnosti přijímání pošty</link>.</para>
@@ -3496,7 +3493,7 @@
   
    <section id="b1dl9th7">
     <title>Google kontakty</title>
-    <para>Evolution vám umožňuje přístupovat k vašemu adresáři Google. Můžete Google kontakty prohlížet offline, vytvářet, měnit a mazat kontakty online.</para>
+    <para>Evolution vám umožňuje přístupovat k vašemu adresáři Google. Můžete Google kontakty prohlížet odpojeni a vytvářet, měnit a mazat kontakty připojeni.</para>
     <para>Chcete-li nastavit v kontaktech Evolutionu adresář Google:</para>
     <orderedlist>
      <listitem id="b1dl9x1r">
@@ -3565,7 +3562,7 @@
      <para>Zadejte jedno z následujících kritérií:</para>
      <itemizedlist>
       <listitem>
-       <para>Name contains</para>
+       <para>Název obsahuje</para>
       </listitem>
       <listitem>
        <para>E-mail začíná na</para>
@@ -3818,7 +3815,7 @@
    <itemizedlist>
     <listitem>
      <para>Složky v síti jsou dostupné, pouze když jste k síti připojeni. Používáte-li notebook nebo máte modemové připojení, možná budete chtít kopírovat nebo ukládat do cache něco z adresáře v síti. Uděláte to přetažením a pustěním požadovaných kontaktů do místního adresáře.</para>
-     <para>Můžete také složku v síti označit pro offline použití. Složku označíte tak, že kliknete pravým tlačítkem na složku, vyberete Nastavení a vyberete Zkopírovat obsah adresáře lokálně pro práci při odpojení.</para>
+     <para>Můžete také složku v síti označit pro použití při odpojení. Složku označíte tak, že kliknete pravým tlačítkem na složku, vyberete Nastavení a vyberete Zkopírovat obsah adresáře lokálně pro práci při odpojení.</para>
     </listitem>
     <listitem>
      <para>Aby zbytečně nezatěžoval síťový provoz, Evolution normálně nenačítá data ze serveru LDAP, dokud složku neotevřete.</para>
@@ -3880,7 +3877,7 @@
    <title>Způsoby, jak se dívat na kalendář</title>
    <para>V Evolutionu můžete udržovat více kalendářů a překládat je jeden přes druhý. Například budete chtít rozvrh pro práci, domů a jeden pro váš oblíbený sportovní tým. Postranní lišta zobrazuje seznam těchto kalendářů a můžete zaškrtávat nebo odškrtávat přepínače vedle nich, tak zobrazíte nebo skryjete události v zobrazení kalendáře. Skrýváním a zobrazováním různých sad událostí si můžete být jistí, že se vyhnete konfliktům a přitom nemáte zobrazení přeplněné.</para>
    <para>Události mají různé barvy podle toho, v jakém jsou kalendáři.</para>
-   <para>Lišta nástrojů vám nabízí pět různých tlačítek, pomocí nichž můžete zobrazit různé náhledy kalendáře.</para>
+   <para>Nástrojová lišta vám nabízí pět různých tlačítek, pomocí nichž můžete zobrazit různé náhledy kalendáře.</para>
    <informaltable>
     <tgroup cols="2">
      <colspec colwidth="2.844*" colname="1" colnum="1"/>
@@ -3940,12 +3937,12 @@
     </tgroup>
    </informaltable>
    <para>Můžete také vybrat vlastní rozsah dnů v malém kalendáři v postranním panelu. Chcete-li to udělat, vyberte táhnutím dny, které chcete v kalendáři vidět.</para>
-   <para>Tlačítky Předchozí a Další se pohybujeme v kalendáři dopředu a zpět. Používáte-li zobrazení po týdnech nebo měsících, budete se pohybovat po týdnech a měsích. Pro návrat na zobrazení pod dnech klikněte na tlačítko Den v liště nástrojů.</para>
+   <para>Tlačítky Předchozí a Další se pohybujeme v kalendáři dopředu a zpět. Používáte-li zobrazení po týdnech nebo měsících, budete se pohybovat po týdnech a měsích. Pro návrat na zobrazení pod dnech klikněte na tlačítko Den v nástrojová liště.</para>
    <para>Chcete-li najít konkrétní datum, klikněte na Jít na a vyberte datum v dialogovém okně, které se zobrazí.</para>
 
    <section id="b13xy2ak">
     <title>Vlastnosti kalendáře</title>
-    <para>Evolution vám umožňuje upravovat název kalendáře, přiřadit barvu a kopírovat obsah pro práci offline. Chcete-li nastavit vlastnosti kalendáře</para>
+    <para>Evolution vám umožňuje upravovat název kalendáře, přiřadit barvu a kopírovat obsah pro práci při odpojení. Chcete-li nastavit vlastnosti kalendáře</para>
     <orderedlist>
      <listitem id="b13xybev">
       <para>Vyberte kalendář z postranního panelu nalevo.</para>
@@ -3969,7 +3966,7 @@
     </orderedlist>
     <para>Chcete-li kalendář označit pro práci při odpojení, klikněte na Z_kopírovat obsah kalendáře lokálně pro práci při odpojení</para>
     <para>Nebo</para>
-    <para>Klikněte pravým tlačítkem na kalendář nalevo a vyberte Zpřístupnit pro použití off-line. Více informací o práci offline naleznete v <link linkend="usage-mail-getnsend-offline">Práci offline</link>. </para>
+    <para>Klikněte pravým tlačítkem na kalendář nalevo a vyberte Zpřístupnit pro použití při odpojení. Více informací o práci offline naleznete v <link linkend="usage-mail-getnsend-offline">Práci offline</link>. </para>
     <tip>
      <para>Chcete-li exportovat, sdílet či uložit kalendář lokálně ve formátu iCal, klikněte pravým tlačíkem na kalendář v zobrazení kalendářů nalevo a a vyberte Uložit na disk.</para>
     </tip>
@@ -3984,7 +3981,7 @@
   
    <section id="b1a47igh">
     <title>Kalendář Google</title>
-    <para>Evolution allows you to access your Google calendar. You can view the Google calendar offline or create, modify, and delete the calendar items online. Google calendar uses the CalDAV interface.</para>
+    <para>Evolution vám umožňuje přistupovat k vašemu kalendáři u Googlu. Můžete Kalendář Google zobrazovat odpojeni nebo vytvářet, měnit a mazat položky kalendáře připojeni. Kalendář Google používá rozhraní CalDAV.</para>
     <para>Kalendář Google do Evolutionu integrujete tak, že:</para>
     <mediaobject id="b1a4ahp1"><imageobject><imagedata format="PNG" fileref="figures/google_cal_view.png"/></imageobject></mediaobject>
     <orderedlist>
@@ -4019,7 +4016,7 @@
       <para>Chcete-li pro kalendář nastavit barvu, klikněte na tlačítko Barva a vyberte požadovanou barvu, potom klikněte na OK.</para>
      </listitem>
      <listitem id="b1a4ao1h">
-      <para>Chcete-li prohlížet položky kalendáře offline, zaškrtněte Zkopírovat obsah kalendáře lokálně pro práci při odpojení.</para>
+      <para>Chcete-li prohlížet položky kalendáře odpojeni, zaškrtněte Zkopírovat obsah kalendáře lokálně pro práci při odpojení.</para>
       <para>Pokud zvolíte tuto možnost, nebudete moci měnit nebo vytvářet položky v kalendáři.</para>
      </listitem>
      <listitem id="b1a4awms">
@@ -4084,7 +4081,7 @@
       <listitem id="bshlods">
        <para>Klikněte na Soubor &gt; Nový &gt; Událost.</para>
        <para>nebo</para>
-       <para>Click Calendars on the Switcher, then click File, then New &gt; Appointment.</para>
+       <para>Klikněte na Kalendář na přepínači, potom klikněte na Soubor &gt; Nový &gt; Událost.</para>
        <para>nebo</para>
        <para>Poklepejte na prázdné místo v zobrazení kalendáře a otevře se dialogové okno Událost. Čas navržený pro novou událost bude ten, na který jste poklepali.</para>
        <para>nebo</para>
@@ -4108,7 +4105,7 @@
       <listitem id="b10fnwwl">
        <para>Chcete-li tuto událost vybrat jako celodenní, klikněte na Volby &gt; Celodenní událost.</para>
        <para>nebo</para>
-       <para>Klikněte na tlačítko Celodenní událost na liště nástrojů.</para>
+       <para>Klikněte na tlačítko Celodenní událost na nástrojová liště.</para>
       </listitem>
       <listitem id="b10fnxet">
        <para>Pokud se jedná o celodenní událost, stanovte počáteční a konečné datum.</para>
@@ -4138,20 +4135,20 @@
        <para>(Volitelně) Napište popis do pole Popis.</para>
       </listitem>
       <listitem id="b10fo251">
-       <para>Chcete-li vytvořit alarm k této události, klikněte na Alarmy na liště nástrojů nebo klikněte na Volby &gt; Alarmy.</para>
+       <para>Chcete-li vytvořit alarm k této události, klikněte na Alarmy na nástrojové liště nebo klikněte na Volby &gt; Alarmy.</para>
        <para>Vyberte Přizpůsobit, chcete-li přidat nebo odstranit vlastní alarmy pro událost.</para>
        <para>Více informací o přípomínkách naleznete v <link linkend="bshly4v">Připomínkách</link>.</para>
       </listitem>
       <listitem id="b10fo3gm">
        <para>(Volitelně) Chcete-li přidat přílohu, táhněte a pusťte přílohu na lištu příloh.</para>
        <para>nebo</para>
-       <para>Klikněte na tlačítko Příloha na liště nástrojů nebo na Vložit &gt; Přílohu a potom přílohu vyberte.</para>
+       <para>Klikněte na tlačítko Příloha na nástrojové liště nebo na Vložit &gt; Přílohu a potom přílohu vyberte.</para>
       </listitem>
       <listitem id="b10fo4ao">
        <para>(Volitelně) Klikněte na Volby &gt; Klasifikace, potom vyberte klasifikaci (jako Veřejné, Soukromé nebo Důvěrné).</para>
       </listitem>
       <listitem id="b10fo4rj">
-       <para>(Volitelně) Klikněte na tlačítko Opakování na liště nástrojů.</para>
+       <para>(Volitelně) Klikněte na tlačítko Opakování na nástrojové liště.</para>
        <para>nebo</para>
        <para>Klikněte na Volby &gt; Opakování a zadejte, zda chcete, aby se událost opakovala a jak často.</para>
       </listitem>
@@ -4192,7 +4189,7 @@
      <para>Chcete-li vytvořit připomínku:</para>
      <orderedlist>
       <listitem id="bxmtait">
-       <para>To create an alarm for this appointment, click Alarms on the toolbar, or click Options, then Alarms.</para>
+       <para>Chcete-li vytvořit alarm k této události, klikněte na Alarmy na nástrojové liště nebo klikněte na Volby &gt; Alarmy.</para>
       </listitem>
       <listitem id="bzz2xh4">
        <para>Vyberte Přizpůsobit, chcete-li přidat nebo odstranit vlastní alarmy pro událost.</para>
@@ -4227,7 +4224,7 @@
     <section id="bxmtcp3">
      <title>Opakování</title>
      <para>Tlačítko Opakování vám umožňuje popsat opakování událostí v rozsahu od každého dne po jednou za 100 let. Poté můžete vybrat časy a data, kdy se má opakování události ukončit. Pod Výjimkami, můžete vybrat jednotlivé dny, kdy se událost neopakuje. Tvořte své výběry zleva doprava a vytvoříte větu: <quote>Každé dva týdny v pondělí a pátek až do 3.ledna, 2008</quote> nebo <quote>Každý měsíc první pátek po 12 opakování.</quote></para>
-     <para>Poté, co máte nastavení hotové, klikněte v liště nástrojů na tlačítko Uložit a zavřete okno pro editaci události. Pokud chcete, můžete měnit shrnutí události tak, že na ni v zobrazení kalendáře kliknete a začnete psát. Ostatní nastavení můžete měnit tak, že kliknete pravým tlačítkem na událost a vyberete Otevřít nebo na událost poklepete.</para>
+     <para>Poté, co máte nastavení hotové, klikněte v nástrojové liště na tlačítko Uložit a zavřete okno pro editaci události. Pokud chcete, můžete měnit shrnutí události tak, že na ni v zobrazení kalendáře kliknete a začnete psát. Ostatní nastavení můžete měnit tak, že kliknete pravým tlačítkem na událost a vyberete Otevřít nebo na událost poklepete.</para>
     </section>
    </section>
 
@@ -4268,7 +4265,7 @@
      <listitem id="b10fofz9">
        <para>Chcete-li tuto událost vybrat jako celodenní, klikněte na Volby &gt; Celodenní událost.</para>
        <para>nebo</para>
-       <para>Klikněte na tlačítko Celodenní událost na liště nástrojů.</para>
+       <para>Klikněte na tlačítko Celodenní událost na nástrojová liště.</para>
      </listitem>
      <listitem id="b10fog24">
       <para>Pokud se jedná o celodenní událost, stanovte počáteční a konečné datum.</para>
@@ -4288,25 +4285,25 @@
       <para>Chcete-li skrýt nebo zobrazit pole Časové pásmo, klikněte na Zobrazit &gt; Časové pásmo.</para>
      </listitem>
      <listitem id="b10foc50">
-      <para>Chcete-li vytvořit alarm k této události, klikněte na Alarmy na liště nástrojů nebo klikněte na Volby &gt; Alarmy.</para>
+      <para>Chcete-li vytvořit alarm k této události, klikněte na Alarmy na nástrojové liště nebo klikněte na Volby &gt; Alarmy.</para>
       <para>Vyberte Přizpůsobit, chcete-li přidat nebo odstranit vlastní alarmy pro událost.</para>
       <para>Více informací o přípomínkách naleznete v <link linkend="bshly4v">Připomínkách</link>.</para>
      </listitem>
      <listitem id="b10fof8e">
       <para>(Volitelně) Chcete-li přidat přílohu, táhněte a pusťte přílohu na lištu příloh.</para>
       <para>nebo</para>
-      <para>Klikněte na tlačítko Příloha na liště nástrojů nebo na Vložit &gt; Přílohu a potom přílohu vyberte.</para>
+      <para>Klikněte na tlačítko Příloha na nástrojové liště nebo na Vložit &gt; Přílohu a potom přílohu vyberte.</para>
      </listitem>
      <listitem id="b10fof8f">
       <para>(Volitelně) Klikněte na Volby &gt; Klasifikace, potom vyberte klasifikaci (jako Veřejné, Soukromé nebo Důvěrné).</para>
      </listitem>
      <listitem id="b10fof8g">
-      <para>(Volitelně) Klikněte na tlačítko Opakování na liště nástrojů.</para>
+      <para>(Volitelně) Klikněte na tlačítko Opakování na nástrojové liště.</para>
       <para>nebo</para>
       <para>Klikněte na Volby &gt; Opakování a zadejte, zda chcete, aby se událost opakovala a jak často.</para>
      </listitem>
      <listitem id="bzy03l6">
-      <para>Chcete-li se zeptat na informace o volnu/obsazenu účastníků, klikněte v liště nástrojů na Volno/obsazeno.</para>
+      <para>Chcete-li se zeptat na informace o volnu/obsazenu účastníků, klikněte v nástrojové liště na Volno/obsazeno.</para>
       <para>nebo</para>
       <para>Klikněte na Volby &gt; Volno/obsazeno.</para>
      </listitem>
@@ -4360,7 +4357,7 @@
       <para>Klikněte na Přidat, abyste přidali e-mailové adresy lidí, které chcete pozvat.</para>
      </listitem>
      <listitem id="bsb0c7x">
-      <para>Klikněte na tlačítko Volno/obsazeno v liště nástrojů nebo na Volby &gt; Volno/obsazeno. </para>
+      <para>Klikněte na tlačítko Volno/obsazeno v nástrojové liště nebo na Volby &gt; Volno/obsazeno. </para>
    
      </listitem>
      <listitem id="b10fogwo">
@@ -4594,36 +4591,36 @@
   </section>
 
   <section id="usage-calendar-multiple">
-   <title>Multiple Calendars, Web Calendars and CalDAV</title>
+   <title>Více kalendářů, webové kalendáře a CalDAV</title>
    <para>Chcete-li vytvořit nový kalendář, klikněte na Soubor &gt; Nový &gt; Kalendář. Jestliže se jedná o kalendář, který chcete mít uložený lokálně, jediné, co potřebujete zadat, je název a barva. Je-li to vzdálený kalendář, musíte zadat název, barvu, URL a obnovovací frekvenci. Ta určuje, jak často bude Evolution kontrolovat změny v kalendáři. Pokud pracujete s někým, kdo zveřejňuje online kalendář, budete možná chtít kontrolovat změny každých 30 minut. Na druhou stranu, pokud kalendář reprezentuje rozvrh sportovního týmu, nebudete jen možná chtít aktualizovat častěji než jednou týdně.</para>
    <para><ulink url="http://icalshare.com">Server icalshare.com</ulink> nabízí rozsáhlý seznam online kalendářů, včetně národních a náboženských svátků, fází měsíce, sportovních, místních a regionálních událostí.</para>
    <para>Evolution umožňuje zobrazit a spravovat kalendáře na vzdálených serverech CalDAV. Postup vytvoření kalendáře CalDAV je podobný tomu při vytváření kalendáře na WWW. Můžete zobrazit a vytvářet události v kalendáři účtů CalDAV stejně jako v jiných kalendářích Evolutionu.</para>
-   <para>You can view and manage local iCal or ics files in the Calendar view. Select the local iCal or ics files as calendar source to manage or view them in Evolution.</para>
-   <para>To access a local ics or iCal file in the Calendar view:</para>
+   <para>V zobrazení Kalendáře můžete prohlížet a spravovat místní soubory iCal nebo ics. Vyberte místní soubory iCal nebo ics jako zdroj kalendáře, chcete-li je spravovat nebo prohlížet v Evolution.</para>
+   <para>Chcete-li pracovat se soubory ics nebo iCal v zobrazení Kalendáře:</para>
    <orderedlist>
      <listitem>
      <para>Klikněte na Nový, potom vyberte Kalendář a otevře se dialog Nový kalendář. </para>
      </listitem>
      <listitem>
-     <para>Select On this computer from the Type drop-down list.</para>
+     <para>Jako Typ vyberte z rozbalovacího seznamu V tomto počítači.</para>
      </listitem>	
      <listitem>
-     <para>In the Name field, specify a name for the local calendar.</para>
+     <para>Do pole Název zadejte název místního kalendáře.</para>
      </listitem>
      <listitem>
-     <para>Select customize options.</para>
+     <para>Vyberte volby pro přizpůsobení.</para>
      </listitem>
      <listitem> 
-     <para>In the File name field, give ics / ical file location as the calendar source.</para>
+     <para>Do pole Název souboru zadejte umístění souboru ics/ical jako zdroje kalendáře.</para>
      </listitem>
      <listitem>
-     <para>In the Refresh field, choose refresh type from the drop-down list.</para>
+     <para>V poli Obnovit vyberte požadovaný typ z rozbalovacího seznamu.</para>
      </listitem> 
      <listitem>
-     <para>Select the Force read only option if you want the calendar read-only.</para>
+     <para>Vyberte volbu Vynutit pouze pro čtení, pokud chcete, aby byl kalendář pouze pro čtení.</para>
      </listitem> 
      <listitem>
-     <para>To set a color label for the calendar, click the Color tab, select the desired color, then click OK.</para>
+     <para>Chcete-li pro kalendář nastavit barvu, klikněte na tlačítko Barva a vyberte požadovanou barvu, potom klikněte na OK.</para>
     </listitem>
    </orderedlist>
     <mediaobject><imageobject><imagedata format="PNG" fileref="figures/local_ics_calendar.png"/></imageobject></mediaobject>
@@ -4705,7 +4702,7 @@
      <listitem id="b10fqh6m">
       <para>(Volitelně) Chcete-li přidat přílohu, táhněte a pusťte přílohu na lištu příloh.</para>
       <para>nebo</para>
-      <para>Klikněte na tlačítko Příloha na liště nástrojů nebo na Vložit &gt; Přílohu a potom přílohu vyberte.</para>
+      <para>Klikněte na tlačítko Příloha na nástrojové liště nebo na Vložit &gt; Přílohu a potom přílohu vyberte.</para>
      </listitem>
     </orderedlist>
    </section>
@@ -4750,7 +4747,7 @@
      <listitem id="b10fqh6o">
       <para>(Volitelně) Chcete-li přidat přílohu, táhněte a pusťte přílohu na lištu příloh.</para>
       <para>nebo</para>
-      <para>Klikněte na tlačítko Příloha na liště nástrojů nebo na Vložit &gt; Přílohu a potom přílohu vyberte.</para>
+      <para>Klikněte na tlačítko Příloha na nástrojové liště nebo na Vložit &gt; Přílohu a potom přílohu vyberte.</para>
      </listitem>
      <listitem id="b10fqh6p">
       <para>(Volitelně) Klikněte na Volby &gt; Klasifikace, potom vyberte klasifikaci (jako Veřejné, Soukromé nebo Důvěrné).</para>
@@ -4970,7 +4967,7 @@
     <listitem id="b10fqh6q">
      <para>(Volitelně) Chcete-li přidat přílohu, táhněte a pusťte přílohu na lištu příloh.</para>
      <para>nebo</para>
-     <para>Klikněte na tlačítko Příloha na liště nástrojů nebo na Vložit &gt; Přílohu a potom přílohu vyberte.</para>
+     <para>Klikněte na tlačítko Příloha na nástrojové liště nebo na Vložit &gt; Přílohu a potom přílohu vyberte.</para>
     </listitem>
     <listitem id="b10fqh6r">
      <para>(Volitelně) Klikněte na Volby &gt; Klasifikace, potom vyberte klasifikaci (jako Veřejné, Soukromé nebo Důvěrné).</para>
@@ -5180,7 +5177,7 @@
     <para><link linkend="full-advantage">Plánování schůzek s Volno/obsazeno</link></para>
    </listitem>
    <listitem>
-    <para><link linkend="mapi-features">Evolution MAPI Features</link></para>
+    <para><link linkend="mapi-features">Funkce Evolution MAPI</link></para>
    </listitem>
   </itemizedlist>
   <important>
@@ -5278,8 +5275,8 @@
      </itemizedlist>
     </listitem>
     <listitem>
-     <para>Práce offline (režim při odpojení)</para>
-     <para>Chcete-li označit složku pro použití offline, klikněte pravým tlačítkem na složku, potom na Vlastnosti. Vyberte Kopírovat obsah složky lokálně pro práci při odpojení. Více informací naleznete v části <link linkend="usage-mail-getnsend-offline">Práce off-line</link>.</para>
+     <para>Pracovat při odpojení (režim odpojení)</para>
+     <para>Chcete-li označit složku pro použití při odpojení, klikněte pravým tlačítkem na složku, potom na Vlastnosti. Vyberte Kopírovat obsah složky lokálně pro práci při odpojení. Více informací naleznete v části <link linkend="usage-mail-getnsend-offline">Práce off-line</link>.</para>
     </listitem>
    </itemizedlist>
    <itemizedlist>
@@ -5706,24 +5703,24 @@
   </section>
   
   <section id="mapi-features">
-   <title>Evolution MAPI Features</title>
-   <para>With Evolution MAPI providers, you can view the size of a selected folder.</para>
-   <para>You can view the folder size by using the following methods:</para>
+   <title>Funkce Evolution MAPI</title>
+   <para>S poskytovateli Evolution MAPI můžete vidět velikost vybrané složky.</para>
+   <para>Velikost složky můžete nechat zobrazit následujícími metodami:</para>
    <orderedlist>
     <listitem>
-     <para>Select Edit &gt; Preferences &gt; MAPI Account &gt; Edit.</para>
+     <para>Klikněte na Upravit &gt; Nastavení &gt; Účet MAPI &gt; Upravit.</para>
     </listitem>
     <listitem>
-     <para>Select the Exchange settings tab.</para>
+     <para>Vyberte na kartu Nastavení Exchange.</para>
     </listitem>
     <listitem>
-     <para>Select Folder size.</para>
+     <para>Vyberte Velikost složky.</para>
      <mediaobject><imageobject><imagedata format="PNG" fileref="figures/folder_size_preference.png"/></imageobject></mediaobject>
     </listitem>
    </orderedlist>
-   <para>Alternatively, right-click the MAPI Account in the folder tree, then select folder size.</para>
+   <para>Eventuelně klikněte pravým tlačítkem na účet MAPI ve stromu složek a vyberte velikost složky.</para>
    <mediaobject><imageobject><imagedata format="PNG" fileref="figures/folder_size_mapi.png"/></imageobject></mediaobject>
-   <para>A Folder dialog is displayed with details, such as folder name and their respective size. It also provides you the total mailbox size.</para>
+   <para>Dialog složky je zobrazen s detaily, jako jsou název složky a její příslušná velikost. Taktéž poskytuje informaci o celkové velikosti poštovní schránky.</para>
   </section>
   
  </chapter>
@@ -5789,7 +5786,7 @@
        <para>Můžete posílat a přijímat žádosti o událost nebo schůzku. Umožňuje uživatelům Evolutionu plánovat schůzky a vidět, jestli mají účastníci z řád uživatelů GroupWise čas.</para>
       </listitem>
       <listitem>
-       <para>You can resend meeting requests. Also, you can edit the fields, and add or delete participants.</para>
+       <para>Můžete znovu poslat požadavky na schůzku. Taktéž můžete upravovat pole, přidávat nebo odstraňovat účastníky.</para>
       </listitem>
       <listitem>
        <para>Můžete přijmout žádost o schůžku ve formátu iCalendar a přidat ji do svého kalendáře na GroupWise.</para>
@@ -6018,7 +6015,7 @@
    <para>Chcete-li Reminder Note odeslat,</para>
    <orderedlist>
     <listitem id="b15ijcgi">
-     <para>Click File, then New &gt; Shared Memo.</para>
+     <para>Klikněte na Soubor &gt; Nový &gt; Sdílená poznámka.</para>
     </listitem>
     <listitem id="b15ijcow">
      <para>Vyberte název účtu organizátora z rozbalovacího seznamu vedle podle Organizátor.</para>
@@ -6072,42 +6069,42 @@
 
 
   <section>
-   <title>Resending a GroupWise Meeting Request</title>
+   <title>Znovu rozeslání požadavku na schůzku v GroupWise.</title>
    <orderedlist>
     <listitem>
-     <para>Right-click an existing meeting that you have organized.</para>
+     <para>Klikněte pravým tlačítkem na existující schůzku, kterou organizujete.</para>
     </listitem>
     <listitem>
-     <para>Select Resend meeting. A confirmation dialog is displayed.</para>
+     <para>Vyberte Znovu poslat schůzku. Zobrazí se dialog pro potvrzení.</para>
     </listitem>
     <listitem>
-     <para>Click OK to resend the meeting.</para>
+     <para>Chcete-li znovu rozeslat schůzku, klikněte na OK.</para>
      <mediaobject><imageobject><imagedata format="PNG" fileref="figures/groupwise_resend.png"/></imageobject></mediaobject>
     </listitem>
      <listitem>
-     <para>(Optional) Edit any of the fields: Duration, Summary, Description</para>
+     <para>(Volitelně) Upravte kterékoliv z polí: Doba trvání, Shrnutí, Popis</para>
     </listitem>
     <listitem>
-     <para>(Optional) Add attendees, either by entering their email addresses into the list, or by clicking the Invite Others button.</para>
+     <para>(Volitelné) Přidejte účastníky tak, že buď vložíte jejich e-mailové adresy do seznamu nebo kliknete na tlačítko Pozvat ostatní.</para>
     </listitem>
     <listitem>
-     <para>To remove an attendee from the list, select the attendee and click Remove.</para>
+     <para>Chcete-li účastníka odstranit ze seznamu, označte jej a klikněte na Ostranit.</para>
     </listitem>
     <listitem>
      <para>Schůzku uložíte tak, že kliknete na Uložit.</para>
     </listitem>
     <listitem>
-     <para>A Dialog is displayed to check whether you want to retract the original item or not. Click OK to confirm. Click Cancel if you want to keep the original item in the recipients' calendar.</para>
+     <para>Zobrazí se dialog, který se zeptá, zda chcete stáhnout původní položku zpět nebo ne. Kliknutím na Budiž to potvrdíte. Klikněte na zrušit, pokud chcete ponechat původní položku v kalendáři příjemců. </para>
      <mediaobject><imageobject><imagedata format="PNG" fileref="figures/groupwise_resend_retract.png"/></imageobject></mediaobject>
     </listitem>
    </orderedlist>
-   <para>An email is send to all the recipients to invite them to your updated event.</para>
+   <para>An email is sent to all the recipients to invite them to your updated event.</para>
   </section>
   
   
   <section>
-   <title>GroupWise support for header based threading enabled</title>
-   <para>There is no need to enable 'Fall back to threading by subject' from Edit &gt; Preferences &gt; Mail preferences &gt; General tab unless other wise you want messages to be threaded on subject basis.</para>
+   <title>Podpora GroupWise pro seskupování do vláken podle hlavičky povoleno.</title>
+   <para>Není potřeba povolit 'Seskupovat zprávy podle předmětu' z Upravit &gt; Nastavení &gt; Nastavení pošty &gt; karta Obecné, pokud nechcete, aby se zprávy seskupovaly do vláken na základě předmětu.</para>
   </section>
   
   
@@ -6480,13 +6477,13 @@
      <para><link linkend="bxqwhft">Označení zprávy, že není nevyžádaná</link></para>
     </listitem>
     <listitem>
-     <para><link linkend="bxqwfgd">Enabling or Disabling Your Junk Mail List</link></para>
+     <para><link linkend="bxqwfgd">Povolení nebo zakázání seznamu nevyžádané pošty</link></para>
     </listitem>
     <listitem>
-     <para><link linkend="bxqwjg6">Adding an Email Address to Your Junk List</link></para>
+     <para><link linkend="bxqwjg6">Přidání e-mailové adresy do seznamu nevyžádané pošty</link></para>
     </listitem>
     <listitem>
-     <para><link linkend="bxqwk0f">Removing an Email Address from Your Junk List</link></para>
+     <para><link linkend="bxqwk0f">Odstranění e-mailové adresy ze seznamu nevyžádané pošty</link></para>
     </listitem>
    </itemizedlist>
 
@@ -6494,8 +6491,8 @@
     <title>Označení zprávy jako nevyžádané</title>
     <orderedlist>
      <listitem id="bxqwgji">
-      <para>Select the message to mark as junk, then click the Junk icon or press Ctrl+J.</para>
-      <para>The message is moved to your Junk Mail folder and the user is added to your junk list.</para>
+      <para>Vyberte zprávu, kterou chcete označit jako nevyžádanou, a klikněte na ikonu Nevyžádaná pošty nebo stiskněte Ctrl+J.</para>
+      <para>Zpráva je přesunuta do složky Nevyžádaná pošta a uživatel je přidán na váš seznam nevyžádané pošty.</para>
      </listitem>
     </orderedlist>
    </section>
@@ -6504,24 +6501,24 @@
     <title>Označení zprávy, že není nevyžádaná</title>
     <orderedlist>
      <listitem id="bxqwhn3">
-      <para>Select the message to mark as not junk in your Junk Mail folder.</para>
+      <para>Vyberte ve složce Nevyžádaná pošta zprávu, abyste označit, že není nevyžádaná.</para>
      </listitem>
      <listitem id="bxqwhsp">
-      <para>Right-click the message, then click Mark as Not Junk.</para>
-      <para>Or select the message and press Shift+Ctrl+J</para>
-      <para>The message is moved to your Mailbox folder and the name is removed from your junk list.</para>
+      <para>Klikněte pravým tlačítkem na zprávu a vyberte Označit že není nevyžádaná.</para>
+      <para>Nebo vyberte zprávu a klikněte na Shift+Ctrl+J</para>
+      <para>Zpráva je přesunuta do složky vaší poštovní schránky a jméno je odstraněno ze seznamu nevyžádané pošty.</para>
      </listitem>
     </orderedlist>
    </section>
 
    <section id="bxqwfgd">
-    <title>Enabling or Disabling Your Junk Mail List</title>
+    <title>Povolení nebo zakázání seznamu nevyžádané pošty</title>
     <orderedlist>
      <listitem id="bxqwi9s">
-      <para>Right-click a message, then click Junk Mail Settings.</para>
+      <para>Klikněte pravým tlačítkem na zprávu a vyberte Nastavení nevyžádané pošty.</para>
      </listitem>
      <listitem id="bxqwikf">
-      <para>Select if you want to enable or disable junk mail handling.</para>
+      <para>Vyberte, zda chcete povolit nebo zakázat manipulaci s nevyžádanou poštou.</para>
      </listitem>
      <listitem id="bxqwirh">
       <para>Klikněte na OK.</para>
@@ -6530,25 +6527,25 @@
    </section>
 
    <section id="bxqwjg6">
-    <title>Adding an Email Address to Your Junk List</title>
+    <title>Přidání e-mailové adresy do seznamu nevyžádané pošty</title>
     <orderedlist>
      <listitem id="bxqwjmf">
-      <para>Right-click a message, then click Junk Mail Settings.</para>
+      <para>Klikněte pravým tlačítkem na zprávu a vyberte Nastavení nevyžádané pošty.</para>
      </listitem>
      <listitem id="bxqwjq0">
       <para>Napište svou e-mailovou adresu, kterou blokovat, do pole E-mailová adresa.</para>
      </listitem>
      <listitem id="bxqwju6">
-      <para>Click Add, then click OK.</para>
+      <para>Kliknetě na Přidat a potom na Budiž.</para>
      </listitem>
     </orderedlist>
    </section>
 
    <section id="bxqwk0f">
-    <title>Removing an Email Address from Your Junk List</title>
+    <title>Odstranění e-mailové adresy ze seznamu nevyžádané pošty</title>
     <orderedlist>
      <listitem id="bxqwkeq">
-      <para>Right-click a message, then click Junk Mail Settings.</para>
+      <para>Klikněte pravým tlačítkem na zprávu a vyberte Nastavení nevyžádané pošty.</para>
      </listitem>
      <listitem id="bxqwker">
       <para>Vyberte e-mailovou adresu, kterou chcete odstranit, a klikněte na tlačítko Odstranit.</para>
@@ -6563,131 +6560,131 @@
 
  <chapter id="config-prefs">
   <title>Pokročilá konfigurace</title>
-  <para>Perhaps your mail server has changed names. Or you have grown tired of a certain layout for your appointments. Whatever the reason, you can change your <trademark>Evolution</trademark> settings.</para>
+  <para>Možná váš poštovní server změnil jména. Nebo jste unavení z určitého rozložení vašich událostí. Ať je důvod jakýkoliv, můžete změnit nastavení <trademark>Evolution</trademark>.</para>
   <itemizedlist>
    <listitem>
     <para><link linkend="config-prefs-mail-identity">Práce s poštovními účty</link></para>
    </listitem>
    <listitem>
-    <para><link linkend="bshoq5l">Autocompletion</link></para>
+    <para><link linkend="bshoq5l">Automatické doplňování</link></para>
    </listitem>
    <listitem>
-    <para><link linkend="config-prefs-mail">Mail Preferences</link></para>
+    <para><link linkend="config-prefs-mail">Nastavení pošty</link></para>
    </listitem>
    <listitem>
-    <para><link linkend="config-prefs-mail-composer">Composer Preferences</link></para>
+    <para><link linkend="config-prefs-mail-composer">Nastavení editoru</link></para>
    </listitem>
    <listitem>
-    <para><link linkend="config-prefs-cal">Calendar and Tasks Settings</link></para>
+    <para><link linkend="config-prefs-cal">Nastavení Kalendáře a Úkolů</link></para>
    </listitem>
    <listitem>
     <para><link linkend="config-prefs-contact">Správa kontaktů</link></para>
    </listitem>
    <listitem>
-    <para><link linkend="bshoty0">Certificates</link></para>
+    <para><link linkend="bshoty0">Certifikáty</link></para>
    </listitem>
    <listitem>
-    <para><link linkend="b1a4ol61">Debug Logs</link></para>
+    <para><link linkend="b1a4ol61">Ladicí protokol</link></para>
    </listitem>
   </itemizedlist>
-  <para>You reach the Evolution settings window by clicking Edit &gt; Preferences. In the left part of the settings window is a column, similar to the Evolution switcher, that lets you choose which portion of Evolution to customize. The right part of the window is where you make your actual changes.</para>
+  <para>Do okna s nastavením Evolution se dostanete kliknutím na Upravit &gt; Nastavení. V levé části okna je sloupec, podobný přepínači Evolution, pomocí kterého můžete vybrat, kterou část Evolution si chcete přizpůsobit. Změny provádíte v pravé části okna.</para>
   <mediaobject id="config-prefs-mail-fig"><imageobject><imagedata format="PNG" fileref="figures/mailer_preferences.png"/></imageobject></mediaobject>
-  <para>There are six items you can customize.</para>
+  <para>Můžete si přizpůsobit šest položek.</para>
   <formalpara id="b17sa7c0">
-   <title>Mail Accounts:</title>
-   <para>Add or change information about your email accounts, such as the servers you connect to, the way you download mail, and your password authentication mode. This is the most complex item in the list, and is covered in <link linkend="config-prefs-mail-identity">Working with Mail Accounts</link>.</para>
+   <title>Účty e-mailu:</title>
+   <para>Přidejte nebo změňte informace o svých e-mailových účtech, jako jsou servery, ke kterým se mají připojovat, způsob, jakým mají stahovat poštu a režim autentizace. Toto je nejkomplexnější položka v seznamu a věnuje se jí část <link linkend="config-prefs-mail-identity">Práce s poštovními účty</link>.</para>
   </formalpara>
   <formalpara id="b17sa7hj">
-   <title>Autocompletion:</title>
-   <para>Set the address books to be used when completing email addresses in the message composer. For more information, see <link linkend="bshoq5l">Autocompletion</link>.</para>
+   <title>Automatické doplňování:</title>
+   <para>Nastavte adresáře, které mají být použity pro doplňování e-mailových adres v editoru zpráv. Více informací naleznete v části <link linkend="bshoq5l">Automatické doplňování</link>.</para>
   </formalpara>
   <formalpara id="b17sa7qv">
-   <title>Mail Preferences:</title>
-   <para>These are overall mail reading preferences, such as display settings, notification options, and security. Settings that vary per account are in the Mail Accounts tool, described in <link linkend="config-prefs-mail-identity">Working with Mail Accounts</link>, but most of the mail settings are in <link linkend="config-prefs-mail">Mail Preferences</link>.</para>
+   <title>Nastavení pošty:</title>
+   <para>Toto jsou celkové nastavení pro čtení počty jako například nastavení zobrazení, volby upozornění a bezpečnost. Nastavení, která se liší účet od účtu naleznete v nástroji Účty e-mailu, popsaném v části <link linkend="config-prefs-mail-identity">Práce s poštovními účty</link>, ale většina nastavení pošty je v <link linkend="config-prefs-mail">Nastavení pošty</link>.</para>
   </formalpara>
   <formalpara id="b17sa85j">
-   <title>Composer Preferences:</title>
-   <para>These are settings for the way that you use the mail composer, such as signatures, and spelling. This includes the ability to substitute graphical emoticons for <quote>emoticons</quote> such as : ) that many people use in email. This tool is covered in <link linkend="config-prefs-mail-composer">Composer Preferences</link>.</para>
+   <title>Nastavení editoru</title>
+   <para>Tato nastavení se vztahují ke způsobu, jakým chcete používat editor zpráv, jako například podpisy, nebo hledání překlepů. To obsahuje také schopnost nahrazovat smajlíky, jako : ), které mnoho lidí používá v e-mailech, grafickými smajlíky. Tento nástroj je popsán v části  <link linkend="config-prefs-mail-composer">Nastavení editoru</link>.</para>
   </formalpara>
   <formalpara id="b17sa8cq">
-   <title>Calendar and Tasks:</title>
-   <para>Use these settings to control how the calendar behaves, including your time zone and the length of your work week. For more information, see <link linkend="config-prefs-cal">Calendar and Tasks Settings</link>.</para>
+   <title>Kalendář a úkoly: </title>
+   <para>Použijte tato nastavení, chcete-li ovlivnit, jak se bude chovat kalendář, včetně vašeho časového pásma a délky pracovního týdne. Více informací naleznete v části  <link linkend="config-prefs-cal">Nastavení Kalendáře a Úkolů</link>.</para>
   </formalpara>
   <formalpara id="b17sa8o7">
-   <title>Certificates:</title>
-   <para>Use these settings for certificate handling for S/MIME security systems. For more information, see <link linkend="bshoty0">Certificates</link>.</para>
+   <title>Certifikáty:</title>
+   <para>Použijte tato nastavení pro manipulaci certifikáty v bezpečnostních systémem S/MIME. Více informací naleznete v části <link linkend="bshoty0">Certifikáty</link>.</para>
   </formalpara>
-  <para>Previous versions of Evolution included directory servers, folder settings, and Exchange delegation in the settings tool. Directory servers can now be set up as contacts groups in the Contacts tool, you can change folder settings in the folder right-click menu, and Exchange delegation is available in the Message Menu of the Exchange tool.</para>
+  <para>Předchozí verze Evolutionu měly adresářové servery, nastavení složky a delegování Exchange v nástroji nastavení. Adresářové servery lze nyní nastavit jako skupiny kontaktů v nástroji Kontakty, nastavení složky lze změnit v kontextové nabídce po kliknutí na složku a delegování Exchange je dostupné nabídce Zpráva v nástroji Exchange.</para>
 
   <section id="config-prefs-mail-identity">
    <title>Práce s poštovními účty</title>
-   <para>Evolution allows you to maintain multiple accounts, or identities. When you are writing an email message, you can choose which account to use by selecting from the drop-down list next to the From field in the message composer.</para>
-   <para>Click Send/Receive to update all mail sources that are not disabled. If you don't want to check mail for a given account, select the account in Edit &gt; Preferences, then Mail Accounts page and click the Disable button.</para>
-   <para>To add a new account, click Add to open the Evolution configuration assistant.</para>
-   <para>To alter an existing account, select it in the Preferences window.</para>
+   <para>Evolution vám umožňuje spravovat více účtů nebo identit. Když píšete e-mailovou zprávu, můžete vybrat, který účet použít, tak, že jej vyberete z rozbalovacího seznamu vedle podle Od v editoru zprávy.</para>
+   <para>Klikněte na Odeslat/přijmout, pokud chcete aktualizovat všechny zdroje pošty, které nejsou zakázané. Nechcete-li daný účet kontrolovat, vyberte onen účet v Upravit-&gt;Nastavení, potom na stránce Účty e-mailu odstraňte zatržení.</para>
+   <para>Chcete-li přidat nový účet, klikněte na Přidat, čímž otevřete konfiguračního asistenta Evolution.</para>
+   <para>Chcete-li změnit existující účet, vyberte jej v okně Nastavení.</para>
    <para>Klikněte na Upravit, chcete-li otevřít okno s editorem účtu.</para>
-   <para>The account editor dialog box has seven sections:</para>
+   <para>Dialogové okno editoru účtu má sedm sekcí:</para>
    <formalpara id="bsbhdwn">
-    <title>Identity:</title>
-    <para>Specify the name and email address for this account. You can also choose a default signature to insert into messages sent from this account.</para>
+    <title>Identita:</title>
+    <para>Zadejte jméno a e-mailovou adresu pro tento účet. Můžete taktéž vybrat výchozí podpis, který se má vložit do zpráv odeslaných z tohoto účtu.</para>
    </formalpara>
    <formalpara id="bsbhe10">
-    <title>Receiving Email:</title>
-    <para>Select the way you receive email. You can download email from a <link linkend="pop">POP server</link>, read and keep it on the server (Microsoft Exchange, <trademark class="registered">Novell</trademark> <trademark class="registered">GroupWise</trademark>, or <link linkend="imap">IMAP</link>), or read it from files that already exist on your desktop computer. If your server requires you to use a secure connection, you can select from the given three options: No encryption, TLS encryption or SSL encryption.</para>
+    <title>Příjem pošty:</title>
+    <para>Vyberte způsob, jak přijímat poštu. Můžete stahovat poštu z <link linkend="pop">POP serveru</link>, číst a ponechat ji na serveru (Microsoft Exchange <trademark class="registered">Novell</trademark><trademark class="registered">GroupWise</trademark>, or <link linkend="imap">IMAP</link>), nebo ji číst ze souborů, které již existují ve vašem počítači. Pokud vás server vyžaduje použití zabezpečeného připojení, můžete jej vybrat z tří možností: Bez šifrování, Šifrování TLS nebo Šifrování SSL.  </para>
    </formalpara>
-   <para>Your system administrator might ask you to connect to a specific port on a mail server. To specify which port you use, just type a colon and the port number after the server name. For example, to connect to port 143 on the server smtp.example.com, specify smtp.example.com:143 as the server name.</para>
-   <para>For additional information, see <link linkend="second-step">Receiving Mail</link>.</para>
+   <para>Váš systémový administrátor vás může požádat, abyste se připojili k poštovnímu serveru přes určitý port. Chcete-li zadat, který port použít, prostě jen napište dvojtečku a číslo portu za názvem serveru. Například chcete-li se připojit k serveru smtp.example.com přes port 143, zadejte jako název serveru smtp.example.com:143.</para>
+   <para>Více informací naleznete v části <link linkend="second-step">Přijímání pošty</link>.</para>
    <formalpara id="bsbhezv">
-    <title>Receiving Options:</title>
-    <para>Decide if you want to check for mail automatically and how often, as well as setting other message retrieval options.</para>
+    <title>Možnosti příjmu:</title>
+    <para>Rozhodněte, jestli chcete kontrolovat poštu automaticky a jak často, stejně jako ostatní možnosti získávání pošty.</para>
    </formalpara>
-   <para>For additional information, see <link linkend="more-mail-options">Receiving Mail Options</link>.</para>
+   <para>Více informací naleznete v části <link linkend="more-mail-options">Možnosti přijímání pošty</link>.</para>
    <formalpara id="bsbhltb">
-    <title>Sending Mail:</title>
-    <para>Use this section to choose and configure a method for sending mail. You can choose <link linkend="smtp">SMTP</link>, Microsoft Exchange (if you have installed the Evolution Connector for Microsoft Exchange), <link linkend="sendmail">Sendmail</link> or many other options.</para>
+    <title>Posílání pošty:</title>
+    <para>Použijte tuto sekci, chcete-li vybrat nebo nastavit metodu posílání pošty. Můžete vybrat <link linkend="smtp">SMTP</link>, Microsoft Exchange (máte-li nainstalovaný Evolution Connector pro Microsoft Exchange), <link linkend="sendmail">Sendmail</link>, nebo mnoho dalších voleb.</para>
    </formalpara>
-   <para>For additional information, see <link linkend="third-step">Sending Mail</link>.</para>
+   <para>Více informací naleznete v části <link linkend="third-step">Posílání pošty</link>.</para>
    <formalpara id="bsbhn0t">
-    <title>Defaults:</title>
-    <para>Use this section to set where this account stores the messages that it has sent, and the messages that you save as drafts. If you want to revert to the default settings, click Restore.</para>
+    <title>Výchozí hodnoty:</title>
+    <para>Použijte tuto sekci, chcete-li nastavit, kde má účet ukládat zprávy, které byly odeslány, a zprávy, které byly uloženy jako koncepty. Chcete-li se vrátit do výchozího nastavení, klikněte na Vrátit.</para>
    </formalpara>
-   <para>If you want to send someone a copy of every message from this account, select either Always Carbon-Copy (Cc) To: or Always Blind Carbon-Copy (Bcc) To:, and specify one or more addresses.</para>
-   <para>You can specify the way you want to receive message receipts. You can set Send message receipts to Never, Always or Ask for each message. For more information refer <link linkend="b13uhy6r">Default Settings</link>.</para>
-   <para>You can change the default settings of your sent items. Click Advanced Send Options to prioritize, classify your send messages. You can also set the date for reply request so that recipient will know the immediacy and can accordingly response to your message. Enable status tracking and set Return Notification for Mail, Calendar and Task.</para>
+   <para>Chcete-li někomu zasílat kopie každé zprávy odeslané z tohoto účtu, vyberte buď Vždy posílat kopii (cc) na: nebo Vždy posílat slepou kopii (bcc) na: a zajdete jednu nebo více adres.</para>
+   <para>Chcete-li zadat způsob, jakým přijímat doručenky zpráv. Můžete nastavit Odeslat doručenky zpráv na Nikdy, Vždy, Ptát se u každé zprávy. Více informací naleznete v části <link linkend="b13uhy6r">Výchozí hodnoty</link>.</para>
+   <para>Můžete změnit výchozí nastavení odeslaných položek. Klikněte na Pokročilé možnosti odesílání, chcete-li prioritizovat a roztřídit odeslané zprávy. Můžete také nastavit dautm pro vyžádání odpovědi, aby příjemce věděl naléhavost a mohl podle toho na zprávu odpovědět. Povolte sledování stavu a nastavte Vrátit upozornění pro poštu, kalendář a úkoly.</para>
    <formalpara id="bsbhndi">
-    <title>Security:</title>
-    <para>Use this section to set the security options for this account. If you use encryption, enter your PGP key ID (see <link linkend="encryption">Encryption</link> for more information) and select among the four options to determine key and signature handling.</para>
+    <title>Zabezpečení:</title>
+    <para>Použijte tuto sekci, chcete-li nastavit možnosti zabezpečení pro tento účet. Používáte-li šifrování, zadejte ID svého PGP klíče (více informací naleznete v sekci <link linkend="encryption">Šifrování</link>) a vyberte mezi čtyřmi možnostmi, jak manipulovat s klíčem a podpisem.</para>
    </formalpara>
    <formalpara id="bxmvpry">
     <title>Proxy:</title>
-    <para>This only displays if you have a GroupWise account. Use this section to set proxy access for other users to access your mailbox or calendar.</para>
+    <para>Toto se zobrazuje pouze v případě, kdy máte účet GroupWise. Použijte tuto sekci, chcete-li nastavit přístup přes proxy pro uživatele přistupující k vaší poštovní schránce nebo kalendáři.</para>
    </formalpara>
   </section>
 
   <section id="bshoq5l">
-   <title>Autocompletion</title>
-   <para>The Autocompletion tool lets you choose address books to auto-complete names for you in the mail composer. This functionality requires accessibility to each of the address books you want to use. To enable autocompletion, select each of the address books that you want to use auto completion in the Autocompletion page.</para>
-   <para>Select the Always show address of the autocompleted contact check box to show the email address along with the username.</para>
+   <title>Automatické doplňování</title>
+   <para>Nástroj automatického doplňování vám umožňuje zvolit si adresář pro automatické doplňování jmen v editoru zpráv. Tato funkce vyžaduje přístup ke každému adresáři, který chcete použít. Chcete-li povolit automatické doplňování, vyberte adresáře, které chcete použít pro automatické doplňování na stránce Automatické doplňování.</para>
+   <para>Zatrhněte Vždy zobrazit adresu automaticky doplněného kontaktu, chcete-li zobrazovat e-mailovou adresu vedle jména.</para>
    <mediaobject><imageobject><imagedata format="PNG" fileref="figures/evolution_contact_preference.png"/></imageobject></mediaobject>
   </section>
 
   <section id="b15fx7uz">
-   <title>IMAP Mail Headers</title>
-   <para>Evolution allows you to choose the headers that you want to download so that you can reduce the download time and filter or move your mail around the way you like it. Evolution helps you to customize your IMAP Mail header preferences and thus save the download time. The IMAP Mail header options are as follows:</para>
+   <title>Hlavičky IMAP</title>
+   <para>Evolution vám umožňuje si vybrat hlavičky, které chcete stahovat, abyste mohli zkrátit čas stahování a filtrovat nebo přesunovat poštu tak, jak chcete. Evolution vám pomáhá s přizpůsobením nastavení hlaviček IMAP a proto šetří čas stahování. Možnosti hlaviček IMAP jsou následující:</para>
    <formalpara id="b15fzvdp">
-    <title>All Headers:</title>
-    <para>All available IMAP mail headers for all the messages will be downloaded.</para>
+    <title>Všechny hlavičky:</title>
+    <para>Všechny dostupné hlavičky IMAP pro všechny zprávy budou staženy.</para>
    </formalpara>
    <formalpara id="b15fzvjw">
-    <title>Basic Headers:</title>
-    <para>This will include Date, From, To, CC, Subject, Preferences, In-Reply-To, Message-ID, Mime-Version, and Content-Type. If you want to just fetch and see messages without having to categorically filter messages based on your mailing lists, choose this option. This will make Evolution work faster and is generally recommended for common users.</para>
+    <title>Základní hlavičky:</title>
+    <para>Toto obsahuje datum, od koho, komu, kopii, předmět, nastavení, In-Reply-To, Message-ID, Mime-Version a Content-Type. Chcete-li pouze stáhnout a prohlédnout zprávy bez filtrování na základě poštovních konferencí, zvolte tuto možnost. Toto Evolution výrazně zrychlí a je obecně doporučováno pro běžné uživatele.</para>
    </formalpara>
    <formalpara id="b15fzvq4">
-    <title>Mailing List Headers:</title>
-    <para>Enable this option to have filters based on mailing list headers (like list ID) so that in addition to the basic headers, the headers that correspond to mailing-lists are also fetched. Mailing list headers will have the informations such as the mailinglist-ID, owner of the mailing list, and so on with which you can create mailing list filters.</para>
+    <title>Konferenční hlavičky:</title>
+    <para>Povolte tuto možnost, chcete-li mít filtry založené na konferenčních hlavičkách (např. ID konference). Kromě základních hlaviček budou hlavičky, odpovídající poštovním konferencím, také staženy. Konferenční hlavičky mají informace jako mailinglist-ID, majitel poštovní konference atd., s kterými můžete vytvářet filtry konferencí.</para>
    </formalpara>
-   <para>This is the default Header preference that comes with Evolution. When this option is chosen, Evolution will download a basic set of headers (as described above) along with a set of headers that are needed for client-side filters based on mailing lists. If you do not have any filters on Evolution, it is recommended to switch to the "Basic Headers Only" option.</para>
-   <para>To set the IMAP Mail headers:</para>
+   <para>Toto je výchozí nastavení Hlaviček, které Evolution má. Když je tato možnost zvolena, Evolution stahuje základní sadu hlaviček (jak je popsáno výše) a sadu hlaviček, které jsou používány v klientovi filtry postavených na poštovních konferencích. Pokud nemáte v Evolution žádné filtry, je lepší přepnout na volbu "Základní hlavičky".</para>
+   <para>Chcete-li nastavit Hlavičky IMAP:</para>
    <orderedlist>
     <listitem id="b15fy0yh">
      <para>Vyberte Upravit &gt; Nastavení.</para>
@@ -6697,128 +6694,128 @@
      <para>Klikněte na Upravit, chcete-li otevřít okno s editorem účtu.</para>
     </listitem>
     <listitem id="b15fy4cs">
-     <para>On the Account Editor, click IMAP Headers tab to open IMAP Headers to the Account Editor.</para>
+     <para>V Editoru účtu klikněte na kartu Hlavičky IMAP a otevřete jejich nastavení.</para>
      <mediaobject id="b15fy5rr"><imageobject><imagedata format="PNG" fileref="figures/evo_imapheader_a.png"/></imageobject></mediaobject>
      
     </listitem>
     <listitem id="b15fy565">
-     <para>Click Fetch All Headers to download all the available header information.</para>
+     <para>Klikněte na Stáhnout všechny hlavičky, chcete-li stáhnout všechny dostupné informace o hlavičkách.</para>
      <warning>
-      <para>The more headers you have, the more time it will consume to download. This option is not recommended.</para>
+      <para>Čím více hlaviček máte, tím více času stahování zabere. Tato volba není doporučována.</para>
      </warning>
     </listitem>
     <listitem id="b15fzu3n">
-     <para>Click Basic Headers to download basic headers.</para>
+     <para>Klikněte na Základní hlavičky, chcete-li stáhnout základní hlavičky.</para>
     </listitem>
     <listitem id="b15g0kdi">
-     <para>Click Basic and Mailing Headers to download both.</para>
+     <para>Klikněte na Základní a konferenční hlavičky, chcete-li stáhnout obojí.</para>
     </listitem>
     <listitem id="b15g160e">
-     <para>Click Add to add any predefined custom headers.</para>
+     <para>Klikněte na Přidat, chcete-li přidat předdefinované vlastní hlavičky.</para>
     </listitem>
     <listitem id="b15g168p">
-     <para>Click Remove to remove the custom headers.</para>
+     <para>Klikněte na Odstranit, chcete-li odstranit vlastní hlavičky.</para>
     </listitem>
    </orderedlist>
   </section>
 
   <section id="config-prefs-mail">
-   <title>Mail Preferences</title>
-   <para>The Mail Preferences tool lets you choose how to display citations, how long to wait before marking a message as read, and other mail display settings.</para>
+   <title>Nastavení pošty</title>
+   <para>Nastavení pošty vám umožňuje zvolit, jak se mají zobrazovat citace, jak dlouho čekat, než se zpráva označí jako přečtená, a další nastavení zobrazení pošty.</para>
    <itemizedlist>
     <listitem>
-     <para><link linkend="config-prefs-mail-general">General Mail Settings</link></para>
+     <para><link linkend="config-prefs-mail-general">Obecné nastavení pošty</link></para>
     </listitem>
     <listitem>
-     <para><link linkend="mail-prefs-html">HTML Mail Preferences</link></para>
+     <para><link linkend="mail-prefs-html">Nastavení HTML zpráv</link></para>
     </listitem>
     <listitem>
-     <para><link linkend="mail-prefs-colors">Label Preferences</link></para>
+     <para><link linkend="mail-prefs-colors">Nastavení štítků</link></para>
     </listitem>
     <listitem>
      <para><link linkend="mail-prefs-headers">Nastavení hlavičky e-mailu</link></para>
     </listitem>
     <listitem>
-     <para><link linkend="mail-prefs-junk">Junk Mail Preferences</link></para>
+     <para><link linkend="mail-prefs-junk">Nastavení nevyžádané pošty</link></para>
     </listitem>
     <listitem>
-     <para><link linkend="bxjnb81">Automatic Contacts Preferences</link></para>
+     <para><link linkend="bxjnb81">Nastavení automatických kontaktů</link></para>
     </listitem>
     <listitem>
-     <para><link linkend="bxjncro">Calendar and Tasks Preferences</link></para>
+     <para><link linkend="bxjncro">Nastavení kalendáře a úkolů</link></para>
     </listitem>
    </itemizedlist>
    <para>Informace o nastavení jednotlivých poštovních účtů naleznete v <link linkend="more-mail-options">Práci s poštovními účty</link>.</para>
 
    <section id="config-prefs-mail-general">
-    <title>General Mail Settings</title>
+    <title>Obecné nastavení pošty</title>
     <para>K dispozici jsou následující volby:</para>
     <formalpara id="bsbhnw0">
-     <title>Message Fonts:</title>
-     <para>Normally, Evolution uses the same fonts as other GNOME applications. To choose different fonts, deselect Use the same fonts as other applications and select one font for standard typefaces and a second for monospace.</para>
+     <title>Písma zpráv:</title>
+     <para>Normálně Evolution používá stejná písma jako ostatní aplikace GNOME. Chcete-li vybrat jiná písma, odškrtněte Používat stejná písma jako jiné aplikace a vyberte jedno písmo pro standardní typ a druhé pro neproporcionální typ.</para>
     </formalpara>
     <formalpara id="bsbho3f">
-     <title>Message Display:</title>
-     <para>Choose how long you want to wait before marking a message read, how to highlight quotations, and the default encoding. Enable <guilabel>Fall back to threading message by subject</guilabel> to group the messages as message threads. You can also set the limit to the number of addresses displayed in the message header by enabling <guilabel>Shrink To/CC/BCC header to</guilabel> option. You can also set the limit for rendering text content in the message you receive. By default, when you receive a message with text content more than 4096 Kilo Bytes, Evolution will not render the message in the preview pane. You can view unformatted text either inline or using an external application. You can also enable the <link linkend="b17rgdac">Magic spacebar</link> and <link linkend="usage-mail-organize-vfolders">search folders</link>.</para>
+     <title>Zobrazení zprávy:</title>
+     <para>Vyberte, jak dlouho chcete čekat, než se zpráva označí jako přečtená, jak zvýrazňovat citace a jaké je výchozí kódování. Povolte <guilabel>Seskupovat zprávy podle předmětu</guilabel>, chcete-li zprávy seskupovat do vláken. Můžete také nastavit limit počtu adres zobrazených v hlavičce zprávy povolením volby <guilabel>Zmenšit hlavičky Komu/Kopie/Skrytá kopie do</guilabel>. Můžete také nastavit limit pro obsah, který se má vykreslovat. Standardně, když dostanete zprávu většiní než 4096 kB, Evolution zprávu v panelu náhledu nevykreslí. Nenaformátovaný text můžete vidět buďto interně nebo za použití jiné externí aplikace. Můžete také povolit <link linkend="b17rgdac">Magický mezerník</link> a <link linkend="usage-mail-organize-vfolders">složky hledání</link>.</para>
     </formalpara>
-    <para>To group the messages as threads select View &gt; Group By threads or press Ctrl+T.</para>
+    <para>Chcete-li seskupovat zprávy do vláken vyberte Zobrazit &gt; Seskupovat podle vláken nebo stiskněte Ctrl+T.</para>
     <formalpara id="bsbhq3y">
-     <title>Deleting Mail:</title>
-     <para>Choose whether to delete messages automatically when quitting Evolution and how frequently, and whether you want to explicitly confirm the final deletion of messages. Select Confirm when expunging a folder to confirm the final deletion. You can have four different options to set the frequency for deletion: Everytime, Once per day, Once per week, and Once per month.</para>
+     <title>Odstraňování pošty:</title>
+     <para>Vyberte, jestli odstraňovat zprávy automaticky při zavírání Evolution a jak často a jestli chcete explicitně potvrdit konečné odstranění zpráv. Vyberte Vyžadovat potvrzení před vyčištěním složky, chcete-li potvrzovat konečné odstranění. Máte čtyři různé volby, jak nastavit frekvenci odstraňování: Pokaždé, Jednou za den, Jednou za týden a Jednou za měsíc.</para>
     </formalpara>
     <formalpara id="bsbhq7t">
-     <title>New Mail Notifications:</title>
-     <para>Evolution can alert you to the arrival of new mail with a beep or by playing a sound file. Choose your alert noise, or select none, as you prefer. You can choose not to notify on new mail arrival.</para>
+     <title>Upozornění na novou poštu:</title>
+     <para>Evolution vás může upozornit na příchod nové pošty pípnutím nebo přehráním zvukového souboru. Podle svých preferencí vyberte zvuk upozornění nebo zvolte žádný. Můžete také zvolit, aby se na novou poštu neupozorňovalo.</para>
     </formalpara>
    </section>
 
    <section id="mail-prefs-html">
-    <title>HTML Mail Preferences</title>
+    <title>Nastavení HTML zpráv</title>
     <para>K dispozici jsou následující volby:</para>
     <formalpara id="bsbhqot">
-     <title>Show Image Animations:</title>
-     <para>Turns image animation (e.g. GIF files) on or off.</para>
+     <title>Zobrazovat animace obrázků:</title>
+     <para>Zapíná nebo vypíná animace obrázků (např. souborů GIF).</para>
     </formalpara>
     <formalpara id="bsbhquu">
-     <title>Prompt When Sending HTML Messages to Contacts That Don't Want Them:</title>
-     <para>Some people do not like HTML mail, and you can set Evolution to warn you of this preference. This warning appears only when you send HTML mail to people in your contacts who are listed as disliking HTML.</para>
+     <title>Upozorňovat, když posílám zprávu v HTML formátu kontaktům, kteří si to nepřejí:</title>
+     <para>Někteří lidé nemají rádi zprávy v HTML a vy můžete nastavit, aby vás Evolution na toto upozorňoval. Toto varování se objeví, pouze když posíláte zprávu v HTML lidem ve svých kontaktech, u kterých je označeno, že nemají rádi HTML.</para>
     </formalpara>
     <formalpara id="bsbhr9p">
-     <title>Loading Images:</title>
-     <para>You can embed a image in an email and have it load only when the message arrives. However, spammers can use image loading patterns to confirm <quote>valid</quote> addresses and invade your privacy. You can elect to never load images automatically, to load images only if the sender is in your contacts, or always load images.</para>
+     <title>Načítání obrázků:</title>
+     <para>K e-mailu můžete připojit obrázky a nechat je načíst, až dorazí. Nicméně spameři mohou využívat vzorky načítání obrázků k potvrzování <quote>platných</quote> adres a nabourat vaše soukromí. Můžete zvolit, aby se obrázky nikdy nenačítaly automaticky, aby se načítaly, pouze pokud je odesílatel ve vašich kontaktech, nebo aby se vždy načítaly.</para>
     </formalpara>
-    <para>If you have chosen not to load images automatically, you can choose to see the images in one message at a time by selecting View &gt; Load Images or press Ctrl+I.</para>
+    <para>Pokud jste se rozhodli, že se obrázky automaticky načítat nebudou, můžete je načíst v jedné zprávě vybráním Zobrazit &gt; Načíst obrázky nebo stisknutím Ctrl+I.</para>
    </section>
 
    <section id="mail-prefs-colors">
-    <title>Label Preferences</title>
-    <para>The Label preferences option lets you add color labels for different kinds of messages. You can add, edit, or remove the labels. You can also assign colors to each label you create. You cannot remove the default labels.</para>
+    <title>Nastavení štítků</title>
+    <para>Nastavení štítků vám umožňuje přidat barevné štítky pro různé druhy zpráv. Můžete přidat, upravit nebo odstranit štítky. Můžete také přiřadit barvy každému štítku, který vytvoříte. Nemůžete odstranit výchozí štítky.</para>
     <mediaobject id="b1ahji7w"><imageobject><imagedata format="PNG" fileref="figures/evo_labels_a.png"/></imageobject></mediaobject>
     <para>Pro vytvoření štítku:</para>
     <orderedlist>
      <listitem id="b1a58p9g">
-      <para>Click Add and specify the name in the Label Name dialog box.</para>
+      <para>Klikněte na Přidat a zadejte název do okna Název štítku.</para>
      </listitem>
      <listitem id="b1a58pyg">
-      <para>Click the color tab and select a color, then click OK.</para>
+      <para>Klikněte na tlačítko barvy, vyberte nějakou a potom klikněte na OK.</para>
      </listitem>
     </orderedlist>
-    <para>To edit label properties:</para>
+    <para>Chcete-li upravit nastavení štítku:</para>
     <orderedlist>
      <listitem id="b1a58tbo">
-      <para>Select the label and click Edit.</para>
+      <para>Vyberte štítek a klikněte na Upravit.</para>
      </listitem>
      <listitem id="b1a58vfx">
-      <para>Edit name and color, then click OK.</para>
+      <para>Upravte název a barvu, potom klikněte na OK.</para>
      </listitem>
     </orderedlist>
-    <para>To assign a label to a specific email message:</para>
+    <para>Chcete-li přiřadit štítek určité e-mailové zprávě:</para>
     <orderedlist>
      <listitem id="b1a58ynk">
-      <para>Right-click the message from the message preview.</para>
+      <para>Klikněte na zprávu v seznamu zpráv.</para>
      </listitem>
      <listitem id="b1a58zoy">
-      <para>Click Label and select the desired label for the message.</para>
+      <para>Klikněte na Štítek a vyberte požadovaný štítek pro zprávu.</para>
       <mediaobject id="b1a59ar0"><imageobject><imagedata format="PNG" fileref="figures/evo_label_a.png"/></imageobject></mediaobject>
      </listitem>
     </orderedlist>
@@ -6826,88 +6823,88 @@
 
    <section id="mail-prefs-headers">
     <title>Nastavení hlavičky e-mailu</title>
-    <para>The headers on an incoming message are the information about the message that isn't the content of the message itself, such as the sender and the time it was sent. Select the options here to show or hide different amounts of information about the messages you read. You can also add or remove new mail headers to the list. The default mail headers cannot be removed.</para>
+    <para>Hlavičky v příchozích zprávách jsou informace o zprávě, které nejsou obsahem zprávy, např. odesílatel nebo čas, kdy byla odeslána. Vyberte zde možnosti, zda zobrazit nebo skrýt různé informace o zprávách, které čtete. Můžete také přidat nebo odstranit nové poštovní hlavičky do/ze seznamu. Výchozí poštovní hlavičky nemohou být odstraněny.</para>
     <formalpara id="b17qfhkz">
-     <title>Sender Photograph:</title>
-     <para>This feature adds support for viewing the photograph of the sender at the right side of the preview pane.</para>
+     <title>Fotografie odesílatele:</title>
+     <para>Tato funkce přidává podporu pro zobrazení fotografie odesílatele v pravé části panelu náhledu. </para>
     </formalpara>
-    <para>To enable this feature, select Edit &gt; Preferences &gt; Mail Preferences &gt; Headers &gt; Show the photograph of sender in the email preview. Deselect this option to disable this feature.</para>
-    <para>By default it searches only in the local address books enabled for autocompletion. If you deselect the option <guilabel>Search for sender photograph only in the local address book</guilabel>, it searches in all the address books enabled for autocompletion. If there are multiple matches for the same contact, it always takes the first one. Consider a contact that has multiple matches - the first one with a photograph and the second without a photo. Here, Evolution takes the first contact regardless of it not having a photograph.</para>
-    <para>This feature is disabled by default as it causes delay in fetching the messages.</para>
+    <para>Chcete-li tuto funkci povolit, vyberte Upravit &gt; Nastavení &gt; Nastavení pošty &gt; Hlavičky &gt; Zobrazovat fotografii odesílatele v náhledu zprávy. Oškrtněte tuto volbu, chcete-li funkci zakázat.</para>
+    <para>Standardně prohledává pouze místní adresáře, které jsou vybrané pro automatické doplňování. Pokud volbu <guilabel>Vyhledávat fotografii odesílatele pouze v místních adresářích</guilabel> oškrtnete, vyhledává ve všech adresářích, které jsou vybrané pro automatické doplňování. Pokud je nalezeno více výsledků pro stejný kontakt, vždy je vybrán ten první. Uvažujte kontakt, který má více výsledků - první s fotografií a druhý bez. Evolution vezme první kontakt bez ohledu na to, jestli má nebo nemá fotografii.</para>
+    <para>Tato funkce je standardně zakázána, protože způsobuje zpoždění při načítání zpráv.</para>
     <formalpara>
-     <title>Configurable Date and Time Format</title>
-     <para>Although Evolution components have a set of predefined date and time formats, an advanced user can write acceptable strftime, with new tag %ad for an abbreviated date to show in tables and date headers.</para>
+     <title>Konfigurovatelný formát data a času</title>
+     <para>Ačkoliv mají komponenty Evolution sadu předdefinovaných formátů data a času, pokročilý uživatelů může zadat přípustný strftime s novým štítkem %ad pro zkrácené datum pro zobrazení v tabulkách a hlavičkách data.</para>
     </formalpara>
     <mediaobject><imageobject><imagedata format="PNG" fileref="figures/evolution_mail_preference.png"/></imageobject></mediaobject>
    </section>
 
    <section id="mail-prefs-junk">
-    <title>Junk Mail Preferences</title>
-    <para>You can check your incoming messages for junk content by using Bogofilter and SpamAssassin* tools, which have trainable Bayesian filters. You need to enable the Junk plugins to start filtering junk mail.</para>
-    <para>To enable Junk plugins:</para>
+    <title>Nastavení nevyžádané pošty</title>
+    <para>Můžete kontrolovat, zda příchozí zprávy neobsahují nevyžádaný obsah pomocí nástrojů Bogofilter a SpamAssassin*, které mají učící se bayesiánské filtry. Chcete-li začít filtrovat nevyžádanou poštu, můsíte povolit zásuvné moduly na nevyžádanou poštu.</para>
+    <para>Chcete-li povolit zásuvné moduly na nevyžádanou poštu:</para>
     <orderedlist>
      <listitem id="b17rdxkm">
       <para>Vyberte Upravit &gt; Zásuvné moduly.</para>
      </listitem>
      <listitem id="b17rdxz8">
-      <para>Select the junk plugins you want. You can select either Bogofilter or SpamAssassin, or you can select both.</para>
+      <para>Vyberte zásuvné moduly na nevyžádanou poštu, které chcete. Můžete vybrat buď Bogofilter nebo SpamAssassin, nebo vybrat oba.</para>
      </listitem>
     </orderedlist>
     <formalpara id="b17rdsy5">
-     <title>General:</title>
-     <para>You can check incoming email for junk contents and also decide how often you want to delete junk mail. You also have the option to choose either SpamAssassin or Bogofilter, or you can select both.</para>
+     <title>Obecné:</title>
+     <para>Můžete kontrolovat, jestli je příchozí pošta nevyžádaná a také rozhodnout, jak často chcete, aby se nevyžádaná pošta odstraňovala. Také máte možnost vybrat, zda použít SpamAssassin, nebo Bogofilter, nebo oba.</para>
     </formalpara>
     <formalpara id="bsaz9zd">
-     <title>Checking Incoming Mail for Junk:</title>
-     <para>This option turns automatic junk mail filtering on or off.</para>
+     <title>Kontrolování, zda je příchozí pošta nevyžádaná:</title>
+     <para>Tato volba zapíná a vypíná automatické filtrování pošty.</para>
     </formalpara>
     <formalpara id="b17xmakf">
-     <title>Delete junk mail on exit:</title>
-     <para>This option deletes junk messages when you exit. You can also specify when to delete the junk messages (every time, once per day, once per week, once per month).</para>
+     <title>Vymazat nevyžádanou poštu při ukončení:</title>
+     <para>Tato volba odstraňuje nevyžádané zprávy při ukončení. Můžete také zadat, kdy nevyžádané zprávy odstraňovat (pokaždé, jednou za den, jednou za týden, jednou za měsíc).</para>
     </formalpara>
     <formalpara id="b17rfn2y">
-     <title>Default junk plugin:</title>
-     <para>Select either SpamAssassin or Bogofilter, or both, as your junk filter. You can view them only if you have enabled the respective plugins. When you select any option, it also reports if the underlying binary is available or not.</para>
+     <title>Výchozí zásuvný modul na nevyžádanou poštu:</title>
+     <para>Vyberte jako filtr nevyžádané pošty buď SpamAssassin, nebo Bogofilter, nebo oba. Vidět je můžete, pouze pokud máte povolené příslušné zásuvné moduly. Když zvolíte jakoukoliv možnost, vždy je nahlášeno, zda je dostupná podkladová binárka.   </para>
     </formalpara>
     <mediaobject id="b17rds6i"><imageobject><imagedata format="PNG" fileref="figures/evo_junk_a.png"/></imageobject></mediaobject>
     <formalpara id="b17rfjfx">
-     <title>SpamAssassin Options:</title>
-     <para>Remote Test performs junk mail filtering on remote servers. It also includes online tests, like checking for blacklisted message senders and ISPs.</para>
+     <title>Možnosti SpamAssassin:</title>
+     <para>Vzdálený test provádí filtrování nevyžádané pošty na vzdálených serverech. To také zahrnuje online testy jako hledání odesílatelů a ISP na černých listinách.</para>
     </formalpara>
-    <para>This option uses tests that require a network connection, such as checking to see if a message is in a list of known junk messages, or if the sender or gateway are blacklisted by anti-spam organizations. Online tests can make filtering slower, because remote tests add to the amount of time it takes to check for junk mail, but they increase accuracy. When you select this option, you do not need to do any additional setup.</para>
+    <para>Tato volba používá testy, které vyžadují síťové připojení, jako např. kontrola, zda je zpráva na seznamu známé nevyžádané pošty, nebo jestli odesílatel či brána jsou na černém seznamu anti-spamových organizací. Online testy mohou fltrování zpomalit, protože vzdálené testy vzdálené testy vyžadují více času, ale zvyšují přesnost. Pokud zvolíte tuto volbu, nemusíte provádět jakákoliv další nastavení.</para>
     <formalpara id="b17rfjnv">
-     <title>Bogofilter Options:</title>
-     <para>Select Convert mail text to Unicode to enable Unicode* filtering. For more information on Bogofilter, see the <ulink url="http://bogofilter.sourceforge.net/">Bogofilter site</ulink>.</para>
+     <title>Možnosti Bogofilter:</title>
+     <para>Vyberte Převést test zprávy do Unicode, chcete-li povolit filtrování Unicode*. Více informací o Bogofilteru naleznete na <ulink url="http://bogofilter.sourceforge.net/">jeho stránkách</ulink>.</para>
     </formalpara>
     <note>
-     <para>Check new messages for junk contents option under Edit &gt; Preferences &gt; Mail Accounts &gt; Edit &gt; Receiving options is enabled only for IMAP. Check incoming mail for junk option under Edit &gt; Preferences &gt; Mail Preferences &gt; Junk &gt; General refers only to POP and Local Delivery.</para>
+     <para>Volba Hledat nevyžádanou poštu v nových zprávách pod Upravit &gt; Nastavení &gt; Účty e-mailu &gt; Možnosti příjmu je určena pouze pro IMAP. Volba Kontrolovat, jestli je příchozí pošta nevyžádaná pod Upravit &gt; Nastavení &gt; Nastavení pošty &gt; Nevyžádaná pošta zase odpovídá POP a lokálnímu příjmu.</para>
     </note>
    </section>
 
    <section id="bxjnb81">
-    <title>Automatic Contacts Preferences</title>
-    <para>There are two items in this section: Automatic Contacts automatically adds people that you respond to into your address book. You can select the default address book for automatic contacts from the list.</para>
-    <para>Instant Messaging Contacts periodically synchronizes contact information and images with your instant messaging program. Currently this only works with Pidgin. Your address book must not be a read-only one for both these features to function properly.</para>
+    <title>Nastavení automatických kontaktů</title>
+    <para>V této sekci jsou dvě položky: Automatické kontakty automaticky přidávají lidi, kterým odpovídáte, do adresáře. Ze seznamu můžete vybrat výchozí adresář pro automatické kontakty.</para>
+    <para>Kontakty instang messaging pravidelně synchronizují informace o kontaktech a zrcadlí váš program pro instant messaging. Momentálně toto funguje pouze s Pidginem. Váš adresář nemůže být pouze pro čtení, chcete-li, aby obě tyto funkce fungovaly.</para>
    </section>
 
    <section id="bxjncro">
-    <title>Calendar and Tasks Preferences</title>
-    <para>Allows you to delete messages after you have acted on an appointment. It also allows you to select calendars to search for meeting conflicts.</para>
+    <title>Nastavení kalendáře a úkolů</title>
+    <para>Umožňuje vám odstranit zprávy poté, co jste reagovali na událost. Také vám umožňuje vybrat kalendáře pro hledání konfliktů se schůzkou.</para>
    </section>
   </section>
 
   <section id="config-prefs-mail-composer">
-   <title>Composer Preferences</title>
-   <para>There are three tabs for message composer settings where you can set the composer preferences. The General tab covers assorted behavior, the Signature tab sets your signature, and the Spell Checking tab controls spell checking.</para>
+   <title>Nastavení editoru</title>
+   <para>V nastavení editoru se nacházejí tři karty, kde můžete nastavit editor. Karta Obecné pokrývá nejrůznější chování, karta Podpisy nastavuje váš podpis a karta Hledání překlepů řeší kontrolu překlepů.</para>
    <itemizedlist>
     <listitem>
      <para><link linkend="bshpixy">Obecné</link></para>
     </listitem>
     <listitem>
-     <para><link linkend="bshpjpl">Signature</link></para>
+     <para><link linkend="bshpjpl">Podpisy</link></para>
     </listitem>
     <listitem>
-     <para><link linkend="bshpjuj">Spell Checking</link></para>
+     <para><link linkend="bshpjuj">Hledání překlepů</link></para>
     </listitem>
    </itemizedlist>
 
@@ -6915,61 +6912,60 @@
     <title>Obecné</title>
     <para>K dispozici jsou následující volby:</para>
     <formalpara id="bsbhs8n">
-     <title>Default Behavior:</title>
-     <para>Choose how to normally forward and reply to messages, what character set they will use, whether they are in HTML, and whether that HTML can contain graphic emoticons.</para>
+     <title>Výchozí chování:</title>
+     <para>Vyberte, jak normálně přeposílat a odpovídat na zprávy, jaké znakové sady budou používat, zda budou v HTML a zda budou HTML používat smajlíky.</para>
     </formalpara>
-    <para>You can forward messages either as an attachment or inline, or else as quoted. Choose reply style from the drop-down list: Quote original message, Do not quote original message, Attach original message.</para>
+    <para>Zprávy můžete přeposílat buď jako přílohu, nebo jako vložené, nebo také jako citované. Vyberte styl odpovědi v rozbalovacím seznamu: Příloha, Vložené, Citace. </para>
     <formalpara id="b17qahr1">
-     <title>Top Posting Options:</title>
-     <para>When replying, you can choose where to place your signature in the message. You can place the signature either above the original message or at the end of the composer window. Top Posting is not recommended because placing the signature other than at the end of the message is against the mailing standards.</para>
+     <title>Volby Top Posting:</title>
+     <para>Když odpovídáte, můžete si vybrat, kde ve zprávě umístit podpis. Můžete jej umístit buďto nad původní zprávu nebo nakonec. Top Posting není doporučován, protože umísťování podpisu jinde než na konec zprávy je proti e-mailovým standardům.</para>
     </formalpara>
     <formalpara id="bsbhsf6">
-     <title>Alerts:</title>
-     <para>There are two optional alerts you can select:</para>
+     <title>Výstrahy:</title>
+     <para>Můžete vybrat dvě volitelné výstrahy:</para>
     </formalpara>
     <itemizedlist>
      <listitem>
       <formalpara id="bsbht5d">
-       <title>Prompt When Sending Messages With an Empty Subject Line:</title>
-       <para>The composer warns you if you try to send a message without a subject.</para>
+       <title>Upozorňovat, když posílám zprávu s prázdným políčkem "Předmět":</title>
+       <para>Editor vás upozorní, když se pokusíte odeslat zprávu bez předmětu.</para>
       </formalpara>
      </listitem>
      <listitem>
       <formalpara id="bsbhto4">
-       <title>Prompt When Sending Messages with Only Bcc Recipients Defined:</title>
-       <para>The composer warns you if you try to send a message that has only Bcc recipients. This is important because some mail servers fail to transmit blind carbon copy if you do not have at least one recipient that is visible to all readers.</para>
+       <title>Upozorňovat, když posílám zprávu, kde jsou uvedeni příjemci jen ve skryté kopii:</title>
+       <para>Editor vás upozorní, když se pokusíte odeslat zprávu, která má pouze Bcc příjemce. To je důležité, protože některé poštovní servery nemusí odeslat skrytou kopii, pokud nemáte aspoň jednoho příjemce, který je viditelný pro všechny čtenáře.</para>
       </formalpara>
      </listitem>
     </itemizedlist>
    </section>
 
    <section id="bshpjpl">
-    <title>Signature</title>
-    <para>The signature editor allows you to create several different signatures in plain text or in HTML, and to specify which of them will be added to email you create in the message composer. If you prefer to use an alternate signature or none at all, you can select it from the mail composer itself.</para>
+    <title>Podpisy</title>
+    <para>Editor podpisů vám umožňuje vytvářet různé podpisy v prostém textu nebo v HTML a určit, který z nich bude přidáván do e-mailů, které vytváříte v editoru zpráv. Pokud chcete zadat jiný podpis nebo vůbec žádný, můžete to zvolit přímo v editoru zpráv.</para>
    </section>
 
    <section id="bshpjuj">
-    <title>Spell Checking</title>
-    <para>To choose a spell-checking language, select it here. You must install gnome-spell, aspell, and an aspell language package
-(like for example aspell-en for english language) for spell-checking to be available in Evolution. Additional dictionaries are available through your package manager and are detected automatically if you have installed them. To have the composer automatically check your spelling while you type, select Check Spelling While I Type. You can set the color for misspelled words.</para>
+    <title>Hledání překlepů</title>
+    <para>Chcete-li vybrat jazyk pro hledání překlepů, zvolte jej zde. Musíte nainstalovat gnome-spell, aspell a jazykový balíček aspell (jako například aspell-cs pro češtinu), chcete-li mít hledání překlepů v Evolution. Další slovníky jsou dostupné skrze správce balíčků a detekovány automaticky po nainstalování. Pokud chcete, aby editor automaticky kontroloval překlepy během psaní, zatrhněte Hledat překlepy během psaní.</para>
    </section>
   </section>
 
   <section id="config-prefs-cal">
-   <title>Calendar and Tasks Settings</title>
-   <para>The calendar configuration tool has several pages:</para>
+   <title>Nastavení Kalendáře a Úkolů</title>
+   <para>Nástroj pro nastavení kalendáře má několik stran:</para>
    <itemizedlist>
     <listitem>
      <para><link linkend="bshpskx">Obecné</link></para>
     </listitem>
     <listitem>
-     <para><link linkend="bshpsxa">Display</link></para>
+     <para><link linkend="bshpsxa">Zobrazení</link></para>
     </listitem>
     <listitem>
-     <para><link linkend="CACHCGCI">Alarms</link></para>
+     <para><link linkend="CACHCGCI">Alarmy</link></para>
     </listitem>
     <listitem>
-     <para><link linkend="bxjng8p">Calendar Publishing</link></para>
+     <para><link linkend="bxjng8p">Zveřejňování kalendáře</link></para>
     </listitem>
    </itemizedlist>
 
@@ -6978,12 +6974,12 @@
     <title>Obecné</title>
     <para>K dispozici jsou následující volby:</para>
     <formalpara id="bsbhukf">
-     <title>Time Zone:</title>
-     <para>The city you're located in, to specify your time zone.</para>
+     <title>Časové pásmo:</title>
+     <para>Město, ve kterém se nacházíte, pro určení vašeho časového pásma.</para>
     </formalpara>
     <formalpara id="bsbhup9">
-     <title>Time Format:</title>
-     <para>Choose between twelve-hour (AM/PM) and twenty-four-hour time formats.</para>
+     <title>Formát času:</title>
+     <para>Zvolte mezi dvanáctihodinovým (AM/PM) a dvacetičtyřhodinovým formátem času.</para>
     </formalpara>
     <formalpara id="b1g4qvkl">
      <title>Druhé pásmo:</title>
@@ -6991,98 +6987,98 @@
     </formalpara>
     <para>Obě časová pásma můžete vidět v zobrazení kalendáře.</para>
     <formalpara id="bsbhuut">
-     <title>Week Starts:</title>
-     <para>Select the day to display as the first in each week.</para>
+     <title>Týden začíná:</title>
+     <para>Vyberte den, který se má zobrazit jako začátek každého týdne.</para>
     </formalpara>
     <formalpara id="bsbhuzl">
-     <title>Day Begins:</title>
-     <para>For Evolution, a normal work day begins at 9 a.m. and ends at 5 p.m. You can select your preferred hours.</para>
+     <title>Den začíná:</title>
+     <para>Pro Evolution normální pracovní den začíná v 9 ráno a končí v 5 odpoledne. Můžete si zadat vlastní hodiny.</para>
     </formalpara>
     <formalpara id="bsbhv3n">
-     <title>Day Ends:</title>
-     <para>Sets the end of a normal workday.</para>
+     <title>Den končí:</title>
+     <para>Nastavuje konec normálního pracovního dne.</para>
     </formalpara>
     <formalpara id="bsbhv7r">
-     <title>Alerts:</title>
-     <para>If you want to be warned before you delete any appointment, or to have a reminder automatically appear for each event, select the options here.</para>
+     <title>Výstrahy:</title>
+     <para>Chcete-li být varováni před tím, než odstraníte událost, nebo chcete-li mít připomínku automaticky pro každou událost, vyberte volby zde.</para>
     </formalpara>
    </section>
 
    <section id="bshpsxa">
-    <title>Display</title>
-    <para>The Display page lets you choose how your appointments and tasks appear in your calendar.</para>
+    <title>Zobrazení</title>
+    <para>Stránka Zobrazení vám umožňuje zvolit, jak se mají události a úkoly zobrazovat v kalendáři.</para>
     <formalpara id="bsbhvoy">
-     <title>Time Divisions:</title>
-     <para>Sets the time increments shown as fine lines on the daily view in the calendar.</para>
+     <title>Časové úseky:</title>
+     <para>Nastavuje časové úseky zobrazené jako tenké čáry v zobrazení dne v kalendáři.</para>
     </formalpara>
     <formalpara id="bsbhvt1">
-     <title>Show appointment end times in week and month views:</title>
-     <para>If there is space, Evolution shows the end times in the week and month views for each appointment.</para>
+     <title>Zobrazovat konce konce událostí v zobrazení týdne a měsíce:</title>
+     <para>Pokud je na to místo, Evolution zobrazí konečné časy událostí v zobrazení týdne a měsíce.</para>
     </formalpara>
     <formalpara id="bsbhw0r">
-     <title>Compress weekends in month view:</title>
-     <para>Select this option to display weekends in one box instead of two in the month view.</para>
+     <title>Komprimovat víkendy v zobrazení měsíce:</title>
+     <para>Vyberte tuto volbu, chcete-li zobrazit víkendy v jednom rámečku místo dvou v zobrazení měsíce.</para>
     </formalpara>
     <formalpara id="bsbhw7p">
-     <title>Show week numbers in date navigator:</title>
-     <para>Shows the week numbers next to the respective weeks in the calendar.</para>
+     <title>Show week numbers:</title>
+     <para>Zobrazuje čísla týdnů vedle příslušných týdnů v kalendáři.</para>
     </formalpara>
     <formalpara id="bsbhwdz">
-     <title>Tasks due today:</title>
-     <para>Select the color for tasks due today.</para>
+     <title>Úkoly, které mají být splněny dnes:</title>
+     <para>Vyberte barvu pro úkoly, které mají být splněny dnes.</para>
     </formalpara>
     <formalpara id="bsbhwj5">
-     <title>Overdue tasks:</title>
-     <para>Select the color for overdue tasks.</para>
+     <title>Úkoly, které již měly být splněny:</title>
+     <para>Vyberte barvu pro úkoly, které již měly být splněny.</para>
     </formalpara>
     <formalpara id="bsbhwnw">
-     <title>Hide completed tasks after:</title>
-     <para>Select this option to have completed tasks hidden after a period of time measured in days, hours, or minutes. If you don't select this option, completed tasks remain in your task list, marked as complete.</para>
+     <title>Skrýt splněné úkoly po:</title>
+     <para>Vybere tuto volbu, chcete-li skrýt dokončené úkoly po určitém časovém úseku měřeném v dnech, hodinách nebo minutách. Pokud tuto volbu nevyberete, dokončené úkoly zůstanou v seznamu úkolů označené jako dokončené.</para>
     </formalpara>
      </section>
 
    <section id="CACHCGCI">
-    <title>Alarms</title>
+    <title>Alarmy</title>
     <formalpara id="b101llxc">
-     <title>Select the Calendars for Alarm Notification:</title>
-     <para>Select the calendars for which you want an alarm notification. If you don't select the calendar, you will not have an alarm notification for any event in this calendar.</para>
+     <title>Zvolte kalendáře pro upozornění alarmem:</title>
+     <para>Vyberte kalendáře, pro které chcete upozorňování alarmem. Nezvolíte-li kalendář, nebudete mít upozornění pro žádnou událost v kalendáři.</para>
     </formalpara>
-    <para>Click Dismiss to close the alarm. Click Dismiss All to close all the alarm notifications.</para>
+    <para>Klikněte na Zahodit, chcete-li alarm zavřít. Klikněte na Zahodit vše, chcete-li zavřít všechna upozornění alarmem.</para>
    </section>
 
    <section id="b13yjhw2">
-    <title>Free/Busy</title>
+    <title>Volno/obsazeno</title>
     <para>Můžete zadat šablonu, která se má použít při umístění na server pro volno/obsazeno.</para>
    </section>
 
    <section id="bxjng8p">
-    <title>Calendar Publishing</title>
+    <title>Zveřejňování kalendáře</title>
     <formalpara id="bxpfx0s">
-     <title>Publishing:</title>
-     <para>Allows you to select a URL to post your calendar information to. When you add a URL, you can specify the publishing location, the frequency of publishing, which calendar to publish, and who to authenticate as.</para>
+     <title>Zveřejňování:</title>
+     <para>Vám umožňuje zvolit URL, na které se mají umísťovat informace o vašem kalendáři. Když přidáváte URL, můžete určit umístnění, frekvenci zveřejňování, který kalendář zveřejnit, jak se má autorizovat.</para>
     </formalpara>
    </section>
   </section>
 
   <section id="b15m55rz">
    <title>Nastavení sítě</title>
-   <para>This interface lets you configure your network proxy settings.</para>
+   <para>Toto rozhraní vám umožňuje nastavit proxy sítě.</para>
    <mediaobject id="b15m5vi1"><imageobject><imagedata format="PNG" fileref="figures/network_pref.png"/></imageobject></mediaobject>
    <para>K dispozici jsou následující volby:</para>
    <formalpara id="b15m5zr2">
-    <title>Use system defaults:</title>
-    <para>Select this option to use the system wide proxy settings configured through Control Center &gt; Network Proxies in GNOME. When this option is selected, Evolution uses the proxy settings in the /system/http_proxy and /system/proxy/gconf keys.</para>
+    <title>Použít výchozí:</title>
+    <para>Vyberte tuto volbu, chcete-li použít systémové nastavení proxy konfigurovatelné skrze Ovládací centrum &gt; Proxy sítě v GNOME. Když je tato volba vybrána, Evolution používá nastavení proxy v /system/http_proxy a /system/proxy/gconf.</para>
    </formalpara>
    <important>
-    <para>If these keys do not reflect the settings configured through Control Center &gt; Network Proxies, Evolution does not work with the proxy and you must either update these gconf keys or choose Manual proxy configuration.</para>
+    <para>Pokud tato nastavení nereflektují nastavení skrze Ovládací centrum &gt; Proxy sítě, Evolution s proxy nepracuje a musíte buď aktualizovat gconf nebo vybrat Ruční nastavení proxy.</para>
    </important>
    <formalpara id="b15m65gt">
-    <title>Direct connection to the Internet:</title>
+    <title>Přímé připojení do internetu:</title>
     <para>Vyberte tuto možnost pro přímé připojení do internetu.</para>
    </formalpara>
    <formalpara id="b15m65i4">
     <title>Ruční nastavení proxy:</title>
-    <para>This option helps you costomize proxy settings regardless of the desktop you use. Specify hosts and ports for HTTP and optionally for other protocols. In the No Proxy Domain field, specify that comma-separated domain names do not go through the configured proxy server. You can specify patterns like *.example.com or .example.com in the No Proxy Domain list. Specify a username and password, and if the proxy server requires authentication, select Use Authentication to enable the username and password fields. The customized proxy settings are as follows:</para>
+    <para>Tato volba vám umožňuje přizpůsobit si nastavení proxy bez ohledu na desktop, který používáte. Zadejte hostitele a porty pro HTTP a případně ostatní protokoly. V poli Žádná proxy zadejte doménové názvy, oddělené čárkami, které nejsou přes proxy server. Do seznamu můžete zadat vzory jako *.example.com nebo .example.com. Zadejte jméno uživatele a heslo a pokud proxy server vyžaduje autentizaci, zatrhněte Použít autentizaci, abyste aktivovali pole jméno uživatele a heslo. Přizpůsobitelná nastavení proxy jsou následující:</para>
    </formalpara>
    <informaltable>
     <tgroup cols="2">
@@ -7104,7 +7100,7 @@
         <para>HTTP Proxy</para>
        </entry>
        <entry colname="2">
-        <para>The machine name to proxy HTTP through.</para>
+        <para>Název stroje, který slouží jako HTTP proxy.</para>
        </entry>
       </row>
       <row id="b15ot8mk">
@@ -7112,15 +7108,15 @@
         <para>Port</para>
        </entry>
        <entry colname="2">
-        <para>The port for the machine defined by the HTTP Proxy field that you proxy through.</para>
+        <para>Port pro stroj, určený polem HTTP Proxy, který slouží jako proxy.</para>
        </entry>
       </row>
       <row id="b15ot9cv">
        <entry colname="1">
-        <para>Secure HTTP Proxy</para>
+        <para>Proxy zabezpečeného HTTP</para>
        </entry>
        <entry colname="2">
-        <para>The machine name to proxy secure HTTP through.</para>
+        <para>Název stroje, který slouží jako proxy pro zabezpečené HTTP.</para>
        </entry>
       </row>
       <row id="b15ot9e8">
@@ -7128,15 +7124,15 @@
         <para>Port</para>
        </entry>
        <entry colname="2">
-        <para>The port for the machine defined by the Secure HTTP Proxy port field.</para>
+        <para>Port pro stroj, který je určený polem Proxy zabezpečeného HTTP.</para>
        </entry>
       </row>
       <row id="b15ot9f9">
        <entry colname="1">
-        <para>SOCKS Host</para>
+        <para>Hostitel SOCKS</para>
        </entry>
        <entry colname="2">
-        <para>The machine name to proxy SOCKS through.</para>
+        <para>Název stroje, kterou slouží jako proxy pro SOCKS.</para>
        </entry>
       </row>
       <row id="b15ot9g7">
@@ -7144,23 +7140,23 @@
         <para>Port</para>
        </entry>
        <entry colname="2">
-        <para>The port for the machine defined by the SOCKS host.</para>
+        <para>Port pro stroj, který je určený hostitelem SOCKS.</para>
        </entry>
       </row>
       <row id="b15ot9h3">
        <entry colname="1">
-        <para>No proxy domain</para>
+        <para>Domény bez proxy</para>
        </entry>
        <entry colname="2">
-        <para>This key contains a list of hosts which are connected to directly, rather than via the proxy (if it is active). The values can be hostnames, domains (using an initial wildcard like *.example.com), IP host addresses (both IPv4 and IPv6) and network addresses with a netmask similar to 192.168.0.0/24.</para>
+        <para>Tento klíč obsahuje seznam hostitelů, ke kterým jste připojeni přímo a ne přes proxy (pokud je zapnutá). Tyto hodnoty mohou být názvy hostitel, domény (využívající divoké karty jako *.example.com), IP adresy hostitelů (jak IPv4, tak IPv6) a síťové adresy se síťovými maskami podobné 192.168.0.0/24.</para>
        </entry>
       </row>
       <row id="b15ot9hy">
        <entry colname="1">
-        <para>Use authentication</para>
+        <para>Použít autenzitaci</para>
        </entry>
        <entry colname="2">
-        <para>If this option is enabled, it uses authentication to connect via the proxy server.</para>
+        <para>Je-li tato volba povolena, je použita autenzitace pro připojení přes proxy server.</para>
        </entry>
       </row>
       <row id="b15ot9j3">
@@ -7168,15 +7164,15 @@
         <para>Jméno uživatele</para>
        </entry>
        <entry colname="2">
-        <para>Username used to authenticate when performing an HTTP proxying.</para>
+        <para>Jméno uživatele použité pro autenzitaci během překládání HTTP.</para>
        </entry>
       </row>
       <row id="b15ot9ln">
        <entry colname="1">
-        <para>Password</para>
+        <para>Heslo</para>
        </entry>
        <entry colname="2">
-        <para>Password used to authenticate when performing an HTTP proxying.</para>
+        <para>Heslo použité pro autentizaci během překládání HTTP.</para>
        </entry>
       </row>
      </tbody>
@@ -7185,49 +7181,49 @@
   </section>
   
   <section id="bshoty0">
-   <title>Certificates</title>
-   <para>Evolution allows you to add certificates for yourself as well as for contacts. This allows you to communicate with others securely over an encrypted connection, or sign a message confirming your identity to the contact. These settings only apply to S/MIME encryption.</para>
+   <title>Certifikáty</title>
+   <para>Evolution vám umožňuje přidat certifikáty jak pro sebe, tak pro kontakty. To vám umožňuje komunikovat s ostatními zabezpečeně skrze šifrované spojení, nebo podepisovat zprávy a tak kontaktům potvrzovat vaši identitu. Tato nastavení se vztahují pouze na šifrování S/MIME.</para>
    <formalpara id="bshov9m">
-    <title>Your Certificates:</title>
-    <para>Click the Your Certificates tab to display a list of certificates that you own. You can import, view and delete your certificates from this page.</para>
+    <title>Vaše certifikáty:</title>
+    <para>Klikněte na kartu Vaše certifikáty, chcete-li zobrazit seznam certifikátů, které vlastníte. Můžete importovat, prohlížet nebo mazat certifikáty z této stránky.</para>
    </formalpara>
    <formalpara id="bshovvp">
-    <title>Contact Certificates:</title>
-    <para>Click the Contact Certificates tab to display a list of certificates that you have for contacts. These certificates allow you to decrypt messages as well verify signed messages. You can import, view, edit, and delete your contact certificates from this page.</para>
+    <title>Certifikáty kontaktů:</title>
+    <para>Klikněte na kartu Certifikáty kontaktů, chcete-li zobrazit seznam certifikátů, které máte pro své kontakty. Tyto certifikáty vám umožňují rozšifrovat zprávy, stejně jako potvrzovat podepsané zprávy. Můžete importovat, prohlížet, upravovat nebo mazat z tého stránky certifikáty svých kontaktů.</para>
    </formalpara>
    <formalpara id="bshowu7">
-    <title>Authorities:</title>
-    <para>Click the Authorities tab to display a list of trusted certificate authorities who verify that the certificate you have is valid. You can import, view, edit, and delete certificate authorities from this page.</para>
+    <title>Autority:</title>
+    <para>Klikněte na kartu Autority, chcete-li zobrazit seznam věrohodných certifikačních autorit, které potvrzují, že je certifikát platný. Můžete importovat, prohlížet, upravovat a mazat certifikační autority z této stránky.</para>
    </formalpara>
   </section>
 
   <section id="config-prefs-contact">
    <title>Správa kontaktů</title>
-   <para>There are two main tasks for configuring contact information:</para>
+   <para>Pro konfiguraci informací o kontaktech existují dvě úlohy:</para>
    <itemizedlist>
     <listitem>
-     <para><link linkend="bxmw6mw">Creating a Contact</link></para>
+     <para><link linkend="bxmw6mw">Vytváření kontaktu</link></para>
     </listitem>
     <listitem>
-     <para><link linkend="bxmw6w5">Creating an Address Book</link></para>
+     <para><link linkend="bxmw6w5">Vytváření adresáře</link></para>
     </listitem>
    </itemizedlist>
 
    <section id="bxmw6mw">
-    <title>Creating a Contact</title>
-    <para>To add a new contact list, either local or remote:</para>
+    <title>Vytváření kontaktu</title>
+    <para>Chcete-li přidat nový seznam kontaktů, buďto místní nebo vzdálený:</para>
     <orderedlist>
      <listitem id="bsbhwyr">
-      <para>Click Contacts in the Switcher.</para>
+      <para>Klikněte na Kontakty na přepínači.</para>
      </listitem>
      <listitem id="bsbhx27">
-      <para>Click the down-arrow next to New.</para>
+      <para>Klikněte na šipku vedle Nový.</para>
      </listitem>
      <listitem id="bsbhxhp">
-      <para>Select Contact List.</para>
+      <para>Vyberte Seznam kontaktů.</para>
      </listitem>
      <listitem id="bsbhxk3">
-      <para>Type a name and location for the Address Book.</para>
+      <para>Zadejte název a umístění adresáře.</para>
      </listitem>
      <listitem id="bsbi2rh">
       <para>Klikněte na OK.</para>
@@ -7236,96 +7232,96 @@
    </section>
 
    <section id="bxmw6w5">
-    <title>Creating an Address Book</title>
+    <title>Vytváření adresáře</title>
     <orderedlist>
      <listitem id="bxmw77d">
       <para>Klikněte na Soubor &gt; Nový &gt; Adresář.</para>
      </listitem>
      <listitem id="bxmw7a9">
-      <para>Select the type of Address Book.</para>
+      <para>Vyberte typ adresáře.</para>
       <formalpara id="bxmw7f3">
-       <title>On This Computer:</title>
-       <para>Creates a local address book on the computer.</para>
+       <title>V tomto počítači:</title>
+       <para>Vytvoří místní adresář ve vašem počítači.</para>
       </formalpara>
       <formalpara id="bxmw7nv">
-       <title>On LDAP Server:</title>
-       <para>Creates an address book on the LDAP server.</para>
+       <title>Na serverech LDAP:</title>
+       <para>Vytvoří adresář na serveru LDAP.</para>
       </formalpara>
       <formalpara id="bxmw804">
-       <title>Specific Account:</title>
-       <para>If you have an account that allows you to create an address book on that server, you can select that account.</para>
+       <title>Zvláštní účet:</title>
+       <para>Máte-li účet, který vám umožňuje vytvořit adresář na daném serveru, vyberte tento účet.</para>
       </formalpara>
      </listitem>
      <listitem id="bxmw8kf">
-      <para>If you selected On This Computer, specify the name of the address book, and choose whether you want to the new address book as your default folder.</para>
+      <para>Pokud jste vybrali V tomto počítači, zadejte název adresáře a vyberte, chcete-li nový adresář nastavit jako výchozí.</para>
       <para>nebo</para>
-      <para> If you are creating an address book on an <link linkend="ldap">LDAP</link> server, enter the server information as requested by the assistant:</para>
+      <para>Pokud vytváříte adresář na serveru <link linkend="ldap">LDAP</link>, vložte informace o serveru, jak vyžaduje asistent:</para>
       <formalpara id="bxmwai1">
-       <title>Server Name:</title>
-       <para>The Internet address of the contact server you are using.</para>
+       <title>Název serveru:</title>
+       <para>Internetovou adresu serveru s kontakty, který používáte.</para>
       </formalpara>
       <formalpara id="bxmwai2">
-       <title>Login Method:</title>
-       <para>Specify whether your login is anonymous, uses an email address, or uses a distinguished name. If the login is not anonymous, specify the email address or distinguished name (DN) required by the server.</para>
+       <title>Metoda přihlášení:</title>
+       <para>Zadejte, zda je vaše přihlášení anonymní, používá e-mailovou adresu, nebo indentifikační jméno (DN) vyžadované serverem.</para>
       </formalpara>
       <formalpara id="bxmwai3">
        <title>Port:</title>
-       <para>The Internet port Evolution connects to in order to access the LDAP database. This is normally 389.</para>
+       <para>Internetový port, který Evolution používá, aby se připojil k databázi LDAP. Normálně je to 389.</para>
       </formalpara>
       <formalpara id="bxmwai4">
-       <title>Use SSL/TLS:</title>
-       <para>SSL and TLS are security mechanisms. If you select No Encryption, Evolution will send your password unencrypted. By using SSL or TLS, a secure connection will be used and your password will be sent encrypted.</para>
+       <title>Použít SSL/TLS:</title>
+       <para>SSL a TLS jsou bezpečnostní mechanismy. Pokud vyberete Bez šifrování, Evolution odešle vaše heslo nešifrované. Použitím SSL nebo TLS využíváte zabezpečené spojení a vašeho heslo bude odesláno zašifrované.</para>
       </formalpara>
       <formalpara id="bxmwai5">
-       <title>Details: Search Base:</title>
-       <para>The <link linkend="search-base">search base</link> is the starting point for a directory search. Contact your network administrator for information about the correct settings.</para>
+       <title>Podrobnosti: Základna pro hledání:</title>
+       <para><link linkend="search-base">Základ vyhledávání</link> je startovní bod pro prohledávání adresáře. Pro více informací kontaktujte svého správce sítě.</para>
       </formalpara>
       <formalpara id="bxmwai6">
-       <title>Search Scope:</title>
-       <para>The <link linkend="search-scope">search scope</link> is the breadth of a given search. The following options are available:</para>
+       <title>Rozsah vyhledávání:</title>
+       <para><link linkend="search-scope">Rozsah vyhledávání</link> je šířka daného vyhledávání. Dostupní jsou následující volby:</para>
       </formalpara>
       <itemizedlist>
        <listitem>
         <formalpara id="bxmwai7">
          <title>One:</title>
-         <para>Searches the Search Base and one entry below it.</para>
+         <para>Prohledává základ vyhledávání a jeden záznam pod ním.</para>
         </formalpara>
        </listitem>
        <listitem>
         <formalpara id="bxmwai8">
          <title>Sub:</title>
-         <para>Searches the Search Base and all entries below it.</para>
+         <para>Prohledává základ vyhledávání a všechny záznamy pod ním.</para>
         </formalpara>
        </listitem>
        <listitem>
         <formalpara id="bxmwai9">
-         <title>Timeout (minutes):</title>
-         <para>The maximum time Evolution attempts to download data from the server before giving up.</para>
+         <title>Časový limit (v minutách):</title>
+         <para>Maximální čas, po který se Evolution pokouší stahovat data ze serveru před tím, než to vzdá.</para>
         </formalpara>
        </listitem>
        <listitem>
         <formalpara id="bxmwaia">
-         <title>Download Limit:</title>
-         <para>The maximum number of results for a given search. Most servers refuse to send more than 500, but you can set the number lower if you want to shorten downloads for very broad searches.</para>
+         <title>Omezení stahování:</title>
+         <para>Maximální počet výsledků pro určité vyhledávání. Většina serverů odmítá poslat více než 500, ale můžete nastavit číslo nižší, pokud chcete zkrátit stahování velmi rozsáhlých vyhledávání.</para>
         </formalpara>
        </listitem>
        <listitem>
         <formalpara id="bxmwaib">
-         <title>Display Name:</title>
-         <para>The name you want to use as a label for this folder. It can be any name you choose.</para>
+         <title>Zobrazovaný název:</title>
+         <para>Název, který chcete používat jako popisek pro tuto složku. Může to být jakýkoliv název chcete.</para>
         </formalpara>
        </listitem>
       </itemizedlist>
       <formalpara id="b1012vdq">
-       <title>Search Filter:</title>
-       <para>The search filter can be set here for all the LDAP queries. For example:</para>
+       <title>Filtr hledání:</title>
+       <para>Filtr hledání může být nastaven zde pro všechny dotazy LDAP. Například:</para>
       </formalpara>
-      <para>ObjectClass=*: Lists all the objects from the server.ObjectClass=User: Lists only the users. Filter (|(ObjectClass=User)(ObjectClass=groupOfNames)): Retrieves the User and Contact List objects.(&amp;(mail=*)(ObjectClass=*)): Lists the objects associated with the email addresses.</para>
+      <para>ObjectClass=*: Vypíše všechny objekty ze serveru. ObjectClass=User: Vypíše pouze uživatele. Filter (|(ObjectClass=User)(ObjectClass=groupOfNames)): Získá objekty seznamů uživatelů a kontaktů. (&amp;(mail=*)(ObjectClass=*)): Vypíše všechny objekty přiřazené e-mailové adrese.</para>
       <note>
-       <para>If you change any LDAP address book configurations, Evolution and the Evolution Data Server need to be restarted in order to see the changes.</para>
+       <para>Pokud změníte jakékoliv nastavení adresáře LDAP, Evolution a Evolution Data Server musí být restartovány, abyste viděli změny.</para>
       </note>
       <para>nebo</para>
-      <para>If you are creating the address book for a specific account, type the name of the address book if you want the address book stored locally when offline, and if you want the address book to be your default folder.</para>
+      <para>Vytváříte-li adresář pro zvláštní účet, napište název adresáře, chcete-li aby byl adresář uložen lokálně, když jste odpojeni, a chcete-li, aby byl výchozím adresářem.</para>
      </listitem>
      <listitem id="bxmw9v2">
       <para>Klikněte na OK.</para>
@@ -7335,14 +7331,14 @@
   </section>
   
   <section id="b1a4ol61">
-   <title>Debug Logs</title>
-   <para>Evolution allows you to view the error logs and set the display duration for the error messages that appear in the statusbar. When an error occurs, statusbar displays the error message for the specified time, then it is moved to the debug file.</para>
+   <title>Ladicí protokol</title>
+   <para>Evolution vám umožňuje zobrazit záznamy chyb a nastavit prodlevu zobrazení pro chybových zpráv, které se objevují ve stavové řádce. Když nastane chyba, stávová řádka zobrazí po určený čas chybovou zprávu, potom ji přesune do ladicího souboru. </para>
    <orderedlist>
     <listitem id="b1a4opqg">
-     <para>From the Help menu, select Debug Logs.</para>
+     <para>Z nabídky Nápověda vyberte Ladicí protokol.</para>
      </listitem>
     <listitem id="b1a4orv0">
-     <para>Specify for how long error messages will be displayed in the statusbar.</para>
+     <para>Určete, jak se mají chybé zprávy zobrazovat ve stavové řádce.</para>
     </listitem>
    </orderedlist>
    <note>
@@ -7353,84 +7349,84 @@
 
  <chapter id="config-sync">
   <title>Synchronizace s přenosným zařízením</title>
-  <para>Synchronization presents you with three issues you need to address. First, you need to enable synchronization. Second, your computer needs to recognize and access your handheld. At this time, <trademark>Evolution</trademark> only supports Palm OS devices like the PalmPilot* and the Handspring Visor. Third, you should decide what sort of synchronization behavior you want.</para>
+  <para>Synchronizace vám předkládá tři problémy, které musíte vyřešit. Za prvé musíte synchronizaci povolit. Za druhé váš počítač musí rozeznat a připojit se k PDA. Nyní <trademark>Evolution</trademark> podporuje pouze zařízení s Palm OS jako např. PalmPilot* a Handspring Visor. Za třetí musíte rozhodnout, jaký druh chování synchronizace chcete.</para>
   <itemizedlist>
    <listitem>
-    <para><link linkend="bshq58g">Enabling Synchronization</link></para>
+    <para><link linkend="bshq58g">Povolení synchronizace</link></para>
    </listitem>
    <listitem>
-    <para><link linkend="bshq7hl">Selecting Conduits</link></para>
+    <para><link linkend="bshq7hl">Výběr conduitů</link></para>
    </listitem>
    <listitem>
-    <para><link linkend="bshq2qn">Synchronizing Information</link></para>
+    <para><link linkend="bshq2qn">Synchronizace informací</link></para>
    </listitem>
   </itemizedlist>
 
   <section id="bshq58g">
-   <title>Enabling Synchronization</title>
-   <para>If you haven't used a handheld device with your computer before, you need to run the GNOME Control Center by clicking System &gt; Settings, and make sure that Pilot Link is properly configured. Make sure that you have read and write permissions on the device, which is normally in /dev/pilot. If that does not work, check in /dev/ttyS0 if you have a serial connection, or in /dev/ttyUSB1 for a USB connection. You can do this by becoming root and adding your username to the group that owns this device node. For a USB device on sync, two device nodes are created, ttyUSB0 and ttyUSB1. The second node is the one to be used in configuring the device.</para>
+   <title>Povolení synchronizace</title>
+   <para>Pokud jste ještě PDA s počítačem nepoužívali, musíte spustit Ovládací centrum GNOME kliknutím na Systém &gt; Volby a ujistíte se, že je Pilot Link dobře nastavený. Ujistěte se, že máte na zařízení, které je normálně v /dev/pilot, práva pro čtení a zápis. Pokud to nefunguje, zkontrolujte v /dev/ttyS0, jestli máte spojení přes sériový port, nebo v /dev/ttyUSB1 přes USB. Můžete to udělat tak, že se přepnete do rootu a přidáte vaše jméno uživatele do skupiny, která vlastní uzel zařízení. Pro USB zařízení na synchronizaci se vytvářejí dva uzly zařízení, ttyUSB0 a ttyUSB1. Druhý uzel je ten, který se používá pro nastavení zařízení.  </para>
   </section>
 
   <section id="bshq7hl">
-   <title>Selecting Conduits</title>
-   <para>After your computer and your Palm OS device are communicating, select the <link linkend="conduit">conduits</link> you want under the Pilot Conduits section of the Control Center. You can use conduits to synchronize data with several applications; the Evolution conduits are labeled EAddress, for the contacts in your address book; ECalendar, for your calendar; and ETodo, for your task list.</para>
-   <para>Click Enable, then click Settings to change what the conduit does when activated. Your options can vary depending on the conduit, but typically they are as follows:</para>
+   <title>Výběr conduitů</title>
+   <para>Poté, co váš počítač a zařízení s Palm OS komunikují, vyberte <link linkend="conduit">conduity</link>, které chcete v sekci Pilot Conduits v Ovládacím centru. Můžete použít conduity pro synchronizaci dat s několika aplikacemi, conduity Evolution jsou označeny EAddress pro kontakty v adresáři; ECalendar, pro kalendář; ETodo pro seznam úkolů.</para>
+   <para>Klikněte na Povolit, potom klikněte na Nastavení, chcete-li změnit, co conduity dělají, když jsou aktivovány. Vaše volby se mohou lišit v závislosti na conduitu, ale většinou jsou následující:</para>
    <formalpara id="bsbi551">
-    <title>Disabled:</title>
-    <para>Do nothing.</para>
+    <title>Zakázáno</title>
+    <para>Nedělat nic.</para>
    </formalpara>
    <formalpara id="bsbi5aa">
-    <title>Synchronize:</title>
-    <para>Copy new data from the computer to the handheld, and from the handheld to the computer. Remove items that were on both systems but have been deleted on one.</para>
+    <title>Synchronizovat:</title>
+    <para>Kopírovat nová data z počítače do PDA a z PDA do počítače. Odstranit položky, které byly v obou systémech, ale byly odstraněny v jednom z nich.</para>
    </formalpara>
    <formalpara id="bsbi5es">
-    <title>Copy From Pilot:</title>
-    <para>If there is any new data on the handheld device, copy it to the computer.</para>
+    <title>Kopírovat z Pilota:</title>
+    <para>Pokud jsou nějaká nová data na PDA, kopírovat z něj na počítač. </para>
    </formalpara>
    <formalpara id="bsbi5k1">
-    <title>Copy To Pilot:</title>
-    <para>Copy new data from the computer to the handheld.</para>
+    <title>Kopírovat do Pilota:</title>
+    <para>Kopírovat nová data z počítače do PDA.</para>
    </formalpara>
-   <para>Select the behavior you want for each conduit you choose to use. If you're not sure, use Synchronize.</para>
+   <para>Vyberte chování, které chcete od každého conduitu, který se rozhodnete použít. Pokud si nejste jisti, zvolte Synchronizovat.</para>
   </section>
 
   <section id="bshq2qn">
-   <title>Synchronizing Information</title>
-   <para>Use the following procedure to synchronize the data on your Palm OS device with the data you store in Evolution.</para>
-   <para>If you want to back up your information before synchronizing, make a copy of the <command>.evolution</command> directory inside your home directory.</para>
+   <title>Synchronizace informací</title>
+   <para>Použijte následující postup, chcete-li synchronizovat data na zařízení s Palm OS s daty uloženými v Evolution.</para>
+   <para>Chcete-li zazálohovat data před synchronizací, zkopírujte adresář <command>.evolution</command> v domovském adresáři.</para>
    <orderedlist>
     <listitem id="bshq1vg">
-     <para>Put your handheld device in its cradle and press the HotSync button.</para>
-     <para>If you use Palm OS v. 4.0 and have password protection turned on for your handheld device, you might encounter trouble synchronizing. If this happens, try turning off password protection on your handheld, synchronize it with your desktop computer, and then re-enable password protection on your handheld.</para>
+     <para>Vložte PDA do kolébky a stiskněte tlačítko HotSync.</para>
+     <para>Používáte-li Palm OS v. 4.0 a máte zapnutou ochranu hesla na vašem zařízení, můžete mít problémy se synchronizací. Pokud toto nastane, zkuste vypnout ochranu hesla na zařízení, synchronizovat jej s počítačem a potom ochranu hesla znovu zapnout.</para>
     </listitem>
    </orderedlist>
-   <para>If you have followed the setup instructions properly, your Palm OS device will synchronize data with Evolution.</para>
+   <para>Pokud jste prováděli instrukce nastavení správně, zařízení s Palm OS bude synchronizovat data s Evolution.</para>
   </section>
  </chapter>
 
  <appendix id="outlook-migration">
   <title>Přechod z Outlooku na Evolution</title>
-  <para>If you are using Microsoft Outlook, but not Microsoft Exchange, this section helps you switch to <trademark>Evolution</trademark>.</para>
+  <para>Používáte-li Microsoft Outlook, ale ne Microsoft Exchange, tato sekce vám pomůže přejít na <trademark>Evolution</trademark>.</para>
 
   <section id="outlook-migration-mail">
-   <title>Migrating Local Outlook Mail Folders</title>
-   <para>Exchange and IMAP mail is stored on the server, so you do not need to migrate it to your Linux* partition. However, if you have stored mail on your computer, you might want to make it accessible to Evolution.</para>
-   <para>First, while using Windows, prepare your messages for import:</para>
+   <title>Převedení místních poštovních složek Outlooku</title>
+   <para>Pošta Exchange a IMAP je uložena na serveru, takže ji nemusíte převádět na svůj linuxový oddíl. Nicméně, máte-li poštu uloženou ve svém počítači, možná ji chcete mít dostupnou pro Evolution.</para>
+   <para>Za prvné, ve Windows si zprávy připravte pro import:</para>
    <orderedlist>
     <listitem id="bshqe24">
-     <para>Clean up your mail. Delete messages and folders you do not need, and click File &gt; Folders &gt; Properties &gt; Advanced &gt; Compact to erase old, deleted messages from your PST file.</para>
+     <para>Udělejte si pořádek v poště. Odstraňte zprávy a složky, které nepotřebujete, a klikněte na Soubor &gt; Složky &gt; Nastavení &gt; Pokročilé &gt; Kompatní, čímž vymažete staré, odstraněné zprávy ze souboru PST.</para>
     </listitem>
     <listitem id="bshqe4g">
-     <para>If you nest your folders one inside another, you might want to rename subfolders so that you can tell which folder they belong to. You must re-nest them after you load them into Evolution.</para>
+     <para>Pokud umístíte složky jednu do druhé, bude se vám hodit, když přejmenujete podsložky tak, že budete vědět, ke které složce patří. Poté, co je nahrajete do Evolutionu, budete je muset znovu umístit do patřičných složek.</para>
     </listitem>
     <listitem id="bshqe6i">
-     <para>Import the files into Mozilla Mail (or another mailer, such as Netscape or Eudora, that uses the standard mbox format).</para>
-     <para>Linux mailers cannot do this task, because it requires a library available only under Windows. In Mozilla, import by selecting Window Mail &amp; Newsgroups Tools Import.</para>
+     <para>Importujte soubory do Mozilla Mail (nebo jiného poštovního klienta, jako např. Netscape nebo Eudora, který používá standardní formát mbox).</para>
+     <para>Linuxoví poštovní klienti toto udělat nemohou, protože to vyžaduje knihovny, které jsou dostupné pouze pod Windows. V Mozille importujete tak, že vyberete Window Mail &amp; Newsgroups Tools Import.</para>
     </listitem>
    </orderedlist>
-   <para>Mozilla creates a set of files in the directory<command> Windows\Application_Data\Mozilla\Profiles\(UserName)\(Random Letters)\Mail\Local Folders\OutlookMail\</command>. The data files are those that have no file extension.</para>
-   <para>If you are using Windows Vista*, Windows XP* or Windows 2000*, your Windows hard drive is probably in the NTFS format, which some Linux systems cannot read without additional software. You might find it simpler to copy the mail folders to a different drive or to burn a CD.</para>
-   <para>When you have your mail in a format Evolution can understand, reboot to Linux. Then continue with the following procedure. To create new folders for your files:</para>
+   <para>Mozilla vytvoří sadu souborů v adresáři <command> Windows\Application_Data\Mozilla\Profiles\(UserName)\(Random Letters)\Mail\Local Folders\OutlookMail\</command>. Datové soubory jsou ty, které nemají žádnou příponu.</para>
+   <para>Používáte-li Windows Vista*, Windows XP* nebo Windows 2000*, váš harddisk ve Windows pravděpodobně používá formát NTFS, který nemohou linuxové systémy číst bez dodatečného softwaru. Možná pro vás bude jednodušší zkopírovat složky pošty na jiný disk nebo vypálit na CD.</para>
+   <para>Když máte poštu ve formátu, kterému Evolution rozumí, přepněte do Linuxu. Potom jděte podle následujícího postupu. Chcete-li vytvořit novou složky pro své soubory:</para>
    <orderedlist>
     <listitem id="bshqeej">
      <para>Připojte váš disk s Windows nebo disk, kde máte uloženy soubory s poštou.</para>
@@ -7517,7 +7513,7 @@
    <title>Úkoly pošty</title>
    <formalpara id="b17saari">
     <title>Posílání a přijímání pošty:</title>
-    <para>Stiskněte F9, klikněte na Odeslat/Přijmout v liště nástrojů nebo klikněte na Soubor &gt; Odeslat/Přijmout</para>
+    <para>Stiskněte F9, klikněte na Odeslat/Přijmout v nástrojové liště nebo klikněte na Soubor &gt; Odeslat/Přijmout</para>
    </formalpara>
    <formalpara id="b17saaxh">
     <title>Pohybování se v seznamu zpráv pomocí klávesnice:</title>
@@ -7529,12 +7525,12 @@
    </formalpara>
    <formalpara id="b17salda">
     <title>Odpověď na zprávu:</title>
-    <para>Chcete-li odpovědět odesílateli zprávy, klikněte na Odpovědět v liště nástrojů nebo stikněte Ctrl+R.</para>
+    <para>Chcete-li odpovědět odesílateli zprávy, klikněte na Odpovědět v nástrojové liště nebo stikněte Ctrl+R.</para>
    </formalpara>
    <para>Pro odpověď odesílateli a všem ostatním příjemcům zprávy, klikněte na Odpovědět všem nebo vyberte zprávu a stiskněte Shift+Ctrl+R.</para>
    <formalpara id="b17sam2t">
     <title>Přeposílání zprávy:</title>
-    <para>Vyberte zprávu nebo zprávy, které chcete přeposlat, potom klikněte na Přeposlat v liště nástrojů nebo stiskněte Ctrl+F.</para>
+    <para>Vyberte zprávu nebo zprávy, které chcete přeposlat, potom klikněte na Přeposlat v nástrojové liště nebo stiskněte Ctrl+F.</para>
    </formalpara>
    <formalpara id="b17sazc5">
     <title>Otevírání zprávy v novém okně:</title>
@@ -7571,7 +7567,7 @@
    </formalpara>
    <formalpara id="b17sb24c">
     <title>Smazání kontaktu:</title>
-    <para>Kliknutí pravým tlačítkem na kontakt a potom kliknutí na Odstranit nebo vybrání kontaktu a potom kliknutí na Odstranit na liště nástrojů. </para>
+    <para>Kliknutí pravým tlačítkem na kontakt a potom kliknutí na Odstranit nebo vybrání kontaktu a potom kliknutí na Odstranit na nástrojové liště. </para>
    </formalpara>
    <formalpara id="b17sb29u">
     <title>Posílání e-mailů kontaktu:</title>
@@ -7655,7 +7651,7 @@
   <glossentry id="automatic-indexing">
    <glossterm>automatická indexace</glossterm>
    <glossdef>
-    <para>A feature which allows Evolution to quickly find and sort data.</para>
+    <para>Funkce, která Evolution umožňuje rychle nalézt a setřídit data.</para>
    </glossdef>
   </glossentry>
   <glossentry id="bsi89la">
@@ -7785,9 +7781,9 @@
    </glossdef>
   </glossentry>
   <glossentry id="search-base">
-   <glossterm>základna pro hledání</glossterm>
+   <glossterm>základ vyhledávání</glossterm>
    <glossdef>
-    <para>LDAP může rozbít seznam kontaktů do mnoha skupin. Základna pro hledání řekne LDAP, kterou top skupinu použít. Volbou rozsahu hledání se nastavuje, jak velká základna má být prohledávána.</para>
+    <para>LDAP může rozbít seznam kontaktů do mnoha skupin. Základ vyhledávání řekne LDAP, kterou top skupinu použít. Volbou rozsahu hledání se nastavuje, jak velká základna má být prohledávána.</para>
    </glossdef>
   </glossentry>
   <glossentry id="vfolder">
@@ -7799,7 +7795,7 @@
   <glossentry id="search-scope">
    <glossterm>rozsah hledání</glossterm>
    <glossdef>
-    <para>rozsah hledání uvádí, jak velká je základna pro hledání.</para>
+    <para>Rozsah hledání uvádí, jak velký je základ vyhledávání.</para>
    </glossdef>
   </glossentry>
   <glossentry id="sendmail">
@@ -7868,7 +7864,7 @@
     <member>U.S.A.</member>
     <member>www.novell.com</member>
    </simplelist>
-   <para id="Bktitle">Evolution 2.28 User Guide</para>
+   <para id="Bktitle">Evolution 2.30 User Guide</para>
    <para>Červen 2007</para>
    <simplelist>
     <member>Pro přístup k online dokumentaci pro tento nebo jiný produkt Novellu a pro aktualizace navštivte www.novell.com/documentation </member>

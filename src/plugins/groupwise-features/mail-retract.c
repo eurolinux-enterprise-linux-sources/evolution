@@ -24,41 +24,74 @@
 #include <config.h>
 #endif
 
-#include <mail/em-popup.h>
-#include <mail/em-folder-view.h>
 #include <glib/gi18n-lib.h>
-#include <share-folder.h>
 #include <e-gw-connection.h>
-#include <camel/camel-store.h>
-#include <camel/camel-folder.h>
-#include <e-util/e-error.h>
 
-void org_gnome_retract_message (EPlugin *ep, EMPopupTargetSelect *t);
+#include <e-util/e-alert-dialog.h>
 
-static void retract_mail_settings (EPopup *ep, EPopupItem *item, gpointer data)
+#include <mail/e-mail-reader.h>
+#include <mail/em-utils.h>
+#include <mail/message-list.h>
+
+#include "gw-ui.h"
+#include "share-folder.h"
+
+static gboolean
+get_selected_info (EShellView *shell_view, CamelFolder **folder, gchar **selected_uid)
+{
+	EShellContent *shell_content;
+	EMailReader *reader;
+	GPtrArray *uids;
+
+	shell_content = e_shell_view_get_shell_content (shell_view);
+
+	reader = E_MAIL_READER (shell_content);
+	uids = e_mail_reader_get_selected_uids (reader);
+
+	if (uids && uids->len == 1) {
+		*folder = e_mail_reader_get_folder (reader);
+		*selected_uid = g_strdup (g_ptr_array_index (uids, 0));
+	}
+
+	em_utils_uids_free (uids);
+
+	return *selected_uid != NULL;
+}
+
+void
+gw_retract_mail_cb (GtkAction *action, EShellView *shell_view)
 {
 	EGwConnection *cnc;
-	CamelFolder *folder = (CamelFolder *)data;
-	CamelStore *store = folder->parent_store;
-	gchar *id;
+	CamelFolder *folder;
+	CamelStore *parent_store;
+	gchar *id = NULL;
 	GtkWidget *confirm_dialog, *confirm_warning;
+	GtkWidget *content_area;
 	gint n;
 
-	cnc = get_cnc (store);
+	g_return_if_fail (get_selected_info (shell_view, &folder, &id));
+	g_return_if_fail (folder != NULL);
+
+	parent_store = camel_folder_get_parent_store (folder);
+
+	cnc = get_cnc (parent_store);
 
 	if (cnc && E_IS_GW_CONNECTION(cnc)) {
-		id = (gchar *)item->user_data;
+		confirm_dialog = gtk_dialog_new_with_buttons (
+			_("Message Retract"),
+			GTK_WINDOW (e_shell_view_get_shell_window (shell_view)),
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_STOCK_YES, GTK_RESPONSE_YES,
+			GTK_STOCK_NO, GTK_RESPONSE_NO, NULL);
 
-		confirm_dialog = gtk_dialog_new_with_buttons (_("Message Retract"), NULL,
-				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-				GTK_STOCK_YES, GTK_RESPONSE_YES,
-				GTK_STOCK_NO, GTK_RESPONSE_NO, NULL);
+		content_area = gtk_dialog_get_content_area (
+			GTK_DIALOG (confirm_dialog));
 
-		confirm_warning = gtk_label_new (_("Retracting a message may remove it from the recipient's mailbox. Are you sure you want to do this ?"));
+		confirm_warning = gtk_label_new (_("Retracting a message may remove it from the recipient's mailbox. Are you sure you want to do this?"));
 		gtk_label_set_line_wrap (GTK_LABEL (confirm_warning), TRUE);
 		gtk_label_set_selectable (GTK_LABEL (confirm_warning), TRUE);
 
-		gtk_container_add (GTK_CONTAINER ((GTK_DIALOG(confirm_dialog))->vbox), confirm_warning);
+		gtk_container_add (GTK_CONTAINER (content_area), confirm_warning);
 		gtk_widget_set_size_request (confirm_dialog, 400, 100);
 		gtk_widget_show_all (confirm_dialog);
 
@@ -70,7 +103,9 @@ static void retract_mail_settings (EPopup *ep, EPopupItem *item, gpointer data)
 		if (n == GTK_RESPONSE_YES) {
 
 			if (e_gw_connection_retract_request (cnc, id, NULL, FALSE, FALSE) != E_GW_CONNECTION_STATUS_OK )
-				e_error_run (NULL, "org.gnome.evolution.message.retract:retract-failure", NULL);
+				e_alert_run_dialog_for_args (GTK_WINDOW (e_shell_view_get_shell_window (shell_view)),
+							     "org.gnome.evolution.message.retract:retract-failure",
+							     NULL);
 			else {
 				GtkWidget *dialog;
 				dialog = gtk_message_dialog_new (NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE, _("Message retracted successfully"));
@@ -79,40 +114,6 @@ static void retract_mail_settings (EPopup *ep, EPopupItem *item, gpointer data)
 			}
 		}
 	}
-}
 
-static EPopupItem popup_items[] = {
-	{ E_POPUP_BAR,  (gchar *) "20.emfv.03" },
-	{ E_POPUP_ITEM, (gchar *) "20.emfv.04", (gchar *) N_("Retract Mail"), retract_mail_settings, NULL, NULL, 0, EM_POPUP_SELECT_ONE|EM_FOLDER_VIEW_SELECT_LISTONLY}
-};
-
-static void popup_free (EPopup *ep, GSList *items, gpointer data)
-{
-	g_slist_free (items);
-}
-
-void org_gnome_retract_message (EPlugin *ep, EMPopupTargetSelect *t)
-{
-	GSList *menus = NULL;
-	GPtrArray *uids;
-	gint i = 0;
-	static gint first = 0;
-
-	uids = t->uids;
-	if (g_strrstr (t->uri, "groupwise://") && !g_ascii_strcasecmp((t->folder)->full_name, "Sent Items")) {
-
-		/* for translation*/
-		if (!first) {
-			popup_items[1].label =  _(popup_items[1].label);
-			popup_items[1].user_data = g_strdup((gchar *) g_ptr_array_index(uids, 0));
-		}
-
-		first++;
-
-		for (i = 0; i < sizeof (popup_items) / sizeof (popup_items[0]); i++)
-			menus = g_slist_prepend (menus, &popup_items[i]);
-
-		e_popup_add_items (t->target.popup, menus, NULL, popup_free, t->folder);
-	}
-	return;
+	g_free (id);
 }

@@ -47,8 +47,6 @@
 	E_COMPOSER_ACTION ((composer), "security-menu")
 #define E_COMPOSER_ACTION_SEND(composer) \
 	E_COMPOSER_ACTION ((composer), "send")
-#define E_COMPOSER_ACTION_SEND_OPTIONS(composer) \
-	E_COMPOSER_ACTION ((composer), "send-options")
 #define E_COMPOSER_ACTION_NEW_MESSAGE(composer) \
 	E_COMPOSER_ACTION ((composer), "new-message")
 #define E_COMPOSER_ACTION_SMIME_ENCRYPT(composer) \
@@ -59,8 +57,6 @@
 	E_COMPOSER_ACTION ((composer), "view-bcc")
 #define E_COMPOSER_ACTION_VIEW_CC(composer) \
 	E_COMPOSER_ACTION ((composer), "view-cc")
-#define E_COMPOSER_ACTION_VIEW_FROM(composer) \
-	E_COMPOSER_ACTION ((composer), "view-from")
 #define E_COMPOSER_ACTION_VIEW_REPLY_TO(composer) \
 	E_COMPOSER_ACTION ((composer), "view-reply-to")
 

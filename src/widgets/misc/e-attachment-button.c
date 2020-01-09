@@ -55,7 +55,10 @@ enum {
 	PROP_VIEW
 };
 
-static gpointer parent_class;
+G_DEFINE_TYPE (
+	EAttachmentButton,
+	e_attachment_button,
+	GTK_TYPE_HBOX)
 
 static void
 attachment_button_menu_deactivate_cb (EAttachmentButton *button)
@@ -82,6 +85,7 @@ attachment_button_menu_position (GtkMenu *menu,
 {
 	GtkRequisition menu_requisition;
 	GtkTextDirection direction;
+	GtkAllocation allocation;
 	GdkRectangle monitor;
 	GdkScreen *screen;
 	GdkWindow *window;
@@ -100,22 +104,28 @@ attachment_button_menu_position (GtkMenu *menu,
 		monitor_num = 0;
 	gdk_screen_get_monitor_geometry (screen, monitor_num, &monitor);
 
+	gtk_widget_get_allocation (widget, &allocation);
+
 	gdk_window_get_origin (window, x, y);
-	*x += widget->allocation.x;
-	*y += widget->allocation.y;
+	*x += allocation.x;
+	*y += allocation.y;
 
 	direction = gtk_widget_get_direction (widget);
 	if (direction == GTK_TEXT_DIR_LTR)
-		*x += MAX (widget->allocation.width - menu_requisition.width, 0);
-	else if (menu_requisition.width > widget->allocation.width)
-		*x -= menu_requisition.width - widget->allocation.width;
+		*x += MAX (allocation.width - menu_requisition.width, 0);
+	else if (menu_requisition.width > allocation.width)
+		*x -= menu_requisition.width - allocation.width;
 
-	if ((*y + toggle_button->allocation.height + menu_requisition.height) <= monitor.y + monitor.height)
-		*y += toggle_button->allocation.height;
+	gtk_widget_get_allocation (toggle_button, &allocation);
+
+	if ((*y + allocation.height +
+		menu_requisition.height) <= monitor.y + monitor.height)
+		*y += allocation.height;
 	else if ((*y - menu_requisition.height) >= monitor.y)
 		*y -= menu_requisition.height;
-	else if (monitor.y + monitor.height - (*y + toggle_button->allocation.height) > *y)
-		*y += toggle_button->allocation.height;
+	else if (monitor.y + monitor.height -
+		(*y + allocation.height) > *y)
+		*y += allocation.height;
 	else
 		*y -= menu_requisition.height;
 
@@ -202,12 +212,9 @@ attachment_button_update_pixbufs (EAttachmentButton *button)
 {
 	GtkCellLayout *cell_layout;
 	GtkCellRenderer *renderer;
-	GtkIconTheme *icon_theme;
 	GdkPixbuf *pixbuf_expander_open;
 	GdkPixbuf *pixbuf_expander_closed;
 	GList *list;
-
-	icon_theme = gtk_icon_theme_get_default ();
 
 	/* Grab the first cell renderer. */
 	cell_layout = GTK_CELL_LAYOUT (button->priv->cell_view);
@@ -243,6 +250,18 @@ attachment_button_expand_clicked_cb (EAttachmentButton *button)
 }
 
 static void
+attachment_button_expand_drag_begin_cb (EAttachmentButton *button,
+                                        GdkDragContext *context)
+{
+	EAttachmentView *view;
+
+	view = e_attachment_button_get_view (button);
+
+	attachment_button_select_path (button);
+	e_attachment_view_drag_begin (view, context);
+}
+
+static void
 attachment_button_expand_drag_data_get_cb (EAttachmentButton *button,
                                            GdkDragContext *context,
                                            GtkSelectionData *selection,
@@ -251,12 +270,21 @@ attachment_button_expand_drag_data_get_cb (EAttachmentButton *button,
 {
 	EAttachmentView *view;
 
-	attachment_button_select_path (button);
-
 	view = e_attachment_button_get_view (button);
 
 	e_attachment_view_drag_data_get (
 		view, context, selection, info, time);
+}
+
+static void
+attachment_button_expand_drag_end_cb (EAttachmentButton *button,
+                                      GdkDragContext *context)
+{
+	EAttachmentView *view;
+
+	view = e_attachment_button_get_view (button);
+
+	e_attachment_view_drag_end (view, context);
 }
 
 static gboolean
@@ -410,7 +438,7 @@ attachment_button_dispose (GObject *object)
 	}
 
 	/* Chain up to parent's dispose() method. */
-	G_OBJECT_CLASS (parent_class)->dispose (object);
+	G_OBJECT_CLASS (e_attachment_button_parent_class)->dispose (object);
 }
 
 static void
@@ -420,19 +448,19 @@ attachment_button_style_set (GtkWidget *widget,
 	EAttachmentButton *button;
 
 	/* Chain up to parent's style_set() method. */
-	GTK_WIDGET_CLASS (parent_class)->style_set (widget, previous_style);
+	GTK_WIDGET_CLASS (e_attachment_button_parent_class)->
+		style_set (widget, previous_style);
 
 	button = E_ATTACHMENT_BUTTON (widget);
 	attachment_button_update_pixbufs (button);
 }
 
 static void
-attachment_button_class_init (EAttachmentButtonClass *class)
+e_attachment_button_class_init (EAttachmentButtonClass *class)
 {
 	GObjectClass *object_class;
 	GtkWidgetClass *widget_class;
 
-	parent_class = g_type_class_peek_parent (class);
 	g_type_class_add_private (class, sizeof (EAttachmentButtonPrivate));
 
 	object_class = G_OBJECT_CLASS (class);
@@ -488,7 +516,7 @@ attachment_button_class_init (EAttachmentButtonClass *class)
 }
 
 static void
-attachment_button_init (EAttachmentButton *button)
+e_attachment_button_init (EAttachmentButton *button)
 {
 	GtkCellRenderer *renderer;
 	GtkCellLayout *cell_layout;
@@ -510,8 +538,8 @@ attachment_button_init (EAttachmentButton *button)
 	gtk_widget_show (widget);
 
 	e_mutual_binding_new (
-		G_OBJECT (button), "expandable",
-		G_OBJECT (widget), "sensitive");
+		button, "expandable",
+		widget, "sensitive");
 
 	widget = gtk_toggle_button_new ();
 	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
@@ -540,8 +568,8 @@ attachment_button_init (EAttachmentButton *button)
 	gtk_cell_layout_pack_start (cell_layout, renderer, FALSE);
 
 	e_mutual_binding_new (
-		G_OBJECT (button), "expanded",
-		G_OBJECT (renderer), "is-expanded");
+		button, "expanded",
+		renderer, "is-expanded");
 
 	renderer = gtk_cell_renderer_pixbuf_new ();
 	g_object_set (renderer, "stock-size", GTK_ICON_SIZE_BUTTON, NULL);
@@ -575,8 +603,18 @@ attachment_button_init (EAttachmentButton *button)
 		G_CALLBACK (attachment_button_expand_clicked_cb), button);
 
 	g_signal_connect_swapped (
+		button->priv->expand_button, "drag-begin",
+		G_CALLBACK (attachment_button_expand_drag_begin_cb),
+		button);
+
+	g_signal_connect_swapped (
 		button->priv->expand_button, "drag-data-get",
 		G_CALLBACK (attachment_button_expand_drag_data_get_cb),
+		button);
+
+	g_signal_connect_swapped (
+		button->priv->expand_button, "drag-end",
+		G_CALLBACK (attachment_button_expand_drag_end_cb),
 		button);
 
 	g_signal_connect_swapped (
@@ -585,36 +623,19 @@ attachment_button_init (EAttachmentButton *button)
 		button);
 
 	g_signal_connect_swapped (
+		button->priv->toggle_button, "drag-begin",
+		G_CALLBACK (attachment_button_expand_drag_begin_cb),
+		button);
+
+	g_signal_connect_swapped (
 		button->priv->toggle_button, "drag-data-get",
 		G_CALLBACK (attachment_button_expand_drag_data_get_cb),
 		button);
 
-}
-
-GType
-e_attachment_button_get_type (void)
-{
-	static GType type = 0;
-
-	if (G_UNLIKELY (type == 0)) {
-		static const GTypeInfo type_info = {
-			sizeof (EAttachmentButtonClass),
-			(GBaseInitFunc) NULL,
-			(GBaseFinalizeFunc) NULL,
-			(GClassInitFunc) attachment_button_class_init,
-			(GClassFinalizeFunc) NULL,
-			NULL,  /* class_data */
-			sizeof (EAttachmentButton),
-			0,     /* n_preallocs */
-			(GInstanceInitFunc) attachment_button_init,
-			NULL   /* value_table */
-		};
-
-		type = g_type_register_static (
-			GTK_TYPE_HBOX, "EAttachmentButton", &type_info, 0);
-	}
-
-	return type;
+	g_signal_connect_swapped (
+		button->priv->toggle_button, "drag-end",
+		G_CALLBACK (attachment_button_expand_drag_end_cb),
+		button);
 }
 
 GtkWidget *
@@ -674,13 +695,13 @@ e_attachment_button_set_attachment (EAttachmentButton *button,
 		gulong handler_id;
 
 		binding = e_mutual_binding_new (
-			G_OBJECT (attachment), "can-show",
-			G_OBJECT (button), "expandable");
+			attachment, "can-show",
+			button, "expandable");
 		button->priv->can_show_binding = binding;
 
 		binding = e_mutual_binding_new (
-			G_OBJECT (attachment), "shown",
-			G_OBJECT (button), "expanded");
+			attachment, "shown",
+			button, "expanded");
 		button->priv->shown_binding = binding;
 
 		handler_id = g_signal_connect_swapped (

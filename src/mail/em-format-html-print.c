@@ -26,10 +26,10 @@
 #endif
 
 #include <string.h>
+#include <glib/gi18n.h>
 #include <gtk/gtk.h>
 #include <gtkhtml/gtkhtml.h>
 
-#include <camel/camel-i18n.h>
 #include "mail-ops.h"
 #include "mail-mt.h"
 #include "em-format-html-print.h"
@@ -38,38 +38,56 @@
 static gpointer parent_class = NULL;
 
 static void
-efhp_finalize (GObject *o)
+efhp_finalize (GObject *object)
 {
-	EMFormatHTMLPrint *efhp = (EMFormatHTMLPrint *)o;
+	EMFormatHTMLPrint *efhp = (EMFormatHTMLPrint *)object;
 
 	gtk_widget_destroy (efhp->window);
 	if (efhp->source != NULL)
 		g_object_unref (efhp->source);
 
-	((GObjectClass *) parent_class)->finalize (o);
+	/* Chain up to parent's finalize() method. */
+	G_OBJECT_CLASS (parent_class)->finalize (object);
+}
+
+static gboolean
+efhp_is_inline (EMFormat *emf,
+                const gchar *part_id,
+                CamelMimePart *mime_part,
+                const EMFormatHandler *handle)
+{
+	/* When printing, inline any part that has a handler. */
+	return (handle != NULL);
 }
 
 static void
-efhp_class_init (GObjectClass *class)
+efhp_class_init (EMFormatHTMLPrintClass *class)
 {
+	GObjectClass *object_class;
+	EMFormatClass *format_class;
+
 	parent_class = g_type_class_peek_parent (class);
-	class->finalize = efhp_finalize;
+
+	object_class = G_OBJECT_CLASS (class);
+	object_class->finalize = efhp_finalize;
+
+	format_class = EM_FORMAT_CLASS (class);
+	format_class->is_inline = efhp_is_inline;
 }
 
 static void
 efhp_init (GObject *o)
 {
 	EMFormatHTMLPrint *efhp = (EMFormatHTMLPrint *)o;
-	GtkWidget *html = (GtkWidget *)efhp->parent.html;
+	EWebView *web_view;
 
-	/* ?? */
-	gtk_widget_set_name(html, "EvolutionMailPrintHTMLWidget");
+	web_view = em_format_html_get_web_view (EM_FORMAT_HTML (efhp));
 
 	/* gtk widgets don't like to be realized outside top level widget
 	   so we put new html widget into gtk window */
 	efhp->window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-	gtk_container_add (GTK_CONTAINER (efhp->window), html);
-	gtk_widget_realize (html);
+	gtk_container_add (GTK_CONTAINER (efhp->window), GTK_WIDGET (web_view));
+	gtk_widget_realize (GTK_WIDGET (web_view));
 	efhp->parent.show_icon = FALSE;
 	((EMFormat *)efhp)->print = TRUE;
 }
@@ -93,7 +111,7 @@ em_format_html_print_get_type (void)
 		};
 
 		type = g_type_register_static (
-			em_format_html_get_type (), "EMFormatHTMLPrint",
+			EM_TYPE_FORMAT_HTML, "EMFormatHTMLPrint",
 			&type_info, 0);
 	}
 
@@ -101,7 +119,8 @@ em_format_html_print_get_type (void)
 }
 
 EMFormatHTMLPrint *
-em_format_html_print_new (EMFormatHTML *source, GtkPrintOperationAction action)
+em_format_html_print_new (EMFormatHTML *source,
+                          GtkPrintOperationAction action)
 {
 	EMFormatHTMLPrint *efhp;
 
@@ -184,12 +203,16 @@ static void
 emfhp_complete (EMFormatHTMLPrint *efhp)
 {
 	GtkPrintOperation *operation;
+	EWebView *web_view;
 	GError *error = NULL;
+
+	web_view = em_format_html_get_web_view (EM_FORMAT_HTML (efhp));
 
 	operation = e_print_operation_new ();
 
 	gtk_html_print_operation_run (
-		efhp->parent.html, operation, efhp->action, NULL,
+		GTK_HTML (web_view),
+		operation, efhp->action, NULL,
 		(GtkHTMLPrintCalcHeight) NULL,
 		(GtkHTMLPrintCalcHeight) efhp_calc_footer_height,
 		(GtkHTMLPrintDrawFunc) NULL,
@@ -210,9 +233,7 @@ emfhp_got_message (CamelFolder *folder, const gchar *uid,
 		return;
 	}
 
-	if (efhp->source != NULL)
-		((EMFormatHTML *)efhp)->load_http =
-			efhp->source->load_http_now;
+	em_format_html_load_images (EM_FORMAT_HTML (efhp));
 
 	g_signal_connect (
 		efhp, "complete", G_CALLBACK (emfhp_complete), efhp);
@@ -229,9 +250,10 @@ em_format_html_print_message (EMFormatHTMLPrint *efhp,
 	g_object_ref (efhp);
 
 	/* Wrap flags to display all entries by default.*/
-	((EMFormatHTML *) efhp)->header_wrap_flags |= EM_FORMAT_HTML_HEADER_TO
-						| EM_FORMAT_HTML_HEADER_CC
-						| EM_FORMAT_HTML_HEADER_BCC;
+	EM_FORMAT_HTML (efhp)->header_wrap_flags |=
+		EM_FORMAT_HTML_HEADER_TO |
+		EM_FORMAT_HTML_HEADER_CC |
+		EM_FORMAT_HTML_HEADER_BCC;
 
 	mail_get_message (
 		folder, uid, emfhp_got_message, efhp, mail_msg_unordered_push);

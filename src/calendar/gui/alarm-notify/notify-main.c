@@ -30,150 +30,102 @@
 #include <string.h>
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
-#include <libgnome/gnome-init.h>
-#include <libgnome/gnome-sound.h>
-#include <libgnomeui/gnome-client.h>
-#include <libgnomeui/gnome-ui-init.h>
-#include <glade/glade.h>
-#include <bonobo/bonobo-main.h>
-#include <bonobo/bonobo-generic-factory.h>
-#include <bonobo-activation/bonobo-activation.h>
+#include <camel/camel.h>
+#include <unique/unique.h>
 #include <libedataserver/e-source.h>
 #include <libedataserverui/e-passwords.h>
-#include "e-util/e-icon-factory.h"
-#include "e-util/e-util-private.h"
+
 #include "alarm.h"
 #include "alarm-queue.h"
 #include "alarm-notify.h"
 #include "config-data.h"
-#include <camel/camel-object.h>
 
-
-
-static BonoboGenericFactory *factory;
-
-static AlarmNotify *alarm_notify_service = NULL;
-
-/* Callback for the master client's "die" signal.  We must terminate the daemon
- * since the session is ending.
- */
-static void
-client_die_cb (GnomeClient *client)
-{
-	bonobo_main_quit ();
-}
-
-static gint
-save_session_cb (GnomeClient *client, GnomeSaveStyle save_style, gint shutdown,
-		 GnomeInteractStyle interact_style, gint fast, gpointer user_data)
-{
-	gchar *args[2];
-
-	args[0] = g_build_filename (EVOLUTION_LIBEXECDIR,
-				    "evolution-alarm-notify"
 #ifdef G_OS_WIN32
-				    ".exe"
+#include <windows.h>
+#include <conio.h>
+#ifndef PROCESS_DEP_ENABLE
+#define PROCESS_DEP_ENABLE 0x00000001
 #endif
-				    ,
-				    NULL);
-	args[1] = NULL;
-	gnome_client_set_restart_command (client, 1, args);
-	g_free (args[0]);
+#ifndef PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION
+#define PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION 0x00000002
+#endif
+#endif
 
-	return TRUE;
-}
-
-/* Sees if a session manager is present.  If so, it tells the SM how to restart
- * the daemon when the session starts.  It also sets the die callback so that
- * the daemon can terminate properly when the session ends.
- */
-static void
-init_session (void)
-{
-	GnomeClient *master_client;
-
-	master_client = gnome_master_client ();
-
-	g_signal_connect (G_OBJECT (master_client), "die",
-			  G_CALLBACK (client_die_cb), NULL);
-	g_signal_connect (G_OBJECT (master_client), "save_yourself",
-			  G_CALLBACK (save_session_cb), NULL);
-
-	/* The daemon should always be started up by the session manager when
-	 * the session starts.  The daemon will take care of loading whatever
-	 * calendars it was told to load.
-	 */
-	gnome_client_set_restart_style (master_client, GNOME_RESTART_IF_RUNNING);
-}
-
-/* Factory function for the alarm notify service; just creates and references a
- * singleton service object.
- */
-static BonoboObject *
-alarm_notify_factory_fn (BonoboGenericFactory *factory, const gchar *component_id, gpointer data)
-{
-	g_return_val_if_fail (alarm_notify_service != NULL, NULL);
-
-	bonobo_object_ref (BONOBO_OBJECT (alarm_notify_service));
-	return BONOBO_OBJECT (alarm_notify_service);
-}
-
-/* Creates the alarm notifier */
-static gboolean
-init_alarm_service (gpointer user_data)
-{
-	alarm_notify_service = alarm_notify_new ();
-	g_return_val_if_fail  (alarm_notify_service != NULL, FALSE);
-	return FALSE;
-}
+#include "e-util/e-util-private.h"
 
 gint
 main (gint argc, gchar **argv)
 {
+	GtkIconTheme *icon_theme;
+	AlarmNotify *alarm_notify_service;
+	UniqueApp *app;
+#ifdef G_OS_WIN32
+	gchar *path;
+
+	/* Reduce risks */
+	{
+		typedef BOOL (WINAPI *t_SetDllDirectoryA) (LPCSTR lpPathName);
+		t_SetDllDirectoryA p_SetDllDirectoryA;
+
+		p_SetDllDirectoryA = GetProcAddress (GetModuleHandle ("kernel32.dll"), "SetDllDirectoryA");
+		if (p_SetDllDirectoryA)
+			(*p_SetDllDirectoryA) ("");
+	}
+#ifndef _WIN64
+	{
+		typedef BOOL (WINAPI *t_SetProcessDEPPolicy) (DWORD dwFlags);
+		t_SetProcessDEPPolicy p_SetProcessDEPPolicy;
+
+		p_SetProcessDEPPolicy = GetProcAddress (GetModuleHandle ("kernel32.dll"), "SetProcessDEPPolicy");
+		if (p_SetProcessDEPPolicy)
+			(*p_SetProcessDEPPolicy) (PROCESS_DEP_ENABLE|PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION);
+	}
+#endif
+#endif
+
 	bindtextdomain (GETTEXT_PACKAGE, EVOLUTION_LOCALEDIR);
 	bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
 	textdomain (GETTEXT_PACKAGE);
 
-	gnome_program_init ("evolution-alarm-notify", VERSION, LIBGNOMEUI_MODULE, argc, argv, NULL);
+	g_thread_init (NULL);
 
-	if (bonobo_init_full (&argc, argv, bonobo_activation_orb_get (),
-			      CORBA_OBJECT_NIL, CORBA_OBJECT_NIL) == FALSE)
-		g_error (_("Could not initialize Bonobo"));
+#ifdef G_OS_WIN32
+	path = g_build_path (";", _e_get_bindir (), g_getenv ("PATH"), NULL);
 
-	glade_init ();
+	if (!g_setenv ("PATH", path, TRUE))
+		g_warning ("Could not set PATH for Evolution Alarm Notifier");
+#endif
 
-	gnome_sound_init ("localhost");
+	gtk_init (&argc, &argv);
 
-	e_icon_factory_init ();
+	app = unique_app_new ("org.gnome.EvolutionAlarmNotify", NULL);
 
-	init_alarm_service (NULL);
+	if (unique_app_is_running (app))
+		goto exit;
 
-	factory = bonobo_generic_factory_new ("OAFIID:GNOME_Evolution_Calendar_AlarmNotify_Factory:" BASE_VERSION,
-					      (BonoboFactoryCallback) alarm_notify_factory_fn, NULL);
-	if (!factory) {
-		g_warning (_("Could not create the alarm notify service factory, maybe it's already running..."));
-		return 1;
-	}
+	alarm_notify_service = alarm_notify_new ();
 
-	init_session ();
+	/* FIXME Ideally we should not use camel libraries in calendar,
+	 *       though it is the case currently for attachments. Remove
+	 *       this once that is fixed. */
 
-	/* FIXME Ideally we should not use camel libraries in calendar, though it is the case
-	   currently for attachments. Remove this once that is fixed.
-	   Initialise global camel_object_type */
+	/* Initialize Camel's type system. */
 	camel_object_get_type();
 
-	bonobo_main ();
+	icon_theme = gtk_icon_theme_get_default ();
+	gtk_icon_theme_append_search_path (icon_theme, EVOLUTION_ICONDIR);
 
-	bonobo_object_unref (BONOBO_OBJECT (factory));
-	factory = NULL;
+	gtk_main ();
 
-	if (alarm_notify_service)
-		bonobo_object_unref (BONOBO_OBJECT (alarm_notify_service));
+	if (alarm_notify_service != NULL)
+		g_object_unref (alarm_notify_service);
 
 	alarm_done ();
 
 	e_passwords_shutdown ();
-	gnome_sound_shutdown ();
+
+exit:
+	g_object_unref (app);
 
 	return 0;
 }

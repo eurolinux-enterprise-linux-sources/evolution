@@ -30,12 +30,11 @@
 #endif
 
 #include <string.h>
-#include <glade/glade.h>
 #include <glib/gi18n.h>
 
-#include <e-util/e-plugin-ui.h>
-#include <e-util/e-util-private.h>
-#include <evolution-shell-component-utils.h>
+#include "e-util/e-binding.h"
+#include "e-util/e-plugin-ui.h"
+#include "e-util/e-util-private.h"
 
 #include "task-page.h"
 #include "task-details-page.h"
@@ -82,13 +81,18 @@ static const gchar *ui =
 "    </menu>"
 "  </menubar>"
 "  <toolbar name='main-toolbar'>"
-"    <toolitem action='view-time-zone'/>"
-"    <toolitem action='option-status'/>"
+"    <placeholder name='content'>"
+"      <toolitem action='view-time-zone'/>"
+"      <toolitem action='option-status'/>"
+"    </placeholder>"
 "  </toolbar>"
 "</ui>";
 
-static void task_editor_edit_comp (CompEditor *editor, ECalComponent *comp);
-static gboolean task_editor_send_comp (CompEditor *editor, ECalComponentItipMethod method, gboolean strip_alarms);
+static void	task_editor_edit_comp		(CompEditor *editor,
+						 ECalComponent *comp);
+static gboolean	task_editor_send_comp		(CompEditor *editor,
+						 ECalComponentItipMethod method,
+						 gboolean strip_alarms);
 
 G_DEFINE_TYPE (TaskEditor, task_editor, TYPE_COMP_EDITOR)
 
@@ -103,7 +107,7 @@ static void
 action_send_options_cb (GtkAction *action,
                         TaskEditor *editor)
 {
-	task_page_sendoptions_clicked_cb (editor->priv->task_page);
+	task_page_send_options_clicked_cb (editor->priv->task_page);
 }
 
 static GtkActionEntry task_entries[] = {
@@ -125,15 +129,6 @@ static GtkActionEntry assigned_task_entries[] = {
 	  N_("Insert advanced send options"),
 	  G_CALLBACK (action_send_options_cb) }
 };
-
-static void
-task_editor_client_changed_cb (TaskEditor *te)
-{
-	ECal *client;
-
-	client = comp_editor_get_client (COMP_EDITOR (te));
-	e_meeting_store_set_e_cal (te->priv->model, client);
-}
 
 static void
 task_editor_model_changed_cb (TaskEditor *te)
@@ -206,6 +201,18 @@ task_editor_dispose (GObject *object)
 
 	/* Chain up to parent's dispose() method. */
 	G_OBJECT_CLASS (task_editor_parent_class)->dispose (object);
+}
+
+static void
+task_editor_constructed (GObject *object)
+{
+	TaskEditorPrivate *priv;
+
+	priv = TASK_EDITOR_GET_PRIVATE (object);
+
+	e_binding_new (
+		object, "client",
+		priv->model, "client");
 }
 
 static void
@@ -285,6 +292,7 @@ task_editor_class_init (TaskEditorClass *class)
 	object_class = G_OBJECT_CLASS (class);
 	object_class->constructor = task_editor_constructor;
 	object_class->dispose = task_editor_dispose;
+	object_class->constructed = task_editor_constructed;
 
 	editor_class = COMP_EDITOR_CLASS (class);
 	editor_class->help_section = "usage-calendar-todo";
@@ -304,6 +312,9 @@ task_editor_init (TaskEditor *te)
 	CompEditor *editor = COMP_EDITOR (te);
 	GtkUIManager *ui_manager;
 	GtkActionGroup *action_group;
+	GtkWidget *content_area;
+	GtkAction *action;
+	const gchar *id;
 	GError *error = NULL;
 
 	te->priv = TASK_EDITOR_GET_PRIVATE (te);
@@ -314,7 +325,7 @@ task_editor_init (TaskEditor *te)
 	te->priv->task_page = task_page_new (te->priv->model, editor);
 	comp_editor_append_page (
 		editor, COMP_EDITOR_PAGE (te->priv->task_page),
-		_("_Task"), TRUE);
+		_("Task"), TRUE);
 
 	te->priv->task_details_window = gtk_dialog_new_with_buttons (
 		_("Task Details"), GTK_WINDOW (te), GTK_DIALOG_MODAL,
@@ -327,8 +338,10 @@ task_editor_init (TaskEditor *te)
 		G_CALLBACK(gtk_widget_hide), NULL);
 
 	te->priv->task_details_page = task_details_page_new (editor);
+	content_area = gtk_dialog_get_content_area (
+		GTK_DIALOG (te->priv->task_details_window));
 	gtk_container_add (
-		GTK_CONTAINER (GTK_DIALOG (te->priv->task_details_window)->vbox),
+		GTK_CONTAINER (content_area),
 		comp_editor_page_get_widget ((CompEditorPage *) te->priv->task_details_page));
 	gtk_widget_show_all (gtk_bin_get_child (GTK_BIN (te->priv->task_details_window)));
 	comp_editor_append_page (
@@ -346,16 +359,18 @@ task_editor_init (TaskEditor *te)
 
 	ui_manager = comp_editor_get_ui_manager (editor);
 	gtk_ui_manager_add_ui_from_string (ui_manager, ui, -1, &error);
-	e_plugin_ui_register_manager ("task-editor", ui_manager, te);
+
+	id = "org.gnome.evolution.task-editor";
+	e_plugin_ui_register_manager (ui_manager, id, te);
+	e_plugin_ui_enable_manager (ui_manager, id);
 
 	if (error != NULL) {
 		g_critical ("%s: %s", G_STRFUNC, error->message);
 		g_error_free (error);
 	}
 
-	g_signal_connect (
-		te, "notify::client",
-		G_CALLBACK (task_editor_client_changed_cb), NULL);
+	action = comp_editor_get_action (editor, "print");
+	gtk_action_set_tooltip (action, _("Print this task"));
 
 	g_signal_connect_swapped (
 		te->priv->model, "row_changed",
@@ -401,9 +416,12 @@ task_editor_edit_comp (CompEditor *editor, ECalComponent *comp)
 			EMeetingAttendee *ia;
 
 			ia = E_MEETING_ATTENDEE (e_meeting_attendee_new_from_e_cal_component_attendee (ca));
-			/* If we aren't the organizer or the attendee is just delegating, don't allow editing */
-			if (!comp_editor_get_user_org (editor) || e_meeting_attendee_is_set_delto (ia))
-				e_meeting_attendee_set_edit_level (ia,  E_MEETING_ATTENDEE_EDIT_NONE);
+			/* If we aren't the organizer or the attendee is just
+			 * delegating, don't allow editing. */
+			if (!comp_editor_get_user_org (editor) ||
+				e_meeting_attendee_is_set_delto (ia))
+				e_meeting_attendee_set_edit_level (
+					ia,  E_MEETING_ATTENDEE_EDIT_NONE);
 			task_page_add_attendee (priv->task_page, ia);
 
 			g_object_unref (ia);
@@ -416,7 +434,9 @@ task_editor_edit_comp (CompEditor *editor, ECalComponent *comp)
 			EIterator *it;
 
 			accounts = itip_addresses_get ();
-			for (it = e_list_get_iterator((EList *)accounts);e_iterator_is_valid(it);e_iterator_next(it)) {
+			for (it = e_list_get_iterator((EList *)accounts);
+				e_iterator_is_valid(it);
+				e_iterator_next(it)) {
 				EMeetingAttendee *ia;
 
 				account = (EAccount*)e_iterator_get(it);
@@ -439,13 +459,17 @@ task_editor_edit_comp (CompEditor *editor, ECalComponent *comp)
 	}
 	e_cal_component_free_attendee_list (attendees);
 
-	comp_editor_set_needs_send (editor, priv->assignment_shown && itip_organizer_is_user (comp, client));
+	comp_editor_set_needs_send (
+		editor, priv->assignment_shown &&
+		itip_organizer_is_user (comp, client));
 
 	priv->updating = FALSE;
 }
 
 static gboolean
-task_editor_send_comp (CompEditor *editor, ECalComponentItipMethod method, gboolean strip_alarms)
+task_editor_send_comp (CompEditor *editor,
+                       ECalComponentItipMethod method,
+                       gboolean strip_alarms)
 {
 	TaskEditorPrivate *priv;
 	ECalComponent *comp = NULL;
@@ -462,7 +486,7 @@ task_editor_send_comp (CompEditor *editor, ECalComponentItipMethod method, gbool
 		ECal *client;
 		gboolean result;
 
-		client = e_meeting_store_get_e_cal (priv->model);
+		client = e_meeting_store_get_client (priv->model);
 		result = itip_send_comp (E_CAL_COMPONENT_METHOD_CANCEL, comp,
 				client, NULL, NULL, NULL, strip_alarms, FALSE);
 		g_object_unref (comp);
@@ -473,7 +497,8 @@ task_editor_send_comp (CompEditor *editor, ECalComponentItipMethod method, gbool
 
  parent:
 	if (COMP_EDITOR_CLASS (task_editor_parent_class)->send_comp)
-		return COMP_EDITOR_CLASS (task_editor_parent_class)->send_comp (editor, method, strip_alarms);
+		return COMP_EDITOR_CLASS (task_editor_parent_class)->
+			send_comp (editor, method, strip_alarms);
 
 	return FALSE;
 }
@@ -488,13 +513,16 @@ task_editor_send_comp (CompEditor *editor, ECalComponentItipMethod method, gbool
  * editor could not be created.
  **/
 CompEditor *
-task_editor_new (ECal *client, CompEditorFlags flags)
+task_editor_new (ECal *client,
+                 EShell *shell,
+                 CompEditorFlags flags)
 {
 	g_return_val_if_fail (E_IS_CAL (client), NULL);
+	g_return_val_if_fail (E_IS_SHELL (shell), NULL);
 
 	return g_object_new (
 		TYPE_TASK_EDITOR,
-		"flags", flags, "client", client, NULL);
+		"client", client, "flags", flags, "shell", shell, NULL);
 }
 
 void

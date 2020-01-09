@@ -32,8 +32,8 @@
 
 #include <gtk/gtk.h>
 
-/* #include "a11y/e-table/gal-a11y-e-cell-registry.h" */
-/* #include "a11y/e-table/gal-a11y-e-cell-vbox.h" */
+/* #include "a11y/gal-a11y-e-cell-registry.h" */
+/* #include "a11y/gal-a11y-e-cell-vbox.h" */
 #include "e-util/e-util.h"
 
 #include "e-cell-hbox.h"
@@ -88,7 +88,7 @@ ecv_kill_view (ECellView *ecv)
             (hbox_view->cell_view.kill_view_cb)(ecv, hbox_view->cell_view.kill_view_cb_data);
 
         if (hbox_view->cell_view.kill_view_cb_data)
-            g_list_free(hbox_view->cell_view.kill_view_cb_data);
+            g_list_free (hbox_view->cell_view.kill_view_cb_data);
 
 	/* kill our subcell view */
 	for (i = 0; i < hbox_view->subcell_view_count; i++)
@@ -195,7 +195,7 @@ ecv_event (ECellView *ecell_view, GdkEvent *event, gint model_col, gint view_col
 		if (width < hbox_view->def_size_cols[i])
 			width = hbox_view->def_size_cols[i];
 		if (y < subcell_offset + width)
-			return e_cell_event(hbox_view->subcell_views[i], event, hbox_view->model_cols[i], view_col, row, flags, actions);
+			return e_cell_event (hbox_view->subcell_views[i], event, hbox_view->model_cols[i], view_col, row, flags, actions);
 		subcell_offset += width;
 	}
 	return 0;
@@ -213,7 +213,7 @@ ecv_height (ECellView *ecell_view, gint model_col, gint view_col, gint row)
 
 	for (i = 0; i < hbox_view->subcell_view_count; i++) {
 		height = e_cell_height (hbox_view->subcell_views[i], hbox_view->model_cols[i], view_col, row);
-		max_height = MAX(max_height, height);
+		max_height = MAX (max_height, height);
 	}
 	return max_height;
 }
@@ -307,7 +307,7 @@ e_cell_hbox_new (void)
 void
 e_cell_hbox_append (ECellHbox *hbox, ECell *subcell, gint model_col, gint size)
 {
-	hbox->subcell_count ++;
+	hbox->subcell_count++;
 
 	hbox->subcells   = g_renew (ECell *, hbox->subcells,   hbox->subcell_count);
 	hbox->model_cols = g_renew (int,     hbox->model_cols, hbox->subcell_count);

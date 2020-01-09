@@ -29,6 +29,8 @@
 #include <libecal/e-cal.h>
 #include "../itip-utils.h"
 #include "comp-editor-page.h"
+#include <shell/e-shell.h>
+#include <misc/e-focus-tracker.h>
 
 /* Standard GObject macros */
 #define TYPE_COMP_EDITOR \
@@ -65,16 +67,25 @@ struct _CompEditorClass {
 	const gchar *help_section;
 
 	/* Virtual functions */
-	void (*edit_comp) (CompEditor *page, ECalComponent *comp);
-	void (*object_created) (CompEditor *page);
-	gboolean (*send_comp) (CompEditor *page, ECalComponentItipMethod method, gboolean strip_alarms);
+	void		(*edit_comp)		(CompEditor *page,
+						 ECalComponent *comp);
+	void		(*object_created)	(CompEditor *page);
+	gboolean	(*send_comp)		(CompEditor *page,
+						 ECalComponentItipMethod method,
+						 gboolean strip_alarms);
 
-	void (*show_categories) (CompEditor *editor, gboolean visible);
-	void (*show_role) (CompEditor *editor, gboolean visible);
-	void (*show_rsvp) (CompEditor *editor, gboolean visible);
-	void (*show_status) (CompEditor *editor, gboolean visible);
-	void (*show_time_zone) (CompEditor *editor, gboolean visible);
-	void (*show_type) (CompEditor *editor, gboolean visible);
+	void		(*show_categories)	(CompEditor *editor,
+						 gboolean visible);
+	void		(*show_role)		(CompEditor *editor,
+						 gboolean visible);
+	void		(*show_rsvp)		(CompEditor *editor,
+						 gboolean visible);
+	void		(*show_status)		(CompEditor *editor,
+						 gboolean visible);
+	void		(*show_time_zone)	(CompEditor *editor,
+						 gboolean visible);
+	void		(*show_type)		(CompEditor *editor,
+						 gboolean visible);
 };
 
 typedef enum {
@@ -91,6 +102,7 @@ GType		comp_editor_get_type		(void);
 void		comp_editor_set_changed		(CompEditor *editor,
 						 gboolean changed);
 gboolean	comp_editor_get_changed		(CompEditor *editor);
+EFocusTracker *	comp_editor_get_focus_tracker	(CompEditor *editor);
 void		comp_editor_set_needs_send	(CompEditor *editor,
 						 gboolean needs_send);
 gboolean	comp_editor_get_needs_send	(CompEditor *editor);
@@ -107,6 +119,7 @@ void		comp_editor_set_classification	(CompEditor *editor,
 						 ECalComponentClassification classification);
 ECalComponentClassification
 		comp_editor_get_classification	(CompEditor *editor);
+EShell *	comp_editor_get_shell		(CompEditor *editor);
 void		comp_editor_set_summary		(CompEditor *editor,
 						 const gchar *summary);
 const gchar *	comp_editor_get_summary		(CompEditor *editor);
@@ -114,6 +127,11 @@ void		comp_editor_append_page		(CompEditor *editor,
 						 CompEditorPage *page,
 						 const gchar *label,
 						 gboolean add);
+void		comp_editor_append_widget	(CompEditor *editor,
+						 GtkWidget  *page,
+						 const gchar *label,
+						 gboolean add);
+
 void		comp_editor_remove_page		(CompEditor *editor,
 						 CompEditorPage *page);
 void		comp_editor_show_page		(CompEditor *editor,
@@ -150,9 +168,8 @@ GtkActionGroup *
 						 const gchar *group_name);
 GtkWidget *	comp_editor_get_managed_widget	(CompEditor *editor,
 						 const gchar *widget_path);
+CompEditor *	comp_editor_find_instance	(const gchar *uid);
 
-void		comp_editor_set_lite		(gboolean status);
-gboolean	comp_editor_get_lite		(void);
 G_END_DECLS
 
 #endif

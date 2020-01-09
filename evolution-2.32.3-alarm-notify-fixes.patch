@@ -1,0 +1,316 @@
+Contains set of fixes:
+commit 350f7118fec5b5d7bcf6a6c40d2fba6bedaf512e
+    Make sure evolution-alarm-notify is running on Evolution's start
+
+commit 48d30dcad171fe84928ba1888a45f7baa3669bda
+    Bug #680611 - Hibernation shifts alarm notification time
+
+commit 608069630f978c2da37bc57ee58342ba9d16f70f
+    Bug #665129 - Memory leak in EBufferTagger
+
+commit f6f4a73bcf229809c8b4ac13b0b74f8a95a0f67e
+    Bug #641711 - Crash in remove_queued_alarm
+
+diff -up evolution-2.32.3/calendar/gui/alarm-notify/alarm.c.alarm-notify-fixes evolution-2.32.3/calendar/gui/alarm-notify/alarm.c
+--- evolution-2.32.3/calendar/gui/alarm-notify/alarm.c.alarm-notify-fixes	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/alarm-notify/alarm.c	2013-10-08 18:24:24.051845115 +0200
+@@ -318,3 +318,15 @@ alarm_done (void)
+ 	g_list_free (alarms);
+ 	alarms = NULL;
+ }
++
++/**
++ * alarm_reschedule_timeout:
++ *
++ * Re-sets timeout for alarms, if any.
++ **/
++void
++alarm_reschedule_timeout (void)
++{
++	if (alarms)
++		setup_timeout ();
++}
+diff -up evolution-2.32.3/calendar/gui/alarm-notify/alarm.h.alarm-notify-fixes evolution-2.32.3/calendar/gui/alarm-notify/alarm.h
+--- evolution-2.32.3/calendar/gui/alarm-notify/alarm.h.alarm-notify-fixes	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/alarm-notify/alarm.h	2013-10-08 18:24:24.051845115 +0200
+@@ -40,6 +40,8 @@ gpointer alarm_add (time_t trigger, Alar
+ 		    AlarmDestroyNotify destroy_notify_fn);
+ void alarm_remove (gpointer alarm);
+ 
++void alarm_reschedule_timeout (void);
++
+ 
+ 
+ #endif
+diff -up evolution-2.32.3/calendar/gui/alarm-notify/alarm-notify-dialog.c.alarm-notify-fixes evolution-2.32.3/calendar/gui/alarm-notify/alarm-notify-dialog.c
+--- evolution-2.32.3/calendar/gui/alarm-notify/alarm-notify-dialog.c.alarm-notify-fixes	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/alarm-notify/alarm-notify-dialog.c	2013-10-08 18:24:24.052845115 +0200
+@@ -133,8 +133,8 @@ dialog_response_cb (GtkDialog *dialog, g
+ 
+ 	if (!funcinfo) {
+ 		GtkTreeModel *treemodel = gtk_tree_view_get_model (GTK_TREE_VIEW (an->treeview));
+-		gtk_tree_model_get_iter_first (treemodel, &iter);
+-		gtk_tree_model_get (treemodel, &iter, ALARM_FUNCINFO_COLUMN, &funcinfo, -1);
++		if (gtk_tree_model_get_iter_first (treemodel, &iter))
++			gtk_tree_model_get (treemodel, &iter, ALARM_FUNCINFO_COLUMN, &funcinfo, -1);
+ 	}
+ 	g_return_if_fail (funcinfo);
+ 	switch (response_id) {
+diff -up evolution-2.32.3/calendar/gui/alarm-notify/alarm-queue.c.alarm-notify-fixes evolution-2.32.3/calendar/gui/alarm-notify/alarm-queue.c
+--- evolution-2.32.3/calendar/gui/alarm-notify/alarm-queue.c.alarm-notify-fixes	2013-10-08 18:24:24.018845115 +0200
++++ evolution-2.32.3/calendar/gui/alarm-notify/alarm-queue.c	2013-10-08 18:24:24.052845115 +0200
+@@ -593,7 +593,9 @@ load_alarms_for_today (ClientAlarms *ca)
+ 	 */
+ 	from = MAX (config_data_get_last_notification_time (ca->client) + 1, day_start);
+ 
+-	day_end = time_day_end_with_zone (now, zone);
++	/* Add one hour after midnight, just to cover the delay in 30 minutes
++	   midnight checking. */
++	day_end = time_day_end_with_zone (now, zone) + (60 * 60);
+ 	d(printf("%s:%d (load_alarms_for_today) - From %s to %s\n",__FILE__, __LINE__,
+ 		 g_strdup (ctime (&from)), g_strdup (e_ctime(&day_end))));
+ 	load_alarms (ca, from, day_end);
+@@ -627,6 +629,9 @@ remove_alarms (CompQueuedAlarms *cqa, gb
+ 	GSList *l;
+ 
+ 	d(printf("%s:%d (remove_alarms) - Removing for %p\n",__FILE__, __LINE__, cqa));
++
++	tray_list_remove_cqa (cqa);
++
+ 	for (l = cqa->queued_alarms; l;) {
+ 		QueuedAlarm *qa;
+ 
+@@ -641,7 +646,6 @@ remove_alarms (CompQueuedAlarms *cqa, gb
+ 		alarm_remove (qa->alarm_id);
+ 		remove_queued_alarm (cqa, qa->alarm_id, free_object, FALSE);
+ 	}
+-
+ }
+ 
+ /* Removes a component an its alarms */
+@@ -963,6 +967,7 @@ typedef struct {
+ 	ECalView *query;
+ 	GdkPixbuf *image;
+ 	GtkTreeIter iter;
++	gboolean is_in_tree;
+ } TrayIconData;
+ 
+ static void
+@@ -1071,9 +1076,10 @@ tray_list_remove_cqa_async (struct _tray
+ 		if (tray_data->cqa == cqa) {
+ 			d(printf("%s:%d (tray_list_remove_cqa_async) - Found.\n", __FILE__, __LINE__));
+ 			tray_icons_list = g_list_delete_link (tray_icons_list, tmp);
+-			if (alarm_notifications_dialog) {
++			if (alarm_notifications_dialog && tray_data->is_in_tree) {
+ 				model = gtk_tree_view_get_model (GTK_TREE_VIEW (alarm_notifications_dialog->treeview));
+ 				gtk_list_store_remove (GTK_LIST_STORE (model), &(tray_data->iter));
++				tray_data->is_in_tree = FALSE;
+ 			}
+ 			free_tray_icon_data (tray_data);
+ 		}
+@@ -1091,9 +1097,10 @@ tray_list_remove_cqa_async (struct _tray
+ 			GtkTreeModel *model = gtk_tree_view_get_model (GTK_TREE_VIEW (alarm_notifications_dialog->treeview));
+ 			GtkTreeSelection *sel;
+ 
+-			gtk_tree_model_get_iter_first (model, &iter);
+-			sel = gtk_tree_view_get_selection (GTK_TREE_VIEW (alarm_notifications_dialog->treeview));
+-			gtk_tree_selection_select_iter (sel, &iter);
++			if (gtk_tree_model_get_iter_first (model, &iter)) {
++				sel = gtk_tree_view_get_selection (GTK_TREE_VIEW (alarm_notifications_dialog->treeview));
++				gtk_tree_selection_select_iter (sel, &iter);
++			}
+ 		}
+ 	}
+ 
+@@ -1128,6 +1135,11 @@ tray_list_remove_async (Message *msg)
+ 			gboolean status;
+ 
+ 			tray_icons_list = g_list_remove_link (tray_icons_list, list);
++			if (alarm_notifications_dialog && tray_data->is_in_tree) {
++				GtkTreeModel *model = gtk_tree_view_get_model (GTK_TREE_VIEW (alarm_notifications_dialog->treeview));
++				gtk_list_store_remove (GTK_LIST_STORE (model), &tray_data->iter);
++				tray_data->is_in_tree = FALSE;
++			}
+ 			status = remove_queued_alarm (tray_data->cqa, tray_data->alarm_id, FALSE, TRUE);
+ 			if (status) {
+ 				g_hash_table_remove (tray_data->cqa->parent_client->uid_alarms_hash, tray_data->cqa->id);
+@@ -1216,6 +1228,7 @@ notify_dialog_cb (AlarmNotifyResult resu
+ 			/* We can also use tray_data->iter */
+ 			if (gtk_tree_selection_get_selected (selection, &model, &iter)) {
+ 				gtk_list_store_remove (GTK_LIST_STORE (model), &iter);
++				tray_data->is_in_tree = FALSE;
+ 				if (!gtk_tree_model_get_iter_first (model, &iter)) {
+ 					/* We removed the last one */
+ 					gtk_widget_destroy (alarm_notifications_dialog->dialog);
+@@ -1237,9 +1250,10 @@ notify_dialog_cb (AlarmNotifyResult resu
+ 		break;
+ 
+ 	case ALARM_NOTIFY_DISMISS:
+-		if (alarm_notifications_dialog) {
++		if (alarm_notifications_dialog && tray_data->is_in_tree) {
+ 			GtkTreeModel *model = gtk_tree_view_get_model (GTK_TREE_VIEW (alarm_notifications_dialog->treeview));
+ 			gtk_list_store_remove (GTK_LIST_STORE (model), &tray_data->iter);
++			tray_data->is_in_tree = FALSE;
+ 		}
+ 		break;
+ 
+@@ -1319,6 +1333,7 @@ open_alarm_dialog (TrayIconData *tray_da
+ 							       tray_data->description,
+ 							       tray_data->location,
+ 							       notify_dialog_cb, tray_data);
++			tray_data->is_in_tree = TRUE;
+ 
+ 			gtk_tree_selection_select_iter (selection, &tray_data->iter);
+ 
+@@ -1557,11 +1572,12 @@ display_notification (time_t trigger, Co
+ 	tray_data->trigger = trigger;
+ 	tray_data->cqa = cqa;
+ 	tray_data->alarm_id = alarm_id;
+-	tray_data->comp = g_object_ref (e_cal_component_clone (comp));
++	tray_data->comp = e_cal_component_clone (comp);
+ 	tray_data->client = cqa->parent_client->client;
+ 	tray_data->query = g_object_ref (cqa->parent_client->query);
+ 	tray_data->blink_state = FALSE;
+ 	tray_data->snooze_set = FALSE;
++	tray_data->is_in_tree = FALSE;
+ 	g_object_ref (tray_data->client);
+ 
+ 	/* Task to add tray_data to the global tray_icon_list */
+@@ -1900,6 +1916,41 @@ check_midnight_refresh (gpointer user_da
+ 	return TRUE;
+ }
+ 
++static gint64
++glibs_g_get_real_time (void)
++{
++	GTimeVal tv;
++
++	g_get_current_time (&tv);
++
++	return (((gint64) tv.tv_sec) * 1000000) + tv.tv_usec;
++}
++
++static gboolean
++check_wall_clock_time_changed (gpointer user_data)
++{
++	static gint64 expected_wall_clock_time = 0;
++	gint64 wall_clock_time;
++
++	#define ADD_SECONDS(to, secs) ((to) + ((secs) * 1000000))
++
++	wall_clock_time = glibs_g_get_real_time ();
++
++	/* use one second margin */
++	if (wall_clock_time > ADD_SECONDS (expected_wall_clock_time, 1) ||
++	    wall_clock_time < ADD_SECONDS (expected_wall_clock_time, -1)) {
++		d (("Current wall-clock time differs from expected, rescheduling alarms"));
++		check_midnight_refresh (NULL);
++		alarm_reschedule_timeout ();
++	}
++
++	expected_wall_clock_time = ADD_SECONDS (wall_clock_time, 60);
++
++	#undef ADD_SECONDS
++
++	return TRUE;
++}
++
+ /**
+  * alarm_queue_init:
+  *
+@@ -1924,7 +1975,11 @@ alarm_queue_init (gpointer data)
+ 	}
+ 
+ 	/* install timeout handler (every 30 mins) for not missing the midnight refresh */
+-	g_timeout_add_seconds (1800, (GSourceFunc) check_midnight_refresh, NULL);
++	g_timeout_add_seconds (1800, check_midnight_refresh, NULL);
++
++	/* monotonic time doesn't change during hibernation, while the wall clock time does,
++	   thus check for wall clock time changes and reschedule alarms when it changes */
++	g_timeout_add_seconds (60, check_wall_clock_time_changed, NULL);
+ 
+ #ifdef HAVE_LIBNOTIFY
+ 	notify_init("Evolution Alarms");
+diff -up evolution-2.32.3/modules/calendar/e-cal-shell-backend.c.alarm-notify-fixes evolution-2.32.3/modules/calendar/e-cal-shell-backend.c
+--- evolution-2.32.3/modules/calendar/e-cal-shell-backend.c.alarm-notify-fixes	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/modules/calendar/e-cal-shell-backend.c	2013-10-08 18:24:24.053845115 +0200
+@@ -694,12 +694,46 @@ cal_shell_backend_dispose (GObject *obje
+ }
+ 
+ static void
++ensure_alarm_notify_is_running (void)
++{
++	const gchar *base_dir;
++	gchar *filename;
++
++	#ifdef G_OS_WIN32
++	base_dir = EVOLUTION_BINDIR;
++	#else
++	base_dir = EVOLUTION_PRIVLIBEXECDIR;
++	#endif
++
++	filename = g_build_filename (base_dir, "evolution-alarm-notify", NULL);
++
++	if (g_file_test (filename, G_FILE_TEST_EXISTS | G_FILE_TEST_IS_EXECUTABLE)) {
++		gchar *argv[2];
++		GError *error = NULL;
++
++		argv[0] = filename;
++		argv[1] = NULL;
++
++		if (!g_spawn_async (base_dir, argv, NULL, 0, NULL, NULL, NULL, &error))
++			g_message ("Failed to start '%s': %s", filename, error ? error->message : "Unknown error");
++
++		g_clear_error (&error);
++	}
++
++	g_free (filename);
++}
++
++static void
+ cal_shell_backend_constructed (GObject *object)
+ {
+ 	EShell *shell;
+ 	EShellBackend *shell_backend;
+ 	GtkWidget *preferences_window;
+ 
++ 	/* Chain up to parent's constructed() method. */
++	if (G_OBJECT_CLASS (parent_class)->constructed)
++		G_OBJECT_CLASS (parent_class)->constructed (object);
++
+ 	shell_backend = E_SHELL_BACKEND (object);
+ 	shell = e_shell_backend_get_shell (shell_backend);
+ 
+@@ -729,6 +763,8 @@ cal_shell_backend_constructed (GObject *
+ 		_("Calendar and Tasks"),
+ 		calendar_prefs_dialog_new,
+ 		600);
++
++	ensure_alarm_notify_is_running ();
+ }
+ 
+ static void
+diff -up evolution-2.32.3/modules/calendar/Makefile.am.alarm-notify-fixes evolution-2.32.3/modules/calendar/Makefile.am
+--- evolution-2.32.3/modules/calendar/Makefile.am.alarm-notify-fixes	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/modules/calendar/Makefile.am	2013-10-08 18:24:24.053845115 +0200
+@@ -4,6 +4,8 @@ module_LTLIBRARIES =					\
+ libevolution_module_calendar_la_CPPFLAGS =		\
+ 	$(AM_CPPFLAGS)					\
+ 	-DG_LOG_DOMAIN=\"calendar-modules\"		\
++	-DEVOLUTION_BINDIR=\""$(bindir)"\"		\
++	-DEVOLUTION_PRIVLIBEXECDIR=\""$(PRIVLIBEXECDIR)"\" \
+ 	-I$(top_srcdir)					\
+ 	-I$(top_srcdir)/widgets				\
+ 	-DEVOLUTION_ETSPECDIR=\""$(etspecdir)"\"	\
+diff -up evolution-2.32.3/widgets/misc/e-buffer-tagger.c.alarm-notify-fixes evolution-2.32.3/widgets/misc/e-buffer-tagger.c
+--- evolution-2.32.3/widgets/misc/e-buffer-tagger.c.alarm-notify-fixes	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/widgets/misc/e-buffer-tagger.c	2013-10-08 18:24:24.053845115 +0200
+@@ -71,6 +71,8 @@ init_magic_links (void)
+ 	if (done)
+ 		return;
+ 
++	done = TRUE;
++
+ 	for (i = 0; i < G_N_ELEMENTS (mim); i++) {
+ 		mim[i].preg = g_new0 (regex_t, 1);
+ 		if (regcomp (mim[i].preg, mim[i].regex, REG_EXTENDED | REG_ICASE)) {

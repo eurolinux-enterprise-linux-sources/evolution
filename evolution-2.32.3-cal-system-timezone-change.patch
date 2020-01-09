@@ -1,0 +1,82 @@
+diff -up evolution-2.32.3/calendar/gui/e-cal-model.c.cal-system-timezone-change evolution-2.32.3/calendar/gui/e-cal-model.c
+--- evolution-2.32.3/calendar/gui/e-cal-model.c.cal-system-timezone-change	2013-10-08 18:40:55.433844862 +0200
++++ evolution-2.32.3/calendar/gui/e-cal-model.c	2013-10-08 18:40:55.973844863 +0200
+@@ -123,6 +123,7 @@ static ECalModelClient *add_new_client (
+ static ECalModelClient *find_client_data (ECalModel *model, ECal *client);
+ static void remove_client_objects (ECalModel *model, ECalModelClient *client_data);
+ static void remove_client (ECalModel *model, ECalModelClient *client_data);
++static void redo_queries (ECalModel *model);
+ 
+ enum {
+ 	PROP_0,
+@@ -1414,6 +1415,7 @@ e_cal_model_set_timezone (ECalModel *mod
+ 	/* the timezone affects the times shown for date fields,
+ 	   so we need to redisplay everything */
+ 	e_table_model_changed (E_TABLE_MODEL (model));
++	redo_queries (model);
+ 
+ 	g_object_notify (G_OBJECT (model), "timezone");
+ 	g_signal_emit (G_OBJECT (model), signals[TIMEZONE_CHANGED], 0,
+diff -up evolution-2.32.3/modules/calendar/e-cal-shell-settings.c.cal-system-timezone-change evolution-2.32.3/modules/calendar/e-cal-shell-settings.c
+--- evolution-2.32.3/modules/calendar/e-cal-shell-settings.c.cal-system-timezone-change	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/modules/calendar/e-cal-shell-settings.c	2013-10-08 18:40:55.971844863 +0200
+@@ -62,19 +62,34 @@ transform_icaltimezone_to_string (const 
+                                   GValue *dst_value,
+                                   gpointer user_data)
+ {
++	EShellSettings *shell_settings;
++	gboolean use_system_timezone;
+ 	const gchar *location = NULL;
++	gchar *location_str = NULL;
+ 	icaltimezone *timezone;
+ 
+-	timezone = g_value_get_pointer (src_value);
++	shell_settings = E_SHELL_SETTINGS (user_data);
++
++	use_system_timezone = e_shell_settings_get_boolean (
++		shell_settings, "cal-use-system-timezone");
+ 
+-	if (timezone != NULL)
+-		location = icaltimezone_get_location (timezone);
++	if (use_system_timezone) {
++		location_str = e_shell_settings_get_string (shell_settings, "cal-timezone-string");
++		location = location_str;
++	} else {
++		timezone = g_value_get_pointer (src_value);
++
++		if (timezone != NULL)
++			location = icaltimezone_get_location (timezone);
++	}
+ 
+ 	if (location == NULL)
+ 		location = "UTC";
+ 
+ 	g_value_set_string (dst_value, location);
+ 
++	g_free (location_str);
++
+ 	return TRUE;
+ }
+ 
+@@ -471,6 +486,12 @@ transform_working_days_saturday_to_bitse
+ 	return TRUE;
+ }
+ 
++static void
++cal_use_system_timezone_changed_cb (GObject *shell_settings)
++{
++	g_object_notify (shell_settings, "cal-timezone-string");
++}
++
+ void
+ e_cal_shell_backend_init_settings (EShell *shell)
+ {
+@@ -735,4 +756,8 @@ e_cal_shell_backend_init_settings (EShel
+ 		transform_working_days_saturday_to_bitset,
+ 		(GDestroyNotify) g_object_unref,
+ 		g_object_ref (shell_settings));
++
++	g_signal_connect (
++		shell_settings, "notify::cal-use-system-timezone",
++		G_CALLBACK (cal_use_system_timezone_changed_cb), NULL);
+ }

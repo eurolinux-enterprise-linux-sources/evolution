@@ -57,7 +57,7 @@ Více informací
 	na adrese http://mail.gnome.org/mailman/listinfo/evolution-list.
 
 	Informace o projektu Evolution jsou dostupné na adrese
-	http://www.gnome.org/projects/evolution.
+	http://projects.gnome.org/evolution.
 
 
 S pozdravem
@@ -73,7 +73,7 @@ Content-Type: text/html; charset=utf-8
   <META HTTP-EQUIV="Content-Type" CONTENT="text/html; CHARSET=UTF-8">
   <META NAME="GENERATOR" CONTENT="GtkHTML/0.13.99">
 </HEAD>
-<BODY BGCOLOR="#f8fcf8">
+<BODY BGCOLOR="#f8fcf8" TEXT="#000000">
 <TABLE BACKGROUND="cid:1001417869.27019.4.camel@spectrolite" CELLSPACING="0" CELLPADDING="0" WIDTH="100%">
 <TR><TD ALIGN="left" VALIGN="top">
 <IMG SRC="cid:1001417869.27019.5.camel@spectrolite" ALIGN="top" BORDER="0" WIDTH="8" HEIGHT="8"></TD>
@@ -133,13 +133,13 @@ Více informací
 
 <blockquote>	
 	Můžete se přihlásit do poštovní konference uživatelů Evolutionu
-	na adrese <a href="http://lists.gnome.org/mailman/listinfo/evolution">http://mail.gnome.org/mailman/listinfo/evolution-list</a>.
+	na adrese <a href="http://lists.gnome.org/mailman/listinfo/evolution-list">http://mail.gnome.org/mailman/listinfo/evolution-list</a>.
 
 	Informace o projektu Evolution jsou dostupné na adrese
-	<a href="http://www.gnome.org/projects/evolution">http://www.gnome.org/projects/evolution</a>.	
+	<a href="http://projects.gnome.org/evolution">http://projects.gnome.org/evolution</a>.	
 	<!--
 	Seznam často kladených otázek (FAQ) naleznete na adrese
-	<a href="http://go-evolution.org/FAQ">http://go-evolution.org/FAQ</a>.
+	<a href="http://live.gnome.org/Evolution/FAQ">http://live.gnome.org/Evolution/FAQ</a>.
 	-->
 <br><br>	
 </blockquote>

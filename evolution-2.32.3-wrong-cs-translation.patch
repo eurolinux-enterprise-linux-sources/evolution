@@ -1,0 +1,12 @@
+diff -up evolution-2.32.3/po/cs.po.wrong-cs-translation evolution-2.32.3/po/cs.po
+--- evolution-2.32.3/po/cs.po.wrong-cs-translation	2011-03-29 20:38:49.000000000 +0200
++++ evolution-2.32.3/po/cs.po	2013-06-10 17:27:38.158675102 +0200
+@@ -17583,7 +17583,7 @@ msgstr "Událost v kalendáři „%s“ 
+ #: ../plugins/itip-formatter/itip-formatter.c:685
+ #, c-format
+ msgid "Found the appointment in the calendar '%s'"
+-msgstr "Nenalezena událost „%s“ v kalendáři"
++msgstr "Událost nalezena v kalendáři '%s'"
+ 
+ #: ../plugins/itip-formatter/itip-formatter.c:784
+ msgid "Unable to find any calendars"

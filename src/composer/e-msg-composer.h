@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /*
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,12 +24,13 @@
 #ifndef E_MSG_COMPOSER_H
 #define E_MSG_COMPOSER_H
 
-#include <camel/camel-internet-address.h>
-#include <camel/camel-mime-message.h>
+#include <camel/camel.h>
 #include <libedataserver/e-account.h>
 #include <libebook/e-destination.h>
 #include <gtkhtml-editor.h>
 #include <misc/e-attachment-view.h>
+#include <misc/e-focus-tracker.h>
+#include <shell/e-shell.h>
 
 #include "e-composer-header-table.h"
 
@@ -60,28 +62,30 @@ typedef struct _EMsgComposerPrivate EMsgComposerPrivate;
 struct _EMsgComposer {
 	GtkhtmlEditor parent;
 	EMsgComposerPrivate *priv;
-	gboolean lite;
 };
 
 struct _EMsgComposerClass {
 	GtkhtmlEditorClass parent_class;
 };
 
-struct _EAttachmentBar;
-
 GType		e_msg_composer_get_type		(void);
-EMsgComposer *	e_msg_composer_new		(void);
-EMsgComposer *  e_msg_composer_lite_new	(void);
-
-EMsgComposer *	e_msg_composer_new_with_message	(CamelMimeMessage *msg);
-EMsgComposer *	e_msg_composer_new_from_url	(const gchar *url);
-EMsgComposer *	e_msg_composer_new_redirect	(CamelMimeMessage *message,
+EMsgComposer *	e_msg_composer_new		(EShell *shell);
+EMsgComposer *	e_msg_composer_new_with_message	(EShell *shell,
+						 CamelMimeMessage *msg);
+EMsgComposer *	e_msg_composer_new_from_url	(EShell *shell,
+						 const gchar *url);
+EMsgComposer *	e_msg_composer_new_redirect	(EShell *shell,
+						 CamelMimeMessage *message,
 						 const gchar *resent_from);
-void		e_msg_composer_set_lite	(void);
-gboolean	e_msg_composer_get_lite	(void);
+EFocusTracker *	e_msg_composer_get_focus_tracker
+						(EMsgComposer *composer);
+CamelSession *	e_msg_composer_get_session	(EMsgComposer *composer);
+EShell *	e_msg_composer_get_shell	(EMsgComposer *composer);
 
 void		e_msg_composer_send		(EMsgComposer *composer);
 void		e_msg_composer_save_draft	(EMsgComposer *composer);
+void		e_msg_composer_print		(EMsgComposer *composer,
+						 GtkPrintOperationAction action);
 
 void		e_msg_composer_set_alternative	(EMsgComposer *composer,
 						 gboolean alt);
@@ -110,12 +114,16 @@ void		e_msg_composer_add_inline_image_from_mime_part
 						 CamelMimePart *part);
 CamelMimeMessage *
 		e_msg_composer_get_message	(EMsgComposer *composer,
+						 gboolean save_html_object_data,
+						 GError **error);
+CamelMimeMessage *
+		e_msg_composer_get_message_print
+						(EMsgComposer *composer,
 						 gboolean save_html_object_data);
 CamelMimeMessage *
-		e_msg_composer_get_message_print(EMsgComposer *composer,
-						 gboolean save_html_object_data);
-CamelMimeMessage *
-		e_msg_composer_get_message_draft(EMsgComposer *composer);
+		e_msg_composer_get_message_draft
+						(EMsgComposer *composer,
+						 GError **error);
 void		e_msg_composer_show_sig_file	(EMsgComposer *composer);
 
 CamelInternetAddress *
@@ -125,24 +133,17 @@ CamelInternetAddress *
 
 void		e_msg_composer_clear_inlined_table
 						(EMsgComposer *composer);
-void		e_msg_composer_set_enable_autosave
-						(EMsgComposer *composer,
-						 gboolean enabled);
-
-gchar *		e_msg_composer_get_sig_file_content
-						(const gchar *sigfile,
-						 gboolean in_html);
 void		e_msg_composer_add_message_attachments
 						(EMsgComposer *composer,
 						 CamelMimeMessage *message,
 						 gboolean just_inlines);
 
 void		e_msg_composer_request_close	(EMsgComposer *composer);
-void		e_msg_composer_request_close_all(void);
-void		e_msg_composer_close		(EMsgComposer *composer);
-gboolean	e_msg_composer_all_closed (void);
-EMsgComposer *	e_msg_composer_load_from_file	(const gchar *filename);
-void		e_msg_composer_check_autosave	(GtkWindow *parent);
+gboolean	e_msg_composer_can_close	(EMsgComposer *composer,
+						 gboolean can_save_draft);
+
+EMsgComposer *	e_msg_composer_load_from_file	(EShell *shell,
+						 const gchar *filename);
 
 void		e_msg_composer_reply_indent	(EMsgComposer *composer);
 
@@ -151,8 +152,6 @@ EComposerHeaderTable *
 EAttachmentView *
 		e_msg_composer_get_attachment_view
 						(EMsgComposer *composer);
-void		e_msg_composer_set_send_options	(EMsgComposer *composer,
-						 gboolean send_enable);
 GByteArray *	e_msg_composer_get_raw_message_text
 						(EMsgComposer *composer);
 
@@ -161,8 +160,9 @@ gboolean	e_msg_composer_is_exiting	(EMsgComposer *composer);
 GList *		e_load_spell_languages		(void);
 void		e_save_spell_languages		(GList *spell_languages);
 
-void		e_msg_composer_set_mail_sent 	(EMsgComposer *composer, gboolean mail_sent);
-gboolean	e_msg_composer_get_mail_sent 	(EMsgComposer *composer);
+gboolean	e_msg_composer_get_mail_sent	(EMsgComposer *composer);
+void		e_msg_composer_set_mail_sent	(EMsgComposer *composer,
+						 gboolean mail_sent);
 
 G_END_DECLS
 

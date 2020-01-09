@@ -1,19 +1,21 @@
-AM_CPPFLAGS =						\
+privsolib_LTLIBRARIES = libessmime.la
+
+libessmime_la_CPPFLAGS =				\
+	$(AM_CPPFLAGS)					\
 	-DG_LOG_DOMAIN=\"evolution-smime\"		\
 	-I$(top_srcdir)					\
 	-I$(top_srcdir)/shell				\
 	-I$(top_builddir)				\
 	-DEVOLUTION_DATADIR=\""$(datadir)"\"		\
-	-DEVOLUTION_GLADEDIR=\""$(gladedir)"\"		\
 	-DEVOLUTION_ETSPECDIR=\""$(etspecdir)"\"	\
 	-DEVOLUTION_IMAGESDIR=\""$(imagesdir)"\"	\
 	-DEVOLUTION_LOCALEDIR=\""$(localedir)"\"	\
-	-DEVOLUTION_UIDIR=\""$(evolutionuidir)"\"	\
+	-DEVOLUTION_UIDIR=\""$(uidir)"\"		\
 	-DPREFIX=\""$(prefix)"\"			\
-	$(EVOLUTION_ADDRESSBOOK_CFLAGS)			\
+	$(EVOLUTION_DATA_SERVER_CFLAGS)			\
+	$(GNOME_PLATFORM_CFLAGS)			\
+	$(CAMEL_CFLAGS)					\
 	$(CERT_UI_CFLAGS)
-
-privsolib_LTLIBRARIES = libessmime.la
 
 libessmime_la_SOURCES = 	\
 	e-asn1-object.c		\
@@ -29,6 +31,9 @@ libessmime_la_SOURCES = 	\
 
 libessmime_la_LIBADD =				\
 	$(top_builddir)/e-util/libeutil.la	\
+	$(EVOLUTION_DATA_SERVER_LIBS)		\
+	$(GNOME_PLATFORM_LIBS)			\
+	$(CAMEL_LIBS)				\
 	$(CERT_UI_LIBS)
 
 libessmime_la_LDFLAGS = $(NO_UNDEFINED)

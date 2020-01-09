@@ -9,18 +9,14 @@ datadir=@datadir@
 privlibdir=@privsolibdir@
 privlibexecdir=@privlibexecdir@
 privincludedir=@privincludedir@
-idldir=@idldir@
-componentdir=@componentdir@
-evolutionuidir=@evolutionuidir@
+moduledir=@moduledir@
 imagesdir=@imagesdir@
 
 execversion=@BASE_VERSION@
 
-IDL_INCLUDES=-I ${idldir} @IDL_INCLUDES@
-
 Name: evolution-shell
 Description: libraries needed for Evolution shell components
 Version: @VERSION@
-Requires: libgnome-2.0 libgnomeui-2.0 libbonoboui-2.0 >= @BONOBOUI_REQUIRED@
+Requires: gconf-2.0 @GNOME_DESKTOP@ @GTK@ @LIBEDATASERVERUI@ @UNIQUE@
 Libs: -L${privlibdir} -leshell -Wl,-R${privlibdir}
 Cflags: -I${privincludedir}

@@ -35,14 +35,14 @@
 #include "check-empty.xpm"
 #include "check-filled.xpm"
 
-G_DEFINE_TYPE (ECellCheckbox, e_cell_checkbox, E_CELL_TOGGLE_TYPE)
+G_DEFINE_TYPE (ECellCheckbox, e_cell_checkbox, E_TYPE_CELL_TOGGLE)
 
-static GdkPixbuf *checks [2];
+static GdkPixbuf *checks[2];
 
 static void
 ecc_print (ECellView *ecell_view, GtkPrintContext *context,
 	    gint model_col, gint view_col, gint row,
-	    double width, double height)
+	    gdouble width, gdouble height)
 {
 	cairo_t *cr = gtk_print_context_get_cairo_context (context);
 	const gint value = GPOINTER_TO_INT (
@@ -66,13 +66,19 @@ e_cell_checkbox_class_init (ECellCheckboxClass *klass)
 	ECellClass *ecc = E_CELL_CLASS (klass);
 
 	ecc->print = ecc_print;
-	checks [0] = gdk_pixbuf_new_from_xpm_data (check_empty_xpm);
-	checks [1] = gdk_pixbuf_new_from_xpm_data (check_filled_xpm);
+	checks[0] = gdk_pixbuf_new_from_xpm_data (check_empty_xpm);
+	checks[1] = gdk_pixbuf_new_from_xpm_data (check_filled_xpm);
 }
 
 static void
 e_cell_checkbox_init (ECellCheckbox *eccb)
 {
+	GPtrArray *pixbufs;
+
+	pixbufs = e_cell_toggle_get_pixbufs (E_CELL_TOGGLE (eccb));
+
+	g_ptr_array_add (pixbufs, g_object_ref (checks[0]));
+	g_ptr_array_add (pixbufs, g_object_ref (checks[1]));
 }
 
 /**
@@ -87,9 +93,5 @@ e_cell_checkbox_init (ECellCheckbox *eccb)
 ECell *
 e_cell_checkbox_new (void)
 {
-	ECellCheckbox *eccb = g_object_new (E_CELL_CHECKBOX_TYPE, NULL);
-
-	e_cell_toggle_construct (E_CELL_TOGGLE (eccb), 2, 2, checks);
-
-	return (ECell *) eccb;
+	return g_object_new (E_CELL_CHECKBOX_TYPE, NULL);
 }

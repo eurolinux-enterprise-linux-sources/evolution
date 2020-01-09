@@ -27,16 +27,20 @@
 #include <gtk/gtk.h>
 #include <glib/gstdio.h>
 #include "e-util/e-mktemp.h"
-#include "camel/camel-medium.h"
-#include "camel/camel-mime-part.h"
-#include "camel/camel-stream.h"
-#include "camel/camel-stream-fs.h"
 #include "mail/em-format-hook.h"
 #include "mail/em-format-html.h"
 #include "gtkhtml/gtkhtml-embedded.h"
 #include "gst/gst.h"
 
 #define d(x)
+
+gint e_plugin_lib_enable (EPlugin *ep, gint enable);
+
+gint
+e_plugin_lib_enable (EPlugin *ep, gint enable)
+{
+	return 0;
+}
 
 void org_gnome_audio_inline_format (gpointer ep, EMFormatHookTarget *t);
 
@@ -78,7 +82,7 @@ org_gnome_audio_inline_pobject_free (EMFormatHTMLPObject *o)
 	}
 
 	if (po->part) {
-		camel_object_unref (po->part);
+		g_object_unref (po->part);
 		po->part = NULL;
 	}
 	if (po->filename) {
@@ -204,11 +208,11 @@ org_gnome_audio_inline_play_clicked (GtkWidget *button, EMFormatHTMLPObject *pob
 
 		d(printf ("audio inline formatter: write to temp file %s\n", po->filename));
 
-		stream = camel_stream_fs_new_with_name (po->filename, O_RDWR | O_CREAT | O_TRUNC, 0600);
-		data = camel_medium_get_content_object (CAMEL_MEDIUM (po->part));
-		camel_data_wrapper_decode_to_stream (data, stream);
-		camel_stream_flush (stream);
-		camel_object_unref (stream);
+		stream = camel_stream_fs_new_with_name (po->filename, O_RDWR | O_CREAT | O_TRUNC, 0600, NULL);
+		data = camel_medium_get_content (CAMEL_MEDIUM (po->part));
+		camel_data_wrapper_decode_to_stream (data, stream, NULL);
+		camel_stream_flush (stream, NULL);
+		g_object_unref (stream);
 
 		d(printf ("audio inline formatter: init gst playbin\n"));
 
@@ -291,13 +295,13 @@ org_gnome_audio_inline_format (gpointer ep, EMFormatHookTarget *t)
 	struct _org_gnome_audio_inline_pobject *pobj;
 	gchar *classid = g_strdup_printf ("org-gnome-audio-inline-button-panel-%d", org_gnome_audio_class_id_counter);
 
-	org_gnome_audio_class_id_counter ++;
+	org_gnome_audio_class_id_counter++;
 
 	d(printf ("audio inline formatter: format classid %s\n", classid));
 
 	pobj = (struct _org_gnome_audio_inline_pobject *) em_format_html_add_pobject ((EMFormatHTML *) t->format, sizeof(*pobj), classid,
 										      t->part, org_gnome_audio_inline_button_panel);
-	camel_object_ref (t->part);
+	g_object_ref (t->part);
 	pobj->part = t->part;
 	pobj->filename = NULL;
 	pobj->playbin = NULL;

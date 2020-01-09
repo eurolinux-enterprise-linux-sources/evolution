@@ -45,18 +45,39 @@ struct _EComposerNameHeaderPrivate {
 	guint destination_index;
 };
 
-static gpointer parent_class;
+G_DEFINE_TYPE (
+	EComposerNameHeader,
+	e_composer_name_header,
+	E_TYPE_COMPOSER_HEADER)
 
-static void
-composer_name_header_clicked_cb (EComposerNameHeader *header)
+static gpointer
+contact_editor_fudge_new (EBook *book,
+                          EContact *contact,
+                          gboolean is_new,
+                          gboolean editable)
 {
-	ENameSelectorDialog *dialog;
+	EShell *shell = e_shell_get_default ();
 
-	dialog = e_name_selector_peek_dialog (header->priv->name_selector);
-	e_name_selector_dialog_set_destination_index (
-		dialog, header->priv->destination_index);
-	gtk_dialog_run (GTK_DIALOG (dialog));
-	gtk_widget_hide (GTK_WIDGET (dialog));
+	/* XXX Putting this function signature in libedataserverui
+	 *     was a terrible idea.  Now we're stuck with it. */
+
+	return e_contact_editor_new (
+		shell, book, contact, is_new, editable);
+}
+
+static gpointer
+contact_list_editor_fudge_new (EBook *book,
+                               EContact *contact,
+                               gboolean is_new,
+                               gboolean editable)
+{
+	EShell *shell = e_shell_get_default ();
+
+	/* XXX Putting this function signature in libedataserverui
+	 *     was a terrible idea.  Now we're stuck with it. */
+
+	return e_contact_list_editor_new (
+		shell, book, contact, is_new, editable);
 }
 
 static void
@@ -94,10 +115,12 @@ composer_name_header_constructor (GType type,
 	ENameSelectorModel *model;
 	ENameSelectorEntry *entry;
 	GObject *object;
+	GList *sections;
 	gchar *label;
 
 	/* Chain up to parent's constructor() method. */
-	object = G_OBJECT_CLASS (parent_class)->constructor (
+	object = G_OBJECT_CLASS (
+		e_composer_name_header_parent_class)->constructor (
 		type, n_construct_properties, construct_properties);
 
 	priv = E_COMPOSER_NAME_HEADER_GET_PRIVATE (object);
@@ -107,9 +130,11 @@ composer_name_header_constructor (GType type,
 	label = e_composer_header_get_label (E_COMPOSER_HEADER (object));
 	g_assert (label != NULL);
 
-	/* XXX Peeking at private data. */
-	priv->destination_index = model->sections->len;
+	sections = e_name_selector_model_list_sections (model);
+	priv->destination_index = g_list_length (sections);
 	e_name_selector_model_add_section (model, label, label, NULL);
+	g_list_foreach (sections, (GFunc) g_free, NULL);
+	g_list_free (sections);
 
 	e_composer_header_set_title_tooltip (
 		E_COMPOSER_HEADER (object),
@@ -120,9 +145,9 @@ composer_name_header_constructor (GType type,
 		priv->name_selector, label));
 
 	e_name_selector_entry_set_contact_editor_func (
-		entry, e_contact_editor_new);
+		entry, contact_editor_fudge_new);
 	e_name_selector_entry_set_contact_list_editor_func (
-		entry, e_contact_list_editor_new);
+		entry, contact_list_editor_fudge_new);
 
 	g_signal_connect (
 		entry, "changed",
@@ -133,9 +158,7 @@ composer_name_header_constructor (GType type,
 		NULL);
 	E_COMPOSER_HEADER (object)->input_widget = g_object_ref_sink (entry);
 
-	g_signal_connect (
-		object, "clicked",
-		G_CALLBACK (composer_name_header_clicked_cb), NULL);
+	g_free (label);
 
 	return object;
 }
@@ -191,15 +214,31 @@ composer_name_header_dispose (GObject *object)
 	}
 
 	/* Chain up to parent's dispose() method. */
-	G_OBJECT_CLASS (parent_class)->dispose (object);
+	G_OBJECT_CLASS (e_composer_name_header_parent_class)->dispose (object);
 }
 
 static void
-composer_name_header_class_init (EComposerNameHeaderClass *class)
+composer_name_header_clicked (EComposerHeader *header)
+{
+	EComposerNameHeaderPrivate *priv;
+	ENameSelectorDialog *dialog;
+
+	priv = E_COMPOSER_NAME_HEADER_GET_PRIVATE (header);
+
+	dialog = e_name_selector_peek_dialog (priv->name_selector);
+	e_name_selector_dialog_set_destination_index (
+		dialog, priv->destination_index);
+	e_name_selector_show_dialog (priv->name_selector, header->title_widget);
+	gtk_dialog_run (GTK_DIALOG (dialog));
+	gtk_widget_hide (GTK_WIDGET (dialog));
+}
+
+static void
+e_composer_name_header_class_init (EComposerNameHeaderClass *class)
 {
 	GObjectClass *object_class;
+	EComposerHeaderClass *header_class;
 
-	parent_class = g_type_class_peek_parent (class);
 	g_type_class_add_private (class, sizeof (EComposerNameHeaderPrivate));
 
 	object_class = G_OBJECT_CLASS (class);
@@ -207,6 +246,9 @@ composer_name_header_class_init (EComposerNameHeaderClass *class)
 	object_class->set_property = composer_name_header_set_property;
 	object_class->get_property = composer_name_header_get_property;
 	object_class->dispose = composer_name_header_dispose;
+
+	header_class = E_COMPOSER_HEADER_CLASS (class);
+	header_class->clicked = composer_name_header_clicked;
 
 	g_object_class_install_property (
 		object_class,
@@ -221,36 +263,9 @@ composer_name_header_class_init (EComposerNameHeaderClass *class)
 }
 
 static void
-composer_name_header_init (EComposerNameHeader *header)
+e_composer_name_header_init (EComposerNameHeader *header)
 {
 	header->priv = E_COMPOSER_NAME_HEADER_GET_PRIVATE (header);
-}
-
-GType
-e_composer_name_header_get_type (void)
-{
-	static GType type = 0;
-
-	if (G_UNLIKELY (type == 0)) {
-		static const GTypeInfo type_info = {
-			sizeof (EComposerNameHeaderClass),
-			(GBaseInitFunc) NULL,
-			(GBaseFinalizeFunc) NULL,
-			(GClassInitFunc) composer_name_header_class_init,
-			(GClassFinalizeFunc) NULL,
-			NULL,  /* class_data */
-			sizeof (EComposerNameHeader),
-			0,     /* n_preallocs */
-			(GInstanceInitFunc) composer_name_header_init,
-			NULL   /* value_table */
-		};
-
-		type = g_type_register_static (
-			E_TYPE_COMPOSER_HEADER, "EComposerNameHeader",
-			&type_info, 0);
-	}
-
-	return type;
 }
 
 EComposerHeader *
@@ -259,33 +274,11 @@ e_composer_name_header_new (const gchar *label,
 {
 	g_return_val_if_fail (E_IS_NAME_SELECTOR (name_selector), NULL);
 
-	return g_object_new (
-		E_TYPE_COMPOSER_NAME_HEADER, "label", label,
-		"button", !e_msg_composer_get_lite(), "name-selector", name_selector, NULL);
-}
-
-EComposerHeader *
-e_composer_name_header_new_with_label (const gchar *label,
-                                       ENameSelector *name_selector)
-{
-	return g_object_new (
-		E_TYPE_COMPOSER_NAME_HEADER, "label", label,
-		"button", !e_msg_composer_get_lite(),  "name-selector", name_selector,
-		"addaction", FALSE, "visible", TRUE, NULL);
-}
-
-EComposerHeader *
-e_composer_name_header_new_with_action (const gchar *label,
-                                        const gchar *action_label,
-                                        ENameSelector *name_selector)
-{
-	g_return_val_if_fail (E_IS_NAME_SELECTOR (name_selector), NULL);
-
-	return g_object_new (
-		E_TYPE_COMPOSER_NAME_HEADER, "label", label,
-		"button", !e_msg_composer_get_lite(), "name-selector", name_selector,
-		"addaction_text", action_label,
-		"addaction", action_label != NULL, NULL);
+	return g_object_new (E_TYPE_COMPOSER_NAME_HEADER,
+			     "label", label,
+			     "button", TRUE,
+			     "name-selector", name_selector,
+			     NULL);
 }
 
 ENameSelector *
@@ -318,7 +311,8 @@ e_composer_name_header_get_destinations (EComposerNameHeader *header)
 
 	g_list_free (list);
 
-	return destinations;  /* free with e_destination_freev() */
+	/* free with e_destination_freev() */
+	return destinations;
 }
 
 void

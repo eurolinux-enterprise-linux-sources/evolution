@@ -27,17 +27,18 @@
 
 #include "eab-contact-merging.h"
 #include "eab-contact-compare.h"
-#include <glade/glade.h>
 #include <gtk/gtk.h>
 #include <string.h>
 #include "addressbook/gui/widgets/eab-contact-display.h"
+#include "e-util/e-util.h"
 #include "e-util/e-util-private.h"
 #include <glib/gi18n.h>
 
 typedef struct dropdown_data dropdown_data;
 typedef enum {
 	E_CONTACT_MERGING_ADD,
-	E_CONTACT_MERGING_COMMIT
+	E_CONTACT_MERGING_COMMIT,
+	E_CONTACT_MERGING_FIND
 } EContactMergingOpType;
 
 typedef struct {
@@ -48,8 +49,9 @@ typedef struct {
 	/*match is the duplicate contact already existing in the addressbook*/
 	EContact *match;
 	GList *avoid;
-	EBookIdCallback id_cb;
-	EBookCallback   cb;
+	EBookIdAsyncCallback id_cb;
+	EBookAsyncCallback   cb;
+	EBookContactAsyncCallback c_cb;
 	gpointer closure;
 } EContactMergingLookup;
 
@@ -108,12 +110,12 @@ free_lookup (EContactMergingLookup *lookup)
 }
 
 static void
-final_id_cb (EBook *book, EBookStatus status, const gchar *id, gpointer closure)
+final_id_cb (EBook *book, const GError *error, const gchar *id, gpointer closure)
 {
 	EContactMergingLookup *lookup = closure;
 
 	if (lookup->id_cb)
-		lookup->id_cb (lookup->book, status, id, lookup->closure);
+		lookup->id_cb (lookup->book, error, id, lookup->closure);
 
 	free_lookup (lookup);
 
@@ -121,12 +123,25 @@ final_id_cb (EBook *book, EBookStatus status, const gchar *id, gpointer closure)
 }
 
 static void
-final_cb (EBook *book, EBookStatus status, gpointer closure)
+final_cb_as_id (EBook *book, const GError *error, gpointer closure)
+{
+	EContactMergingLookup *lookup = closure;
+
+	if (lookup->id_cb)
+		lookup->id_cb (lookup->book, error, lookup->contact ? e_contact_get_const (lookup->contact, E_CONTACT_UID) : NULL, lookup->closure);
+
+	free_lookup (lookup);
+
+	finished_lookup ();
+}
+
+static void
+final_cb (EBook *book, const GError *error, gpointer closure)
 {
 	EContactMergingLookup *lookup = closure;
 
 	if (lookup->cb)
-		lookup->cb (lookup->book, status, lookup->closure);
+		lookup->cb (lookup->book, error, lookup->closure);
 
 	free_lookup (lookup);
 
@@ -134,33 +149,43 @@ final_cb (EBook *book, EBookStatus status, gpointer closure)
 }
 
 static void
-doit (EContactMergingLookup *lookup)
+doit (EContactMergingLookup *lookup, gboolean force_commit)
 {
-	if (lookup->op == E_CONTACT_MERGING_ADD)
-		e_book_async_add_contact (lookup->book, lookup->contact, final_id_cb, lookup);
-	else if (lookup->op == E_CONTACT_MERGING_COMMIT)
-		e_book_async_commit_contact (lookup->book, lookup->contact, final_cb, lookup);
+	if (lookup->op == E_CONTACT_MERGING_ADD) {
+		if (force_commit)
+			e_book_commit_contact_async (lookup->book, lookup->contact, final_cb_as_id, lookup);
+		else
+			e_book_add_contact_async (lookup->book, lookup->contact, final_id_cb, lookup);
+	} else if (lookup->op == E_CONTACT_MERGING_COMMIT)
+		e_book_commit_contact_async (lookup->book, lookup->contact, final_cb, lookup);
 }
 
 static void
 cancelit (EContactMergingLookup *lookup)
 {
+	GError *error = g_error_new (E_BOOK_ERROR, E_BOOK_ERROR_CANCELLED, _("Cancelled"));
+
 	if (lookup->op == E_CONTACT_MERGING_ADD) {
-		final_id_cb (lookup->book, E_BOOK_ERROR_CANCELLED, NULL, lookup);
+		final_id_cb (lookup->book, error, NULL, lookup);
 	} else if (lookup->op == E_CONTACT_MERGING_COMMIT) {
-		final_cb (lookup->book, E_BOOK_ERROR_CANCELLED, lookup);
+		final_cb (lookup->book, error, lookup);
 	}
+
+	g_error_free (error);
 }
 
 static void
 dialog_map (GtkWidget *window, GdkEvent *event, GtkWidget *table)
 {
+	GtkAllocation allocation;
 	gint h, w;
 
+	gtk_widget_get_allocation (table, &allocation);
+
 	/* Spacing around the table */
-	w = table->allocation.width + 30;
+	w = allocation.width + 30;
 	/* buttons and outer spacing */
-	h = table->allocation.height + 60;
+	h = allocation.height + 60;
 	if (w > 400)
 		w = 400;
 	if (h > 450)
@@ -186,6 +211,7 @@ static gint
 mergeit (EContactMergingLookup *lookup)
 {
 	GtkWidget *scrolled_window, *label, *hbox, *dropdown;
+	GtkWidget *content_area;
 	GtkDialog *dialog;
 	GtkTable *table;
 	EContactField field;
@@ -197,6 +223,8 @@ mergeit (EContactMergingLookup *lookup)
 
 	dialog = (GtkDialog *)(gtk_dialog_new_with_buttons (_("Merge Contact"), NULL, GTK_DIALOG_NO_SEPARATOR, NULL));
 	gtk_container_set_border_width (GTK_CONTAINER(dialog), 5);
+
+	content_area = gtk_dialog_get_content_area (dialog);
 
 	scrolled_window = gtk_scrolled_window_new (NULL, NULL);
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window),
@@ -337,7 +365,7 @@ mergeit (EContactMergingLookup *lookup)
 
 	gtk_window_set_default_size (GTK_WINDOW (dialog), 420, 300);
 	gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (scrolled_window), GTK_WIDGET (table));
-	gtk_box_pack_start (GTK_BOX (dialog->vbox), GTK_WIDGET (scrolled_window), TRUE, TRUE, 0);
+	gtk_box_pack_start (GTK_BOX (content_area), GTK_WIDGET (scrolled_window), TRUE, TRUE, 0);
 	gtk_widget_show (scrolled_window);
 	g_signal_connect (dialog, "map-event", G_CALLBACK (dialog_map), table);
 	gtk_widget_show_all ((GtkWidget *)table);
@@ -347,8 +375,8 @@ mergeit (EContactMergingLookup *lookup)
 	{
 	case GTK_RESPONSE_OK:
 		     lookup->contact = lookup->match;
-		     e_book_async_remove_contact (lookup->book, lookup->match, NULL, lookup);
-		     e_book_async_add_contact (lookup->book, lookup->contact, final_id_cb, lookup);
+		     e_book_remove_contact_async (lookup->book, lookup->match, NULL, lookup);
+		     e_book_add_contact_async (lookup->book, lookup->contact, final_id_cb, lookup);
 		     value = 1;
 		     break;
 	case GTK_RESPONSE_CANCEL:
@@ -415,7 +443,7 @@ response (GtkWidget *dialog, gint response, EContactMergingLookup *lookup)
 
 	switch (response) {
 	case 0:
-		doit (lookup);
+		doit (lookup, FALSE);
 		break;
 	case 1:
 		cancelit (lookup);
@@ -437,66 +465,90 @@ static void
 match_query_callback (EContact *contact, EContact *match, EABContactMatchType type, gpointer closure)
 {
 	EContactMergingLookup *lookup = closure;
-	gchar *gladefile;
 	gint flag;
+	gboolean same_uids;
 
-	if ((gint) type <= (gint) EAB_CONTACT_MATCH_VAGUE) {
-		doit (lookup);
+	if (lookup->op == E_CONTACT_MERGING_FIND) {
+		if (lookup->c_cb)
+			lookup->c_cb (lookup->book, NULL, (gint) type <= (gint) EAB_CONTACT_MATCH_VAGUE ? NULL : match, lookup->closure);
+
+		free_lookup (lookup);
+		finished_lookup ();
+		return;
+	}
+
+	/* if had same UID, then we are editing old contact, thus force commit change to it */
+	same_uids = contact && match
+		&& e_contact_get_const (contact, E_CONTACT_UID)
+		&& e_contact_get_const (match, E_CONTACT_UID)
+		&& g_str_equal (e_contact_get_const (contact, E_CONTACT_UID), e_contact_get_const (match, E_CONTACT_UID));
+
+	if ((gint) type <= (gint) EAB_CONTACT_MATCH_VAGUE || same_uids) {
+		doit (lookup, same_uids);
 	} else {
-		GladeXML *ui;
+		GtkBuilder *builder;
+		GtkWidget *container;
+		GtkWidget *merge_button;
+		GtkWidget *widget;
 
-		GtkWidget *widget, *merge_button;
+		/* XXX I think we're leaking the GtkBuilder. */
+		builder = gtk_builder_new ();
 
 		lookup->match = g_object_ref (match);
 		if (lookup->op == E_CONTACT_MERGING_ADD) {
 			/* Compares all the values of contacts and return true, if they match */
 			flag = check_if_same (contact, match);
-			gladefile = g_build_filename (EVOLUTION_GLADEDIR,
-						      "eab-contact-duplicate-detected.glade",
-						      NULL);
-			ui = glade_xml_new (gladefile, NULL, NULL);
-			merge_button = glade_xml_get_widget (ui, "button5");
+			e_load_ui_builder_definition (
+				builder, "eab-contact-duplicate-detected.ui");
+			merge_button = e_builder_get_widget (builder, "button5");
 			/* Merge Button not sensitive when all values are same */
 			if (flag)
 				gtk_widget_set_sensitive (GTK_WIDGET (merge_button), FALSE);
-			g_free (gladefile);
 		} else if (lookup->op == E_CONTACT_MERGING_COMMIT) {
-			gladefile = g_build_filename (EVOLUTION_GLADEDIR,
-						      "eab-contact-commit-duplicate-detected.glade",
-						      NULL);
-			ui = glade_xml_new (gladefile, NULL, NULL);
-			g_free (gladefile);
+			e_load_ui_builder_definition (
+				builder, "eab-contact-commit-duplicate-detected.ui");
 		} else {
-			doit (lookup);
+			doit (lookup, FALSE);
 			return;
 		}
 
-		widget = glade_xml_get_widget (ui, "custom-old-contact");
-		eab_contact_display_render (EAB_CONTACT_DISPLAY (widget),
-					    match, EAB_CONTACT_DISPLAY_RENDER_COMPACT);
+		widget = e_builder_get_widget (builder, "custom-old-contact");
+		eab_contact_display_set_mode (
+			EAB_CONTACT_DISPLAY (widget),
+			EAB_CONTACT_DISPLAY_RENDER_COMPACT);
+		eab_contact_display_set_contact (
+			EAB_CONTACT_DISPLAY (widget), match);
 
-		widget = glade_xml_get_widget (ui, "custom-new-contact");
-		eab_contact_display_render (EAB_CONTACT_DISPLAY (widget),
-					    contact, EAB_CONTACT_DISPLAY_RENDER_COMPACT);
+		widget = e_builder_get_widget (builder, "custom-new-contact");
+		eab_contact_display_set_mode (
+			EAB_CONTACT_DISPLAY (widget),
+			EAB_CONTACT_DISPLAY_RENDER_COMPACT);
+		eab_contact_display_set_contact (
+			EAB_CONTACT_DISPLAY (widget), contact);
 
-		widget = glade_xml_get_widget (ui, "dialog-duplicate-contact");
+		widget = e_builder_get_widget (builder, "dialog-duplicate-contact");
 
 		gtk_widget_ensure_style (widget);
-		gtk_container_set_border_width (GTK_CONTAINER (GTK_DIALOG (widget)->vbox), 0);
-		gtk_container_set_border_width (GTK_CONTAINER (GTK_DIALOG (widget)->action_area), 12);
 
-		g_signal_connect (widget, "response",
-				  G_CALLBACK (response), lookup);
+		container = gtk_dialog_get_action_area (GTK_DIALOG (widget));
+		gtk_container_set_border_width (GTK_CONTAINER (container), 12);
+
+		container = gtk_dialog_get_content_area (GTK_DIALOG (widget));
+		gtk_container_set_border_width (GTK_CONTAINER (container), 0);
+
+		g_signal_connect (
+			widget, "response",
+			G_CALLBACK (response), lookup);
 
 		gtk_widget_show_all (widget);
 	}
 }
 
 gboolean
-eab_merging_book_add_contact (EBook           *book,
-			      EContact        *contact,
-			      EBookIdCallback  cb,
-			      gpointer         closure)
+eab_merging_book_add_contact (EBook                *book,
+			      EContact             *contact,
+			      EBookIdAsyncCallback  cb,
+			      gpointer              closure)
 {
 	EContactMergingLookup *lookup;
 
@@ -516,10 +568,10 @@ eab_merging_book_add_contact (EBook           *book,
 }
 
 gboolean
-eab_merging_book_commit_contact (EBook                 *book,
-				 EContact              *contact,
-				 EBookCallback          cb,
-				 gpointer               closure)
+eab_merging_book_commit_contact (EBook              *book,
+				 EContact           *contact,
+				 EBookAsyncCallback  cb,
+				 gpointer            closure)
 {
 	EContactMergingLookup *lookup;
 
@@ -538,15 +590,25 @@ eab_merging_book_commit_contact (EBook                 *book,
 	return TRUE;
 }
 
-GtkWidget *
-_eab_contact_merging_create_contact_display(gchar *name,
-					    gchar *string1, gchar *string2,
-					    gint int1, gint int2);
-
-GtkWidget *
-_eab_contact_merging_create_contact_display(gchar *name,
-					    gchar *string1, gchar *string2,
-					    gint int1, gint int2)
+gboolean
+eab_merging_book_find_contact (EBook                     *book,
+			       EContact                  *contact,
+			       EBookContactAsyncCallback  cb,
+			       gpointer                   closure)
 {
-	return eab_contact_display_new();
+	EContactMergingLookup *lookup;
+
+	lookup = g_new (EContactMergingLookup, 1);
+
+	lookup->op = E_CONTACT_MERGING_FIND;
+	lookup->book = g_object_ref (book);
+	lookup->contact = g_object_ref (contact);
+	lookup->c_cb = cb;
+	lookup->closure = closure;
+	lookup->avoid = g_list_append (NULL, contact);
+	lookup->match = NULL;
+
+	add_lookup (lookup);
+
+	return TRUE;
 }

@@ -35,22 +35,22 @@
 
 #define fsync(fd) 0
 
-const gchar *_e_get_category_icons (void) G_GNUC_CONST;
+const gchar *_e_get_bindir (void) G_GNUC_CONST;
 const gchar *_e_get_datadir (void) G_GNUC_CONST;
 const gchar *_e_get_ecpsdir (void) G_GNUC_CONST;
 const gchar *_e_get_etspecdir (void) G_GNUC_CONST;
 const gchar *_e_get_galviewsdir (void) G_GNUC_CONST;
-const gchar *_e_get_gladedir (void) G_GNUC_CONST;
 const gchar *_e_get_helpdir (void) G_GNUC_CONST;
-const gchar *_e_get_iconsdir (void) G_GNUC_CONST;
+const gchar *_e_get_icondir (void) G_GNUC_CONST;
 const gchar *_e_get_imagesdir (void) G_GNUC_CONST;
 const gchar *_e_get_libdir (void) G_GNUC_CONST;
 const gchar *_e_get_libexecdir (void) G_GNUC_CONST;
 const gchar *_e_get_localedir (void) G_GNUC_CONST;
+const gchar *_e_get_moduledir (void) G_GNUC_CONST;
 const gchar *_e_get_plugindir (void) G_GNUC_CONST;
 const gchar *_e_get_prefix (void) G_GNUC_CONST;
 const gchar *_e_get_privdatadir (void) G_GNUC_CONST;
-const gchar *_e_get_search_rule_dir (void) G_GNUC_CONST;
+const gchar *_e_get_ruledir (void) G_GNUC_CONST;
 const gchar *_e_get_sounddir (void) G_GNUC_CONST;
 const gchar *_e_get_sysconfdir (void) G_GNUC_CONST;
 const gchar *_e_get_toolsdir (void) G_GNUC_CONST;
@@ -68,8 +68,8 @@ const gchar *_e_get_uidir (void) G_GNUC_CONST;
 #undef PREFIX
 #define PREFIX _e_get_prefix ()
 
-#undef EVOLUTION_CATEGORY_ICONS
-#define EVOLUTION_CATEGORY_ICONS _e_get_category_icons ()
+#undef EVOLUTION_BINDIR
+#define EVOLUTION_BINDIR _e_get_bindir ()
 
 #undef EVOLUTION_DATADIR
 #define EVOLUTION_DATADIR _e_get_datadir ()
@@ -86,23 +86,20 @@ const gchar *_e_get_uidir (void) G_GNUC_CONST;
 #undef EVOLUTION_GALVIEWSDIR
 #define EVOLUTION_GALVIEWSDIR _e_get_galviewsdir ()
 
-#undef EVOLUTION_GLADEDIR
-#define EVOLUTION_GLADEDIR _e_get_gladedir ()
-
 #undef EVOLUTION_HELPDIR
 #define EVOLUTION_HELPDIR _e_get_helpdir ()
 
-#undef EVOLUTION_ICONSDIR
-#define EVOLUTION_ICONSDIR _e_get_iconsdir ()
-
-#undef EVOLUTION_IMAGES
-#define EVOLUTION_IMAGES EVOLUTION_IMAGESDIR
+#undef EVOLUTION_ICONDIR
+#define EVOLUTION_ICONDIR _e_get_icondir ()
 
 #undef EVOLUTION_IMAGESDIR
 #define EVOLUTION_IMAGESDIR _e_get_imagesdir ()
 
 #undef EVOLUTION_LIBEXECDIR
 #define EVOLUTION_LIBEXECDIR _e_get_libexecdir ()
+
+#undef EVOLUTION_MODULEDIR
+#define EVOLUTION_MODULEDIR _e_get_moduledir ()
 
 #undef EVOLUTION_PLUGINDIR
 #define EVOLUTION_PLUGINDIR _e_get_plugindir ()
@@ -122,8 +119,8 @@ const gchar *_e_get_uidir (void) G_GNUC_CONST;
 #undef EVOLUTION_UIDIR
 #define EVOLUTION_UIDIR _e_get_uidir ()
 
-#undef SEARCH_RULE_DIR
-#define SEARCH_RULE_DIR _e_get_search_rule_dir ()
+#undef EVOLUTION_RULEDIR
+#define EVOLUTION_RULEDIR _e_get_ruledir ()
 
 #endif	/* G_OS_WIN32 */
 

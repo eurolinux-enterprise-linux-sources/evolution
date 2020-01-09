@@ -57,7 +57,7 @@ További információk
 	http://mail.gnome.org/mailman/listinfo/evolution-list címen iratkozhat fel.
 
 	Az Evolution projekttel kapcsolatos információk a
-	http://www.gnome.org/projects/evolution címen érhetők el.
+	http://projects.gnome.org/evolution címen érhetők el.
 
 
 Tisztelettel,
@@ -73,7 +73,7 @@ Content-Type: text/html; charset=utf-8
   <META HTTP-EQUIV="Content-Type" CONTENT="text/html; CHARSET=UTF-8">
   <META NAME="GENERATOR" CONTENT="GtkHTML/0.13.99">
 </HEAD>
-<BODY BGCOLOR="#f8fcf8">
+<BODY BGCOLOR="#f8fcf8" TEXT="#000000">
 <TABLE BACKGROUND="cid:1001417869.27019.4.camel@spectrolite" CELLSPACING="0" CELLPADDING="0" WIDTH="100%">
 <TR><TD ALIGN="left" VALIGN="top">
 <IMG SRC="cid:1001417869.27019.5.camel@spectrolite" ALIGN="top" BORDER="0" WIDTH="8" HEIGHT="8"></TD>
@@ -133,13 +133,13 @@ További információk
 
 <blockquote>
 	Az Evolution felhasználók (angol nyelvű) levelezőlistájára a
-	<a href="http://lists.gnome.org/mailman/listinfo/evolution">http://lists.gnome.org/mailman/listinfo/evolution</a> címen iratkozhat fel.
+	<a href="http://lists.gnome.org/mailman/listinfo/evolution-list">http://lists.gnome.org/mailman/listinfo/evolution-list</a> címen iratkozhat fel.
 
 	Az Evolution projekttel kapcsolatos információk a
-	<a href="http://www.gnome.org/projects/evolution">http://www.gnome.org/projects/evolution</a> címen érhetők el.
+	<a href="http://projects.gnome.org/evolution">http://projects.gnome.org/evolution</a> címen érhetők el.
 	<!--
 	A gyakran feltett kérdésekre adott válaszok a 
-	<a href="http://go-evolution.org/FAQ">http://go-evolution.org/FAQ</a> oldalon találhatók.
+	<a href="http://live.gnome.org/Evolution/FAQ">http://live.gnome.org/Evolution/FAQ</a> oldalon találhatók.
 	-->
 <br><br>	
 </blockquote>

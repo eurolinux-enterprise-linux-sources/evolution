@@ -1,125 +1,141 @@
 eutilincludedir = $(privincludedir)/e-util
-econdincludedir = $(privincludedir)/e-conduit
 ecpsdir = $(privdatadir)/ecps
 ruledir = $(privdatadir)
 
 if OS_WIN32
-WIN32_BOOTSTRAP_LIBS = $(top_builddir)/win32/libemiscwidgets.la
-PLATFORM_SOURCES = e-win32-reloc.c
+PLATFORM_SOURCES = e-win32-reloc.c e-win32-defaults.c e-win32-defaults.h
 endif
 
-AM_CPPFLAGS =								\
+privsolib_LTLIBRARIES = libeutil.la
+
+eutilinclude_HEADERS = 				\
+	e-account-utils.h			\
+	e-activity.h				\
+	e-alert.h				\
+	e-alert-activity.h			\
+	e-alert-dialog.h			\
+	e-binding.h				\
+	e-bit-array.h				\
+	e-categories-config.h			\
+	e-charset.h				\
+	e-config.h				\
+	e-datetime-format.h			\
+	e-dialog-utils.h			\
+	e-dialog-widgets.h			\
+	e-event.h				\
+	e-extensible.h				\
+	e-extension.h				\
+	e-file-utils.h				\
+	e-html-utils.h				\
+	e-icon-factory.h			\
+	e-import.h				\
+	e-io-activity.h				\
+	e-logger.h				\
+	e-marshal.h				\
+	e-mktemp.h				\
+	e-module.h				\
+	e-non-intrusive-error-dialog.h		\
+	e-poolv.h				\
+	e-print.h				\
+	e-plugin.h				\
+	e-plugin-ui.h				\
+	e-plugin-util.h				\
+	e-profile-event.h			\
+	e-selection.h				\
+	e-signature.h				\
+	e-signature-list.h			\
+	e-signature-utils.h			\
+	e-sorter.h				\
+	e-sorter-array.h			\
+	e-text-event-processor-emacs-like.h	\
+	e-text-event-processor-types.h		\
+	e-text-event-processor.h		\
+	e-timeout-activity.h			\
+	e-ui-manager.h				\
+	e-util.h				\
+	e-unicode.h				\
+	e-xml-utils.h				\
+	gconf-bridge.h
+
+libeutil_la_CPPFLAGS =							\
+	$(AM_CPPFLAGS)							\
 	-I$(top_srcdir)							\
 	-I$(top_builddir)						\
 	-I$(top_srcdir)/widgets						\
-	-DEVOLUTION_CATEGORY_ICONS=\""$(imagesdir)/categories"\"	\
+	-DEVOLUTION_BINDIR=\""$(bindir)"\"				\
 	-DEVOLUTION_DATADIR=\""$(datadir)"\"				\
 	-DEVOLUTION_ECPSDIR=\""$(ecpsdir)"\"				\
 	-DEVOLUTION_ETSPECDIR=\""$(etspecdir)"\"			\
 	-DEVOLUTION_GALVIEWSDIR=\""$(viewsdir)"\"			\
-	-DEVOLUTION_GLADEDIR=\""$(gladedir)"\"				\
 	-DEVOLUTION_HELPDIR=\""$(evolutionhelpdir)"\"			\
-	-DEVOLUTION_ICONSDIR=\""$(imagesdir)"\"				\
+	-DEVOLUTION_ICONDIR=\""$(icondir)"\"				\
 	-DEVOLUTION_IMAGESDIR=\""$(imagesdir)"\"			\
 	-DEVOLUTION_LIBDIR=\""$(datadir)"\"				\
 	-DEVOLUTION_LIBEXECDIR=\""$(privlibexecdir)"\"			\
 	-DEVOLUTION_LOCALEDIR=\""$(localedir)"\"			\
+	-DEVOLUTION_MODULEDIR=\""$(moduledir)"\"		\
 	-DEVOLUTION_PLUGINDIR=\""$(plugindir)"\"			\
 	-DEVOLUTION_PREFIX=\""$(prefix)"\"				\
 	-DEVOLUTION_PRIVDATADIR=\""$(privdatadir)"\"			\
 	-DEVOLUTION_SOUNDDIR=\""$(soundsdir)"\"				\
 	-DEVOLUTION_SYSCONFDIR=\""$(sysconfdir)"\"			\
 	-DEVOLUTION_TOOLSDIR=\""$(privlibexecdir)"\"			\
-	-DEVOLUTION_UIDIR=\""$(evolutionuidir)"\"			\
-	-DSEARCH_RULE_DIR=\"$(ruledir)\"				\
+	-DEVOLUTION_UIDIR=\""$(uidir)"\"				\
+	-DEVOLUTION_RULEDIR=\"$(ruledir)\"				\
 	-DG_LOG_DOMAIN=\"e-utils\"					\
-	$(GNOME_PILOT_CFLAGS)						\
+	$(GNOME_PLATFORM_CFLAGS)					\
 	$(E_UTIL_CFLAGS)
-
-privsolib_LTLIBRARIES = libeutil.la libeconduit.la
-
-eutilinclude_HEADERS = 				\
-	e-bconf-map.h				\
-	e-binding.h				\
-	e-categories-config.h			\
-	e-config.h				\
-	e-corba-utils.h				\
-	e-cursor.h				\
-	e-datetime-format.h			\
-	e-dialog-utils.h			\
-	e-dialog-widgets.h			\
-	e-error.h				\
-	e-event.h				\
-	e-folder-map.h				\
-	e-fsutils.h				\
-	e-html-utils.h				\
-	e-icon-factory.h			\
-	e-import.h				\
-	e-logger.h				\
-	e-non-intrusive-error-dialog.h		\
-	e-marshal.h				\
-	e-menu.h				\
-	e-mktemp.h				\
-	e-print.h				\
-	e-plugin.h				\
-	e-plugin-ui.h				\
-	e-popup.h				\
-	e-profile-event.h			\
-	e-request.h				\
-	e-signature.h				\
-	e-signature-list.h			\
-	e-bit-array.h				\
-	e-sorter.h				\
-	e-sorter-array.h			\
-	e-text-event-processor-emacs-like.h	\
-	e-text-event-processor-types.h		\
-	e-text-event-processor.h		\
-	e-util.h				\
-	e-util-labels.h				\
-	e-xml-utils.h
 
 libeutil_la_SOURCES =				\
 	$(eutilinclude_HEADERS)			\
-	e-bconf-map.c				\
+	e-account-utils.c			\
+	e-activity.c				\
+	e-alert.c				\
+	e-alert-activity.c			\
+	e-alert-dialog.c			\
 	e-binding.c				\
+	e-bit-array.c				\
 	e-categories-config.c			\
+	e-charset.c				\
 	e-config.c				\
-	e-corba-utils.c				\
-	e-cursor.c				\
 	e-datetime-format.c			\
 	e-dialog-utils.c			\
 	e-dialog-widgets.c			\
-	e-error.c				\
 	e-event.c				\
-	e-folder-map.c				\
-	e-fsutils.c				\
+	e-extensible.c				\
+	e-extension.c				\
+	e-file-utils.c				\
 	e-html-utils.c				\
 	e-icon-factory.c			\
 	e-import.c				\
+	e-io-activity.c				\
 	e-logger.c				\
-	e-non-intrusive-error-dialog.c		\
 	e-marshal.c				\
-	e-menu.c				\
 	e-mktemp.c				\
+	e-module.c				\
+	e-non-intrusive-error-dialog.c		\
+	e-poolv.c				\
 	e-plugin.c				\
 	e-plugin-ui.c				\
-	e-popup.c				\
+	e-plugin-util.c				\
 	e-print.c				\
 	e-profile-event.c			\
-	e-request.c				\
+	e-selection.c				\
 	e-signature.c				\
 	e-signature-list.c			\
-	e-bit-array.c				\
+	e-signature-utils.c			\
 	e-sorter.c				\
 	e-sorter-array.c			\
-	e-text-event-processor-emacs-like.c     \
-	e-text-event-processor.c                \
+	e-text-event-processor-emacs-like.c	\
+	e-text-event-processor.c		\
+	e-timeout-activity.c			\
+	e-ui-manager.c				\
 	e-util.c				\
-	e-util-labels.c				\
+	e-unicode.c				\
 	e-util-private.h			\
 	e-xml-utils.c				\
 	gconf-bridge.c				\
-	gconf-bridge.h				\
+	gtk-compat.h				\
 	$(PLATFORM_SOURCES)
 
 MARSHAL_GENERATED = e-marshal.c e-marshal.h
@@ -128,32 +144,10 @@ MARSHAL_GENERATED = e-marshal.c e-marshal.h
 libeutil_la_LDFLAGS = $(NO_UNDEFINED)
 
 libeutil_la_LIBADD = 		\
-	$(WIN32_BOOTSTRAP_LIBS)	\
 	$(ICONV_LIBS)		\
 	$(E_UTIL_LIBS)		\
-	$(GNOME_PILOT_LIBS)	\
+	$(GNOME_PLATFORM_LIBS)	\
 	$(INTLLIBS)
-
-econdinclude_HEADERS =		\
-	e-pilot-map.h		\
-	e-pilot-util.h
-
-pilot_sources = \
-	$(econdinclude_HEADERS)	\
-	e-pilot-map.c		\
-	e-pilot-util.c
-
-if ENABLE_PILOT_CONDUITS
-pilot_compile = $(pilot_sources)
-else
-pilot_compile = e-html-utils.c
-endif
-
-libeconduit_la_SOURCES = $(pilot_compile)
-
-libeconduit_la_LDFLAGS = $(NO_UNDEFINED)
-
-libeconduit_la_LIBADD = $(E_UTIL_LIBS) 	$(GNOME_PILOT_LIBS)
 
 error_DATA = e-system.error
 errordir = $(privdatadir)/errors
@@ -161,8 +155,6 @@ errordir = $(privdatadir)/errors
 
 EXTRA_DIST =				\
 	e-system.error.xml		\
-	$(pilot_sources)		\
-	ChangeLog.pre-1-4		\
 	e-marshal.list
 
 BUILT_SOURCES = $(MARSHAL_GENERATED) $(error_DATA)

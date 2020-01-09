@@ -65,76 +65,164 @@ static void free_buddy_list (GList *blist);
 static void parse_buddy_group (xmlNodePtr group, GList **buddies, GSList *blocked);
 static EContactField proto_to_contact_field (const gchar *proto);
 
+static gchar *
+get_buddy_filename (void)
+{
+	return g_build_path ("/", g_get_home_dir (), ".purple/blist.xml", NULL);
+}
+
+static gchar *
+get_md5_as_string (const gchar *filename)
+{
+	GMappedFile *mapped_file;
+	const gchar *contents;
+	gchar *digest;
+	gsize length;
+	GError *error = NULL;
+
+	g_return_val_if_fail (filename != NULL, NULL);
+
+	mapped_file = g_mapped_file_new (filename, FALSE, &error);
+	if (mapped_file == NULL) {
+		g_warning ("%s", error->message);
+		return NULL;
+	}
+
+	contents = g_mapped_file_get_contents (mapped_file);
+	length = g_mapped_file_get_length (mapped_file);
+
+	digest = g_compute_checksum_for_data (
+		G_CHECKSUM_MD5, (guchar *) contents, length);
+
+	g_mapped_file_unref (mapped_file);
+
+	return digest;
+}
+
 void
 bbdb_sync_buddy_list_check (void)
 {
 	GConfClient *gconf;
 	struct stat statbuf;
-	time_t last_sync;
+	time_t last_sync_time;
+	gchar *md5;
 	gchar *blist_path;
 	gchar *last_sync_str;
 
-	gconf = gconf_client_get_default ();
-
-	blist_path = g_build_path ("/", getenv ("HOME"), ".purple/blist.xml", NULL);
+	blist_path = get_buddy_filename ();
 	if (stat (blist_path, &statbuf) < 0) {
 		g_free (blist_path);
-		g_object_unref (G_OBJECT (gconf));
 		return;
 	}
 
-	g_free (blist_path);
-
 	/* Reprocess the buddy list if it's been updated. */
-	last_sync_str = gconf_client_get_string (gconf, GCONF_KEY_GAIM_LAST_SYNC, NULL);
-	if (last_sync_str == NULL || ! strcmp ((const gchar *)last_sync_str, ""))
-		last_sync = (time_t) 0;
+	gconf = gconf_client_get_default ();
+	last_sync_str = gconf_client_get_string (gconf, GCONF_KEY_GAIM_LAST_SYNC_TIME, NULL);
+	if (last_sync_str == NULL || !strcmp ((const gchar *)last_sync_str, ""))
+		last_sync_time = (time_t) 0;
 	else
-		last_sync = (time_t) g_ascii_strtoull (last_sync_str, NULL, 10);
+		last_sync_time = (time_t) g_ascii_strtoull (last_sync_str, NULL, 10);
 
 	g_free (last_sync_str);
+
+	if (statbuf.st_mtime <= last_sync_time) {
+		g_object_unref (G_OBJECT (gconf));
+		g_free (blist_path);
+		return;
+	}
+
+	last_sync_str = gconf_client_get_string (gconf, GCONF_KEY_GAIM_LAST_SYNC_MD5, NULL);
 	g_object_unref (G_OBJECT (gconf));
 
-	if (statbuf.st_mtime > last_sync) {
+	md5 = get_md5_as_string (blist_path);
+
+	if (!last_sync_str || !*last_sync_str || !g_str_equal (md5, last_sync_str)) {
 		fprintf (stderr, "bbdb: Buddy list has changed since last sync.\n");
 
 		bbdb_sync_buddy_list ();
 	}
+
+	g_free (last_sync_str);
+	g_free (blist_path);
+	g_free (md5);
 }
 
-void
-bbdb_sync_buddy_list (void)
+static gboolean
+store_last_sync_idle_cb (gpointer data)
 {
-	GList       *blist, *l;
-	EBook       *book = NULL;
+	GConfClient *gconf;
+	gchar *md5;
+	gchar *blist_path = get_buddy_filename ();
+	time_t last_sync;
+	gchar *last_sync_time;
 
-	/* Get the Gaim buddy list */
-	blist = bbdb_get_gaim_buddy_list ();
-	if (blist == NULL)
-		return;
+	time (&last_sync);
+	last_sync_time = g_strdup_printf ("%ld", (glong) last_sync);
 
-	/* Open the addressbook */
-	book = bbdb_open_addressbook (GAIM_ADDRESSBOOK);
-	if (book == NULL) {
-		free_buddy_list (blist);
-		return;
+	md5 = get_md5_as_string (blist_path);
+
+	gconf = gconf_client_get_default ();
+	gconf_client_set_string (gconf, GCONF_KEY_GAIM_LAST_SYNC_TIME, last_sync_time, NULL);
+	gconf_client_set_string (gconf, GCONF_KEY_GAIM_LAST_SYNC_MD5, md5, NULL);
+
+	g_object_unref (G_OBJECT (gconf));
+
+	g_free (last_sync_time);
+	g_free (blist_path);
+	g_free (md5);
+
+	return FALSE;
+}
+
+static gboolean syncing = FALSE;
+G_LOCK_DEFINE_STATIC (syncing);
+
+struct sync_thread_data
+{
+	GList *blist;
+	EBook *book;
+};
+
+static gpointer
+bbdb_sync_buddy_list_in_thread (gpointer data)
+{
+	GList *l;
+	struct sync_thread_data *std = data;
+
+	g_return_val_if_fail (std != NULL, NULL);
+
+	if (!bbdb_open_ebook (std->book)) {
+		/* book got freed in bbdb_open_ebook on a failure */
+		free_buddy_list (std->blist);
+		g_free (std);
+
+		G_LOCK (syncing);
+		syncing = FALSE;
+		G_UNLOCK (syncing);
+
+		return NULL;
 	}
 
 	printf ("bbdb: Synchronizing buddy list to contacts...\n");
 	/* Walk the buddy list */
-	for (l = blist; l != NULL; l = l->next) {
+	for (l = std->blist; l != NULL; l = l->next) {
 		GaimBuddy *b = l->data;
 		EBookQuery *query;
-		GList *contacts;
+		GList *contacts = NULL;
 		GError *error = NULL;
 		EContact *c;
 
-		if (b->alias == NULL || strlen (b->alias) == 0)
-			b->alias = b->account_name;
+		if (b->alias == NULL || strlen (b->alias) == 0) {
+			g_free (b->alias);
+			b->alias = g_strdup (b->account_name);
+		}
 
 		/* Look for an exact match full name == buddy alias */
 		query = e_book_query_field_test (E_CONTACT_FULL_NAME, E_BOOK_QUERY_IS, b->alias);
-		e_book_get_contacts (book, query, &contacts, NULL);
+		if (!e_book_get_contacts (std->book, query, &contacts, NULL)) {
+			e_book_query_unref (query);
+			continue;
+		}
 		e_book_query_unref (query);
 		if (contacts != NULL) {
 
@@ -146,11 +234,11 @@ bbdb_sync_buddy_list (void)
 
 			c = E_CONTACT (contacts->data);
 
-			if (! bbdb_merge_buddy_to_contact (book, b, c))
+			if (!bbdb_merge_buddy_to_contact (std->book, b, c))
 				continue;
 
 			/* Write it out to the addressbook */
-			if (! e_book_commit_contact (book, c, &error)) {
+			if (!e_book_commit_contact (std->book, c, &error)) {
 				g_warning ("bbdb: Could not modify contact: %s\n", error->message);
 				g_error_free (error);
 			}
@@ -160,36 +248,85 @@ bbdb_sync_buddy_list (void)
 		/* Otherwise, create a new contact. */
 		c = e_contact_new ();
 		e_contact_set (c, E_CONTACT_FULL_NAME, (gpointer) b->alias);
-		if (! bbdb_merge_buddy_to_contact (book, b, c)) {
+		if (!bbdb_merge_buddy_to_contact (std->book, b, c)) {
 			g_object_unref (G_OBJECT (c));
 			continue;
 		}
 
-		if (! e_book_add_contact (book, c, &error)) {
+		if (!e_book_add_contact (std->book, c, &error)) {
 			g_warning ("bbdb: Failed to add new contact: %s\n", error->message);
 			g_error_free (error);
-			return;
+			goto finish;
 		}
 		g_object_unref (G_OBJECT (c));
 
 	}
 
-	/* Update the last-sync'd time */
-	{
-		GConfClient *gconf;
-		time_t  last_sync;
-		gchar   *last_sync_str;
+	g_idle_add (store_last_sync_idle_cb, NULL);
 
-		gconf = gconf_client_get_default ();
-
-		time (&last_sync);
-		last_sync_str = g_strdup_printf ("%ld", (glong) last_sync);
-		gconf_client_set_string (gconf, GCONF_KEY_GAIM_LAST_SYNC, last_sync_str, NULL);
-		g_free (last_sync_str);
-
-		g_object_unref (G_OBJECT (gconf));
-	}
+ finish:
 	printf ("bbdb: Done syncing buddy list to contacts.\n");
+
+	g_object_unref (std->book);
+	free_buddy_list (std->blist);
+	g_free (std);
+
+	G_LOCK (syncing);
+	syncing = FALSE;
+	G_UNLOCK (syncing);
+
+	return NULL;
+}
+
+void
+bbdb_sync_buddy_list (void)
+{
+	GList *blist;
+	GError *error = NULL;
+	EBook *book = NULL;
+	struct sync_thread_data *std;
+
+	G_LOCK (syncing);
+	if (syncing) {
+		G_UNLOCK (syncing);
+		printf ("bbdb: Already syncing buddy list, skipping this call\n");
+		return;
+	}
+
+	/* Get the Gaim buddy list */
+	blist = bbdb_get_gaim_buddy_list ();
+	if (blist == NULL) {
+		G_UNLOCK (syncing);
+		return;
+	}
+
+	/* Open the addressbook */
+	book = bbdb_create_ebook (GAIM_ADDRESSBOOK);
+	if (book == NULL) {
+		free_buddy_list (blist);
+		G_UNLOCK (syncing);
+		return;
+	}
+
+	std = g_new0 (struct sync_thread_data, 1);
+	std->blist = blist;
+	std->book = book;
+
+	syncing = TRUE;
+
+	g_thread_create (bbdb_sync_buddy_list_in_thread, std, FALSE, &error);
+	if (error) {
+		g_warning (
+			"%s: Creation of the thread failed with error: %s",
+			G_STRFUNC, error->message);
+		g_error_free (error);
+
+		G_UNLOCK (syncing);
+		bbdb_sync_buddy_list_in_thread (std);
+		G_LOCK (syncing);
+	}
+
+	G_UNLOCK (syncing);
 }
 
 static gboolean
@@ -200,7 +337,7 @@ im_list_contains_buddy (GList *ims, GaimBuddy *b)
 	for (l = ims; l != NULL; l = l->next) {
 		gchar *im = (gchar *) l->data;
 
-		if (! strcmp (im, b->account_name))
+		if (!strcmp (im, b->account_name))
 			return TRUE;
 	}
 
@@ -211,7 +348,7 @@ static gboolean
 bbdb_merge_buddy_to_contact (EBook *book, GaimBuddy *b, EContact *c)
 {
 	EContactField field;
-	GList *ims, *l;
+	GList *ims;
 	gboolean dirty = FALSE;
 
 	EContactPhoto *photo = NULL;
@@ -221,11 +358,15 @@ bbdb_merge_buddy_to_contact (EBook *book, GaimBuddy *b, EContact *c)
 	/* Set the IM account */
 	field = proto_to_contact_field (b->proto);
 	ims = e_contact_get (c, field);
-	if (! im_list_contains_buddy (ims, b)) {
-		ims = g_list_append (ims, (gpointer) b->account_name);
+	if (!im_list_contains_buddy (ims, b)) {
+		ims = g_list_append (ims, g_strdup (b->account_name));
 		e_contact_set (c, field, (gpointer) ims);
 		dirty = TRUE;
 	}
+
+	g_list_foreach (ims, (GFunc) g_free, NULL);
+	g_list_free (ims);
+	ims = NULL;
 
         /* Set the photo if it's not set */
 	if (b->icon != NULL) {
@@ -236,12 +377,11 @@ bbdb_merge_buddy_to_contact (EBook *book, GaimBuddy *b, EContact *c)
 			photo = g_new0 (EContactPhoto, 1);
 			photo->type = E_CONTACT_PHOTO_TYPE_INLINED;
 
-			if (! g_file_get_contents (b->icon, &contents, &photo->data.inlined.length, &error)) {
+			if (!g_file_get_contents (
+				b->icon, &contents,
+				&photo->data.inlined.length, &error)) {
 				g_warning ("bbdb: Could not read buddy icon: %s\n", error->message);
 				g_error_free (error);
-				for (l = ims; l != NULL; l = l->next)
-					g_free ((gchar *) l->data);
-				g_list_free (ims);
 				return dirty;
 			}
 
@@ -255,29 +395,25 @@ bbdb_merge_buddy_to_contact (EBook *book, GaimBuddy *b, EContact *c)
 	if (photo != NULL)
 		e_contact_photo_free (photo);
 
-	for (l = ims; l != NULL; l = l->next)
-		g_free ((gchar *) l->data);
-	g_list_free (ims);
-
 	return dirty;
 }
 
 static EContactField
 proto_to_contact_field (const gchar *proto)
 {
-	if (! strcmp (proto,  "prpl-oscar"))
+	if (!strcmp (proto,  "prpl-oscar"))
 		return E_CONTACT_IM_AIM;
-	if (! strcmp (proto, "prpl-novell"))
+	if (!strcmp (proto, "prpl-novell"))
 		return E_CONTACT_IM_GROUPWISE;
-	if (! strcmp (proto, "prpl-msn"))
+	if (!strcmp (proto, "prpl-msn"))
 		return E_CONTACT_IM_MSN;
-	if (! strcmp (proto, "prpl-icq"))
+	if (!strcmp (proto, "prpl-icq"))
 		return E_CONTACT_IM_ICQ;
-	if (! strcmp (proto, "prpl-yahoo"))
+	if (!strcmp (proto, "prpl-yahoo"))
 		return E_CONTACT_IM_YAHOO;
-	if (! strcmp (proto, "prpl-jabber"))
+	if (!strcmp (proto, "prpl-jabber"))
 		return E_CONTACT_IM_JABBER;
-	if (! strcmp (proto, "prpl-gg"))
+	if (!strcmp (proto, "prpl-gg"))
 		return E_CONTACT_IM_GADUGADU;
 
 	return E_CONTACT_IM_AIM;
@@ -313,11 +449,11 @@ bbdb_get_gaim_buddy_list (void)
 	GList *buddies = NULL;
 	GSList *blocked = NULL;
 
-	blist_path = g_build_path ("/", getenv ("HOME"), ".purple/blist.xml", NULL);
+	blist_path = get_buddy_filename ();
 
 	buddy_xml = xmlParseFile (blist_path);
 	g_free (blist_path);
-	if (! buddy_xml) {
+	if (!buddy_xml) {
 		fprintf (stderr, "bbdb: Could not open Pidgin buddy list.\n");
 		return NULL;
 	}
@@ -330,7 +466,7 @@ bbdb_get_gaim_buddy_list (void)
 	}
 
 	for (child = root->children; child != NULL; child = child->next) {
-		if (! strcmp ((const gchar *)child->name, "privacy")) {
+		if (!strcmp ((const gchar *)child->name, "privacy")) {
 			get_all_blocked (child, &blocked);
 			break;
 		}
@@ -338,7 +474,7 @@ bbdb_get_gaim_buddy_list (void)
 
 	blist = NULL;
 	for (child = root->children; child != NULL; child = child->next) {
-		if (! strcmp ((const gchar *)child->name, "blist")) {
+		if (!strcmp ((const gchar *)child->name, "blist")) {
 			blist = child;
 			break;
 		}
@@ -350,7 +486,7 @@ bbdb_get_gaim_buddy_list (void)
 	}
 
 	for (child = blist->children; child != NULL; child = child->next) {
-		if (! strcmp ((const gchar *)child->name, "group"))
+		if (!strcmp ((const gchar *)child->name, "group"))
 			parse_buddy_group (child, &buddies, blocked);
 	}
 
@@ -398,10 +534,10 @@ get_buddy_icon_from_setting (xmlNodePtr setting)
 	gchar *icon = NULL;
 
 	icon = get_node_text (setting);
-	if (icon [0] != '/') {
+	if (icon[0] != '/') {
 		gchar *path;
 
-		path = g_build_path ("/", getenv ("HOME"), ".purple/icons", icon, NULL);
+		path = g_build_path ("/", g_get_home_dir (), ".purple/icons", icon, NULL);
 		g_free (icon);
 		icon = path;
 	}
@@ -418,14 +554,16 @@ parse_contact (xmlNodePtr contact, GList **buddies, GSList *blocked)
 	gboolean    is_blocked = FALSE;
 
 	for (child = contact->children; child != NULL; child = child->next) {
-		if (! strcmp ((const gchar *)child->name, "buddy")) {
+		if (!strcmp ((const gchar *)child->name, "buddy")) {
 			buddy = child;
 			break;
 		}
 	}
 
 	if (buddy == NULL) {
-		fprintf (stderr, "bbdb: Could not find buddy in contact. Malformed Pidgin buddy list file.\n");
+		fprintf (
+			stderr, "bbdb: Could not find buddy in contact. "
+			"Malformed Pidgin buddy list file.\n");
 		return;
 	}
 
@@ -434,18 +572,20 @@ parse_contact (xmlNodePtr contact, GList **buddies, GSList *blocked)
 	gb->proto = e_xml_get_string_prop_by_name (buddy, (const guchar *)"proto");
 
 	for (child = buddy->children; child != NULL && !is_blocked; child = child->next) {
-		if (! strcmp ((const gchar *)child->name, "setting")) {
+		if (!strcmp ((const gchar *)child->name, "setting")) {
 			gchar *setting_type;
 			setting_type = e_xml_get_string_prop_by_name (child, (const guchar *)"name");
 
-			if (! strcmp ((const gchar *)setting_type, "buddy_icon"))
+			if (!strcmp ((const gchar *)setting_type, "buddy_icon"))
 				gb->icon = get_buddy_icon_from_setting (child);
 
 			g_free (setting_type);
-		} else if (! strcmp ((const gchar *)child->name, "name")) {
+		} else if (!strcmp ((const gchar *)child->name, "name")) {
 			gb->account_name = get_node_text (child);
-			is_blocked = g_slist_find_custom (blocked, gb->account_name, (GCompareFunc)strcmp) != NULL;
-		} else if (! strcmp ((const gchar *)child->name, "alias"))
+			is_blocked = g_slist_find_custom (
+				blocked, gb->account_name,
+				(GCompareFunc) strcmp) != NULL;
+		} else if (!strcmp ((const gchar *)child->name, "alias"))
 			gb->alias = get_node_text (child);
 
 	}

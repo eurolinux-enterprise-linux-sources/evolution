@@ -167,7 +167,7 @@ input_to_decoder (SEC_PKCS12DecoderContext *dcx, const gchar *path, GError **err
 	fp = g_fopen (path, "rb");
 	if (!fp) {
 		/* XXX gerror */
-		printf ("couldn't open `%s'\n", path);
+		printf ("couldn't open '%s'\n", path);
 		return FALSE;
 	}
 
@@ -222,8 +222,8 @@ prompt_for_password (gchar *title, gchar *prompt, SECItem *pwd)
 			*outptr++ = ((gchar *) &c)[1];
 		}
 
-		*outptr++ = 0;
-		*outptr++ = 0;
+		outptr[0] = 0;
+		outptr[1] = 0;
 
 		memset (passwd, 0, strlen (passwd));
 		g_free (passwd);
@@ -246,7 +246,9 @@ import_from_file_helper (EPKCS12 *pkcs12, PK11SlotInfo *slot,
 	*aWantRetry = FALSE;
 
 	passwd.data = NULL;
-	rv = prompt_for_password (_("PKCS12 File Password"), _("Enter password for PKCS12 file:"), &passwd);
+	rv = prompt_for_password (
+		_("PKCS12 File Password"),
+		_("Enter password for PKCS12 file:"), &passwd);
 	if (!rv) goto finish;
 	if (passwd.data == NULL) {
 		handle_error (PKCS12_USER_CANCELED);
@@ -317,7 +319,7 @@ e_pkcs12_import_from_file (EPKCS12 *pkcs12, const gchar *path, GError **error)
 	gboolean wantRetry;
 	PK11SlotInfo *slot;
 
-	printf ("importing pkcs12 from `%s'\n", path);
+	printf ("importing pkcs12 from '%s'\n", path);
 
 	slot = PK11_GetInternalKeySlot();
 
@@ -332,7 +334,10 @@ e_pkcs12_import_from_file (EPKCS12 *pkcs12, const gchar *path, GError **error)
 }
 
 gboolean
-e_pkcs12_export_to_file (EPKCS12 *pkcs12, const gchar *path, GList *certs, GError **error)
+e_pkcs12_export_to_file (EPKCS12 *pkcs12,
+                         const gchar *path,
+                         GList *certs,
+                         GError **error)
 {
 	return FALSE;
 }

@@ -1,0 +1,34 @@
+diff -up evolution-2.32.3/mail/message-list.c.msg-list-auto-select evolution-2.32.3/mail/message-list.c
+--- evolution-2.32.3/mail/message-list.c.msg-list-auto-select	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/mail/message-list.c	2013-06-10 17:16:45.782675267 +0200
+@@ -3913,6 +3913,7 @@ on_selection_changed_cmd(ETree *tree, Me
+ static gint
+ on_click (ETree *tree, gint row, ETreePath path, gint col, GdkEvent *event, MessageList *list)
+ {
++	ESelectionModel *esm;
+ 	CamelMessageInfo *info;
+ 	gboolean folder_is_trash;
+ 	const gchar *uid;
+@@ -3966,6 +3967,11 @@ on_click (ETree *tree, gint row, ETreePa
+ 		list->seen_id = 0;
+ 	}
+ 
++	esm = e_tree_get_selection_model (tree);
++	if (esm && e_selection_model_cursor_row (esm) == -1) {
++		select_path (list, path);
++	}
++
+ 	return TRUE;
+ }
+ 
+diff -up evolution-2.32.3/widgets/table/e-tree.c.msg-list-auto-select evolution-2.32.3/widgets/table/e-tree.c
+--- evolution-2.32.3/widgets/table/e-tree.c.msg-list-auto-select	2011-03-29 20:38:58.000000000 +0200
++++ evolution-2.32.3/widgets/table/e-tree.c	2013-06-10 17:16:45.780675267 +0200
+@@ -1159,7 +1159,6 @@ table_canvas_focus_event_cb (GtkWidget *
+ 
+ 	if (!canvas->focused_item ||
+ 		(e_selection_model_cursor_row (tree->priv->selection) == -1)) {
+-		e_table_item_set_cursor (E_TABLE_ITEM (tree->priv->item), 0, 0);
+ 		gnome_canvas_item_grab_focus (tree->priv->item);
+ 	}
+ 

@@ -1,4 +1,7 @@
-AM_CPPFLAGS = 								\
+noinst_LTLIBRARIES = libcal-dialogs.la
+
+libcal_dialogs_la_CPPFLAGS = 						\
+	$(AM_CPPFLAGS)							\
 	-DG_LOG_DOMAIN=\"calendar-gui\"					\
 	-I$(top_srcdir)							\
 	-I$(top_srcdir)/widgets						\
@@ -7,11 +10,13 @@ AM_CPPFLAGS = 								\
 	-I$(top_builddir)/shell						\
 	-I$(top_srcdir)/shell						\
 	-I$(top_srcdir)/widgets/misc					\
-	-DEVOLUTION_GLADEDIR=\""$(gladedir)"\"				\
-	-DEVOLUTION_UIDIR=\""$(evolutionuidir)"\"			\
-	-DEVOLUTION_ICONSDIR=\""$(imagesdir)"\"				\
+	-DEVOLUTION_UIDIR=\""$(uidir)"\"				\
+	-DEVOLUTION_ICONDIR=\""$(icondir)"\"				\
+	-DEVOLUTION_IMAGESDIR=\""$(imagesdir)"\"				\
 	-DPREFIX=\""$(prefix)"\"					\
-	$(EVOLUTION_CALENDAR_CFLAGS)
+	$(GNOME_PLATFORM_CFLAGS)					\
+	$(EVOLUTION_CALENDAR_CFLAGS)					\
+	$(CAMEL_CFLAGS)
 
 ecalendarincludedir = $(privincludedir)/calendar/gui/dialogs
 
@@ -20,7 +25,6 @@ ecalendarinclude_HEADERS =	\
 	comp-editor.h		\
 	alarm-dialog.h		\
 	alarm-list-dialog.h	\
-	cal-attachment-select-file.h \
 	cal-prefs-dialog.h	\
 	calendar-setup.h	\
 	cancel-comp.h		\
@@ -45,10 +49,10 @@ ecalendarinclude_HEADERS =	\
 	task-details-page.h	\
 	task-page.h		
 
-noinst_LTLIBRARIES = libcal-dialogs.la
-
 libcal_dialogs_la_LIBADD =					\
-	$(top_builddir)/addressbook/util/libeabutil.la
+	$(top_builddir)/addressbook/util/libeabutil.la		\
+	$(CAMEL_LIBS)						\
+	$(GNOME_PLATFORM_LIBS)
 
 libcal_dialogs_la_SOURCES =	\
 	$(IDL_GENERATED)	\
@@ -56,8 +60,6 @@ libcal_dialogs_la_SOURCES =	\
 	alarm-dialog.h		\
 	alarm-list-dialog.c	\
 	alarm-list-dialog.h	\
-	cal-attachment-select-file.c \
-	cal-attachment-select-file.h \
 	cal-prefs-dialog.c	\
 	cal-prefs-dialog.h	\
 	calendar-setup.c	\
@@ -109,17 +111,17 @@ libcal_dialogs_la_SOURCES =	\
 	task-page.c		\
 	task-page.h		
 
-glade_DATA =				\
-	alarm-dialog.glade		\
-	alarm-list-dialog.glade		\
-	cal-prefs-dialog.glade		\
-	e-delegate-dialog.glade		\
-	event-page.glade		\
-	memo-page.glade			\
-	recurrence-page.glade		\
-	schedule-page.glade		\
-	task-details-page.glade		\
-	task-page.glade
+ui_DATA =				\
+	alarm-dialog.ui		\
+	alarm-list-dialog.ui		\
+	cal-prefs-dialog.ui		\
+	e-delegate-dialog.ui		\
+	event-page.ui		\
+	memo-page.ui			\
+	recurrence-page.ui		\
+	schedule-page.ui		\
+	task-details-page.ui		\
+	task-page.ui
 
 CLEANFILES = $(BUILT_SOURCES)
 
@@ -127,6 +129,6 @@ dist-hook:
 	cd $(distdir); rm -f $(BUILT_SOURCES)
 
 EXTRA_DIST =			\
-	$(glade_DATA)
+	$(ui_DATA)
 
 -include $(top_srcdir)/git.mk

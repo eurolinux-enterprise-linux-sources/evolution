@@ -19,7 +19,6 @@
 
 #include "e-composer-private.h"
 #include "e-util/e-util-private.h"
-#include "widgets/misc/e-attachment-icon-view.h"
 
 static void
 composer_setup_charset_menu (EMsgComposer *composer)
@@ -30,9 +29,11 @@ composer_setup_charset_menu (EMsgComposer *composer)
 	guint merge_id;
 
 	ui_manager = gtkhtml_editor_get_ui_manager (GTKHTML_EDITOR (composer));
-	list = gtk_action_group_list_actions (composer->priv->charset_actions);
-	path = "/main-menu/edit-menu/pre-spell-check/charset-menu";
+	path = "/main-menu/options-menu/charset-menu";
 	merge_id = gtk_ui_manager_new_merge_id (ui_manager);
+
+	list = gtk_action_group_list_actions (composer->priv->charset_actions);
+	list = g_list_sort (list, (GCompareFunc) e_action_compare_by_label);
 
 	while (list != NULL) {
 		GtkAction *action = list->data;
@@ -81,30 +82,90 @@ composer_setup_recent_menu (EMsgComposer *composer)
 	gtk_ui_manager_ensure_update (ui_manager);
 }
 
+static void
+msg_composer_url_requested_cb (GtkHTML *html,
+                               const gchar *uri,
+                               GtkHTMLStream *stream,
+                               EMsgComposer *composer)
+{
+	GByteArray *array;
+	GHashTable *hash_table;
+	CamelDataWrapper *wrapper;
+	CamelStream *camel_stream;
+	CamelMimePart *mime_part;
+
+	hash_table = composer->priv->inline_images_by_url;
+	mime_part = g_hash_table_lookup (hash_table, uri);
+
+	if (mime_part == NULL) {
+		hash_table = composer->priv->inline_images;
+		mime_part = g_hash_table_lookup (hash_table, uri);
+	}
+
+	/* If this is not an inline image request,
+	 * allow the signal emission to continue. */
+	if (mime_part == NULL)
+		return;
+
+	array = g_byte_array_new ();
+	camel_stream = camel_stream_mem_new_with_byte_array (array);
+	wrapper = camel_medium_get_content (CAMEL_MEDIUM (mime_part));
+	camel_data_wrapper_decode_to_stream (wrapper, camel_stream, NULL);
+
+	gtk_html_write (html, stream, (gchar *) array->data, array->len);
+
+	gtk_html_end (html, stream, GTK_HTML_STREAM_OK);
+
+	g_object_unref (camel_stream);
+
+	/* gtk_html_end() destroys the GtkHTMLStream, so we need to
+	 * stop the signal emission so nothing else tries to use it. */
+	g_signal_stop_emission_by_name (html, "url-requested");
+}
+
 void
-e_composer_private_init (EMsgComposer *composer)
+e_composer_private_constructed (EMsgComposer *composer)
 {
 	EMsgComposerPrivate *priv = composer->priv;
-
+	EShell *shell;
+	EFocusTracker *focus_tracker;
 	GtkhtmlEditor *editor;
 	GtkUIManager *ui_manager;
-	GtkWidget *widget;
+	GtkAction *action;
 	GtkWidget *container;
+	GtkWidget *widget;
 	GtkWidget *send_widget;
 	GtkWindow *window;
+	GtkHTML *html;
 	const gchar *path;
+	gboolean small_screen_mode;
 	gchar *filename;
 	gint ii;
 	GError *error = NULL;
 
 	editor = GTKHTML_EDITOR (composer);
+	html = gtkhtml_editor_get_html (editor);
 	ui_manager = gtkhtml_editor_get_ui_manager (editor);
 
-	if (composer->lite) {
+	shell = e_msg_composer_get_shell (composer);
+	small_screen_mode = e_shell_get_small_screen_mode (shell);
+
+	if (small_screen_mode) {
+#if 0
+		/* In the lite composer, for small screens, we are not
+		 * ready yet to hide the menubar.  It still has useful
+		 * items like the ones to show/hide the various header
+		 * fields, plus the security options.
+		 *
+		 * When we move those options out of the menu and into
+		 * the composer's toplevel, we can probably get rid of
+		 * the menu.
+		 */
 		widget = gtkhtml_editor_get_managed_widget (editor, "/main-menu");
 		gtk_widget_hide (widget);
+#endif
 		widget = gtkhtml_editor_get_managed_widget (editor, "/main-toolbar");
-		gtk_toolbar_set_style ((GtkToolbar *)widget, GTK_TOOLBAR_BOTH_HORIZ);
+		gtk_toolbar_set_style (GTK_TOOLBAR (widget), GTK_TOOLBAR_BOTH_HORIZ);
 		gtk_widget_hide (widget);
 
 	}
@@ -131,9 +192,11 @@ e_composer_private_init (EMsgComposer *composer)
 	priv->inline_images_by_url = g_hash_table_new_full (
 		g_str_hash, g_str_equal,
 		(GDestroyNotify) g_free,
-		(GDestroyNotify) camel_object_unref);
+		(GDestroyNotify) g_object_unref);
 
 	priv->charset = e_composer_get_default_charset ();
+
+	priv->is_from_message = FALSE;
 
 	e_composer_actions_init (composer);
 
@@ -146,6 +209,23 @@ e_composer_private_init (EMsgComposer *composer)
 	send_widget = gtk_ui_manager_get_widget (ui_manager, path);
 	gtk_tool_item_set_is_important (GTK_TOOL_ITEM (send_widget), TRUE);
 
+	/* Tooltips for all buttons in toolbar that don't yet have one */
+	path = "/main-toolbar/undo";
+	widget = gtk_ui_manager_get_widget (ui_manager, path);
+	gtk_widget_set_tooltip_text (widget, _("Undo the last action"));
+
+	path = "/main-toolbar/redo";
+	widget = gtk_ui_manager_get_widget (ui_manager, path);
+	gtk_widget_set_tooltip_text (widget, _("Redo the last undone action"));
+
+	path = "/main-toolbar/show-find";
+	widget = gtk_ui_manager_get_widget (ui_manager, path);
+	gtk_widget_set_tooltip_text (widget, _("Search for text"));
+
+	path = "/main-toolbar/show-replace";
+	widget = gtk_ui_manager_get_widget (ui_manager, path);
+	gtk_widget_set_tooltip_text (widget, _("Search for and replace text"));
+
 	composer_setup_charset_menu (composer);
 
 	if (error != NULL) {
@@ -154,15 +234,33 @@ e_composer_private_init (EMsgComposer *composer)
 		g_clear_error (&error);
 	}
 
+	/* Configure an EFocusTracker to manage selection actions. */
+
+	focus_tracker = e_focus_tracker_new (GTK_WINDOW (composer));
+
+	action = gtkhtml_editor_get_action (editor, "cut");
+	e_focus_tracker_set_cut_clipboard_action (focus_tracker, action);
+
+	action = gtkhtml_editor_get_action (editor, "copy");
+	e_focus_tracker_set_copy_clipboard_action (focus_tracker, action);
+
+	action = gtkhtml_editor_get_action (editor, "paste");
+	e_focus_tracker_set_paste_clipboard_action (focus_tracker, action);
+
+	action = gtkhtml_editor_get_action (editor, "select-all");
+	e_focus_tracker_set_select_all_action (focus_tracker, action);
+
+	priv->focus_tracker = focus_tracker;
+
 	/* Construct the header table. */
 
 	container = editor->vbox;
 
-	widget = e_composer_header_table_new ();
+	widget = e_composer_header_table_new (shell);
 	gtk_container_set_border_width (GTK_CONTAINER (widget), 6);
 	gtk_box_pack_start (GTK_BOX (editor->vbox), widget, FALSE, FALSE, 0);
-	if (composer->lite)
-		gtk_box_reorder_child (GTK_BOX (editor->vbox), widget, 0);
+	if (small_screen_mode)
+		gtk_box_reorder_child (GTK_BOX (editor->vbox), widget, 1);
 	else
 		gtk_box_reorder_child (GTK_BOX (editor->vbox), widget, 2);
 
@@ -171,7 +269,7 @@ e_composer_private_init (EMsgComposer *composer)
 
 	/* Construct the attachment paned. */
 
-	if (composer->lite) {
+	if (small_screen_mode) {
 		e_attachment_paned_set_default_height (75); /* short attachment bar for Anjal */
 		e_attachment_icon_view_set_default_icon_size (GTK_ICON_SIZE_BUTTON);
 	}
@@ -180,7 +278,7 @@ e_composer_private_init (EMsgComposer *composer)
 	priv->attachment_paned = g_object_ref (widget);
 	gtk_widget_show (widget);
 
-	if (composer->lite) {
+	if (small_screen_mode) {
 		GtkWidget *tmp, *tmp1, *tmp_box, *container;
 		GtkWidget *combo;
 
@@ -198,15 +296,18 @@ e_composer_private_init (EMsgComposer *composer)
 		gtk_box_pack_start ((GtkBox *)tmp, tmp1, FALSE, FALSE, 0);
 		tmp1 = gtk_label_new_with_mnemonic (_("S_end"));
 		gtk_box_pack_start ((GtkBox *)tmp, tmp1, FALSE, FALSE, 6);
-		gtk_widget_show_all(tmp);
+		gtk_widget_show_all (tmp);
 		gtk_widget_reparent (send_widget, tmp_box);
-		gtk_box_set_child_packing ((GtkBox *)tmp_box, send_widget, FALSE, FALSE, 6, GTK_PACK_END);
+		gtk_box_set_child_packing (
+			GTK_BOX (tmp_box), send_widget,
+			FALSE, FALSE, 6, GTK_PACK_END);
 		gtk_tool_item_set_is_important (GTK_TOOL_ITEM (send_widget), TRUE);
 		send_widget = gtk_bin_get_child ((GtkBin *)send_widget);
-		gtk_container_remove((GtkContainer *)send_widget, gtk_bin_get_child ((GtkBin *)send_widget));
-		gtk_container_add((GtkContainer *)send_widget, tmp);
+		gtk_container_remove (
+			GTK_CONTAINER (send_widget),
+			gtk_bin_get_child (GTK_BIN (send_widget)));
+		gtk_container_add ((GtkContainer *)send_widget, tmp);
 		gtk_button_set_relief ((GtkButton *)send_widget, GTK_RELIEF_NORMAL);
-
 		path = "/main-toolbar/pre-main-toolbar/save-draft";
 		send_widget = gtk_ui_manager_get_widget (ui_manager, path);
 		tmp = gtk_hbox_new (FALSE, 0);
@@ -215,16 +316,20 @@ e_composer_private_init (EMsgComposer *composer)
 		gtk_box_pack_start ((GtkBox *)tmp, tmp1, FALSE, FALSE, 0);
 		tmp1 = gtk_label_new_with_mnemonic (_("Save draft"));
 		gtk_box_pack_start ((GtkBox *)tmp, tmp1, FALSE, FALSE, 3);
-		gtk_widget_show_all(tmp);
+		gtk_widget_show_all (tmp);
 		gtk_widget_reparent (send_widget, tmp_box);
-		gtk_box_set_child_packing ((GtkBox *)tmp_box, send_widget, FALSE, FALSE, 6, GTK_PACK_END);
+		gtk_box_set_child_packing (
+			GTK_BOX (tmp_box), send_widget,
+			FALSE, FALSE, 6, GTK_PACK_END);
 		gtk_tool_item_set_is_important (GTK_TOOL_ITEM (send_widget), TRUE);
 		send_widget = gtk_bin_get_child ((GtkBin *)send_widget);
-		gtk_container_remove((GtkContainer *)send_widget, gtk_bin_get_child ((GtkBin *)send_widget));
-		gtk_container_add((GtkContainer *)send_widget, tmp);
+		gtk_container_remove (
+			GTK_CONTAINER (send_widget),
+			gtk_bin_get_child (GTK_BIN (send_widget)));
+		gtk_container_add ((GtkContainer *)send_widget, tmp);
 		gtk_button_set_relief ((GtkButton *)send_widget, GTK_RELIEF_NORMAL);
 
-		gtk_widget_show(tmp_box);
+		gtk_widget_show (tmp_box);
 		gtk_box_pack_end (GTK_BOX (container), tmp_box, FALSE, FALSE, 3);
 	}
 
@@ -262,10 +367,6 @@ e_composer_private_init (EMsgComposer *composer)
 				action = ACTION (VIEW_CC);
 				break;
 
-			case E_COMPOSER_HEADER_FROM:
-				action = ACTION (VIEW_FROM);
-				break;
-
 			case E_COMPOSER_HEADER_REPLY_TO:
 				action = ACTION (VIEW_REPLY_TO);
 				break;
@@ -275,13 +376,28 @@ e_composer_private_init (EMsgComposer *composer)
 		}
 
 		e_mutual_binding_new (
-			G_OBJECT (header), "sensitive",
-			G_OBJECT (action), "sensitive");
+			header, "sensitive",
+			action, "sensitive");
 
 		e_mutual_binding_new (
-			G_OBJECT (header), "visible",
-			G_OBJECT (action), "active");
+			header, "visible",
+			action, "active");
 	}
+
+	/* Install a handler for inline images. */
+
+	/* XXX We no longer use GtkhtmlEditor::uri-requested because it
+	 *     conflicts with EWebView's url_requested() method, which
+	 *     unconditionally launches an async operation.  I changed
+	 *     GtkHTML::url-requested to be a G_SIGNAL_RUN_LAST so that
+	 *     our handler runs first.  If we can handle the request
+	 *     we'll stop the signal emission to prevent EWebView from
+	 *     launching an async operation.  Messy, but works until we
+	 *     switch to WebKit.  --mbarnes */
+
+	g_signal_connect (
+		html, "url-requested",
+		G_CALLBACK (msg_composer_url_requested_cb), composer);
 
 	priv->mail_sent = FALSE;
 }
@@ -289,22 +405,44 @@ e_composer_private_init (EMsgComposer *composer)
 void
 e_composer_private_dispose (EMsgComposer *composer)
 {
-	GConfBridge *bridge;
-	GArray *array;
-	guint binding_id;
+	if (composer->priv->gconf_bridge_binding_ids) {
+		GConfBridge *bridge;
+		GArray *array;
+		guint binding_id;
 
-	bridge = gconf_bridge_get ();
-	array = composer->priv->gconf_bridge_binding_ids;
+		bridge = gconf_bridge_get ();
+		array = composer->priv->gconf_bridge_binding_ids;
 
-	while (array->len > 0) {
-		binding_id = g_array_index (array, guint, 0);
-		gconf_bridge_unbind (bridge, binding_id);
-		g_array_remove_index_fast (array, 0);
+		while (array->len > 0) {
+			binding_id = g_array_index (array, guint, 0);
+			gconf_bridge_unbind (bridge, binding_id);
+			g_array_remove_index_fast (array, 0);
+		}
+
+		g_array_free (composer->priv->gconf_bridge_binding_ids, TRUE);
+		composer->priv->gconf_bridge_binding_ids = NULL;
+	}
+
+	if (composer->priv->shell != NULL) {
+		g_object_remove_weak_pointer (
+			G_OBJECT (composer->priv->shell),
+			&composer->priv->shell);
+		composer->priv->shell = NULL;
 	}
 
 	if (composer->priv->header_table != NULL) {
 		g_object_unref (composer->priv->header_table);
 		composer->priv->header_table = NULL;
+	}
+
+	if (composer->priv->attachment_paned != NULL) {
+		g_object_unref (composer->priv->attachment_paned);
+		composer->priv->attachment_paned = NULL;
+	}
+
+	if (composer->priv->focus_tracker != NULL) {
+		g_object_unref (composer->priv->focus_tracker);
+		composer->priv->focus_tracker = NULL;
 	}
 
 	if (composer->priv->window_group != NULL) {
@@ -326,7 +464,7 @@ e_composer_private_dispose (EMsgComposer *composer)
 	g_hash_table_remove_all (composer->priv->inline_images_by_url);
 
 	if (composer->priv->redirect != NULL) {
-		camel_object_unref (composer->priv->redirect);
+		g_object_unref (composer->priv->redirect);
 		composer->priv->redirect = NULL;
 	}
 }
@@ -420,6 +558,27 @@ e_composer_get_default_charset (void)
 }
 
 gboolean
+e_composer_paste_html (EMsgComposer *composer,
+                       GtkClipboard *clipboard)
+{
+	GtkhtmlEditor *editor;
+	gchar *html;
+
+	g_return_val_if_fail (E_IS_MSG_COMPOSER (composer), FALSE);
+	g_return_val_if_fail (GTK_IS_CLIPBOARD (clipboard), FALSE);
+
+	html = e_clipboard_wait_for_html (clipboard);
+	g_return_val_if_fail (html != NULL, FALSE);
+
+	editor = GTKHTML_EDITOR (composer);
+	gtkhtml_editor_insert_html (editor, html);
+
+	g_free (html);
+
+	return TRUE;
+}
+
+gboolean
 e_composer_paste_image (EMsgComposer *composer,
                         GtkClipboard *clipboard)
 {
@@ -491,6 +650,27 @@ exit:
 	g_free (uri);
 
 	return success;
+}
+
+gboolean
+e_composer_paste_text (EMsgComposer *composer,
+                       GtkClipboard *clipboard)
+{
+	GtkhtmlEditor *editor;
+	gchar *text;
+
+	g_return_val_if_fail (E_IS_MSG_COMPOSER (composer), FALSE);
+	g_return_val_if_fail (GTK_IS_CLIPBOARD (clipboard), FALSE);
+
+	text = gtk_clipboard_wait_for_text (clipboard);
+	g_return_val_if_fail (text != NULL, FALSE);
+
+	editor = GTKHTML_EDITOR (composer);
+	gtkhtml_editor_insert_text (editor, text);
+
+	g_free (text);
+
+	return TRUE;
 }
 
 gboolean

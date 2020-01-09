@@ -31,37 +31,31 @@
 #include <errno.h>
 #include <signal.h>
 #include <string.h>
-#include <pthread.h>
 #include <signal.h>
 #include <time.h>
 
-#include <camel/camel-mime-message.h>
-#include <camel/camel-debug.h>
-#include <camel/camel-file-utils.h>
-#include <camel/camel-data-wrapper.h>
-#include <camel/camel-stream-fs.h>
-#include <camel/camel-stream-mem.h>
-#include <camel/camel-i18n.h>
-#include <mail/em-junk-hook.h>
+#include <mail/em-junk.h>
 #include <mail/em-utils.h>
 #include <e-util/e-mktemp.h>
 
 #include <gtk/gtk.h>
+#include <glib/gi18n.h>
 #include "mail/em-config.h"
+#include "shell/e-shell.h"
 
 #include <gconf/gconf-client.h>
 
 #define d(x) (camel_debug("junk")?(x):0)
 
-static pthread_mutex_t em_junk_sa_init_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t em_junk_sa_report_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t em_junk_sa_preferred_socket_path_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t em_junk_sa_spamd_restart_lock = PTHREAD_MUTEX_INITIALIZER;
+G_LOCK_DEFINE_STATIC (init);
+G_LOCK_DEFINE_STATIC (report);
+G_LOCK_DEFINE_STATIC (socket_path);
+G_LOCK_DEFINE_STATIC (spamd_restart);
 
-gint e_plugin_lib_enable (EPluginLib *ep, gint enable);
-gboolean em_junk_sa_check_junk (EPlugin *ep, EMJunkHookTarget *target);
-void em_junk_sa_report_junk (EPlugin *ep, EMJunkHookTarget *target);
-void em_junk_sa_report_non_junk (EPlugin *ep, EMJunkHookTarget *target);
+gint e_plugin_lib_enable (EPlugin *ep, gint enable);
+gboolean em_junk_sa_check_junk (EPlugin *ep, EMJunkTarget *target);
+void em_junk_sa_report_junk (EPlugin *ep, EMJunkTarget *target);
+void em_junk_sa_report_non_junk (EPlugin *ep, EMJunkTarget *target);
 void em_junk_sa_commit_reports (EPlugin *ep);
 gpointer em_junk_sa_validate_binary (EPlugin *ep);
 GtkWidget *org_gnome_sa_use_remote_tests (struct _EPlugin *epl, struct _EConfigHookItemFactoryData *data);
@@ -92,12 +86,13 @@ static const gchar *em_junk_sa_spamc_binaries [4] = {"spamc", "/usr/bin/spamc", 
 static const gchar *em_junk_sa_spamd_binaries [4] = {"spamd", "/usr/bin/spamd", "/usr/sbin/spamd", NULL};
 
 #define SPAMD_RESTARTS_SIZE 8
-static time_t em_junk_sa_spamd_restarts [SPAMD_RESTARTS_SIZE] = {0, 0, 0, 0, 0, 0, 0, 0};
+static time_t em_junk_sa_spamd_restarts[SPAMD_RESTARTS_SIZE] = {0, 0, 0, 0, 0, 0, 0, 0};
 static gint em_junk_sa_spamd_restarts_count = 0;
 
 /* Variables to indicate whether spamd is running with --allow-tell */
 static gint no_allow_tell;
 static gboolean em_junk_sa_allow_tell_tested = FALSE;
+static gboolean is_installed = FALSE;
 
 gchar *em_junk_sa_spamc_gconf_binary = NULL;
 gchar *em_junk_sa_spamd_gconf_binary = NULL;
@@ -120,7 +115,7 @@ pipe_to_sa_full (CamelMimeMessage *msg, const gchar *in, const gchar **argv, gin
 		camel_debug_end ();
 	}
 
-	program = g_find_program_in_path (argv [0]);
+	program = g_find_program_in_path (argv[0]);
 	if (program == NULL) {
 		d(printf ("program not found, returning %d\n", rv_err));
 		g_set_error (error, EM_JUNK_ERROR, rv_err, _("SpamAssassin not found, code: %d"), rv_err);
@@ -140,8 +135,8 @@ pipe_to_sa_full (CamelMimeMessage *msg, const gchar *in, const gchar **argv, gin
 		errnosav = errno;
 		d(printf ("failed to create a pipe (for use with SpamAssassin: %s\n", g_strerror (errno)));
 		g_set_error (error, EM_JUNK_ERROR, errnosav, _("Failed to create pipe: %s"), g_strerror (errnosav));
-		close (fds [0]);
-		close (fds [1]);
+		close (fds[0]);
+		close (fds[1]);
 		errno = errnosav;
 		return rv_err;
 	}
@@ -157,9 +152,9 @@ pipe_to_sa_full (CamelMimeMessage *msg, const gchar *in, const gchar **argv, gin
 		    (output_buffer == NULL && dup2 (nullfd, STDOUT_FILENO) == -1) ||
 		    (output_buffer != NULL && dup2 (out_fds[1], STDOUT_FILENO) == -1))
 			_exit (rv_err & 0377);
-		close (fds [0]);
+		close (fds[0]);
 		if (output_buffer)
-			close (out_fds [1]);
+			close (out_fds[1]);
 
 		setsid ();
 
@@ -174,8 +169,8 @@ pipe_to_sa_full (CamelMimeMessage *msg, const gchar *in, const gchar **argv, gin
 		close (fds[0]);
 		close (fds[1]);
 		if (output_buffer) {
-			close (out_fds [0]);
-			close (out_fds [1]);
+			close (out_fds[0]);
+			close (out_fds[1]);
 		}
 		if (errnosav != 0 && errnosav != -1)
 			g_set_error (error, EM_JUNK_ERROR, errnosav, _("Error after fork: %s"), g_strerror (errnosav));
@@ -186,17 +181,18 @@ pipe_to_sa_full (CamelMimeMessage *msg, const gchar *in, const gchar **argv, gin
 	/* parent process */
 	close (fds[0]);
 	if (output_buffer)
-		close (out_fds [1]);
+		close (out_fds[1]);
 
 	if (msg) {
 		stream = camel_stream_fs_new_with_fd (fds[1]);
 
-		camel_data_wrapper_write_to_stream (CAMEL_DATA_WRAPPER (msg), stream);
-		camel_stream_flush (stream);
-		camel_stream_close (stream);
-		camel_object_unref (stream);
+		camel_data_wrapper_write_to_stream (
+			CAMEL_DATA_WRAPPER (msg), stream, NULL);
+		camel_stream_flush (stream, NULL);
+		camel_stream_close (stream, NULL);
+		g_object_unref (stream);
 	} else if (in) {
-		camel_write (fds[1], in, strlen (in));
+		camel_write (fds[1], in, strlen (in), NULL);
 		close (fds[1]);
 	}
 
@@ -208,8 +204,8 @@ pipe_to_sa_full (CamelMimeMessage *msg, const gchar *in, const gchar **argv, gin
 		memstream = (CamelStreamMem *) camel_stream_mem_new ();
 		camel_stream_mem_set_byte_array (memstream, output_buffer);
 
-		camel_stream_write_to_stream (stream, (CamelStream *) memstream);
-		camel_object_unref (stream);
+		camel_stream_write_to_stream (stream, (CamelStream *) memstream, NULL);
+		g_object_unref (stream);
 		g_byte_array_append (output_buffer, (guchar *)"", 1);
 
 		d(printf ("child process output: %s len: %d\n", output_buffer->data, output_buffer->len));
@@ -273,7 +269,7 @@ em_junk_sa_test_spamd_running (const gchar *binary, gboolean system)
 	gint i = 0;
 	gboolean rv;
 
-	pthread_mutex_lock (&em_junk_sa_preferred_socket_path_lock);
+	G_LOCK (socket_path);
 
 	d(fprintf (stderr, "test if spamd is running (system %d) or using socket path %s\n", system, em_junk_sa_get_socket_path ()));
 
@@ -291,7 +287,7 @@ em_junk_sa_test_spamd_running (const gchar *binary, gboolean system)
 
 	d(fprintf (stderr, "result: %d (%s)\n", rv, rv ? "success" : "failed"));
 
-	pthread_mutex_unlock (&em_junk_sa_preferred_socket_path_lock);
+	G_UNLOCK (socket_path);
 
 	return rv;
 }
@@ -304,7 +300,7 @@ em_junk_sa_test_spamd_running (const gchar *binary, gboolean system)
 static void
 em_junk_sa_test_allow_tell (void)
 {
-	const gchar *argv [4] = {
+	const gchar *argv[4] = {
 		"spamc",
 		"-L",
 		"forget",
@@ -318,7 +314,7 @@ em_junk_sa_test_allow_tell (void)
 static void
 em_junk_sa_test_spamassassin (void)
 {
-	const gchar *argv [3] = {
+	const gchar *argv[3] = {
 		"spamassassin",
 		"--version",
 		NULL,
@@ -341,7 +337,7 @@ em_junk_sa_run_spamd (const gchar *binary)
 	gint i;
 	gboolean rv = FALSE;
 
-	pthread_mutex_lock (&em_junk_sa_preferred_socket_path_lock);
+	G_LOCK (socket_path);
 
 	d(fprintf (stderr, "looks like spamd is not running\n"));
 
@@ -372,7 +368,7 @@ em_junk_sa_run_spamd (const gchar *binary)
 		time_req.tv_sec = 0;
 		time_req.tv_nsec = 50000000;
 
-		for (i = 0; i < 100; i ++) {
+		for (i = 0; i < 100; i++) {
 			if (stat (em_junk_sa_get_socket_path (), &stat_buf) == 0) {
 				d(fprintf (stderr, "socket created\n"));
 				break;
@@ -384,7 +380,7 @@ em_junk_sa_run_spamd (const gchar *binary)
 		rv = TRUE;
 	}
 
-	pthread_mutex_unlock (&em_junk_sa_preferred_socket_path_lock);
+	G_UNLOCK (socket_path);
 
 	return rv;
 }
@@ -399,8 +395,8 @@ em_junk_sa_start_own_daemon ()
 	em_junk_sa_socket_path = e_mktemp ("spamd-socket-path-XXXXXX");
 	em_junk_sa_spamd_pidfile = e_mktemp ("spamd-pid-file-XXXXXX");
 
-	for (b = 0; em_junk_sa_spamd_binaries [b]; b ++) {
-		em_junk_sa_use_spamc = em_junk_sa_run_spamd (em_junk_sa_spamd_binaries [b]);
+	for (b = 0; em_junk_sa_spamd_binaries[b]; b++) {
+		em_junk_sa_use_spamc = em_junk_sa_run_spamd (em_junk_sa_spamd_binaries[b]);
 		if (em_junk_sa_use_spamc) {
 			em_junk_sa_new_daemon_started = TRUE;
 			break;
@@ -415,8 +411,8 @@ em_junk_sa_find_spamc ()
 		gint b;
 
 		em_junk_sa_use_spamc = FALSE;
-		for (b = 0; em_junk_sa_spamc_binaries [b]; b ++) {
-			em_junk_sa_spamc_binary = em_junk_sa_spamc_binaries [b];
+		for (b = 0; em_junk_sa_spamc_binaries[b]; b++) {
+			em_junk_sa_spamc_binary = em_junk_sa_spamc_binaries[b];
 			if (em_junk_sa_test_spamd_running (em_junk_sa_spamc_binary, FALSE)) {
 				em_junk_sa_use_spamc = TRUE;
 				break;
@@ -433,13 +429,13 @@ em_junk_sa_test_spamd (void)
 	gboolean try_system_spamd = TRUE;
 
 	if (em_junk_sa_spamc_gconf_binary) {
-		em_junk_sa_spamc_binaries [0] = em_junk_sa_spamc_gconf_binary;
-		em_junk_sa_spamc_binaries [1] = NULL;
+		em_junk_sa_spamc_binaries[0] = em_junk_sa_spamc_gconf_binary;
+		em_junk_sa_spamc_binaries[1] = NULL;
 	}
 
 	if (em_junk_sa_spamd_gconf_binary) {
-		em_junk_sa_spamd_binaries [0] = em_junk_sa_spamd_gconf_binary;
-		em_junk_sa_spamd_binaries [1] = NULL;
+		em_junk_sa_spamd_binaries[0] = em_junk_sa_spamd_gconf_binary;
+		em_junk_sa_spamd_binaries[1] = NULL;
 		try_system_spamd = FALSE;
 	}
 
@@ -460,8 +456,8 @@ em_junk_sa_test_spamd (void)
 
 	/* try to use sytem spamd first */
 	if (try_system_spamd) {
-		for (b = 0; em_junk_sa_spamc_binaries [b]; b ++) {
-			em_junk_sa_spamc_binary = em_junk_sa_spamc_binaries [b];
+		for (b = 0; em_junk_sa_spamc_binaries[b]; b++) {
+			em_junk_sa_spamc_binary = em_junk_sa_spamc_binaries[b];
 			if (em_junk_sa_test_spamd_running (em_junk_sa_spamc_binary, TRUE)) {
 				em_junk_sa_use_spamc = TRUE;
 				em_junk_sa_system_spamd_available = TRUE;
@@ -472,8 +468,8 @@ em_junk_sa_test_spamd (void)
 
 	/* if there's no system spamd running, try to use user one with user specified socket */
 	if (!em_junk_sa_use_spamc && em_junk_sa_preferred_socket_path) {
-		for (b = 0; em_junk_sa_spamc_binaries [b]; b ++) {
-			em_junk_sa_spamc_binary = em_junk_sa_spamc_binaries [b];
+		for (b = 0; em_junk_sa_spamc_binaries[b]; b++) {
+			em_junk_sa_spamc_binary = em_junk_sa_spamc_binaries[b];
 			if (em_junk_sa_test_spamd_running (em_junk_sa_spamc_binary, FALSE)) {
 				em_junk_sa_use_spamc = TRUE;
 				em_junk_sa_system_spamd_available = FALSE;
@@ -497,7 +493,7 @@ em_junk_sa_test_spamd (void)
 static gboolean
 em_junk_sa_is_available (GError **error)
 {
-	pthread_mutex_lock (&em_junk_sa_init_lock);
+	G_LOCK (init);
 
 	if (!em_junk_sa_tested)
 		em_junk_sa_test_spamassassin ();
@@ -505,14 +501,18 @@ em_junk_sa_is_available (GError **error)
 	if (em_junk_sa_available && !em_junk_sa_spamd_tested && em_junk_sa_use_daemon)
 		em_junk_sa_test_spamd ();
 
-	if (!em_junk_sa_available)
-		g_set_error (error, EM_JUNK_ERROR, 1, _("SpamAssassin is not available."));
+	if (!em_junk_sa_available && error) {
+		if (is_installed)
+			g_set_error (error, EM_JUNK_ERROR, 1, _("SpamAssassin is not available. Please install it first."));
+
+		is_installed = FALSE;
+	}
 
 	/* While we're at it, see if spamd is running with --allow-tell */
 	if (!em_junk_sa_allow_tell_tested)
 		em_junk_sa_test_allow_tell ();
 
-	pthread_mutex_unlock (&em_junk_sa_init_lock);
+	G_UNLOCK (init);
 
 	return em_junk_sa_available;
 }
@@ -523,18 +523,18 @@ em_junk_sa_check_respawn_too_fast ()
 	time_t time_now = time (NULL);
 	gboolean rv;
 
-	pthread_mutex_lock (&em_junk_sa_spamd_restart_lock);
+	G_LOCK (spamd_restart);
 
 	if (em_junk_sa_spamd_restarts_count >= SPAMD_RESTARTS_SIZE) {
 		/* all restarts in last 5 minutes */
-		rv = (time_now - em_junk_sa_spamd_restarts [em_junk_sa_spamd_restarts_count % SPAMD_RESTARTS_SIZE] < 5*60);
+		rv = (time_now - em_junk_sa_spamd_restarts[em_junk_sa_spamd_restarts_count % SPAMD_RESTARTS_SIZE] < 5*60);
 	} else
 		rv = FALSE;
 
-	em_junk_sa_spamd_restarts [em_junk_sa_spamd_restarts_count % SPAMD_RESTARTS_SIZE] = time_now;
-	em_junk_sa_spamd_restarts_count ++;
+	em_junk_sa_spamd_restarts[em_junk_sa_spamd_restarts_count % SPAMD_RESTARTS_SIZE] = time_now;
+	em_junk_sa_spamd_restarts_count++;
 
-	pthread_mutex_unlock (&em_junk_sa_spamd_restart_lock);
+	G_UNLOCK (spamd_restart);
 
 	d(printf ("em_junk_sa_check_respawn_too_fast: %d\n", rv));
 
@@ -571,7 +571,7 @@ em_junk_sa_respawn_spamd ()
 }
 
 gboolean
-em_junk_sa_check_junk(EPlugin *ep, EMJunkHookTarget *target)
+em_junk_sa_check_junk(EPlugin *ep, EMJunkTarget *target)
 {
 	GByteArray *out = NULL;
 	const gchar *argv[7];
@@ -580,10 +580,14 @@ em_junk_sa_check_junk(EPlugin *ep, EMJunkHookTarget *target)
 	gboolean rv;
 	CamelMimeMessage *msg = target->m;
 
+	if (!is_installed)
+		return FALSE;
+
 	d(fprintf (stderr, "em_junk_sa_check_junk\n"));
 
-	if (!em_junk_sa_is_available (&target->error))
+	if (!em_junk_sa_is_available (&target->error)) {
 		return FALSE;
+	}
 
 	if (em_junk_sa_use_spamc && em_junk_sa_use_daemon) {
 		out = g_byte_array_new ();
@@ -594,10 +598,10 @@ em_junk_sa_check_junk(EPlugin *ep, EMJunkHookTarget *target)
 		if (!em_junk_sa_system_spamd_available) {
 			argv[i++] = "-U";
 
-			pthread_mutex_lock (&em_junk_sa_preferred_socket_path_lock);
+			G_LOCK (socket_path);
 			socket_i = i;
 			argv[i++] = to_free = g_strdup (em_junk_sa_get_socket_path ());
-			pthread_mutex_unlock (&em_junk_sa_preferred_socket_path_lock);
+			G_UNLOCK (socket_path);
 		}
 	} else {
 		argv [i++] = "spamassassin";
@@ -615,10 +619,10 @@ em_junk_sa_check_junk(EPlugin *ep, EMJunkHookTarget *target)
 		if (em_junk_sa_respawn_spamd ()) {
 			g_byte_array_set_size (out, 0);
 
-			pthread_mutex_lock (&em_junk_sa_preferred_socket_path_lock);
+			G_LOCK (socket_path);
 			g_free (to_free);
-			argv [socket_i] = to_free = g_strdup (em_junk_sa_get_socket_path ());
-			pthread_mutex_unlock (&em_junk_sa_preferred_socket_path_lock);
+			argv[socket_i] = to_free = g_strdup (em_junk_sa_get_socket_path ());
+			G_UNLOCK (socket_path);
 
 			rv = pipe_to_sa_full (msg, NULL, argv, 0, 1, out, &target->error) != 0;
 		} else if (!em_junk_sa_use_spamc)
@@ -675,7 +679,7 @@ get_spamassassin_version ()
 }
 
 void
-em_junk_sa_report_junk (EPlugin *ep, EMJunkHookTarget *target)
+em_junk_sa_report_junk (EPlugin *ep, EMJunkTarget *target)
 {
 	const gchar *sync_op =
 		(get_spamassassin_version () >= 3)
@@ -698,6 +702,9 @@ em_junk_sa_report_junk (EPlugin *ep, EMJunkHookTarget *target)
 	gchar *sub = NULL;
 	CamelMimeMessage *msg = target->m;
 
+	if (!is_installed)
+		return;
+
 	sub = g_strdup (camel_mime_message_get_subject (msg));
 	g_print ("\nreport junk?? %s\n", sub);
 
@@ -706,16 +713,16 @@ em_junk_sa_report_junk (EPlugin *ep, EMJunkHookTarget *target)
 		if (no_allow_tell && em_junk_sa_local_only)
 			argv[4] = "--local";
 
-		pthread_mutex_lock (&em_junk_sa_report_lock);
+		G_LOCK (report);
 		pipe_to_sa (msg, NULL,
 			    (no_allow_tell ? argv : argv2),
 			    &target->error);
-		pthread_mutex_unlock (&em_junk_sa_report_lock);
+		G_UNLOCK (report);
 	}
 }
 
 void
-em_junk_sa_report_non_junk (EPlugin *ep, EMJunkHookTarget *target)
+em_junk_sa_report_non_junk (EPlugin *ep, EMJunkTarget *target)
 {
 	const gchar *sync_op =
 		(get_spamassassin_version () >= 3)
@@ -737,17 +744,20 @@ em_junk_sa_report_non_junk (EPlugin *ep, EMJunkHookTarget *target)
 	};
 	CamelMimeMessage *msg = target->m;
 
+	if (!is_installed)
+		return;
+
 	d(fprintf (stderr, "em_junk_sa_report_notjunk\n"));
 
 	if (em_junk_sa_is_available (&target->error)) {
 
 		if (no_allow_tell && em_junk_sa_local_only)
 			argv[4] = "--local";
-		pthread_mutex_lock (&em_junk_sa_report_lock);
+		G_LOCK (report);
 		pipe_to_sa (msg, NULL,
 			    (no_allow_tell ? argv : argv2),
 			    &target->error);
-		pthread_mutex_unlock (&em_junk_sa_report_lock);
+		G_UNLOCK (report);
 	}
 }
 
@@ -764,7 +774,7 @@ em_junk_sa_commit_reports (EPlugin *ep)
 	};
 
 	/* Only meaningful if we're using sa-learn */
-	if (!no_allow_tell)
+	if (!no_allow_tell || !is_installed)
 		return;
 
 	d(fprintf (stderr, "em_junk_sa_commit_reports\n"));
@@ -773,16 +783,21 @@ em_junk_sa_commit_reports (EPlugin *ep)
 		if (em_junk_sa_local_only)
 			argv[2] = "--local";
 
-		pthread_mutex_lock (&em_junk_sa_report_lock);
+		G_LOCK (report);
 		pipe_to_sa (NULL, NULL, argv, NULL);
-		pthread_mutex_unlock (&em_junk_sa_report_lock);
+		G_UNLOCK (report);
 	}
 }
 
 gpointer
 em_junk_sa_validate_binary (EPlugin *ep)
 {
-	return em_junk_sa_is_available (NULL) ? (gpointer) "1" : NULL;
+	gpointer res = em_junk_sa_is_available (NULL) ? (gpointer) "1" : NULL;
+
+	if (res != NULL)
+		is_installed = TRUE;
+
+	return res;
 }
 
 static void
@@ -804,16 +819,21 @@ em_junk_sa_setting_notify(GConfClient *gconf, guint cnxn_id, GConfEntry *entry, 
 	else if (!strcmp(tkey, "use_daemon"))
 		em_junk_sa_use_daemon = gconf_value_get_bool(value);
 	else if (!strcmp(tkey, "socket_path")) {
-		pthread_mutex_lock (&em_junk_sa_preferred_socket_path_lock);
+		G_LOCK (socket_path);
 		g_free (em_junk_sa_preferred_socket_path);
 		em_junk_sa_preferred_socket_path = g_strdup (gconf_value_get_string(value));
-		pthread_mutex_unlock (&em_junk_sa_preferred_socket_path_lock);
+		G_UNLOCK (socket_path);
 	}
 }
 
 gint
-e_plugin_lib_enable (EPluginLib *ep, gint enable)
+e_plugin_lib_enable (EPlugin *ep, gint enable)
 {
+	is_installed = enable != 0;
+
+	if (is_installed)
+		em_junk_sa_tested = FALSE;
+
 	em_junk_sa_init();
 
 	return 0;
@@ -822,7 +842,7 @@ e_plugin_lib_enable (EPluginLib *ep, gint enable)
 static void
 em_junk_sa_init (void)
 {
-	pthread_mutex_lock (&em_junk_sa_init_lock);
+	G_LOCK (init);
 
 	if (!em_junk_sa_gconf) {
 		em_junk_sa_gconf = gconf_client_get_default();
@@ -831,10 +851,10 @@ em_junk_sa_init (void)
 		em_junk_sa_local_only = gconf_client_get_bool (em_junk_sa_gconf, "/apps/evolution/mail/junk/sa/local_only", NULL);
 		em_junk_sa_use_daemon = gconf_client_get_bool (em_junk_sa_gconf, "/apps/evolution/mail/junk/sa/use_daemon", NULL);
 
-		pthread_mutex_lock (&em_junk_sa_preferred_socket_path_lock);
+		G_LOCK (socket_path);
 		g_free (em_junk_sa_preferred_socket_path);
 		em_junk_sa_preferred_socket_path = gconf_client_get_string (em_junk_sa_gconf, "/apps/evolution/mail/junk/sa/socket_path", NULL);
-		pthread_mutex_unlock (&em_junk_sa_preferred_socket_path_lock);
+		G_UNLOCK (socket_path);
 
 		gconf_client_notify_add(em_junk_sa_gconf, "/apps/evolution/mail/junk/sa",
 					(GConfClientNotifyFunc)em_junk_sa_setting_notify,
@@ -842,33 +862,33 @@ em_junk_sa_init (void)
 
 		em_junk_sa_spamc_gconf_binary = gconf_client_get_string (em_junk_sa_gconf, "/apps/evolution/mail/junk/sa/spamc_binary", NULL);
 		em_junk_sa_spamd_gconf_binary = gconf_client_get_string (em_junk_sa_gconf, "/apps/evolution/mail/junk/sa/spamd_binary", NULL);
+
+		atexit (em_junk_sa_finalize);
 	}
 
-	pthread_mutex_unlock (&em_junk_sa_init_lock);
-
-	atexit (em_junk_sa_finalize);
+	G_UNLOCK (init);
 }
 
 static void
 em_junk_sa_kill_spamd (void)
 {
-	pthread_mutex_lock (&em_junk_sa_preferred_socket_path_lock);
+	G_LOCK (socket_path);
 	g_free (em_junk_sa_preferred_socket_path);
 	em_junk_sa_preferred_socket_path = NULL;
-	pthread_mutex_unlock (&em_junk_sa_preferred_socket_path_lock);
+	G_UNLOCK (socket_path);
 
 	if (em_junk_sa_new_daemon_started) {
 		gint fd = open (em_junk_sa_spamd_pidfile, O_RDONLY);
 
 		if (fd != -1) {
-			gchar pid_str [16];
+			gchar pid_str[16];
 			gint bytes;
 
 			bytes = read (fd, pid_str, 15);
 			if (bytes > 0) {
 				gint pid;
 
-				pid_str [bytes] = 0;
+				pid_str[bytes] = 0;
 				pid = atoi (pid_str);
 
 				if (pid > 0) {
@@ -902,9 +922,12 @@ use_remote_tests_cb (GtkWidget *widget, gpointer data)
 GtkWidget *
 org_gnome_sa_use_remote_tests (struct _EPlugin *epl, struct _EConfigHookItemFactoryData *data)
 {
+	EShell *shell;
 	GtkWidget *check, *vbox, *label;
 	gchar *text = g_strdup_printf ("    <small>%s</small>", _("This will make SpamAssassin more reliable, but slower"));
-	guint i = ((GtkTable *)data->parent)->nrows;
+	guint n_rows;
+
+	g_object_get (data->parent, "n-rows", &n_rows, NULL);
 
 	if (data->old)
                 return data->old;
@@ -919,8 +942,16 @@ org_gnome_sa_use_remote_tests (struct _EPlugin *epl, struct _EConfigHookItemFact
 
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), !em_junk_sa_local_only);
 	g_signal_connect (GTK_TOGGLE_BUTTON (check), "toggled", G_CALLBACK (use_remote_tests_cb), (gpointer) "/apps/evolution/mail/junk/sa/local_only");
-	gtk_table_attach((GtkTable *)data->parent, vbox, 0, 1, i, i+1, 0, 0, 0, 0);
-	gtk_widget_show_all (vbox);
-	return (GtkWidget *)vbox;
+	gtk_table_attach (
+		GTK_TABLE (data->parent), vbox,
+		0, 1, n_rows, n_rows+1, 0, 0, 0, 0);
+
+	shell = e_shell_get_default ();
+	if (e_shell_get_express_mode (shell))
+		gtk_widget_hide (vbox);
+	else
+		gtk_widget_show_all (vbox);
+
+	return vbox;
 }
 

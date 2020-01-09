@@ -38,8 +38,6 @@
 #include "dialogs/comp-editor-util.h"
 
 #include <composer/e-msg-composer.h>
-#include <mail/em-composer-utils.h>
-#include <camel/camel-mime-filter-tohtml.h>
 
 static const gchar *itip_methods[] = {
 	"PUBLISH",
@@ -609,9 +607,8 @@ comp_to_list (ECalComponentItipMethod method, ECalComponent *comp, GList *users,
 	if (array == NULL)
 		return NULL;
 
-	convert.pdata = array->pdata;
 	g_ptr_array_add (array, NULL);
-	g_ptr_array_free (array, FALSE);
+	convert.pdata = g_ptr_array_free (array, FALSE);
 
 	return convert.destinations;
 }
@@ -633,12 +630,16 @@ comp_subject (ECalComponentItipMethod method, ECalComponent *comp)
 		switch (e_cal_component_get_vtype (comp)) {
 		case E_CAL_COMPONENT_EVENT:
 			description = _("Event information");
+			break;
 		case E_CAL_COMPONENT_TODO:
 			description = _("Task information");
+			break;
 		case E_CAL_COMPONENT_JOURNAL:
 			description = _("Memo information");
+			break;
 		case E_CAL_COMPONENT_FREEBUSY:
 			description = _("Free/Busy information");
+			break;
 		default:
 			description = _("Calendar information");
 		}
@@ -826,8 +827,13 @@ comp_server_send (ECalComponentItipMethod method, ECalComponent *comp, ECal *cli
 	if (!e_cal_send_objects (client, top_level, users, &returned_icalcomp, &error)) {
 		/* FIXME Really need a book problem status code */
 		if (error->code != E_CALENDAR_STATUS_OK) {
-			/* FIXME Better error message */
-			e_notice (NULL, GTK_MESSAGE_ERROR, "Unable to book");
+			if (error->code == E_CALENDAR_STATUS_OBJECT_ID_ALREADY_EXISTS) {
+				e_notice (NULL, GTK_MESSAGE_ERROR, _("Unable to book a resource, the new event collides with some other."));
+			} else {
+				gchar *msg = g_strconcat (_("Unable to book a resource, error: "), error->message, NULL);
+				e_notice (NULL, GTK_MESSAGE_ERROR, msg);
+				g_free (msg);
+			}
 
 			retval = FALSE;
 		}
@@ -892,7 +898,6 @@ comp_limit_attendees (ECalComponent *comp)
 
 		if (!match)
 			list = g_slist_prepend (list, prop);
-		match = FALSE;
 	}
 
 	for (l = list; l != NULL; l = l->next) {
@@ -1032,6 +1037,36 @@ comp_minimal (ECalComponent *comp, gboolean attendee)
 	return NULL;
 }
 
+static void
+strip_x_microsoft_props (ECalComponent *comp)
+{
+	GSList *lst = NULL, *l;
+	icalcomponent *icalcomp;
+	icalproperty *icalprop;
+
+	g_return_if_fail (comp != NULL);
+
+	icalcomp = e_cal_component_get_icalcomponent (comp);
+	g_return_if_fail (icalcomp != NULL);
+
+	for (icalprop = icalcomponent_get_first_property (icalcomp, ICAL_X_PROPERTY);
+	     icalprop;
+	     icalprop = icalcomponent_get_next_property (icalcomp, ICAL_X_PROPERTY)) {
+		const gchar *x_name = icalproperty_get_x_name (icalprop);
+
+		if (x_name && g_ascii_strncasecmp (x_name, "X-MICROSOFT-", 12) == 0)
+			lst = g_slist_prepend (lst, icalprop);
+	}
+
+	for (l = lst; l != NULL; l = l->next) {
+		icalprop = l->data;
+		icalcomponent_remove_property (icalcomp, icalprop);
+		icalproperty_free (icalprop);
+	}
+
+	g_slist_free (lst);
+}
+
 static ECalComponent *
 comp_compliant (ECalComponentItipMethod method, ECalComponent *comp, ECal *client, icalcomponent *zones, gboolean strip_alarms)
 {
@@ -1116,6 +1151,8 @@ comp_compliant (ECalComponentItipMethod method, ECalComponent *comp, ECal *clien
 		cal_obj_uid_list_free (uids);
 	}
 
+	strip_x_microsoft_props (clone);
+
 	/* Strip X-LIC-ERROR stuff */
 	e_cal_component_strip_errors (clone);
 
@@ -1188,7 +1225,7 @@ append_cal_attachments (EMsgComposer *composer,
 			camel_mime_part_set_disposition (
 				attachment, "attachment");
 		e_msg_composer_attach (composer, attachment);
-		camel_object_unref (attachment);
+		g_object_unref (attachment);
 
 		g_free (mime_attach->filename);
 		g_free (mime_attach->content_type);
@@ -1201,18 +1238,80 @@ append_cal_attachments (EMsgComposer *composer,
 	g_slist_free (attach_list);
 }
 
+static EAccount *
+find_enabled_account (EAccountList *accounts, const gchar *id_address)
+{
+	EIterator *it;
+	EAccount *account = NULL;
+
+	g_return_val_if_fail (accounts != NULL, NULL);
+
+	if (!id_address)
+		return NULL;
+
+	for (it = e_list_get_iterator ((EList *)accounts);
+	     e_iterator_is_valid (it);
+	     e_iterator_next (it)) {
+		account = (EAccount *)e_iterator_get (it);
+
+		if (account
+		    && account->enabled
+		    && account->id
+		    && account->id->address
+		    && g_ascii_strcasecmp (account->id->address, id_address) == 0)
+			break;
+
+		account = NULL;
+	}
+
+	return account;
+}
+
+static void
+setup_from (ECalComponentItipMethod method, ECalComponent *comp, ECal *client, EComposerHeaderTable *table)
+{
+	EAccountList *accounts;
+
+	accounts = e_composer_header_table_get_account_list (table);
+	if (accounts) {
+		EAccount *account = NULL;
+
+		/* always use organizer's email when user is an organizer */
+		if (itip_organizer_is_user (comp, client)) {
+			ECalComponentOrganizer organizer = {0};
+
+			e_cal_component_get_organizer (comp, &organizer);
+			if (organizer.value != NULL) {
+				account = find_enabled_account (accounts, itip_strip_mailto (organizer.value));
+			}
+		}
+
+		if (!account) {
+			gchar *from = comp_from (method, comp);
+
+			if (from)
+				account = find_enabled_account (accounts, from);
+
+			g_free (from);
+		}
+
+		if (account)
+			e_composer_header_table_set_account (table, account);
+	}
+}
+
 gboolean
 itip_send_comp (ECalComponentItipMethod method, ECalComponent *send_comp,
 		ECal *client, icalcomponent *zones, GSList *attachments_list, GList *users,
 		gboolean strip_alarms, gboolean only_new_attendees)
 {
+	EShell *shell;
 	EMsgComposer *composer;
 	EComposerHeaderTable *table;
 	EDestination **destinations;
 	ECalComponent *comp = NULL;
 	icalcomponent *top_level = NULL;
 	gchar *ical_string = NULL;
-	gchar *from = NULL;
 	gchar *content_type = NULL;
 	gchar *subject = NULL;
 	gboolean retval = FALSE;
@@ -1255,15 +1354,14 @@ itip_send_comp (ECalComponentItipMethod method, ECalComponent *send_comp,
 	/* Subject information */
 	subject = comp_subject (method, comp);
 
-	/* From address */
-	from = comp_from (method, comp);
+	/* FIXME Pass this in. */
+	shell = e_shell_get_default ();
 
-	composer = e_msg_composer_new ();
+	composer = e_msg_composer_new (shell);
 	table = e_msg_composer_get_header_table (composer);
-	em_composer_utils_setup_default_callbacks (composer);
 
+	setup_from (method, send_comp, client, table);
 	e_composer_header_table_set_subject (table, subject);
-	e_composer_header_table_set_account_name (table, from);
 	e_composer_header_table_set_destinations_to (table, destinations);
 
 	e_destination_freev (destinations);
@@ -1300,7 +1398,7 @@ itip_send_comp (ECalComponentItipMethod method, ECalComponent *send_comp,
 			camel_mime_part_set_description (attachment, description);
 		camel_mime_part_set_disposition (attachment, "inline");
 		e_msg_composer_attach (composer, attachment);
-		camel_object_unref (attachment);
+		g_object_unref (attachment);
 
 		g_free (description);
 	}
@@ -1325,7 +1423,6 @@ itip_send_comp (ECalComponentItipMethod method, ECalComponent *send_comp,
 		g_list_free (users);
 	}
 
-	g_free (from);
 	g_free (content_type);
 	g_free (subject);
 	g_free (ical_string);
@@ -1341,13 +1438,13 @@ reply_to_calendar_comp (ECalComponentItipMethod method,
                         icalcomponent *zones,
                         GSList *attachments_list)
 {
+	EShell *shell;
 	EMsgComposer *composer;
 	EComposerHeaderTable *table;
 	EDestination **destinations;
 	ECalComponent *comp = NULL;
 	icalcomponent *top_level = NULL;
 	GList *users = NULL;
-	gchar *from = NULL;
 	gchar *subject = NULL;
 	gchar *ical_string = NULL;
 	gboolean retval = FALSE;
@@ -1363,15 +1460,14 @@ reply_to_calendar_comp (ECalComponentItipMethod method,
 	/* Subject information */
 	subject = comp_subject (method, comp);
 
-	/* From address */
-	from = comp_from (method, comp);
+	/* FIXME Pass this in. */
+	shell = e_shell_get_default ();
 
-	composer = e_msg_composer_new ();
+	composer = e_msg_composer_new (shell);
 	table = e_msg_composer_get_header_table (composer);
-	em_composer_utils_setup_default_callbacks (composer);
 
+	setup_from (method, send_comp, client, table);
 	e_composer_header_table_set_subject (table, subject);
-	e_composer_header_table_set_account_name (table, from);
 	e_composer_header_table_set_destinations_to (table, destinations);
 
 	e_destination_freev (destinations);
@@ -1486,7 +1582,6 @@ reply_to_calendar_comp (ECalComponentItipMethod method,
 		g_list_free (users);
 	}
 
-	g_free (from);
 	g_free (subject);
 	g_free (ical_string);
 	return retval;
@@ -1501,10 +1596,9 @@ itip_publish_begin (ECalComponent *pub_comp, ECal *client,
 
 	if (e_cal_component_get_vtype (pub_comp) == E_CAL_COMPONENT_FREEBUSY) {
 
-		if (!cloned) {
+		if (!cloned)
 			*clone = e_cal_component_clone (pub_comp);
-			cloned = TRUE;
-		} else {
+		else {
 
 			icomp = e_cal_component_get_icalcomponent (pub_comp);
 			icomp_clone = e_cal_component_get_icalcomponent (*clone);

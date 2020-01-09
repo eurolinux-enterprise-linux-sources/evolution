@@ -27,10 +27,6 @@
 #include <string.h>
 #include <glib/gi18n.h>
 #include <gconf/gconf-client.h>
-#include <camel/camel-stream.h>
-#include <camel/camel-stream-mem.h>
-#include <camel/camel-medium.h>
-#include <camel/camel-mime-message.h>
 #include <libedataserver/e-time-utils.h>
 #include <libedataserver/e-data-server-util.h>
 #include <libedataserverui/e-source-combo-box.h>
@@ -41,6 +37,7 @@
 #include <mail/em-format-html.h>
 #include <libedataserver/e-account-list.h>
 #include <e-util/e-util.h>
+#include <e-util/e-unicode.h>
 #include <calendar/gui/itip-utils.h>
 #include "itip-view.h"
 
@@ -85,10 +82,12 @@ struct _ItipViewPrivate {
 	GtkWidget *start_header;
 	GtkWidget *start_label;
 	struct tm *start_tm;
+	gboolean start_tm_is_date;
 
 	GtkWidget *end_header;
 	GtkWidget *end_label;
 	struct tm *end_tm;
+	gboolean end_tm_is_date;
 
 	GtkWidget *upper_info_box;
 	GSList *upper_info_items;
@@ -145,6 +144,7 @@ format_date_and_time_x		(struct tm	*date_tm,
 				 gboolean	 use_24_hour_format,
 				 gboolean	 show_midnight,
 				 gboolean	 show_zero_seconds,
+				 gboolean	 is_date,
 				 gchar		*buffer,
 				 gint		 buffer_size)
 {
@@ -185,8 +185,8 @@ format_date_and_time_x		(struct tm	*date_tm,
 	if (date_tm->tm_mday == current_tm->tm_mday &&
 	    date_tm->tm_mon == current_tm->tm_mon &&
 	    date_tm->tm_year == current_tm->tm_year) {
-		if (!show_midnight && date_tm->tm_hour == 0
-		    && date_tm->tm_min == 0 && date_tm->tm_sec == 0) {
+		if (is_date || (!show_midnight && date_tm->tm_hour == 0
+		    && date_tm->tm_min == 0 && date_tm->tm_sec == 0)) {
 			/* strftime format of a weekday and a date. */
 			format = _("Today");
 		} else if (use_24_hour_format) {
@@ -213,8 +213,8 @@ format_date_and_time_x		(struct tm	*date_tm,
 	} else if (date_tm->tm_mday == tomorrow_tm.tm_mday &&
 		   date_tm->tm_mon == tomorrow_tm.tm_mon &&
 		   date_tm->tm_year == tomorrow_tm.tm_year) {
-		if (!show_midnight && date_tm->tm_hour == 0
-		    && date_tm->tm_min == 0 && date_tm->tm_sec == 0) {
+		if (is_date || (!show_midnight && date_tm->tm_hour == 0
+		    && date_tm->tm_min == 0 && date_tm->tm_sec == 0)) {
 			/* strftime format of a weekday and a date. */
 			format = _("Tomorrow");
 		} else if (use_24_hour_format) {
@@ -250,8 +250,8 @@ format_date_and_time_x		(struct tm	*date_tm,
 		   (date_tm->tm_year == week_tm.tm_year &&
 		    date_tm->tm_mon == week_tm.tm_mon &&
 		    date_tm->tm_mday < week_tm.tm_mday))) {
-		if (!show_midnight && date_tm->tm_hour == 0
-		    && date_tm->tm_min == 0 && date_tm->tm_sec == 0) {
+		if (is_date || (!show_midnight && date_tm->tm_hour == 0
+		    && date_tm->tm_min == 0 && date_tm->tm_sec == 0)) {
 			/* strftime format of a weekday. */
 			format = _("%A");
 		} else if (use_24_hour_format) {
@@ -276,8 +276,8 @@ format_date_and_time_x		(struct tm	*date_tm,
 
 	/* This Year */
 	} else if (date_tm->tm_year == current_tm->tm_year) {
-		if (!show_midnight && date_tm->tm_hour == 0
-		    && date_tm->tm_min == 0 && date_tm->tm_sec == 0) {
+		if (is_date || (!show_midnight && date_tm->tm_hour == 0
+		    && date_tm->tm_min == 0 && date_tm->tm_sec == 0)) {
 			/* strftime format of a weekday and a date
 			   without a year. */
 			format = _("%A, %B %e");
@@ -302,8 +302,8 @@ format_date_and_time_x		(struct tm	*date_tm,
 				format = _("%A, %B %e %l:%M:%S %p");
 		}
 	} else {
-		if (!show_midnight && date_tm->tm_hour == 0
-		    && date_tm->tm_min == 0 && date_tm->tm_sec == 0) {
+		if (is_date || (!show_midnight && date_tm->tm_hour == 0
+		    && date_tm->tm_min == 0 && date_tm->tm_sec == 0)) {
 			/* strftime format of a weekday and a date. */
 			format = _("%A, %B %e, %Y");
 		} else if (use_24_hour_format) {
@@ -333,6 +333,22 @@ format_date_and_time_x		(struct tm	*date_tm,
 		buffer[0] = '\0';
 }
 
+static gchar *
+dupe_first_bold (const gchar *format, const gchar *first, const gchar *second)
+{
+	gchar *f, *s, *res;
+
+	f = g_markup_printf_escaped ("<b>%s</b>", first ? first : "");
+	s = g_markup_escape_text (second ? second : "", -1);
+
+	res = g_strdup_printf (format, f, s);
+
+	g_free (f);
+	g_free (s);
+
+	return res;
+}
+
 static void
 set_calendar_sender_text (ItipView *view)
 {
@@ -348,64 +364,64 @@ set_calendar_sender_text (ItipView *view)
 
 	/* The current account ID (i.e. the delegatee) is receiving a copy of the request/response. Here we ask the delegatee to respond/accept on behalf of the delegator. */
 	if (priv->organizer && priv->proxy)
-		on_behalf_of = g_markup_printf_escaped (_("Please respond on behalf of <b>%s</b>"), priv->proxy);
+		on_behalf_of = dupe_first_bold (_("Please respond on behalf of %s"), priv->proxy, NULL);
 	else if (priv->attendee && priv->proxy)
-		on_behalf_of = g_markup_printf_escaped (_("Received on behalf of <b>%s</b>"), priv->proxy);
+		on_behalf_of = dupe_first_bold (_("Received on behalf of %s"), priv->proxy, NULL);
 
 	switch (priv->mode) {
 	case ITIP_VIEW_MODE_PUBLISH:
 		if (priv->organizer_sentby)
-			sender = g_markup_printf_escaped (_("<b>%s</b> through %s has published the following meeting information:"), organizer, priv->organizer_sentby);
+			sender = dupe_first_bold (_("%s through %s has published the following meeting information:"), organizer, priv->organizer_sentby);
 		else
-			sender = g_markup_printf_escaped (_("<b>%s</b> has published the following meeting information:"), organizer);
+			sender = dupe_first_bold (_("%s has published the following meeting information:"), organizer, NULL);
 		break;
 	case ITIP_VIEW_MODE_REQUEST:
 		/* FIXME is the delegator stuff handled correctly here? */
 		if (priv->delegator) {
-			sender = g_markup_printf_escaped (_("<b>%s</b> has delegated the following meeting to you:"), priv->delegator);
+			sender = dupe_first_bold (_("%s has delegated the following meeting to you:"), priv->delegator, NULL);
 		} else {
 			if (priv->organizer_sentby)
-				sender = g_markup_printf_escaped (_("<b>%s</b> through %s requests your presence at the following meeting:"), organizer, priv->organizer_sentby);
+				sender = dupe_first_bold (_("%s through %s requests your presence at the following meeting:"), organizer, priv->organizer_sentby);
 			else
-				sender = g_markup_printf_escaped (_("<b>%s</b> requests your presence at the following meeting:"), organizer);
+				sender = dupe_first_bold (_("%s requests your presence at the following meeting:"), organizer, NULL);
 		}
 		break;
 	case ITIP_VIEW_MODE_ADD:
 		/* FIXME What text for this? */
 		if (priv->organizer_sentby)
-			sender = g_markup_printf_escaped (_("<b>%s</b> through %s wishes to add to an existing meeting:"), organizer, priv->organizer_sentby);
+			sender = dupe_first_bold (_("%s through %s wishes to add to an existing meeting:"), organizer, priv->organizer_sentby);
 		else
-			sender = g_markup_printf_escaped (_("<b>%s</b> wishes to add to an existing meeting:"), organizer);
+			sender = dupe_first_bold (_("%s wishes to add to an existing meeting:"), organizer, NULL);
 		break;
 	case ITIP_VIEW_MODE_REFRESH:
 		if (priv->attendee_sentby)
-			sender = g_markup_printf_escaped (_("<b>%s</b> through %s wishes to receive the latest information for the following meeting:"), attendee, priv->attendee_sentby);
+			sender = dupe_first_bold (_("%s through %s wishes to receive the latest information for the following meeting:"), attendee, priv->attendee_sentby);
 		else
-			sender = g_markup_printf_escaped (_("<b>%s</b> wishes to receive the latest information for the following meeting:"), attendee);
+			sender = dupe_first_bold (_("%s wishes to receive the latest information for the following meeting:"), attendee, NULL);
 		break;
 	case ITIP_VIEW_MODE_REPLY:
 		if (priv->attendee_sentby)
-			sender = g_markup_printf_escaped (_("<b>%s</b> through %s has sent back the following meeting response:"), attendee, priv->attendee_sentby);
+			sender = dupe_first_bold (_("%s through %s has sent back the following meeting response:"), attendee, priv->attendee_sentby);
 		else
-			sender = g_markup_printf_escaped (_("<b>%s</b> has sent back the following meeting response:"), attendee);
+			sender = dupe_first_bold (_("%s has sent back the following meeting response:"), attendee, NULL);
 		break;
 	case ITIP_VIEW_MODE_CANCEL:
 		if (priv->organizer_sentby)
-			sender = g_markup_printf_escaped (_("<b>%s</b> through %s has canceled the following meeting:"), organizer, priv->organizer_sentby);
+			sender = dupe_first_bold (_("%s through %s has canceled the following meeting:"), organizer, priv->organizer_sentby);
 		else
-			sender = g_markup_printf_escaped (_("<b>%s</b> has canceled the following meeting."), organizer);
+			sender = dupe_first_bold (_("%s has canceled the following meeting."), organizer, NULL);
 		break;
 	case ITIP_VIEW_MODE_COUNTER:
 		if (priv->attendee_sentby)
-			sender = g_markup_printf_escaped (_("<b>%s</b> through %s has proposed the following meeting changes."), attendee, priv->attendee_sentby);
+			sender = dupe_first_bold (_("%s through %s has proposed the following meeting changes."), attendee, priv->attendee_sentby);
 		else
-			sender = g_markup_printf_escaped (_("<b>%s</b> has proposed the following meeting changes."), attendee);
+			sender = dupe_first_bold (_("%s has proposed the following meeting changes."), attendee, NULL);
 		break;
 	case ITIP_VIEW_MODE_DECLINECOUNTER:
 		if (priv->organizer_sentby)
-			sender = g_markup_printf_escaped (_("<b>%s</b> through %s has declined the following meeting changes:"), organizer, priv->organizer_sentby);
+			sender = dupe_first_bold (_("%s through %s has declined the following meeting changes:"), organizer, priv->organizer_sentby);
 		else
-			sender = g_markup_printf_escaped (_("<b>%s</b> has declined the following meeting changes."), organizer);
+			sender = dupe_first_bold (_("%s has declined the following meeting changes."), organizer, NULL);
 		break;
 	default:
 		break;
@@ -436,64 +452,64 @@ set_tasklist_sender_text (ItipView *view)
 
 	/* The current account ID (i.e. the delegatee) is receiving a copy of the request/response. Here we ask the delegatee to respond/accept on behalf of the delegator. */
 	if (priv->organizer && priv->proxy)
-		on_behalf_of = g_markup_printf_escaped (_("Please respond on behalf of <b>%s</b>"), priv->proxy);
+		on_behalf_of = dupe_first_bold (_("Please respond on behalf of %s"), priv->proxy, NULL);
 	else if (priv->attendee && priv->proxy)
-		on_behalf_of = g_markup_printf_escaped (_("Received on behalf of <b>%s</b>"), priv->proxy);
+		on_behalf_of = dupe_first_bold (_("Received on behalf of %s"), priv->proxy, NULL);
 
 	switch (priv->mode) {
 	case ITIP_VIEW_MODE_PUBLISH:
 		if (priv->organizer_sentby)
-			sender = g_markup_printf_escaped (_("<b>%s</b> through %s has published the following task:"), organizer, priv->organizer_sentby);
+			sender = dupe_first_bold (_("%s through %s has published the following task:"), organizer, priv->organizer_sentby);
 		else
-			sender = g_markup_printf_escaped (_("<b>%s</b> has published the following task:"), organizer);
+			sender = dupe_first_bold (_("%s has published the following task:"), organizer, NULL);
 		break;
 	case ITIP_VIEW_MODE_REQUEST:
 		/* FIXME is the delegator stuff handled correctly here? */
 		if (priv->delegator) {
-			sender = g_markup_printf_escaped (_("<b>%s</b> requests the assignment of %s to the following task:"), organizer, priv->delegator);
+			sender = dupe_first_bold (_("%s requests the assignment of %s to the following task:"), organizer, priv->delegator);
 		} else {
 			if (priv->organizer_sentby)
-				sender = g_markup_printf_escaped (_("<b>%s</b> through %s has assigned you a task:"), organizer, priv->organizer_sentby);
+				sender = dupe_first_bold (_("%s through %s has assigned you a task:"), organizer, priv->organizer_sentby);
 			else
-				sender = g_markup_printf_escaped (_("<b>%s</b> has assigned you a task:"), organizer);
+				sender = dupe_first_bold (_("%s has assigned you a task:"), organizer, NULL);
 		}
 		break;
 	case ITIP_VIEW_MODE_ADD:
 		/* FIXME What text for this? */
 		if (priv->organizer_sentby)
-			sender = g_markup_printf_escaped (_("<b>%s</b> through %s wishes to add to an existing task:"), organizer, priv->organizer_sentby);
+			sender = dupe_first_bold (_("%s through %s wishes to add to an existing task:"), organizer, priv->organizer_sentby);
 		else
-			sender = g_markup_printf_escaped (_("<b>%s</b> wishes to add to an existing task:"), organizer);
+			sender = dupe_first_bold (_("%s wishes to add to an existing task:"), organizer, NULL);
 		break;
 	case ITIP_VIEW_MODE_REFRESH:
 		if (priv->attendee_sentby)
-			sender = g_markup_printf_escaped (_("<b>%s</b> through %s wishes to receive the latest information for the following assigned task:"), attendee, priv->attendee_sentby);
+			sender = dupe_first_bold (_("%s through %s wishes to receive the latest information for the following assigned task:"), attendee, priv->attendee_sentby);
 		else
-			sender = g_markup_printf_escaped (_("<b>%s</b> wishes to receive the latest information for the following assigned task:"), attendee);
+			sender = dupe_first_bold (_("%s wishes to receive the latest information for the following assigned task:"), attendee, NULL);
 		break;
 	case ITIP_VIEW_MODE_REPLY:
 		if (priv->attendee_sentby)
-			sender = g_markup_printf_escaped (_("<b>%s</b> through %s has sent back the following assigned task response:"), attendee, priv->attendee_sentby);
+			sender = dupe_first_bold (_("%s through %s has sent back the following assigned task response:"), attendee, priv->attendee_sentby);
 		else
-			sender = g_markup_printf_escaped (_("<b>%s</b> has sent back the following assigned task response:"), attendee);
+			sender = dupe_first_bold (_("%s has sent back the following assigned task response:"), attendee, NULL);
 		break;
 	case ITIP_VIEW_MODE_CANCEL:
 		if (priv->organizer_sentby)
-			sender = g_markup_printf_escaped (_("<b>%s</b> through %s has canceled the following assigned task:"), organizer, priv->organizer_sentby);
+			sender = dupe_first_bold (_("%s through %s has canceled the following assigned task:"), organizer, priv->organizer_sentby);
 		else
-			sender = g_markup_printf_escaped (_("<b>%s</b> has canceled the following assigned task:"), organizer);
+			sender = dupe_first_bold (_("%s has canceled the following assigned task:"), organizer, NULL);
 		break;
 	case ITIP_VIEW_MODE_COUNTER:
 		if (priv->attendee_sentby)
-			sender = g_markup_printf_escaped (_("<b>%s</b> through %s has proposed the following task assignment changes:"), attendee, priv->attendee_sentby);
+			sender = dupe_first_bold (_("%s through %s has proposed the following task assignment changes:"), attendee, priv->attendee_sentby);
 		else
-			sender = g_markup_printf_escaped (_("<b>%s</b> has proposed the following task assignment changes:"), attendee);
+			sender = dupe_first_bold (_("%s has proposed the following task assignment changes:"), attendee, NULL);
 		break;
 	case ITIP_VIEW_MODE_DECLINECOUNTER:
 		if (priv->organizer_sentby)
-			sender = g_markup_printf_escaped (_("<b>%s</b> through %s has declined the following assigned task:"), organizer, priv->organizer_sentby);
+			sender = dupe_first_bold (_("%s through %s has declined the following assigned task:"), organizer, priv->organizer_sentby);
 		else
-			sender = g_markup_printf_escaped (_("<b>%s</b> has declined the following assigned task:"), organizer);
+			sender = dupe_first_bold (_("%s has declined the following assigned task:"), organizer, NULL);
 		break;
 	default:
 		break;
@@ -513,40 +529,39 @@ static void
 set_journal_sender_text (ItipView *view)
 {
 	ItipViewPrivate *priv;
-	const gchar *organizer, *attendee;
+	const gchar *organizer;
 	gchar *sender = NULL;
 	gchar *on_behalf_of = NULL;
 
 	priv = view->priv;
 
 	organizer = priv->organizer ? priv->organizer : _("An unknown person");
-	attendee = priv->attendee ? priv->attendee : _("An unknown person");
 
 	/* The current account ID (i.e. the delegatee) is receiving a copy of the request/response. Here we ask the delegatee to respond/accept on behalf of the delegator. */
 	if (priv->organizer && priv->proxy)
-		on_behalf_of = g_markup_printf_escaped (_("Please respond on behalf of <b>%s</b>"), priv->proxy);
+		on_behalf_of = dupe_first_bold (_("Please respond on behalf of %s"), priv->proxy, NULL);
 	else if (priv->attendee && priv->proxy)
-		on_behalf_of = g_markup_printf_escaped (_("Received on behalf of <b>%s</b>"), priv->proxy);
+		on_behalf_of = dupe_first_bold (_("Received on behalf of %s"), priv->proxy, NULL);
 
 	switch (priv->mode) {
 	case ITIP_VIEW_MODE_PUBLISH:
 		if (priv->organizer_sentby)
-			sender = g_markup_printf_escaped (_("<b>%s</b> through %s has published the following memo:"), organizer, priv->organizer_sentby);
+			sender = dupe_first_bold (_("%s through %s has published the following memo:"), organizer, priv->organizer_sentby);
 		else
-			sender = g_markup_printf_escaped (_("<b>%s</b> has published the following memo:"), organizer);
+			sender = dupe_first_bold (_("%s has published the following memo:"), organizer, NULL);
 		break;
 	case ITIP_VIEW_MODE_ADD:
 		/* FIXME What text for this? */
 		if (priv->organizer_sentby)
-			sender = g_markup_printf_escaped (_("<b>%s</b> through %s wishes to add to an existing memo:"), organizer, priv->organizer_sentby);
+			sender = dupe_first_bold (_("%s through %s wishes to add to an existing memo:"), organizer, priv->organizer_sentby);
 		else
-			sender = g_markup_printf_escaped (_("<b>%s</b> wishes to add to an existing memo:"), organizer);
+			sender = dupe_first_bold (_("%s wishes to add to an existing memo:"), organizer, NULL);
 		break;
 	case ITIP_VIEW_MODE_CANCEL:
 		if (priv->organizer_sentby)
-			sender = g_markup_printf_escaped (_("<b>%s</b> through %s has canceled the following shared memo:"), organizer, priv->organizer_sentby);
+			sender = dupe_first_bold (_("%s through %s has canceled the following shared memo:"), organizer, priv->organizer_sentby);
 		else
-			sender = g_markup_printf_escaped (_("<b>%s</b> has canceled the following shared memo:"), organizer);
+			sender = dupe_first_bold (_("%s has canceled the following shared memo:"), organizer, NULL);
 		break;
 	default:
 		break;
@@ -652,7 +667,7 @@ set_description_text (ItipView *view)
 }
 
 static void
-set_start_text (ItipView *view)
+update_start_end_times (ItipView *view)
 {
 	ItipViewPrivate *priv;
 	gchar buffer[256];
@@ -664,39 +679,45 @@ set_start_text (ItipView *view)
 	now = time (NULL);
 	now_tm = localtime (&now);
 
-	if (priv->start_tm) {
-		format_date_and_time_x (priv->start_tm, now_tm, FALSE, TRUE, FALSE, buffer, 256);
+	#define is_same(_member) (priv->start_tm->_member == priv->end_tm->_member)
+	if (priv->start_tm && priv->end_tm && priv->start_tm_is_date && priv->end_tm_is_date
+	    && is_same (tm_mday) && is_same (tm_mon) && is_same (tm_year)) {
+		/* it's an all day event in one particular day */
+		format_date_and_time_x (priv->start_tm, now_tm, FALSE, TRUE, FALSE, priv->start_tm_is_date, buffer, 256);
 		gtk_label_set_text (GTK_LABEL (priv->start_label), buffer);
+		gtk_label_set_text (GTK_LABEL (priv->start_header), _("All day:"));
+
+		gtk_widget_show (priv->start_header);
+		gtk_widget_show (priv->start_label);
+		gtk_widget_hide (priv->end_header);
+		gtk_widget_hide (priv->end_label);
 	} else {
-		gtk_label_set_text (GTK_LABEL (priv->start_label), NULL);
+		if (priv->start_tm) {
+			format_date_and_time_x (priv->start_tm, now_tm, FALSE, TRUE, FALSE, priv->start_tm_is_date, buffer, 256);
+			gtk_label_set_text (GTK_LABEL (priv->start_label), buffer);
+			gtk_label_set_text (GTK_LABEL (priv->start_header), priv->start_tm_is_date ? _("Start day:") : _("Start time:"));
+			gtk_widget_show (priv->start_header);
+			gtk_widget_show (priv->start_label);
+		} else {
+			gtk_label_set_text (GTK_LABEL (priv->start_label), NULL);
+			gtk_widget_hide (priv->start_header);
+			gtk_widget_hide (priv->start_label);
+		}
+
+		if (priv->end_tm) {
+			format_date_and_time_x (priv->end_tm, now_tm, FALSE, TRUE, FALSE, priv->end_tm_is_date, buffer, 256);
+			gtk_label_set_text (GTK_LABEL (priv->end_label), buffer);
+			gtk_label_set_text (GTK_LABEL (priv->end_header), priv->end_tm_is_date ? _("End day:") : _("End time:"));
+			gtk_widget_show (priv->end_header);
+			gtk_widget_show (priv->end_label);
+		} else {
+			gtk_label_set_text (GTK_LABEL (priv->end_label), NULL);
+			gtk_widget_hide (priv->end_header);
+			gtk_widget_hide (priv->end_label);
+		}
 	}
 
-	priv->start_tm ? gtk_widget_show (priv->start_header) : gtk_widget_hide (priv->start_header);
-	priv->start_tm ? gtk_widget_show (priv->start_label) : gtk_widget_hide (priv->start_label);
-}
-
-static void
-set_end_text (ItipView *view)
-{
-	ItipViewPrivate *priv;
-	gchar buffer[256];
-	time_t now;
-	struct tm *now_tm;
-
-	priv = view->priv;
-
-	now = time (NULL);
-	now_tm = localtime (&now);
-
-	if (priv->end_tm) {
-		format_date_and_time_x (priv->end_tm, now_tm, FALSE, TRUE, FALSE, buffer, 256);
-		gtk_label_set_text (GTK_LABEL (priv->end_label), buffer);
-	} else {
-		gtk_label_set_text (GTK_LABEL (priv->end_label), NULL);
-	}
-
-	priv->end_tm ? gtk_widget_show (priv->end_header) : gtk_widget_hide (priv->end_header);
-	priv->end_tm ? gtk_widget_show (priv->end_label) : gtk_widget_hide (priv->end_label);
+	#undef is_same
 }
 
 static void
@@ -774,7 +795,6 @@ button_clicked_cb (GtkWidget *widget, gpointer data)
 
 	response = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (widget), DATA_RESPONSE_KEY));
 
-	g_message ("Response %d", response);
 	g_signal_emit (G_OBJECT (data), signals[RESPONSE], 0, response);
 }
 
@@ -827,19 +847,19 @@ set_buttons (ItipView *view)
 		/* FIXME Is this really the right button? */
 		if (priv->needs_decline)
 			set_one_button (view, _("_Decline"), GTK_STOCK_CANCEL, ITIP_VIEW_RESPONSE_DECLINE);
-		set_one_button (view, _("_Accept"), GTK_STOCK_APPLY, ITIP_VIEW_RESPONSE_ACCEPT);
+		set_one_button (view, _("A_ccept"), GTK_STOCK_APPLY, ITIP_VIEW_RESPONSE_ACCEPT);
 		break;
 	case ITIP_VIEW_MODE_REQUEST:
 		set_one_button (view, is_recur_set ? _("_Decline all") : _("_Decline"), GTK_STOCK_CANCEL, ITIP_VIEW_RESPONSE_DECLINE);
 		set_one_button (view, is_recur_set ? _("_Tentative all") : _("_Tentative"), GTK_STOCK_DIALOG_QUESTION, ITIP_VIEW_RESPONSE_TENTATIVE);
-		set_one_button (view, is_recur_set ? _("_Accept all") : _("_Accept"), GTK_STOCK_APPLY, ITIP_VIEW_RESPONSE_ACCEPT);
+		set_one_button (view, is_recur_set ? _("A_ccept all") : _("A_ccept"), GTK_STOCK_APPLY, ITIP_VIEW_RESPONSE_ACCEPT);
 		break;
 	case ITIP_VIEW_MODE_ADD:
 		if (priv->type != E_CAL_SOURCE_TYPE_JOURNAL) {
 			set_one_button (view, _("_Decline"), GTK_STOCK_CANCEL, ITIP_VIEW_RESPONSE_DECLINE);
 			set_one_button (view, _("_Tentative"), GTK_STOCK_DIALOG_QUESTION, ITIP_VIEW_RESPONSE_TENTATIVE);
 		}
-		set_one_button (view, _("_Accept"), GTK_STOCK_APPLY, ITIP_VIEW_RESPONSE_ACCEPT);
+		set_one_button (view, _("A_ccept"), GTK_STOCK_APPLY, ITIP_VIEW_RESPONSE_ACCEPT);
 		break;
 	case ITIP_VIEW_MODE_REFRESH:
 		/* FIXME Is this really the right button? */
@@ -855,12 +875,12 @@ set_buttons (ItipView *view)
 	case ITIP_VIEW_MODE_COUNTER:
 		set_one_button (view, _("_Decline"), GTK_STOCK_CANCEL, ITIP_VIEW_RESPONSE_DECLINE);
 		set_one_button (view, _("_Tentative"), GTK_STOCK_DIALOG_QUESTION, ITIP_VIEW_RESPONSE_TENTATIVE);
-		set_one_button (view, _("_Accept"), GTK_STOCK_APPLY, ITIP_VIEW_RESPONSE_ACCEPT);
+		set_one_button (view, _("A_ccept"), GTK_STOCK_APPLY, ITIP_VIEW_RESPONSE_ACCEPT);
 		break;
 	case ITIP_VIEW_MODE_DECLINECOUNTER:
 		set_one_button (view, _("_Decline"), GTK_STOCK_CANCEL, ITIP_VIEW_RESPONSE_DECLINE);
 		set_one_button (view, _("_Tentative"), GTK_STOCK_DIALOG_QUESTION, ITIP_VIEW_RESPONSE_TENTATIVE);
-		set_one_button (view, _("_Accept"), GTK_STOCK_APPLY, ITIP_VIEW_RESPONSE_ACCEPT);
+		set_one_button (view, _("A_ccept"), GTK_STOCK_APPLY, ITIP_VIEW_RESPONSE_ACCEPT);
 		break;
 	default:
 		break;
@@ -962,7 +982,7 @@ alarm_check_toggled_cb (GtkWidget *check1, GtkWidget *check2)
 	g_return_if_fail (check1 != NULL);
 	g_return_if_fail (check2 != NULL);
 
-	gtk_widget_set_sensitive (check2, !(GTK_WIDGET_VISIBLE (check1) && gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check1))));
+	gtk_widget_set_sensitive (check2, !(gtk_widget_get_visible (check1) && gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check1))));
 }
 
 static void
@@ -1238,25 +1258,6 @@ itip_view_get_item_type (ItipView *view)
 	return priv->type;
 }
 
-/* ensures the returned text will be valid UTF-8 text, thus gtk functions expecting
-   only valid UTF-8 texts will not crash. Returned pointer should be freed with g_free. */
-static gchar *
-ensure_utf8 (const gchar *text)
-{
-	gchar *res = g_strdup (text), *p;
-
-	if (!text)
-		return res;
-
-	p = res;
-	while (!g_utf8_validate (p, -1, (const gchar **) &p)) {
-		/* make all invalid characters appear as question marks */
-		*p = '?';
-	}
-
-	return res;
-}
-
 void
 itip_view_set_organizer (ItipView *view, const gchar *organizer)
 {
@@ -1270,7 +1271,7 @@ itip_view_set_organizer (ItipView *view, const gchar *organizer)
 	if (priv->organizer)
 		g_free (priv->organizer);
 
-	priv->organizer = ensure_utf8 (organizer);
+	priv->organizer = e_utf8_ensure_valid (organizer);
 
 	set_sender_text (view);
 }
@@ -1301,7 +1302,7 @@ itip_view_set_organizer_sentby (ItipView *view, const gchar *sentby)
 	if (priv->organizer_sentby)
 		g_free (priv->organizer_sentby);
 
-	priv->organizer_sentby = ensure_utf8 (sentby);
+	priv->organizer_sentby = e_utf8_ensure_valid (sentby);
 
 	set_sender_text (view);
 }
@@ -1332,7 +1333,7 @@ itip_view_set_attendee (ItipView *view, const gchar *attendee)
 	if (priv->attendee)
 		g_free (priv->attendee);
 
-	priv->attendee = ensure_utf8 (attendee);
+	priv->attendee = e_utf8_ensure_valid (attendee);
 
 	set_sender_text (view);
 }
@@ -1363,7 +1364,7 @@ itip_view_set_attendee_sentby (ItipView *view, const gchar *sentby)
 	if (priv->attendee_sentby)
 		g_free (priv->attendee_sentby);
 
-	priv->attendee_sentby = ensure_utf8 (sentby);
+	priv->attendee_sentby = e_utf8_ensure_valid (sentby);
 
 	set_sender_text (view);
 }
@@ -1394,7 +1395,7 @@ itip_view_set_proxy (ItipView *view, const gchar *proxy)
 	if (priv->proxy)
 		g_free (priv->proxy);
 
-	priv->proxy = ensure_utf8 (proxy);
+	priv->proxy = e_utf8_ensure_valid (proxy);
 
 	set_sender_text (view);
 }
@@ -1425,7 +1426,7 @@ itip_view_set_delegator (ItipView *view, const gchar *delegator)
 	if (priv->delegator)
 		g_free (priv->delegator);
 
-	priv->delegator = ensure_utf8 (delegator);
+	priv->delegator = e_utf8_ensure_valid (delegator);
 
 	set_sender_text (view);
 }
@@ -1456,7 +1457,7 @@ itip_view_set_summary (ItipView *view, const gchar *summary)
 	if (priv->summary)
 		g_free (priv->summary);
 
-	priv->summary = summary ? g_strstrip (ensure_utf8 (summary)) : NULL;
+	priv->summary = summary ? g_strstrip (e_utf8_ensure_valid (summary)) : NULL;
 
 	set_summary_text (view);
 }
@@ -1487,7 +1488,7 @@ itip_view_set_location (ItipView *view, const gchar *location)
 	if (priv->location)
 		g_free (priv->location);
 
-	priv->location = location ? g_strstrip (ensure_utf8 (location)) : NULL;
+	priv->location = location ? g_strstrip (e_utf8_ensure_valid (location)) : NULL;
 
 	set_location_text (view);
 }
@@ -1518,7 +1519,7 @@ itip_view_set_status (ItipView *view, const gchar *status)
 	if (priv->status)
 		g_free (priv->status);
 
-	priv->status = status ? g_strstrip (ensure_utf8 (status)) : NULL;
+	priv->status = status ? g_strstrip (e_utf8_ensure_valid (status)) : NULL;
 
 	set_status_text (view);
 }
@@ -1549,7 +1550,7 @@ itip_view_set_comment (ItipView *view, const gchar *comment)
 	if (priv->comment)
 		g_free (priv->comment);
 
-	priv->comment = comment ? g_strstrip (ensure_utf8 (comment)) : NULL;
+	priv->comment = comment ? g_strstrip (e_utf8_ensure_valid (comment)) : NULL;
 
 	set_comment_text (view);
 }
@@ -1580,7 +1581,7 @@ itip_view_set_description (ItipView *view, const gchar *description)
 	if (priv->description)
 		g_free (priv->description);
 
-	priv->description = description ? g_strstrip (ensure_utf8 (description)) : NULL;
+	priv->description = description ? g_strstrip (e_utf8_ensure_valid (description)) : NULL;
 
 	set_description_text (view);
 }
@@ -1599,7 +1600,7 @@ itip_view_get_description (ItipView *view)
 }
 
 void
-itip_view_set_start (ItipView *view, struct tm *start)
+itip_view_set_start (ItipView *view, struct tm *start, gboolean is_date)
 {
 	ItipViewPrivate *priv;
 
@@ -1618,11 +1619,13 @@ itip_view_set_start (ItipView *view, struct tm *start)
 		*priv->start_tm = *start;
 	}
 
-	set_start_text (view);
+	priv->start_tm_is_date = is_date && start;
+
+	update_start_end_times (view);
 }
 
 const struct tm *
-itip_view_get_start (ItipView *view)
+itip_view_get_start (ItipView *view, gboolean *is_date)
 {
 	ItipViewPrivate *priv;
 
@@ -1631,11 +1634,14 @@ itip_view_get_start (ItipView *view)
 
 	priv = view->priv;
 
+	if (is_date)
+		*is_date = priv->start_tm_is_date;
+
 	return priv->start_tm;
 }
 
 void
-itip_view_set_end (ItipView *view, struct tm *end)
+itip_view_set_end (ItipView *view, struct tm *end, gboolean is_date)
 {
 	ItipViewPrivate *priv;
 
@@ -1654,11 +1660,13 @@ itip_view_set_end (ItipView *view, struct tm *end)
 		*priv->end_tm = *end;
 	}
 
-	set_end_text (view);
+	priv->end_tm_is_date = is_date && end;
+
+	update_start_end_times (view);
 }
 
 const struct tm *
-itip_view_get_end (ItipView *view)
+itip_view_get_end (ItipView *view, gboolean *is_date)
 {
 	ItipViewPrivate *priv;
 
@@ -1666,6 +1674,9 @@ itip_view_get_end (ItipView *view)
 	g_return_val_if_fail (ITIP_IS_VIEW (view), NULL);
 
 	priv = view->priv;
+
+	if (is_date)
+		*is_date = priv->end_tm_is_date;
 
 	return priv->end_tm;
 }
@@ -1684,7 +1695,7 @@ itip_view_add_upper_info_item (ItipView *view, ItipViewInfoItemType type, const 
 	item = g_new0 (ItipViewInfoItem, 1);
 
 	item->type = type;
-	item->message = ensure_utf8 (message);
+	item->message = e_utf8_ensure_valid (message);
 	item->id = priv->next_info_item_id++;
 
 	priv->upper_info_items = g_slist_append (priv->upper_info_items, item);
@@ -1779,7 +1790,7 @@ itip_view_add_lower_info_item (ItipView *view, ItipViewInfoItemType type, const 
 	item = g_new0 (ItipViewInfoItem, 1);
 
 	item->type = type;
-	item->message = ensure_utf8 (message);
+	item->message = e_utf8_ensure_valid (message);
 	item->id = priv->next_info_item_id++;
 
 	priv->lower_info_items = g_slist_append (priv->lower_info_items, item);
@@ -1995,7 +2006,7 @@ itip_view_get_rsvp (ItipView *view)
 
 	priv = view->priv;
 
-	return gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (priv->rsvp_check));
+	return priv->rsvp_show && gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (priv->rsvp_check));
 }
 
 void

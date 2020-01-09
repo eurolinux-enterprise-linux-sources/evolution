@@ -32,9 +32,11 @@
 #include <glib/gi18n.h>
 #include <libedataserver/e-time-utils.h>
 #include <libecal/e-cal-time-util.h>
+#include "e-util/e-binding.h"
+#include "widgets/misc/e-dateedit.h"
 #include "../calendar-config.h"
-#include "../e-date-edit-config.h"
 #include "../itip-utils.h"
+#include <shell/e-shell.h>
 #include "comp-editor-util.h"
 
 
@@ -109,110 +111,6 @@ comp_editor_free_dates (CompEditorPageDates *dates)
 		e_cal_component_free_icaltimetype (dates->complete);
 }
 
-/* dtstart is only passed in if tt is the dtend. */
-static void
-write_label_piece (struct icaltimetype *tt,
-                   gchar *buffer,
-                   gint size,
-                   gchar *stext,
-                   const gchar *etext,
-                   struct icaltimetype *dtstart)
-{
-	struct tm tmp_tm = { 0 };
-	struct icaltimetype tt_copy = *tt;
-	gint len;
-
-	/* FIXME: May want to convert the time to an appropriate zone. */
-
-	if (stext != NULL)
-		strcat (buffer, stext);
-
-	/* If we are writing the DTEND (i.e. DTSTART is set), and
-	   DTEND > DTSTART, subtract 1 day. The DTEND date is not inclusive. */
-	if (tt_copy.is_date && dtstart
-	    && icaltime_compare_date_only (tt_copy, *dtstart) > 0) {
-		icaltime_adjust (&tt_copy, -1, 0, 0, 0);
-	}
-
-	tmp_tm.tm_year = tt_copy.year - 1900;
-	tmp_tm.tm_mon = tt_copy.month - 1;
-	tmp_tm.tm_mday = tt_copy.day;
-	tmp_tm.tm_hour = tt_copy.hour;
-	tmp_tm.tm_min = tt_copy.minute;
-	tmp_tm.tm_sec = tt_copy.second;
-	tmp_tm.tm_isdst = -1;
-
-	tmp_tm.tm_wday = time_day_of_week (tt_copy.day, tt_copy.month - 1,
-					   tt_copy.year);
-
-	len = strlen (buffer);
-	e_time_format_date_and_time (&tmp_tm,
-				     calendar_config_get_24_hour_format (),
-				     !tt_copy.is_date, FALSE,
-				     &buffer[len], size - len);
-	if (etext != NULL)
-		strcat (buffer, etext);
-}
-
-/**
- * comp_editor_date_label:
- * @dates: The dates to use in constructing a label
- * @label: The label whose text is to be set
- *
- * Set the text of a label based on the dates available and the user's
- * formatting preferences
- **/
-void
-comp_editor_date_label (CompEditorPageDates *dates, GtkWidget *label)
-{
-	gchar buffer[1024];
-	gboolean start_set = FALSE, end_set = FALSE;
-	gboolean complete_set = FALSE, due_set = FALSE;
-
-	buffer[0] = '\0';
-
-	if (dates->start && !icaltime_is_null_time (*dates->start->value))
-		start_set = TRUE;
-	if (dates->end && !icaltime_is_null_time (*dates->end->value))
-		end_set = TRUE;
-	if (dates->complete && !icaltime_is_null_time (*dates->complete))
-		complete_set = TRUE;
-	if (dates->due && !icaltime_is_null_time (*dates->due->value))
-		due_set = TRUE;
-
-	if (start_set)
-		write_label_piece (dates->start->value, buffer, 1024,
-				   NULL, NULL, NULL);
-
-	if (start_set && end_set)
-		write_label_piece (dates->end->value, buffer, 1024,
-				   _(" to "), NULL, dates->start->value);
-
-	if (complete_set) {
-		if (start_set)
-			write_label_piece (dates->complete, buffer, 1024, _(" (Completed "), ")", NULL);
-		else
-			write_label_piece (dates->complete, buffer, 1024, _("Completed "), NULL, NULL);
-	}
-
-	if (due_set && dates->complete == NULL) {
-		if (start_set)
-			write_label_piece (dates->due->value, buffer, 1024, _(" (Due "), ")", NULL);
-		else
-			write_label_piece (dates->due->value, buffer, 1024, _("Due "), NULL, NULL);
-	}
-
-	gtk_label_set_text (GTK_LABEL (label), buffer);
-}
-
-static void
-date_edit_destroy_cb (EDateEdit *date_edit, gpointer data)
-{
-	EDateEditConfig *config = data;
-
-	g_object_unref (config);
-}
-
 /**
  * comp_editor_new_date_edit:
  * @show_date: Whether to show a date picker in the widget.
@@ -226,11 +124,11 @@ date_edit_destroy_cb (EDateEdit *date_edit, gpointer data)
  * Return value: A newly-created #EDateEdit widget.
  **/
 GtkWidget *
-comp_editor_new_date_edit (gboolean show_date, gboolean show_time,
-			   gboolean make_time_insensitive)
+comp_editor_new_date_edit (gboolean show_date,
+                           gboolean show_time,
+                           gboolean make_time_insensitive)
 {
 	EDateEdit *dedit;
-	EDateEditConfig *config;
 
 	dedit = E_DATE_EDIT (e_date_edit_new ());
 
@@ -241,9 +139,6 @@ comp_editor_new_date_edit (gboolean show_date, gboolean show_time,
 #else
 	e_date_edit_set_make_time_insensitive (dedit, FALSE);
 #endif
-
-	config = e_date_edit_config_new (dedit);
-	g_signal_connect (G_OBJECT (dedit), "destroy", G_CALLBACK (date_edit_destroy_cb), config);
 
 	return GTK_WIDGET (dedit);
 }
@@ -399,7 +294,9 @@ free_slist_strs (gpointer data)
  * @note The list is just string of emails separated by ';'
  **/
 void
-comp_editor_manage_new_attendees (ECalComponent *comp, EMeetingAttendee *ma, gboolean add)
+comp_editor_manage_new_attendees (ECalComponent *comp,
+                                  EMeetingAttendee *ma,
+                                  gboolean add)
 {
 	const gchar *eml;
 
@@ -411,7 +308,11 @@ comp_editor_manage_new_attendees (ECalComponent *comp, EMeetingAttendee *ma, gbo
 		eml = itip_strip_mailto (eml);
 	g_return_if_fail (eml != NULL);
 
-	g_object_set_data_full (G_OBJECT (comp), "new-attendees", manage_new_attendees (g_object_get_data (G_OBJECT (comp), "new-attendees"), eml, add), free_slist_strs);
+	g_object_set_data_full (
+		G_OBJECT (comp), "new-attendees",
+		manage_new_attendees (
+			g_object_get_data (G_OBJECT (comp), "new-attendees"),
+			eml, add), free_slist_strs);
 }
 
 /**
@@ -454,15 +355,19 @@ comp_editor_have_in_new_attendees (ECalComponent *comp, EMeetingAttendee *ma)
 		eml = itip_strip_mailto (eml);
 	g_return_val_if_fail (eml != NULL, FALSE);
 
-	return comp_editor_have_in_new_attendees_lst (g_object_get_data (G_OBJECT (comp), "new-attendees"), eml);
+	return comp_editor_have_in_new_attendees_lst (
+		g_object_get_data (G_OBJECT (comp), "new-attendees"), eml);
 }
 
 /**
  * comp_editor_have_in_new_attendees_lst:
- * Same as @ref comp_editor_have_in_new_attendees only parameters are direct GSList and string.
+ *
+ * Same as comp_editor_have_in_new_attendees() only parameters are
+ * direct GSList and string.
  **/
 gboolean
-comp_editor_have_in_new_attendees_lst (const GSList *new_attendees, const gchar *eml)
+comp_editor_have_in_new_attendees_lst (const GSList *new_attendees,
+                                       const gchar *eml)
 {
 	const GSList *l;
 
@@ -475,4 +380,35 @@ comp_editor_have_in_new_attendees_lst (const GSList *new_attendees, const gchar 
 	}
 
 	return FALSE;
+}
+
+/**
+ * comp_editor_test_time_in_the_past:
+ * @time_tt: Time to check.
+ * @parent: Parent window for a question dialog.
+ * @tag: Question message tag to use.
+ * Returns whether given time is in the past.
+ *
+ * Tests the given @time_tt whether occurs in the past,
+ * and if so, returns TRUE.
+ **/
+gboolean
+comp_editor_test_time_in_the_past (const struct icaltimetype time_tt)
+{
+	struct icaltimetype now_tt;
+	gboolean is_past;
+
+	if (icaltime_is_null_time (time_tt))
+		return FALSE;
+
+	if (time_tt.is_date) {
+		now_tt = icaltime_today ();
+		is_past = icaltime_compare_date_only (time_tt, now_tt) < 0;
+	} else {
+		now_tt = icaltime_current_time_with_zone (time_tt.zone);
+		now_tt.zone = time_tt.zone;
+		is_past = icaltime_compare (time_tt, now_tt) < 0;
+	}
+
+	return is_past;
 }

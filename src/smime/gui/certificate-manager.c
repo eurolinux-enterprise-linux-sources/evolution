@@ -25,14 +25,10 @@
 #include <config.h>
 #endif
 
-#define GLADE_FILE_NAME "smime-ui.glade"
-
 #include <gtk/gtk.h>
 
 #include <glib/gi18n.h>
 
-#include <glade/glade.h>
-#include "evolution-config-control.h"
 #include "ca-trust-dialog.h"
 #include "cert-trust-dialog.h"
 #include "certificate-manager.h"
@@ -49,10 +45,14 @@
 #include <pkcs11.h>
 #include <pk11func.h>
 
+#include "shell/e-shell.h"
+#include "e-util/e-dialog-utils.h"
+#include "e-util/e-util.h"
 #include "e-util/e-util-private.h"
+#include "widgets/misc/e-preferences-window.h"
 
 typedef struct {
-	GladeXML *gui;
+	GtkBuilder *builder;
 
 	GtkWidget *yourcerts_treeview;
 	GtkTreeStore *yourcerts_treemodel;
@@ -90,6 +90,18 @@ static void load_certs (CertificateManagerData *cfm, ECertType type, AddCertCb a
 static void add_user_cert (CertificateManagerData *cfm, ECert *cert);
 static void add_contact_cert (CertificateManagerData *cfm, ECert *cert);
 static void add_ca_cert (CertificateManagerData *cfm, ECert *cert);
+
+static void
+report_and_free_error (CertificateManagerData *cfm, const gchar *where, GError *error)
+{
+	g_return_if_fail (cfm != NULL);
+
+	e_notice (gtk_widget_get_toplevel (cfm->yourcerts_treeview),
+		  GTK_MESSAGE_ERROR, "%s: %s", where, error ? error->message : _("Unknown error"));
+
+	if (error)
+		g_error_free (error);
+}
 
 static void
 handle_selection_changed (GtkTreeSelection *selection,
@@ -154,17 +166,20 @@ import_your (GtkWidget *widget, CertificateManagerData *cfm)
 
 	if (GTK_RESPONSE_OK == gtk_dialog_run (GTK_DIALOG (filesel))) {
 		gchar *filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (filesel));
+		GError *error = NULL;
 
 		/* destroy dialog to get rid of it in the GUI */
 		gtk_widget_destroy (filesel);
 
 		if (e_cert_db_import_pkcs12_file (e_cert_db_peek (),
-						  filename, NULL /* XXX */)) {
+						  filename, &error)) {
 			/* there's no telling how many certificates were added during the import,
 			   so we blow away the contact cert display and regenerate it. */
 			unload_certs (cfm, E_CERT_USER);
 			load_certs (cfm, E_CERT_USER, add_user_cert);
 			gtk_tree_view_expand_all (GTK_TREE_VIEW (cfm->yourcerts_treeview));
+		} else {
+			report_and_free_error (cfm, _("Failed to import user's certificate"), error);
 		}
 
 		g_free (filename);
@@ -190,7 +205,6 @@ delete_your (GtkWidget *widget, CertificateManagerData *cfm)
 		if (cert
 		    && e_cert_db_delete_cert (e_cert_db_peek (), cert)) {
 			GtkTreeIter child_iter;
-			printf ("DELETE\n");
 			gtk_tree_model_sort_convert_iter_to_child_iter (GTK_TREE_MODEL_SORT (cfm->yourcerts_streemodel),
 									&child_iter,
 									&iter);
@@ -242,6 +256,69 @@ static void
 backup_all_your (GtkWidget *widget, CertificateManagerData *cfm)
 {
 	/* FIXME: implement */
+}
+
+struct find_cert_data {
+	ECert *cert;
+	GtkTreePath *path;
+	gint cert_index;
+};
+
+static gboolean
+find_cert_cb (GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
+{
+	struct find_cert_data *fcd = data;
+	ECert *cert = NULL;
+
+	g_return_val_if_fail (model != NULL, TRUE);
+	g_return_val_if_fail (iter != NULL, TRUE);
+	g_return_val_if_fail (data != NULL, TRUE);
+
+	gtk_tree_model_get (model, iter, fcd->cert_index, &cert, -1);
+
+	if (cert && g_strcmp0 (e_cert_get_serial_number (cert), e_cert_get_serial_number (fcd->cert)) == 0
+	    && g_strcmp0 (e_cert_get_subject_name (cert), e_cert_get_subject_name (fcd->cert)) == 0
+	    && g_strcmp0 (e_cert_get_sha1_fingerprint (cert), e_cert_get_sha1_fingerprint (fcd->cert)) == 0
+	    && g_strcmp0 (e_cert_get_md5_fingerprint (cert), e_cert_get_md5_fingerprint (fcd->cert)) == 0) {
+		fcd->path = gtk_tree_path_copy (path);
+	}
+
+	return fcd->path != NULL;
+}
+
+static void
+select_certificate (CertificateManagerData *cfm, GtkTreeView *treeview, ECert *cert)
+{
+	GtkTreeModel *model;
+	GtkTreeSelection *selection;
+	struct find_cert_data fcd;
+
+	g_return_if_fail (treeview != NULL);
+	g_return_if_fail (GTK_IS_TREE_VIEW (treeview));
+	g_return_if_fail (cert != NULL);
+	g_return_if_fail (E_IS_CERT (cert));
+
+	model = gtk_tree_view_get_model (treeview);
+	g_return_if_fail (model != NULL);
+
+	fcd.cert = cert;
+	fcd.path = NULL;
+	fcd.cert_index = cfm->yourcerts_treeview == GTK_WIDGET (treeview) ? 4
+		       : cfm->authoritycerts_treeview == GTK_WIDGET (treeview) ? 1
+		       : 3;
+
+	gtk_tree_model_foreach (model, find_cert_cb, &fcd);
+
+	if (fcd.path) {
+		gtk_tree_view_expand_to_path (treeview, fcd.path);
+
+		selection = gtk_tree_view_get_selection (treeview);
+		gtk_tree_selection_select_path (selection, fcd.path);
+
+		gtk_tree_view_scroll_to_cell (treeview, fcd.path, NULL, FALSE, 0.0, 0.0);
+
+		gtk_tree_path_free (fcd.path);
+	}
 }
 
 static void
@@ -401,6 +478,8 @@ import_contact (GtkWidget *widget, CertificateManagerData *cfm)
 
 	if (GTK_RESPONSE_OK == gtk_dialog_run (GTK_DIALOG (filesel))) {
 		gchar *filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (filesel));
+		GError *error = NULL;
+		GSList *imported_certs = NULL;
 
 		/* destroy dialog to get rid of it in the GUI */
 		gtk_widget_destroy (filesel);
@@ -408,16 +487,24 @@ import_contact (GtkWidget *widget, CertificateManagerData *cfm)
 		if (e_cert_db_import_certs_from_file (e_cert_db_peek (),
 						      filename,
 						      E_CERT_CONTACT,
-						      NULL)) {
+						      &imported_certs,
+						      &error)) {
 
 			/* there's no telling how many certificates were added during the import,
 			   so we blow away the contact cert display and regenerate it. */
 			unload_certs (cfm, E_CERT_CONTACT);
 			load_certs (cfm, E_CERT_CONTACT, add_contact_cert);
 			gtk_tree_view_expand_all (GTK_TREE_VIEW (cfm->contactcerts_treeview));
+
+			if (imported_certs)
+				select_certificate (cfm, GTK_TREE_VIEW (cfm->contactcerts_treeview), imported_certs->data);
+		} else {
+			report_and_free_error (cfm, _("Failed to import contact's certificate"), error);
 		}
 
 		g_free (filename);
+		g_slist_foreach (imported_certs, (GFunc) g_object_unref, NULL);
+		g_slist_free (imported_certs);
 	} else
 		gtk_widget_destroy (filesel);
 }
@@ -440,7 +527,6 @@ delete_contact (GtkWidget *widget, CertificateManagerData *cfm)
 		if (cert
 		    && e_cert_db_delete_cert (e_cert_db_peek (), cert)) {
 			GtkTreeIter child_iter;
-			printf ("DELETE\n");
 			gtk_tree_model_sort_convert_iter_to_child_iter (GTK_TREE_MODEL_SORT (cfm->contactcerts_streemodel),
 									&child_iter,
 									&iter);
@@ -593,7 +679,7 @@ edit_ca (GtkWidget *widget, CertificateManagerData *cfm)
 							   trust_email,
 							   trust_objsign);
 
-				CERT_ChangeCertTrust (CERT_GetDefaultCertDB(), icert, &trust);
+				e_cert_db_change_cert_trust (icert, &trust);
 			}
 
 			gtk_widget_destroy (dialog);
@@ -628,6 +714,8 @@ import_ca (GtkWidget *widget, CertificateManagerData *cfm)
 
 	if (GTK_RESPONSE_OK == gtk_dialog_run (GTK_DIALOG (filesel))) {
 		gchar *filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (filesel));
+		GSList *imported_certs = NULL;
+		GError *error = NULL;
 
 		/* destroy dialog to get rid of it in the GUI */
 		gtk_widget_destroy (filesel);
@@ -635,14 +723,22 @@ import_ca (GtkWidget *widget, CertificateManagerData *cfm)
 		if (e_cert_db_import_certs_from_file (e_cert_db_peek (),
 						      filename,
 						      E_CERT_CA,
-						      NULL)) {
+						      &imported_certs,
+						      &error)) {
 
 			/* there's no telling how many certificates were added during the import,
 			   so we blow away the CA cert display and regenerate it. */
 			unload_certs (cfm, E_CERT_CA);
 			load_certs (cfm, E_CERT_CA, add_ca_cert);
+
+			if (imported_certs)
+				select_certificate (cfm, GTK_TREE_VIEW (cfm->authoritycerts_treeview), imported_certs->data);
+		} else {
+			report_and_free_error (cfm, _("Failed to import certificate authority's certificate"), error);
 		}
 
+		g_slist_foreach (imported_certs, (GFunc) g_object_unref, NULL);
+		g_slist_free (imported_certs);
 		g_free (filename);
 	} else
 		gtk_widget_destroy (filesel);
@@ -666,7 +762,6 @@ delete_ca (GtkWidget *widget, CertificateManagerData *cfm)
 		if (cert
 		    && e_cert_db_delete_cert (e_cert_db_peek (), cert)) {
 			GtkTreeIter child_iter;
-			printf ("DELETE\n");
 			gtk_tree_model_sort_convert_iter_to_child_iter (GTK_TREE_MODEL_SORT (cfm->authoritycerts_streemodel),
 									&child_iter,
 									&iter);
@@ -960,19 +1055,25 @@ load_certs (CertificateManagerData *cfm,
 	for (node = CERT_LIST_HEAD(certList);
 	     !CERT_LIST_END(node, certList);
 	     node = CERT_LIST_NEXT(node)) {
-		ECert *cert = e_cert_new ((CERTCertificate*)node->cert);
+		ECert *cert = e_cert_new (CERT_DupCertificate ((CERTCertificate*)node->cert));
 		ECertType ct = e_cert_get_cert_type (cert);
 
 		/* show everything else in a contact tab */
 		if (ct == type || (type == E_CERT_CONTACT && ct != E_CERT_CA && ct != E_CERT_USER)) {
 			add_cert (cfm, cert);
+		} else {
+			g_object_unref (cert);
 		}
 	}
+
+	CERT_DestroyCertList (certList);
 }
 
-static void
+static gboolean
 populate_ui (CertificateManagerData *cfm)
 {
+	/* This is an idle callback. */
+
 	unload_certs (cfm, E_CERT_USER);
 	load_certs (cfm, E_CERT_USER, add_user_cert);
 
@@ -985,60 +1086,69 @@ populate_ui (CertificateManagerData *cfm)
 	/* expand all three trees */
 	gtk_tree_view_expand_all (GTK_TREE_VIEW (cfm->yourcerts_treeview));
 	gtk_tree_view_expand_all (GTK_TREE_VIEW (cfm->contactcerts_treeview));
+
+	return FALSE;
 }
 
-EvolutionConfigControl*
-certificate_manager_config_control_new (void)
+GtkWidget *
+certificate_manager_config_new (EPreferencesWindow *window)
 {
+	EShell *shell;
+	GtkWidget *parent;
+	GtkWidget *widget;
 	CertificateManagerData *cfm_data;
-	GtkWidget *control_widget;
-	gchar *gladefile;
+
+	shell = e_preferences_window_get_shell (window);
+
+	g_return_val_if_fail (E_IS_SHELL (shell), NULL);
 
 	/* We need to peek the db here to make sure it (and NSS) are fully initialized. */
 	e_cert_db_peek ();
 
 	cfm_data = g_new0 (CertificateManagerData, 1);
 
-	gladefile = g_build_filename (EVOLUTION_GLADEDIR,
-				      GLADE_FILE_NAME,
-				      NULL);
-	cfm_data->gui = glade_xml_new (gladefile, NULL, NULL);
-	g_free (gladefile);
+	cfm_data->builder = gtk_builder_new ();
+	e_load_ui_builder_definition (cfm_data->builder, "smime-ui.ui");
 
-	cfm_data->yourcerts_treeview = glade_xml_get_widget (cfm_data->gui, "yourcerts-treeview");
-	cfm_data->contactcerts_treeview = glade_xml_get_widget (cfm_data->gui, "contactcerts-treeview");
-	cfm_data->authoritycerts_treeview = glade_xml_get_widget (cfm_data->gui, "authoritycerts-treeview");
+	cfm_data->yourcerts_treeview = e_builder_get_widget (cfm_data->builder, "yourcerts-treeview");
+	cfm_data->contactcerts_treeview = e_builder_get_widget (cfm_data->builder, "contactcerts-treeview");
+	cfm_data->authoritycerts_treeview = e_builder_get_widget (cfm_data->builder, "authoritycerts-treeview");
 
-	cfm_data->view_your_button = glade_xml_get_widget (cfm_data->gui, "your-view-button");
-	cfm_data->backup_your_button = glade_xml_get_widget (cfm_data->gui, "your-backup-button");
-	cfm_data->backup_all_your_button = glade_xml_get_widget (cfm_data->gui, "your-backup-all-button");
-	cfm_data->import_your_button = glade_xml_get_widget (cfm_data->gui, "your-import-button");
-	cfm_data->delete_your_button = glade_xml_get_widget (cfm_data->gui, "your-delete-button");
+	cfm_data->view_your_button = e_builder_get_widget (cfm_data->builder, "your-view-button");
+	cfm_data->backup_your_button = e_builder_get_widget (cfm_data->builder, "your-backup-button");
+	cfm_data->backup_all_your_button = e_builder_get_widget (cfm_data->builder, "your-backup-all-button");
+	cfm_data->import_your_button = e_builder_get_widget (cfm_data->builder, "your-import-button");
+	cfm_data->delete_your_button = e_builder_get_widget (cfm_data->builder, "your-delete-button");
 
-	cfm_data->view_contact_button = glade_xml_get_widget (cfm_data->gui, "contact-view-button");
-	cfm_data->edit_contact_button = glade_xml_get_widget (cfm_data->gui, "contact-edit-button");
-	cfm_data->import_contact_button = glade_xml_get_widget (cfm_data->gui, "contact-import-button");
-	cfm_data->delete_contact_button = glade_xml_get_widget (cfm_data->gui, "contact-delete-button");
+	cfm_data->view_contact_button = e_builder_get_widget (cfm_data->builder, "contact-view-button");
+	cfm_data->edit_contact_button = e_builder_get_widget (cfm_data->builder, "contact-edit-button");
+	cfm_data->import_contact_button = e_builder_get_widget (cfm_data->builder, "contact-import-button");
+	cfm_data->delete_contact_button = e_builder_get_widget (cfm_data->builder, "contact-delete-button");
 
-	cfm_data->view_ca_button = glade_xml_get_widget (cfm_data->gui, "authority-view-button");
-	cfm_data->edit_ca_button = glade_xml_get_widget (cfm_data->gui, "authority-edit-button");
-	cfm_data->import_ca_button = glade_xml_get_widget (cfm_data->gui, "authority-import-button");
-	cfm_data->delete_ca_button = glade_xml_get_widget (cfm_data->gui, "authority-delete-button");
+	cfm_data->view_ca_button = e_builder_get_widget (cfm_data->builder, "authority-view-button");
+	cfm_data->edit_ca_button = e_builder_get_widget (cfm_data->builder, "authority-edit-button");
+	cfm_data->import_ca_button = e_builder_get_widget (cfm_data->builder, "authority-import-button");
+	cfm_data->delete_ca_button = e_builder_get_widget (cfm_data->builder, "authority-delete-button");
 
 	initialize_yourcerts_ui(cfm_data);
 	initialize_contactcerts_ui(cfm_data);
 	initialize_authoritycerts_ui(cfm_data);
 
-	populate_ui (cfm_data);
+	/* Run this in an idle callback so Evolution has a chance to
+	 * fully initialize itself and start its main loop before we
+	 * load certificates, since doing so may trigger a password
+	 * dialog, and dialogs require a main loop. */
+	g_idle_add ((GSourceFunc) populate_ui, cfm_data);
 
-	control_widget = glade_xml_get_widget (cfm_data->gui, "cert-manager-notebook");
-	g_object_ref (control_widget);
+	widget = e_builder_get_widget (cfm_data->builder, "cert-manager-notebook");
+	g_object_ref (widget);
 
-	gtk_container_remove (GTK_CONTAINER (control_widget->parent), control_widget);
+	parent = gtk_widget_get_parent (widget);
+	gtk_container_remove (GTK_CONTAINER (parent), widget);
 
 	/* FIXME: remove when implemented */
 	gtk_widget_set_sensitive(cfm_data->backup_your_button, FALSE);
 	gtk_widget_set_sensitive(cfm_data->backup_all_your_button, FALSE);
 
-	return evolution_config_control_new (control_widget);
+	return widget;
 }

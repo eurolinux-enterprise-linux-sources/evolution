@@ -38,8 +38,8 @@
 #include <gtk/gtk.h>
 #include <libgnomecanvas/gnome-canvas.h>
 
-#include "a11y/e-table/gal-a11y-e-cell-registry.h"
-#include "a11y/e-table/gal-a11y-e-cell-tree.h"
+#include "gal-a11y-e-cell-registry.h"
+#include "gal-a11y-e-cell-tree.h"
 #include "e-util/e-util.h"
 
 #include "e-cell-tree.h"
@@ -94,9 +94,9 @@ e_cell_tree_get_tree_table_adapter (ETableModel *table_model, gint row)
 static gint
 visible_depth_of_node (ETableModel *model, gint row)
 {
-	ETreeModel *tree_model = e_cell_tree_get_tree_model(model, row);
-	ETreeTableAdapter *adapter = e_cell_tree_get_tree_table_adapter(model, row);
-	ETreePath path = e_cell_tree_get_node(model, row);
+	ETreeModel *tree_model = e_cell_tree_get_tree_model (model, row);
+	ETreeTableAdapter *adapter = e_cell_tree_get_tree_table_adapter (model, row);
+	ETreePath path = e_cell_tree_get_node (model, row);
 	return (e_tree_model_node_depth (tree_model, path)
 		- (e_tree_table_adapter_root_node_is_visible (adapter) ? 0 : 1));
 }
@@ -107,12 +107,12 @@ visible_depth_of_node (ETableModel *model, gint row)
 static gint
 offset_of_node (ETableModel *table_model, gint row)
 {
-	ETreeModel *tree_model = e_cell_tree_get_tree_model(table_model, row);
-	ETreePath path = e_cell_tree_get_node(table_model, row);
+	ETreeModel *tree_model = e_cell_tree_get_tree_model (table_model, row);
+	ETreePath path = e_cell_tree_get_node (table_model, row);
 
-	if (visible_depth_of_node (table_model, row) > 0 ||
-	    e_tree_model_node_is_expandable(tree_model, path)) {
-		return (visible_depth_of_node(table_model, row) + 1) * INDENT_AMOUNT;
+	if (visible_depth_of_node (table_model, row) >= 0 ||
+	    e_tree_model_node_is_expandable (tree_model, path)) {
+		return (visible_depth_of_node (table_model, row) + 1) * INDENT_AMOUNT;
 	} else {
 		return 0;
 	}
@@ -154,7 +154,7 @@ ect_kill_view (ECellView *ecv)
             (tree_view->cell_view.kill_view_cb)(ecv, tree_view->cell_view.kill_view_cb_data);
 
         if (tree_view->cell_view.kill_view_cb_data)
-            g_list_free(tree_view->cell_view.kill_view_cb_data);
+            g_list_free (tree_view->cell_view.kill_view_cb_data);
 
 	/* kill our subcell view */
 	e_cell_kill_view (tree_view->subcell_view);
@@ -169,11 +169,13 @@ static void
 ect_realize (ECellView *ecell_view)
 {
 	ECellTreeView *tree_view = (ECellTreeView *) ecell_view;
+	GdkWindow *window;
 
 	/* realize our subcell view */
 	e_cell_realize (tree_view->subcell_view);
 
-	tree_view->gc = gdk_gc_new (GTK_WIDGET (tree_view->canvas)->window);
+	window = gtk_widget_get_window (GTK_WIDGET (tree_view->canvas));
+	tree_view->gc = gdk_gc_new (window);
 
 	gdk_gc_set_line_attributes (tree_view->gc, 1,
 				    GDK_LINE_ON_OFF_DASH,
@@ -208,12 +210,12 @@ draw_retro_expander (ECellTreeView *ectv, GdkDrawable *drawable, gboolean expand
 {
 	GdkPixbuf *image;
 	gint image_width, image_height;
-	ECellTree *ect = E_CELL_TREE(ectv->cell_view.ecell);
+	ECellTree *ect = E_CELL_TREE (ectv->cell_view.ecell);
 
 	image = expanded ? ect->open_pixbuf : ect->closed_pixbuf;
 
-	image_width = gdk_pixbuf_get_width(image);
-	image_height = gdk_pixbuf_get_height(image);
+	image_width = gdk_pixbuf_get_width (image);
+	image_height = gdk_pixbuf_get_height (image);
 
 	gdk_draw_pixbuf (drawable,
 			 NULL,
@@ -229,11 +231,19 @@ draw_retro_expander (ECellTreeView *ectv, GdkDrawable *drawable, gboolean expand
 static void
 draw_expander (ECellTreeView *ectv, GdkDrawable *drawable, GtkExpanderStyle expander_style, GtkStateType state, GdkRectangle *rect)
 {
-	GtkWidget *tree = GTK_WIDGET (ectv->canvas)->parent;
+	GtkStyle *style;
+	GtkWidget *tree;
 	gint exp_size;
+
+	tree = gtk_widget_get_parent (GTK_WIDGET (ectv->canvas));
+	style = gtk_widget_get_style (tree);
+
 	gtk_widget_style_get (tree, "expander_size", &exp_size, NULL);
 
-	gtk_paint_expander (tree->style, drawable, state, rect, tree, "treeview", rect->x + rect->width - exp_size / 2, rect->y + rect->height / 2, expander_style);
+	gtk_paint_expander (
+		style, drawable, state, rect, tree, "treeview",
+		rect->x + rect->width - exp_size / 2,
+		rect->y + rect->height / 2, expander_style);
 }
 
 /*
@@ -245,16 +255,20 @@ ect_draw (ECellView *ecell_view, GdkDrawable *drawable,
 	  gint x1, gint y1, gint x2, gint y2)
 {
 	ECellTreeView *tree_view = (ECellTreeView *)ecell_view;
-	ETreeModel *tree_model = e_cell_tree_get_tree_model(ecell_view->e_table_model, row);
-	ETreeTableAdapter *tree_table_adapter = e_cell_tree_get_tree_table_adapter(ecell_view->e_table_model, row);
+	ETreeModel *tree_model = e_cell_tree_get_tree_model (ecell_view->e_table_model, row);
+	ETreeTableAdapter *tree_table_adapter = e_cell_tree_get_tree_table_adapter (ecell_view->e_table_model, row);
 	ETreePath node;
 	GdkRectangle rect, *clip_rect = NULL;
 	GtkWidget *canvas = GTK_WIDGET (tree_view->canvas);
-	GdkGC *fg_gc = canvas->style->fg_gc[GTK_STATE_ACTIVE];
+	GtkStyle *style;
+	GdkGC *fg_gc;
 	GdkColor *foreground;
 	gboolean selected;
 
 	gint offset, subcell_offset;
+
+	style = gtk_widget_get_style (canvas);
+	fg_gc = style->fg_gc[GTK_STATE_ACTIVE];
 
 	selected = flags & E_CELL_SELECTED;
 
@@ -263,7 +277,9 @@ ect_draw (ECellView *ecell_view, GdkDrawable *drawable,
 		GdkPixbuf *node_image;
 		gint node_image_width = 0, node_image_height = 0;
 		ETreePath parent_node;
-		ETree *tree = E_TREE (canvas->parent);
+		ETree *tree;
+
+		tree = E_TREE (gtk_widget_get_parent (canvas));
 
 		gtk_widget_style_get (GTK_WIDGET (tree),
 				      "retro_look", &tree_view->retro_look,
@@ -295,15 +311,15 @@ ect_draw (ECellView *ecell_view, GdkDrawable *drawable,
 		clip_rect = &rect;
 
 		if (selected) {
-			foreground = &canvas->style->text [GTK_STATE_SELECTED];
+			foreground = &style->text[GTK_STATE_SELECTED];
 		} else {
-			foreground = &canvas->style->text [GTK_STATE_NORMAL];
+			foreground = &style->text[GTK_STATE_NORMAL];
 		}
 
 		gdk_gc_set_foreground (tree_view->gc, foreground);
 
 		/* draw our lines */
-		if (tree_view->retro_look && E_CELL_TREE(tree_view->cell_view.ecell)->draw_lines) {
+		if (tree_view->retro_look && E_CELL_TREE (tree_view->cell_view.ecell)->draw_lines) {
 
 			gint depth;
 
@@ -332,7 +348,7 @@ ect_draw (ECellView *ecell_view, GdkDrawable *drawable,
 			offset -= INDENT_AMOUNT;
 			depth = visible_depth_of_node (ecell_view->e_table_model, row) - 1;
 			while (parent_node && depth != 0) {
-				if (e_tree_table_adapter_node_get_next(tree_table_adapter, parent_node)) {
+				if (e_tree_table_adapter_node_get_next (tree_table_adapter, parent_node)) {
 					gdk_draw_line (drawable, tree_view->gc,
 						       rect.x + offset - INDENT_AMOUNT / 2,
 						       rect.y,
@@ -340,7 +356,7 @@ ect_draw (ECellView *ecell_view, GdkDrawable *drawable,
 						       rect.y + rect.height);
 				}
 				parent_node = e_tree_model_node_get_parent (tree_model, parent_node);
-				depth --;
+				depth--;
 				offset -= INDENT_AMOUNT;
 			}
 		}
@@ -445,6 +461,8 @@ typedef struct {
 static gboolean
 animate_expander (gpointer data)
 {
+	GtkLayout *layout;
+	GdkWindow *window;
 	animate_closure_t *closure = (animate_closure_t *) data;
 
 	if (closure->finish) {
@@ -454,9 +472,14 @@ animate_expander (gpointer data)
 		return FALSE;
 	}
 
-	draw_expander (closure->ectv, GTK_LAYOUT (closure->ectv->canvas)->bin_window,
-		       closure->expanded ? GTK_EXPANDER_SEMI_COLLAPSED : GTK_EXPANDER_SEMI_EXPANDED,
-		       GTK_STATE_NORMAL, &closure->area);
+	layout = GTK_LAYOUT (closure->ectv->canvas);
+	window = gtk_layout_get_bin_window (layout);
+
+	draw_expander (
+		closure->ectv, window, closure->expanded ?
+		GTK_EXPANDER_SEMI_COLLAPSED :
+		GTK_EXPANDER_SEMI_EXPANDED,
+		GTK_STATE_NORMAL, &closure->area);
 	closure->finish = TRUE;
 
 	return TRUE;
@@ -468,19 +491,24 @@ animate_expander (gpointer data)
 static gint
 ect_event (ECellView *ecell_view, GdkEvent *event, gint model_col, gint view_col, gint row, ECellFlags flags, ECellActions *actions)
 {
+	GtkLayout *layout;
+	GdkWindow *window;
 	ECellTreeView *tree_view = (ECellTreeView *) ecell_view;
 	ETreeModel *tree_model = e_cell_tree_get_tree_model (ecell_view->e_table_model, row);
-	ETreeTableAdapter *etta = e_cell_tree_get_tree_table_adapter(ecell_view->e_table_model, row);
+	ETreeTableAdapter *etta = e_cell_tree_get_tree_table_adapter (ecell_view->e_table_model, row);
 	ETreePath node = e_cell_tree_get_node (ecell_view->e_table_model, row);
 	gint offset = offset_of_node (ecell_view->e_table_model, row);
 	gint result;
+
+	layout = GTK_LAYOUT (tree_view->canvas);
+	window = gtk_layout_get_bin_window (layout);
 
 	switch (event->type) {
 	case GDK_BUTTON_PRESS:
 
 		if (event_in_expander (event, offset, 0)) {
 			if (e_tree_model_node_is_expandable (tree_model, node)) {
-				gboolean expanded = e_tree_table_adapter_node_is_expanded(etta, node);
+				gboolean expanded = e_tree_table_adapter_node_is_expanded (etta, node);
 				if (tree_view->retro_look)
 					e_tree_table_adapter_node_set_expanded (etta, node, !expanded);
 				else {
@@ -497,9 +525,11 @@ ect_event (ECellView *ecell_view, GdkEvent *event, gint model_col, gint view_col
 					if (hgt != area.height) /* Composite cells */
 						area.height += hgt;
 
-					draw_expander (tree_view, GTK_LAYOUT (tree_view->canvas)->bin_window,
-						       expanded ? GTK_EXPANDER_SEMI_EXPANDED : GTK_EXPANDER_SEMI_COLLAPSED,
-						       GTK_STATE_NORMAL, &area);
+					draw_expander (
+						tree_view, window, expanded ?
+						GTK_EXPANDER_SEMI_EXPANDED :
+						GTK_EXPANDER_SEMI_COLLAPSED,
+						GTK_STATE_NORMAL, &area);
 					closure->ectv = tree_view;
 					closure->etta = etta;
 					closure->node = node;
@@ -526,9 +556,11 @@ ect_event (ECellView *ecell_view, GdkEvent *event, gint model_col, gint view_col
 				e_table_item_get_cell_geometry (tree_view->cell_view.e_table_item_view,
 								&tmp_row, &view_col, &area.x, &area.y, NULL, &area.height);
 				area.width = offset - 2;
-				draw_expander (tree_view, GTK_LAYOUT (tree_view->canvas)->bin_window,
-					       e_tree_table_adapter_node_is_expanded (etta, node) ? GTK_EXPANDER_EXPANDED : GTK_EXPANDER_COLLAPSED,
-					       in_expander ? GTK_STATE_PRELIGHT : GTK_STATE_NORMAL, &area);
+				draw_expander (
+					tree_view, window,
+					e_tree_table_adapter_node_is_expanded (etta, node) ?
+					GTK_EXPANDER_EXPANDED : GTK_EXPANDER_COLLAPSED,
+					in_expander ? GTK_STATE_PRELIGHT : GTK_STATE_NORMAL, &area);
 				tree_view->prelit = in_expander;
 				return TRUE;
 			}
@@ -544,9 +576,11 @@ ect_event (ECellView *ecell_view, GdkEvent *event, gint model_col, gint view_col
 			e_table_item_get_cell_geometry (tree_view->cell_view.e_table_item_view,
 							&tmp_row, &view_col, &area.x, &area.y, NULL, &area.height);
 			area.width = offset - 2;
-			draw_expander (tree_view, GTK_LAYOUT (tree_view->canvas)->bin_window,
-				       e_tree_table_adapter_node_is_expanded (etta, node) ? GTK_EXPANDER_EXPANDED : GTK_EXPANDER_COLLAPSED,
-				       GTK_STATE_NORMAL, &area);
+			draw_expander (
+				tree_view, window,
+				e_tree_table_adapter_node_is_expanded (etta, node) ?
+				GTK_EXPANDER_EXPANDED : GTK_EXPANDER_COLLAPSED,
+				GTK_STATE_NORMAL, &area);
 			tree_view->prelit = FALSE;
 		}
 		return TRUE;
@@ -556,7 +590,7 @@ ect_event (ECellView *ecell_view, GdkEvent *event, gint model_col, gint view_col
 	}
 
 	adjust_event_position (event, -offset);
-	result = e_cell_event(tree_view->subcell_view, event, model_col, view_col, row, flags, actions);
+	result = e_cell_event (tree_view->subcell_view, event, model_col, view_col, row, flags, actions);
 	adjust_event_position (event, offset);
 
 	return result;
@@ -582,7 +616,7 @@ ect_max_width (ECellView *ecell_view, gint model_col, gint view_col)
 		subcell_max_width = e_cell_max_width (tree_view->subcell_view, model_col, view_col);
 
 	for (row = 0; row < number_of_rows; row++) {
-		ETreeModel *tree_model = e_cell_tree_get_tree_model(ecell_view->e_table_model, row);
+		ETreeModel *tree_model = e_cell_tree_get_tree_model (ecell_view->e_table_model, row);
 		ETreePath node;
 		GdkPixbuf *node_image;
 		gint node_image_width = 0;
@@ -590,7 +624,7 @@ ect_max_width (ECellView *ecell_view, gint model_col, gint view_col)
 		gint offset, subcell_offset;
 #if 0
 		gboolean expanded, expandable;
-		ETreeTableAdapter *tree_table_adapter = e_cell_tree_get_tree_table_adapter(ecell_view->e_table_model, row);
+		ETreeTableAdapter *tree_table_adapter = e_cell_tree_get_tree_table_adapter (ecell_view->e_table_model, row);
 #endif
 
 		node = e_cell_tree_get_node (ecell_view->e_table_model, row);
@@ -623,10 +657,10 @@ ect_max_width (ECellView *ecell_view, gint model_col, gint view_col)
 			GdkPixbuf *image;
 
 			image = (expanded
-				 ? E_CELL_TREE(tree_view->cell_view.ecell)->open_pixbuf
-				 : E_CELL_TREE(tree_view->cell_view.ecell)->closed_pixbuf);
+				 ? E_CELL_TREE (tree_view->cell_view.ecell)->open_pixbuf
+				 : E_CELL_TREE (tree_view->cell_view.ecell)->closed_pixbuf);
 
-			width += gdk_pixbuf_get_width(image);
+			width += gdk_pixbuf_get_width (image);
 		}
 #endif
 
@@ -634,27 +668,6 @@ ect_max_width (ECellView *ecell_view, gint model_col, gint view_col)
 	}
 
 	return max_width;
-}
-
-/*
- * ECellView::show_tooltip method
- */
-static void
-ect_show_tooltip (ECellView *ecell_view, gint model_col, gint view_col, gint row,
-		  gint col_width, ETableTooltip *tooltip)
-{
-	ECellTreeView *tree_view = (ECellTreeView *) ecell_view;
-	ETreeModel *tree_model = e_cell_tree_get_tree_model (ecell_view->e_table_model, row);
-	ETreePath node = e_cell_tree_get_node (ecell_view->e_table_model, row);
-	gint offset = offset_of_node (ecell_view->e_table_model, row);
-	GdkPixbuf *node_image;
-
-	node_image = e_tree_model_icon_at (tree_model, node);
-	if (node_image)
-		offset += gdk_pixbuf_get_width (node_image);
-
-	tooltip->x += offset;
-	e_cell_show_tooltip (tree_view->subcell_view, model_col, view_col, row, col_width - offset, tooltip);
 }
 
 /*
@@ -695,7 +708,7 @@ ect_leave_edit (ECellView *ecell_view, gint model_col, gint view_col, gint row, 
 static void
 ect_print (ECellView *ecell_view, GtkPrintContext *context,
 	   gint model_col, gint view_col, gint row,
-	   double width, double height)
+	   gdouble width, gdouble height)
 {
 	ECellTreeView *tree_view = (ECellTreeView *) ecell_view;
 	cairo_t *cr = gtk_print_context_get_cairo_context (context);
@@ -704,7 +717,7 @@ ect_print (ECellView *ecell_view, GtkPrintContext *context,
 
 	if (/* XXX only if we're the active sort */ TRUE) {
 		ETreeModel *tree_model = e_cell_tree_get_tree_model (ecell_view->e_table_model, row);
-		ETreeTableAdapter *tree_table_adapter = e_cell_tree_get_tree_table_adapter(ecell_view->e_table_model, row);
+		ETreeTableAdapter *tree_table_adapter = e_cell_tree_get_tree_table_adapter (ecell_view->e_table_model, row);
 		ETreePath node = e_cell_tree_get_node (ecell_view->e_table_model, row);
 		gint offset = offset_of_node (ecell_view->e_table_model, row);
 		gint subcell_offset = offset;
@@ -712,7 +725,7 @@ ect_print (ECellView *ecell_view, GtkPrintContext *context,
 		gboolean expanded = e_tree_table_adapter_node_is_expanded (tree_table_adapter, node);
 
 		/* draw our lines */
-		if (E_CELL_TREE(tree_view->cell_view.ecell)->draw_lines) {
+		if (E_CELL_TREE (tree_view->cell_view.ecell)->draw_lines) {
 			gint depth;
 
 			if (!e_tree_model_node_is_root (tree_model, node)
@@ -740,7 +753,7 @@ ect_print (ECellView *ecell_view, GtkPrintContext *context,
 			depth = visible_depth_of_node (ecell_view->e_table_model, row) - 1;
 			offset -= INDENT_AMOUNT;
 			while (node && depth != 0) {
-				if (e_tree_table_adapter_node_get_next(tree_table_adapter, node)) {
+				if (e_tree_table_adapter_node_get_next (tree_table_adapter, node)) {
 					cairo_move_to (cr,
 						offset - INDENT_AMOUNT / 2,
 						height);
@@ -748,7 +761,7 @@ ect_print (ECellView *ecell_view, GtkPrintContext *context,
 						offset - INDENT_AMOUNT / 2, 0);
 				}
 				node = e_tree_model_node_get_parent (tree_model, node);
-				depth --;
+				depth--;
 				offset -= INDENT_AMOUNT;
 			}
 		}
@@ -790,7 +803,7 @@ ect_print (ECellView *ecell_view, GtkPrintContext *context,
 static gdouble
 ect_print_height (ECellView *ecell_view, GtkPrintContext *context,
 		  gint model_col, gint view_col, gint row,
-		  double width)
+		  gdouble width)
 {
 	return 12; /* XXX */
 }
@@ -839,7 +852,6 @@ e_cell_tree_class_init (ECellTreeClass *klass)
 	ecc->print            = ect_print;
 	ecc->print_height     = ect_print_height;
 	ecc->max_width        = ect_max_width;
-	ecc->show_tooltip     = ect_show_tooltip;
 	ecc->get_bg_color     = ect_get_bg_color;
 
         gal_a11y_e_cell_registry_add_cell_type (NULL, E_CELL_TREE_TYPE, gal_a11y_e_cell_tree_new);

@@ -1,21 +1,18 @@
-if OS_WIN32
-WIN32_BOOTSTRAP_LIBS = $(top_builddir)/win32/libevolution-addressbook.la
-endif
+privsolib_LTLIBRARIES =	libecontacteditor.la
 
-AM_CPPFLAGS =						\
+libecontacteditor_la_CPPFLAGS =				\
+	$(AM_CPPFLAGS)					\
 	-I$(top_srcdir)					\
 	-I$(top_srcdir)/widgets				\
 	-I$(top_srcdir)/addressbook/			\
 	-I$(top_srcdir)/addressbook/gui/merging		\
 	-I$(top_srcdir)/widgets/table			\
 	-I$(top_builddir)/shell				\
-	-DEVOLUTION_GLADEDIR=\""$(gladedir)"\"		\
+	-DEVOLUTION_UIDIR=\""$(uidir)"\"		\
 	-DEVOLUTION_IMAGESDIR=\""$(imagesdir)"\"	\
 	-DG_LOG_DOMAIN=\"contact-editor\"		\
+	$(GNOME_PLATFORM_CFLAGS)			\
 	$(EVOLUTION_ADDRESSBOOK_CFLAGS)
-
-privsolib_LTLIBRARIES =				\
-	libecontacteditor.la
 
 libecontacteditor_la_SOURCES = 			\
 	eab-editor.c				\
@@ -29,16 +26,21 @@ libecontacteditor_la_SOURCES = 			\
 
 libecontacteditor_la_LDFLAGS = $(NO_UNDEFINED)
 
-libecontacteditor_la_LIBADD =				\
-	$(WIN32_BOOTSTRAP_LIBS)				\
-	$(top_builddir)/widgets/misc/libemiscwidgets.la	\
-	$(top_builddir)/e-util/libeutil.la		\
-	$(EVOLUTION_ADDRESSBOOK_LIBS)
+libecontacteditor_la_LIBADD =						\
+	$(top_builddir)/e-util/libeutil.la				\
+	$(top_builddir)/widgets/misc/libemiscwidgets.la			\
+	$(top_builddir)/addressbook/util/libeabutil.la			\
+	$(top_builddir)/addressbook/gui/widgets/libeabwidgets.la	\
+	$(top_builddir)/addressbook/gui/merging/libeabbookmerging.la	\
+	$(top_builddir)/addressbook/printing/libecontactprint.la	\
+	$(top_builddir)/widgets/menus/.libs/libmenus.la	\
+	$(EVOLUTION_ADDRESSBOOK_LIBS)					\
+	$(GNOME_PLATFORM_LIBS)
 
-glade_DATA = 				\
-	contact-editor.glade		\
-	fullname.glade
+ui_DATA = 				\
+	contact-editor.ui		\
+	fullname.ui
 
-EXTRA_DIST=	$(glade_DATA)
+EXTRA_DIST=	$(ui_DATA)
 
 -include $(top_srcdir)/git.mk

@@ -1,10 +1,4 @@
-if ENABLE_PILOT_CONDUITS
-CONDUIT_DIR = conduits
-else
-CONDUIT_DIR =
-endif
-
-SUBDIRS = idl common importers gui $(CONDUIT_DIR)
+SUBDIRS = common importers gui
 
 error_DATA = calendar.error
 errordir = $(privdatadir)/errors
@@ -12,7 +6,6 @@ errordir = $(privdatadir)/errors
 
 EXTRA_DIST =			\
 	calendar.error.xml	\
-	ChangeLog.pre-1-4	\
 	$(error_DATA)		\
 	zones.h
 

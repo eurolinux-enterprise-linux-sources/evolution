@@ -24,8 +24,6 @@
 #ifndef __EAB_UTIL_H__
 #define __EAB_UTIL_H__
 
-#include <bonobo/bonobo-object.h>
-#include <bonobo/bonobo-moniker-util.h>
 #include <libebook/e-book.h>
 
 G_BEGIN_DECLS
@@ -34,13 +32,13 @@ typedef void (*EABHaveAddressCallback) (EBook *book, const gchar *addr, EContact
 
 /* Specialized Name/Email Queries */
 guint                  eab_name_and_email_query      (EBook                    *book,
-						      const gchar               *name,
-						      const gchar               *email,
-						      EBookListCallback         cb,
+						      const gchar              *name,
+						      const gchar              *email,
+						      EBookListAsyncCallback    cb,
 						      gpointer                  closure);
 guint                  eab_nickname_query            (EBook                    *book,
-						      const gchar               *nickname,
-						      EBookListCallback         cb,
+						      const gchar              *nickname,
+						      EBookListAsyncCallback     cb,
 						      gpointer                  closure);
 
 GList                 *eab_contact_list_from_string (const gchar *str);

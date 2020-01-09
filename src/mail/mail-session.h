@@ -24,23 +24,18 @@
 #define MAIL_SESSION_H
 
 #include <glib.h>
-#include <bonobo/bonobo-ui-component.h>
-#include <camel/camel-session.h>
+#include <camel/camel.h>
 
 G_BEGIN_DECLS
 
-void mail_session_init (const gchar *base_directory);
+void mail_session_start (void);
 void mail_session_shutdown (void);
-gboolean mail_session_get_interactive (void);
-void mail_session_set_interactive (gboolean interactive);
 gchar *mail_session_request_dialog (const gchar *prompt, gboolean secret,
 				   const gchar *key, gboolean async);
 gboolean mail_session_accept_dialog (const gchar *prompt, const gchar *key,
 				     gboolean async);
 gchar *mail_session_get_password (const gchar *url);
 void mail_session_add_password (const gchar *url, const gchar *passwd);
-void mail_session_forget_passwords (BonoboUIComponent *uih, gpointer user_data,
-				    const gchar *path);
 void mail_session_remember_password (const gchar *url);
 
 void mail_session_forget_password (const gchar *key);
@@ -52,8 +47,11 @@ void mail_session_add_junk_plugin (const gchar *plugin_name, CamelJunkPlugin *ju
 const GList * mail_session_get_junk_plugins (void);
 void mail_session_set_junk_headers (const gchar **name, const gchar **value, gint len);
 
+const gchar * mail_session_get_data_dir (void);
+const gchar * mail_session_get_config_dir (void);
+
 extern CamelSession *session;
 
 G_END_DECLS
 
-#endif /* ! MAIL_SESSION_H */
+#endif /* MAIL_SESSION_H */

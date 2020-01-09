@@ -24,34 +24,53 @@
 #ifndef EM_HTML_STREAM_H
 #define EM_HTML_STREAM_H
 
+#include <gtkhtml/gtkhtml.h>
+#include <gtkhtml/gtkhtml-stream.h>
+#include <mail/em-sync-stream.h>
+
+/* Standard GObject macros */
+#define EM_TYPE_HTML_STREAM \
+	(em_html_stream_get_type ())
+#define EM_HTML_STREAM(obj) \
+	(G_TYPE_CHECK_INSTANCE_CAST \
+	((obj), EM_TYPE_HTML_STREAM, EMHTMLStream))
+#define EM_HTML_STREAM_CLASS(cls) \
+	(G_TYPE_CHECK_CLASS_CAST \
+	((cls), EM_TYPE_HTML_STREAM, EMHTMLStreamClass))
+#define EM_IS_HTML_STREAM(obj) \
+	(G_TYPE_CHECK_INSTANCE_TYPE \
+	((obj), EM_TYPE_HTML_STREAM))
+#define EM_IS_HTML_STREAM_CLASS(cls) \
+	(G_TYPE_CHECK_CLASS_TYPE \
+	((cls), EM_TYPE_HTML_STREAM))
+#define EM_HTML_STREAM_GET_CLASS(obj) \
+	(G_TYPE_INSTANCE_GET_CLASS \
+	((obj), EM_TYPE_HTML_STREAM, EMHTMLStreamClass))
+
 G_BEGIN_DECLS
 
-#define EM_HTML_STREAM_TYPE     (em_html_stream_get_type ())
-#define EM_HTML_STREAM(obj)     (CAMEL_CHECK_CAST((obj), EM_HTML_STREAM_TYPE, EMHTMLStream))
-#define EM_HTML_STREAM_CLASS(k) (CAMEL_CHECK_CLASS_CAST ((k), EM_HTML_STREAM_TYPE, EMHTMLStreamClass))
-#define EM_IS_HTML_STREAM(o)    (CAMEL_CHECK_TYPE((o), EM_HTML_STREAM_TYPE))
+typedef struct _EMHTMLStream EMHTMLStream;
+typedef struct _EMHTMLStreamClass EMHTMLStreamClass;
 
-#include "mail/em-sync-stream.h"
-
-typedef struct _EMHTMLStream {
+struct _EMHTMLStream {
 	EMSyncStream sync;
 
 	guint destroy_id;
 	GtkHTML *html;
 	GtkHTMLStream *html_stream;
 	GtkHTMLBeginFlags flags;
-} EMHTMLStream;
+};
 
-typedef struct {
+struct _EMHTMLStreamClass {
 	EMSyncStreamClass parent_class;
 
-} EMHTMLStreamClass;
+};
 
-CamelType    em_html_stream_get_type (void);
-
-/* the html_stream is closed when we are finalised (with an error), or closed (ok) */
-CamelStream *em_html_stream_new(GtkHTML *html, GtkHTMLStream *html_stream);
-void em_html_stream_set_flags (EMHTMLStream *emhs, GtkHTMLBeginFlags flags);
+GType		em_html_stream_get_type		(void);
+CamelStream *	em_html_stream_new		(GtkHTML *html,
+						 GtkHTMLStream *html_stream);
+void		em_html_stream_set_flags	(EMHTMLStream *emhs,
+						 GtkHTMLBeginFlags flags);
 
 G_END_DECLS
 

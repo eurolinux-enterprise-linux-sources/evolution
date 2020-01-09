@@ -26,6 +26,7 @@
 #include <glib.h>
 #include <glib/gi18n.h>
 #include <string.h>
+#include <e-util/e-util.h>
 #include <e-util/e-util-private.h>
 
 static GtkDialogClass *parent_class = NULL;
@@ -115,7 +116,7 @@ check_input (UrlEditorDialog *dialog)
 		gtk_widget_hide (dialog->fb_duration_combo);
 	}
 
-	if (GTK_WIDGET_IS_SENSITIVE (dialog->events_selector)) {
+	if (gtk_widget_get_sensitive (dialog->events_selector)) {
 		sources = e_source_selector_get_selection (E_SOURCE_SELECTOR (dialog->events_selector));
 		n += g_slist_length (sources);
 	}
@@ -326,23 +327,18 @@ set_from_uri (UrlEditorDialog *dialog)
 static gboolean
 url_editor_dialog_construct (UrlEditorDialog *dialog)
 {
-	GladeXML *gui;
 	GtkWidget *toplevel;
+	GtkWidget *content_area;
 	GConfClient *gconf;
 	GtkSizeGroup *group;
 	EPublishUri *uri;
-	gchar *gladefile;
 
 	gconf = gconf_client_get_default ();
 
-	gladefile = g_build_filename (EVOLUTION_GLADEDIR,
-				      "publish-calendar.glade",
-				      NULL);
-	gui = glade_xml_new (gladefile, "publishing toplevel", NULL);
-	g_free (gladefile);
-	dialog->gui = gui;
+	dialog->builder = gtk_builder_new ();
+	e_load_ui_builder_definition (dialog->builder, "publish-calendar.ui");
 
-#define GW(name) ((dialog->name) = glade_xml_get_widget (dialog->gui, #name))
+#define GW(name) ((dialog->name) = e_builder_get_widget (dialog->builder, #name))
 	GW(type_selector);
 	GW(fb_duration_label);
 	GW(fb_duration_spin);
@@ -375,15 +371,16 @@ url_editor_dialog_construct (UrlEditorDialog *dialog)
 	GW(file_label);
 #undef GW
 
-	g_return_val_if_fail (gui != NULL, FALSE);
-
 	uri = dialog->uri;
 
-	toplevel = glade_xml_get_widget (gui, "publishing toplevel");
-	gtk_container_add (GTK_CONTAINER (GTK_DIALOG (dialog)->vbox), toplevel);
+	content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+	toplevel = e_builder_get_widget (dialog->builder, "publishing toplevel");
+	gtk_container_add (GTK_CONTAINER (content_area), toplevel);
 
 	gtk_container_set_border_width (GTK_CONTAINER (dialog), 6);
-	gtk_dialog_set_has_separator (GTK_DIALOG (dialog), FALSE);
+#if !GTK_CHECK_VERSION(2,90,7)
+	g_object_set (dialog, "has-separator", FALSE, NULL);
+#endif
 
 	dialog->cancel = gtk_dialog_add_button (GTK_DIALOG (dialog), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
 	dialog->ok = gtk_dialog_add_button (GTK_DIALOG (dialog), GTK_STOCK_OK, GTK_RESPONSE_OK);
@@ -498,9 +495,9 @@ url_editor_dialog_dispose (GObject *obj)
 		g_object_unref (dialog->url_list_model);
 		dialog->url_list_model = NULL;
 	}
-	if (dialog->gui) {
-		g_object_unref (dialog->gui);
-		dialog->gui = NULL;
+	if (dialog->builder) {
+		g_object_unref (dialog->builder);
+		dialog->builder = NULL;
 	}
 
 	((GObjectClass *)(parent_class))->dispose (obj);

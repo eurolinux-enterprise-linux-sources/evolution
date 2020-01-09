@@ -1,0 +1,24 @@
+diff -up evolution-2.32.3/modules/addressbook/e-book-shell-backend.c.addressbook-source-list-sync evolution-2.32.3/modules/addressbook/e-book-shell-backend.c
+--- evolution-2.32.3/modules/addressbook/e-book-shell-backend.c.addressbook-source-list-sync	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/modules/addressbook/e-book-shell-backend.c	2013-07-09 17:05:48.713720699 +0200
+@@ -81,6 +81,7 @@ book_shell_backend_ensure_sources (EShel
+ 	ESource *personal;
+ 	GSList *sources, *iter;
+ 	const gchar *name;
++	GError *error = NULL;
+ 
+ 	on_this_computer = NULL;
+ 	personal = NULL;
+@@ -128,6 +129,12 @@ book_shell_backend_ensure_sources (EShel
+ 		e_source_set_name (personal, name);
+ 	}
+ 
++	e_source_list_sync (priv->source_list, &error);
++	if (error) {
++		g_warning ("%s: Could not save source list: %s", G_STRFUNC, error ? error->message : "Unknown error");
++		g_clear_error (&error);
++	}
++	
+ 	g_object_unref (on_this_computer);
+ }
+ 

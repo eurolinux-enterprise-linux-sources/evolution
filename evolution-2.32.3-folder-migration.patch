@@ -1,0 +1,67 @@
+diff -up evolution-2.32.3/mail/e-mail-migrate.c.folder-migration evolution-2.32.3/mail/e-mail-migrate.c
+--- evolution-2.32.3/mail/e-mail-migrate.c.folder-migration	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/mail/e-mail-migrate.c	2013-06-19 11:53:36.861930816 +0200
+@@ -132,27 +132,12 @@ em_migrate_setup_progress_dialog (const 
+ 	gtk_window_set_modal ((GtkWindow *) window, TRUE);
+ 	gtk_container_set_border_width ((GtkContainer *) window, 6);
+ 
+-	vbox = gtk_vbox_new (FALSE, 6);
+-	gtk_widget_show (vbox);
+-	gtk_container_add ((GtkContainer *) window, vbox);
+-
+-	w = gtk_label_new (desc);
++	hbox = gtk_hbox_new (FALSE, 24);
+ 
+-	gtk_label_set_line_wrap ((GtkLabel *) w, TRUE);
+-	gtk_widget_show (w);
+-	gtk_box_pack_start ((GtkBox *) vbox, w, TRUE, TRUE, 0);
+-
+-	hbox = gtk_hbox_new (FALSE, 6);
+-	gtk_widget_show (hbox);
+-	gtk_box_pack_start ((GtkBox *) vbox, hbox, TRUE, TRUE, 0);
+-
+-	label = (GtkLabel *) gtk_label_new ("");
+-	gtk_widget_show ((GtkWidget *) label);
+-	gtk_box_pack_start ((GtkBox *) hbox, (GtkWidget *) label, TRUE, TRUE, 0);
+-
+-	progress = (GtkProgressBar *) gtk_progress_bar_new ();
+-	gtk_widget_show ((GtkWidget *) progress);
+-	gtk_box_pack_start ((GtkBox *) hbox, (GtkWidget *) progress, TRUE, TRUE, 0);
++	/* Install the info image */
++	w = gtk_image_new_from_stock (GTK_STOCK_DIALOG_INFO, GTK_ICON_SIZE_DIALOG);
++	gtk_misc_set_alignment (GTK_MISC (w), 0.5, 0.0);
++	gtk_box_pack_start (GTK_BOX (hbox), w, TRUE, TRUE, 0);
+ 
+ 	/* Prepare the message */
+ 	vbox = gtk_vbox_new (FALSE, 12);
+@@ -193,6 +178,8 @@ em_migrate_setup_progress_dialog (const 
+ static void
+ em_migrate_close_progress_dialog (void)
+ {
++	while (gtk_events_pending ())
++		gtk_main_iteration ();
+ 	gtk_widget_destroy ((GtkWidget *) window);
+ }
+ 
+@@ -560,9 +547,20 @@ migrate_folders (CamelStore *store,
+ 		else
+ 				folder = camel_store_get_folder (store, fi->full_name, 0, NULL);
+ 
+-		if (folder != NULL)
++		if (folder != NULL && folder->summary && folder->summary->summary_path)
+ 			camel_folder_summary_migrate_infos (folder->summary);
+ 		migrate_folders(store, is_local, fi->child, acc, done, nth_folder, total_folders);
++		if (folder) {
++			/* this recalculates counts in the folder and store summary on local folders */
++			if (!CAMEL_IS_OFFLINE_FOLDER (folder) && !CAMEL_IS_DISCO_FOLDER (folder)) {
++				if (folder->summary)
++					camel_folder_summary_load_from_db (folder->summary, NULL);
++				camel_folder_refresh_info (folder, NULL);
++				camel_folder_sync (folder, FALSE, NULL);
++			}
++
++			g_object_unref (folder);
++		}
+ 		fi = fi->next;
+ 	}
+ 

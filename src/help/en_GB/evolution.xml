@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
 <!ENTITY appname "Evolution">
-<!ENTITY appversion "2.28">
+<!ENTITY appversion "2.30">
 <!ENTITY z-3rdParty "*">
 <!ENTITY z-SM "(SM)">
 <!ENTITY z-CM "(CM)">
@@ -19,7 +19,7 @@
    <date>2002-2009</date>
    <revhistory>
      <revision>
-       <revnumber>2.28</revnumber>
+       <revnumber>2.30</revnumber>
        <date>September 2009</date>
        <revdescription>
 	 <para role="author">Akhil Laddha</para>
@@ -69,21 +69,21 @@
    </revhistory>
 
    <releaseinfo>
-     This manual describes version 2.28 of Evolution 
+     This manual describes version 2.30 of Evolution 
    </releaseinfo>
    <abstract role="description">
      <para>A user's guide to Evolution which explains how to use its mail, calendar, address book, and task list features.</para>
    </abstract>
    <productname class="trade">Evolution</productname>
-   <productnumber>2.28</productnumber>
+   <productnumber>2.30</productnumber>
    <invpartnumber>February 2008</invpartnumber>
-   <title>Evolution 2.28 User Guide</title>
+   <title>Evolution 2.30 User Guide</title>
  <copyright><year>2007</year><holder>David Lodge (dave@cirt.net)</holder></copyright><copyright><year>2009</year><holder>Philip Withnall (philip@tecnocode.co.uk)</holder></copyright><copyright><year>2009</year><holder>Jen Ockwell (jenfraggleubuntu@gmail.com)</holder></copyright></bookinfo>
 
 
  <preface id="preface">
   <title>About This Guide</title>
-  <para>This guide describes how to use and manage <trademark>Evolution</trademark> 2.28 client software. This guide is intended for users and is divided into the following sections:</para>
+  <para>This guide describes how to use and manage <trademark>Evolution</trademark> 2.30 client software. This guide is intended for users and is divided into the following sections:</para>
   <itemizedlist>
    <listitem>
     <para><link linkend="usage-mainwindow">Getting Started</link></para>
@@ -2530,7 +2530,7 @@
     </formalpara>
     <formalpara id="b141jcun">
      <title>vCalendar:</title>
-     <para>A format for storing calender files, which is generally used by Evolution, Microsoft Outlook, Sunbird, and Korganizer.</para>
+     <para>A format for storing calendar files, which is generally used by Evolution, Microsoft Outlook, Sunbird, and Korganizer.</para>
     </formalpara>
     <formalpara id="bsawccr">
      <title>iCalendar or iCal (.ics):</title>
@@ -3976,7 +3976,7 @@
     <para>Click Mark as default folder if you want to mark this folder as your default calendar folder.</para>
     <section id="b1g4s6ns">
      <title>Weather Calendar</title>
-     <para>In the Properties of a Weather calendar you can specify a location for the weather calender. Click <guibutton>Location</guibutton> to select any world-wide location for the calendar.</para>
+     <para>In the Properties of a Weather calendar you can specify a location for the weather calendar. Click Location to select any world-wide location for the calendar.</para>
      <mediaobject id="b1g4qrov"><imageobject><imagedata format="PNG" fileref="figures/evo_Wcal_prop_a.png"/></imageobject></mediaobject>
      <para>The temperature for the selected location appears in units as specified at the top of the Calendar view.</para>
 
@@ -4088,7 +4088,7 @@
        <para>or</para>
        <para>Double-click in a blank space on the calendar view to open an Appointment dialogue box. The particular time on the calendar view against which you have double-clicked on will be suggested for the new appointment.</para>
        <para>or</para>
-       <para>Select the required duration on the calender view and enter the summary.</para>
+       <para>Select the required duration on the calendar view and enter the summary.</para>
       </listitem>
       <listitem id="b10fnwj2">
        <para>Select a calendar in the Calendar drop-down list.</para>
@@ -6010,7 +6010,7 @@
   <section id="b15iirao">
    <title>Reminder Notes</title>
    <para>GroupWise Reminder notes are like mail messages except they are scheduled for a particular day and appear on the Calendar for that date. You can use reminder notes to show vacations, holidays, pay days, birthdays, and so on. Posted reminder notes are placed in your Calendar on the date you specify. They are not placed in your Mailbox or in any other user's Mailbox.</para>
-   <para>Evolution integrates this feature into its Memo component so that you can view the Reminder notes listed under Memo at the right bottom side of the calender view.</para>
+   <para>Evolution integrates this feature into its Memo component so that you can view the Reminder notes listed under Memo at the right bottom side of the calendar view.</para>
    <note>
     <para>Select the memo or the Reminder notes under the Memo component to display it on the Calendar view.</para>
    </note>
@@ -6101,7 +6101,7 @@
      <mediaobject><imageobject><imagedata format="PNG" fileref="figures/groupwise_resend_retract.png"/></imageobject></mediaobject>
     </listitem>
    </orderedlist>
-   <para>An email is send to all the recipients to invite them to your updated event.</para>
+   <para>An email is sent to all the recipients to invite them to your updated event.</para>
   </section>
   
   
@@ -7023,7 +7023,7 @@
      <para>Select this option to display weekends in one box instead of two in the month view.</para>
     </formalpara>
     <formalpara id="bsbhw7p">
-     <title>Show week numbers in date navigator:</title>
+     <title>Show week numbers:</title>
      <para>Shows the week numbers next to the respective weeks in the calendar.</para>
     </formalpara>
     <formalpara id="bsbhwdz">
@@ -7867,7 +7867,7 @@
     <member>U.S.A.</member>
     <member>www.novell.com</member>
    </simplelist>
-   <para id="Bktitle">Evolution 2.28 User Guide</para>
+   <para id="Bktitle">Evolution 2.30 User Guide</para>
    <para>July 2007</para>
    <simplelist>
     <member>To access the online documentation for this and other Novell products, and to get updates, see www.novell.com/documentation</member>

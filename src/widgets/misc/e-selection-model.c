@@ -29,7 +29,10 @@
 
 #include "e-selection-model.h"
 
-G_DEFINE_TYPE (ESelectionModel, e_selection_model, G_TYPE_OBJECT)
+G_DEFINE_TYPE (
+	ESelectionModel,
+	e_selection_model,
+	G_TYPE_OBJECT)
 
 enum {
 	CURSOR_CHANGED,
@@ -39,7 +42,7 @@ enum {
 	LAST_SIGNAL
 };
 
-static guint e_selection_model_signals [LAST_SIGNAL] = { 0, };
+static guint signals[LAST_SIGNAL] = { 0, };
 
 enum {
 	PROP_0,
@@ -49,7 +52,7 @@ enum {
 };
 
 inline static void
-add_sorter(ESelectionModel *esm, ESorter *sorter)
+add_sorter (ESelectionModel *esm, ESorter *sorter)
 {
 	esm->sorter = sorter;
 	if (sorter) {
@@ -58,7 +61,7 @@ add_sorter(ESelectionModel *esm, ESorter *sorter)
 }
 
 inline static void
-drop_sorter(ESelectionModel *esm)
+drop_sorter (ESelectionModel *esm)
 {
 	if (esm->sorter) {
 		g_object_unref (esm->sorter);
@@ -73,55 +76,63 @@ esm_dispose (GObject *object)
 
 	esm = E_SELECTION_MODEL (object);
 
-	drop_sorter(esm);
+	drop_sorter (esm);
 
-	if (G_OBJECT_CLASS (e_selection_model_parent_class)->dispose)
-		(* G_OBJECT_CLASS (e_selection_model_parent_class)->dispose) (object);
+	/* Chain up to parent's dispose() method. */
+	G_OBJECT_CLASS (e_selection_model_parent_class)->dispose (object);
 }
 
 static void
-esm_get_property (GObject *object, guint prop_id, GValue *value, GParamSpec *pspec)
+esm_get_property (GObject *object,
+                  guint property_id,
+                  GValue *value,
+                  GParamSpec *pspec)
 {
 	ESelectionModel *esm = E_SELECTION_MODEL (object);
 
-	switch (prop_id) {
-	case PROP_SORTER:
-		g_value_set_object (value, esm->sorter);
-		break;
+	switch (property_id) {
+		case PROP_SORTER:
+			g_value_set_object (value, esm->sorter);
+			break;
 
-	case PROP_SELECTION_MODE:
-		g_value_set_int (value, esm->mode);
-		break;
+		case PROP_SELECTION_MODE:
+			g_value_set_int (value, esm->mode);
+			break;
 
-	case PROP_CURSOR_MODE:
-		g_value_set_int (value, esm->cursor_mode);
-		break;
+		case PROP_CURSOR_MODE:
+			g_value_set_int (value, esm->cursor_mode);
+			break;
 	}
 }
 
 static void
-esm_set_property (GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec)
+esm_set_property (GObject *object,
+                  guint property_id,
+                  const GValue *value,
+                  GParamSpec *pspec)
 {
 	ESelectionModel *esm = E_SELECTION_MODEL (object);
 
-	switch (prop_id) {
-	case PROP_SORTER:
-		drop_sorter(esm);
-		add_sorter(esm, g_value_get_object (value) ? E_SORTER(g_value_get_object(value)) : NULL);
-		break;
+	switch (property_id) {
+		case PROP_SORTER:
+			drop_sorter (esm);
+			add_sorter (
+				esm, g_value_get_object (value) ?
+				E_SORTER (g_value_get_object (value)) : NULL);
+			break;
 
-	case PROP_SELECTION_MODE:
-		esm->mode = g_value_get_int (value);
-		if (esm->mode == GTK_SELECTION_SINGLE) {
-			gint cursor_row = e_selection_model_cursor_row(esm);
-			gint cursor_col = e_selection_model_cursor_col(esm);
-			e_selection_model_do_something(esm, cursor_row, cursor_col, 0);
-		}
-		break;
+		case PROP_SELECTION_MODE:
+			esm->mode = g_value_get_int (value);
+			if (esm->mode == GTK_SELECTION_SINGLE) {
+				gint cursor_row = e_selection_model_cursor_row (esm);
+				gint cursor_col = e_selection_model_cursor_col (esm);
+				e_selection_model_do_something (esm, cursor_row, cursor_col, 0);
+			}
+			break;
 
-	case PROP_CURSOR_MODE:
-		esm->cursor_mode = g_value_get_int (value);
-		break;
+		case PROP_CURSOR_MODE:
+			esm->cursor_mode = g_value_get_int (value);
+			break;
 	}
 }
 
@@ -134,97 +145,89 @@ e_selection_model_init (ESelectionModel *selection)
 }
 
 static void
-e_selection_model_class_init (ESelectionModelClass *klass)
+e_selection_model_class_init (ESelectionModelClass *class)
 {
 	GObjectClass *object_class;
 
-	object_class = G_OBJECT_CLASS(klass);
-
+	object_class = G_OBJECT_CLASS (class);
 	object_class->dispose = esm_dispose;
 	object_class->get_property = esm_get_property;
 	object_class->set_property = esm_set_property;
 
-	e_selection_model_signals [CURSOR_CHANGED] =
-		g_signal_new ("cursor_changed",
-			      G_OBJECT_CLASS_TYPE (object_class),
-			      G_SIGNAL_RUN_LAST,
-			      G_STRUCT_OFFSET (ESelectionModelClass, cursor_changed),
-			      NULL, NULL,
-			      e_marshal_NONE__INT_INT,
-			      G_TYPE_NONE, 2, G_TYPE_INT, G_TYPE_INT);
+	signals[CURSOR_CHANGED] = g_signal_new (
+		"cursor_changed",
+		G_OBJECT_CLASS_TYPE (object_class),
+		G_SIGNAL_RUN_LAST,
+		G_STRUCT_OFFSET (ESelectionModelClass, cursor_changed),
+		NULL, NULL,
+		e_marshal_NONE__INT_INT,
+		G_TYPE_NONE, 2,
+		G_TYPE_INT,
+		G_TYPE_INT);
 
-	e_selection_model_signals [CURSOR_ACTIVATED] =
-		g_signal_new ("cursor_activated",
-			      G_OBJECT_CLASS_TYPE (object_class),
-			      G_SIGNAL_RUN_LAST,
-			      G_STRUCT_OFFSET (ESelectionModelClass, cursor_activated),
-			      NULL, NULL,
-			      e_marshal_NONE__INT_INT,
-			      G_TYPE_NONE, 2, G_TYPE_INT, G_TYPE_INT);
+	signals[CURSOR_ACTIVATED] = g_signal_new (
+		"cursor_activated",
+		G_OBJECT_CLASS_TYPE (object_class),
+		G_SIGNAL_RUN_LAST,
+		G_STRUCT_OFFSET (ESelectionModelClass, cursor_activated),
+		NULL, NULL,
+		e_marshal_NONE__INT_INT,
+		G_TYPE_NONE, 2,
+		G_TYPE_INT,
+		G_TYPE_INT);
 
-	e_selection_model_signals [SELECTION_CHANGED] =
-		g_signal_new ("selection_changed",
-			      G_OBJECT_CLASS_TYPE (object_class),
-			      G_SIGNAL_RUN_LAST,
-			      G_STRUCT_OFFSET (ESelectionModelClass, selection_changed),
-			      NULL, NULL,
-			      g_cclosure_marshal_VOID__VOID,
-			      G_TYPE_NONE, 0);
+	signals[SELECTION_CHANGED] = g_signal_new (
+		"selection_changed",
+		G_OBJECT_CLASS_TYPE (object_class),
+		G_SIGNAL_RUN_LAST,
+		G_STRUCT_OFFSET (ESelectionModelClass, selection_changed),
+		NULL, NULL,
+		g_cclosure_marshal_VOID__VOID,
+		G_TYPE_NONE, 0);
 
-	e_selection_model_signals [SELECTION_ROW_CHANGED] =
-		g_signal_new ("selection_row_changed",
-			      G_OBJECT_CLASS_TYPE (object_class),
-			      G_SIGNAL_RUN_LAST,
-			      G_STRUCT_OFFSET (ESelectionModelClass, selection_row_changed),
-			      NULL, NULL,
-			      g_cclosure_marshal_VOID__INT,
-			      G_TYPE_NONE, 1, G_TYPE_INT);
+	signals[SELECTION_ROW_CHANGED] = g_signal_new (
+		"selection_row_changed",
+		G_OBJECT_CLASS_TYPE (object_class),
+		G_SIGNAL_RUN_LAST,
+		G_STRUCT_OFFSET (ESelectionModelClass, selection_row_changed),
+		NULL, NULL,
+		g_cclosure_marshal_VOID__INT,
+		G_TYPE_NONE, 1,
+		G_TYPE_INT);
 
-	klass->cursor_changed        = NULL;
-	klass->cursor_activated      = NULL;
-	klass->selection_changed     = NULL;
-	klass->selection_row_changed = NULL;
+	g_object_class_install_property (
+		object_class,
+		PROP_SORTER,
+		g_param_spec_object (
+			"sorter",
+			"Sorter",
+			NULL,
+			E_SORTER_TYPE,
+			G_PARAM_READWRITE));
 
-	klass->is_row_selected       = NULL;
-	klass->foreach               = NULL;
-	klass->clear                 = NULL;
-	klass->selected_count        = NULL;
-	klass->select_all            = NULL;
-	klass->invert_selection      = NULL;
-	klass->row_count             = NULL;
+	g_object_class_install_property (
+		object_class,
+		PROP_SELECTION_MODE,
+		g_param_spec_int (
+			"selection_mode",
+			"Selection Mode",
+			NULL,
+			GTK_SELECTION_NONE,
+			GTK_SELECTION_MULTIPLE,
+			GTK_SELECTION_SINGLE,
+			G_PARAM_READWRITE));
 
-	klass->change_one_row        = NULL;
-	klass->change_cursor         = NULL;
-	klass->cursor_row            = NULL;
-	klass->cursor_col            = NULL;
-
-	klass->select_single_row     = NULL;
-	klass->toggle_single_row     = NULL;
-	klass->move_selection_end    = NULL;
-	klass->set_selection_end     = NULL;
-
-	g_object_class_install_property (object_class, PROP_SORTER,
-					 g_param_spec_object ("sorter",
-							      _("Sorter"),
-							      /*_( */"XXX blurb" /*)*/,
-							      E_SORTER_TYPE,
-							      G_PARAM_READWRITE));
-
-	g_object_class_install_property (object_class, PROP_SELECTION_MODE,
-					 g_param_spec_int ("selection_mode",
-							   _("Selection Mode"),
-							   /*_( */"XXX blurb" /*)*/,
-							   GTK_SELECTION_NONE, GTK_SELECTION_MULTIPLE,
-							   GTK_SELECTION_SINGLE,
-							   G_PARAM_READWRITE));
-
-	g_object_class_install_property (object_class, PROP_CURSOR_MODE,
-					 g_param_spec_int ("cursor_mode",
-							   _("Cursor Mode"),
-							   /*_( */"XXX blurb" /*)*/,
-							   E_CURSOR_LINE, E_CURSOR_SPREADSHEET,
-							   E_CURSOR_LINE,
-							   G_PARAM_READWRITE));
+	g_object_class_install_property (
+		object_class,
+		PROP_CURSOR_MODE,
+		g_param_spec_int (
+			"cursor_mode",
+			"Cursor Mode",
+			NULL,
+			E_CURSOR_LINE,
+			E_CURSOR_SPREADSHEET,
+			E_CURSOR_LINE,
+			G_PARAM_READWRITE));
 }
 
 /**
@@ -238,12 +241,16 @@ e_selection_model_class_init (ESelectionModelClass *klass)
  */
 gboolean
 e_selection_model_is_row_selected (ESelectionModel *selection,
-				   gint                 n)
+                                   gint n)
 {
-	if (E_SELECTION_MODEL_GET_CLASS(selection)->is_row_selected)
-		return E_SELECTION_MODEL_GET_CLASS(selection)->is_row_selected (selection, n);
-	else
-		return FALSE;
+	ESelectionModelClass *class;
+
+	g_return_val_if_fail (E_IS_SELECTION_MODEL (selection), FALSE);
+
+	class = E_SELECTION_MODEL_GET_CLASS (selection);
+	g_return_val_if_fail (class->is_row_selected != NULL, FALSE);
+
+	return class->is_row_selected (selection, n);
 }
 
 /**
@@ -256,12 +263,19 @@ e_selection_model_is_row_selected (ESelectionModel *selection,
  * selected row, passing closure as the closure.
  */
 void
-e_selection_model_foreach     (ESelectionModel *selection,
-			       EForeachFunc callback,
-			       gpointer closure)
+e_selection_model_foreach (ESelectionModel *selection,
+                           EForeachFunc callback,
+                           gpointer closure)
 {
-	if (E_SELECTION_MODEL_GET_CLASS(selection)->foreach)
-		E_SELECTION_MODEL_GET_CLASS(selection)->foreach (selection, callback, closure);
+	ESelectionModelClass *class;
+
+	g_return_if_fail (E_IS_SELECTION_MODEL (selection));
+	g_return_if_fail (callback != NULL);
+
+	class = E_SELECTION_MODEL_GET_CLASS (selection);
+	g_return_if_fail (class->foreach != NULL);
+
+	class->foreach (selection, callback, closure);
 }
 
 /**
@@ -271,10 +285,16 @@ e_selection_model_foreach     (ESelectionModel *selection,
  * This routine clears the selection to no rows selected.
  */
 void
-e_selection_model_clear(ESelectionModel *selection)
+e_selection_model_clear (ESelectionModel *selection)
 {
-	if (E_SELECTION_MODEL_GET_CLASS(selection)->clear)
-		E_SELECTION_MODEL_GET_CLASS(selection)->clear (selection);
+	ESelectionModelClass *class;
+
+	g_return_if_fail (E_IS_SELECTION_MODEL (selection));
+
+	class = E_SELECTION_MODEL_GET_CLASS (selection);
+	g_return_if_fail (class->clear != NULL);
+
+	class->clear (selection);
 }
 
 /**
@@ -288,10 +308,14 @@ e_selection_model_clear(ESelectionModel *selection)
 gint
 e_selection_model_selected_count (ESelectionModel *selection)
 {
-	if (E_SELECTION_MODEL_GET_CLASS(selection)->selected_count)
-		return E_SELECTION_MODEL_GET_CLASS(selection)->selected_count (selection);
-	else
-		return 0;
+	ESelectionModelClass *class;
+
+	g_return_val_if_fail (E_IS_SELECTION_MODEL (selection), 0);
+
+	class = E_SELECTION_MODEL_GET_CLASS (selection);
+	g_return_val_if_fail (class->selected_count != NULL, 0);
+
+	return class->selected_count (selection);
 }
 
 /**
@@ -304,8 +328,14 @@ e_selection_model_selected_count (ESelectionModel *selection)
 void
 e_selection_model_select_all (ESelectionModel *selection)
 {
-	if (E_SELECTION_MODEL_GET_CLASS(selection)->select_all)
-		E_SELECTION_MODEL_GET_CLASS(selection)->select_all (selection);
+	ESelectionModelClass *class;
+
+	g_return_if_fail (E_IS_SELECTION_MODEL (selection));
+
+	class = E_SELECTION_MODEL_GET_CLASS (selection);
+	g_return_if_fail (class->select_all != NULL);
+
+	class->select_all (selection);
 }
 
 /**
@@ -318,77 +348,139 @@ e_selection_model_select_all (ESelectionModel *selection)
 void
 e_selection_model_invert_selection (ESelectionModel *selection)
 {
-	if (E_SELECTION_MODEL_GET_CLASS(selection)->invert_selection)
-		E_SELECTION_MODEL_GET_CLASS(selection)->invert_selection (selection);
+	ESelectionModelClass *class;
+
+	g_return_if_fail (E_IS_SELECTION_MODEL (selection));
+
+	class = E_SELECTION_MODEL_GET_CLASS (selection);
+	g_return_if_fail (class->invert_selection != NULL);
+
+	class->invert_selection (selection);
 }
 
 gint
 e_selection_model_row_count (ESelectionModel *selection)
 {
-	if (E_SELECTION_MODEL_GET_CLASS(selection)->row_count)
-		return E_SELECTION_MODEL_GET_CLASS(selection)->row_count (selection);
-	else
-		return 0;
+	ESelectionModelClass *class;
+
+	g_return_val_if_fail (E_IS_SELECTION_MODEL (selection), 0);
+
+	class = E_SELECTION_MODEL_GET_CLASS (selection);
+	g_return_val_if_fail (class->row_count != NULL, 0);
+
+	return class->row_count (selection);
 }
 
 void
-e_selection_model_change_one_row(ESelectionModel *selection, gint row, gboolean grow)
+e_selection_model_change_one_row (ESelectionModel *selection,
+                                  gint row,
+                                  gboolean grow)
 {
-	if (E_SELECTION_MODEL_GET_CLASS(selection)->change_one_row)
-		E_SELECTION_MODEL_GET_CLASS(selection)->change_one_row (selection, row, grow);
+	ESelectionModelClass *class;
+
+	g_return_if_fail (E_IS_SELECTION_MODEL (selection));
+
+	class = E_SELECTION_MODEL_GET_CLASS (selection);
+	g_return_if_fail (class->change_one_row != NULL);
+
+	return class->change_one_row (selection, row, grow);
 }
 
 void
-e_selection_model_change_cursor (ESelectionModel *selection, gint row, gint col)
+e_selection_model_change_cursor (ESelectionModel *selection,
+                                 gint row,
+                                 gint col)
 {
-	if (E_SELECTION_MODEL_GET_CLASS(selection)->change_cursor)
-		E_SELECTION_MODEL_GET_CLASS(selection)->change_cursor (selection, row, col);
+	ESelectionModelClass *class;
+
+	g_return_if_fail (E_IS_SELECTION_MODEL (selection));
+
+	class = E_SELECTION_MODEL_GET_CLASS (selection);
+	g_return_if_fail (class->change_cursor != NULL);
+
+	class->change_cursor (selection, row, col);
 }
 
 gint
 e_selection_model_cursor_row (ESelectionModel *selection)
 {
-	if (E_SELECTION_MODEL_GET_CLASS(selection)->cursor_row)
-		return E_SELECTION_MODEL_GET_CLASS(selection)->cursor_row (selection);
-	else
-		return -1;
+	ESelectionModelClass *class;
+
+	g_return_val_if_fail (E_IS_SELECTION_MODEL (selection), -1);
+
+	class = E_SELECTION_MODEL_GET_CLASS (selection);
+	g_return_val_if_fail (class->cursor_row != NULL, -1);
+
+	return class->cursor_row (selection);
 }
 
 gint
 e_selection_model_cursor_col (ESelectionModel *selection)
 {
-	if (E_SELECTION_MODEL_GET_CLASS(selection)->cursor_col)
-		return E_SELECTION_MODEL_GET_CLASS(selection)->cursor_col (selection);
-	else
-		return -1;
+	ESelectionModelClass *class;
+
+	g_return_val_if_fail (E_IS_SELECTION_MODEL (selection), -1);
+
+	class = E_SELECTION_MODEL_GET_CLASS (selection);
+	g_return_val_if_fail (class->cursor_col != NULL, -1);
+
+	return class->cursor_col (selection);
 }
 
 void
-e_selection_model_select_single_row (ESelectionModel *selection, gint row)
+e_selection_model_select_single_row (ESelectionModel *selection,
+                                     gint row)
 {
-	if (E_SELECTION_MODEL_GET_CLASS(selection)->select_single_row)
-		E_SELECTION_MODEL_GET_CLASS(selection)->select_single_row (selection, row);
+	ESelectionModelClass *class;
+
+	g_return_if_fail (E_IS_SELECTION_MODEL (selection));
+
+	class = E_SELECTION_MODEL_GET_CLASS (selection);
+	g_return_if_fail (class->select_single_row != NULL);
+
+	class->select_single_row (selection, row);
 }
 
 void
-e_selection_model_toggle_single_row (ESelectionModel *selection, gint row)
+e_selection_model_toggle_single_row (ESelectionModel *selection,
+                                     gint row)
 {
-	if (E_SELECTION_MODEL_GET_CLASS(selection)->toggle_single_row)
-		E_SELECTION_MODEL_GET_CLASS(selection)->toggle_single_row (selection, row);
+	ESelectionModelClass *class;
+
+	g_return_if_fail (E_IS_SELECTION_MODEL (selection));
+
+	class = E_SELECTION_MODEL_GET_CLASS (selection);
+	g_return_if_fail (class->toggle_single_row != NULL);
+
+	class->toggle_single_row (selection, row);
 }
 
 void
-e_selection_model_move_selection_end (ESelectionModel *selection, gint row)
+e_selection_model_move_selection_end (ESelectionModel *selection,
+                                      gint row)
 {
-	if (E_SELECTION_MODEL_GET_CLASS(selection)->move_selection_end)
-		E_SELECTION_MODEL_GET_CLASS(selection)->move_selection_end (selection, row);
+	ESelectionModelClass *class;
+
+	g_return_if_fail (E_IS_SELECTION_MODEL (selection));
+
+	class = E_SELECTION_MODEL_GET_CLASS (selection);
+	g_return_if_fail (class->move_selection_end != NULL);
+
+	class->move_selection_end (selection, row);
 }
 
 void
-e_selection_model_set_selection_end (ESelectionModel *selection, gint row)
+e_selection_model_set_selection_end (ESelectionModel *selection,
+                                     gint row)
 {
-	if (E_SELECTION_MODEL_GET_CLASS(selection)->set_selection_end)
-		E_SELECTION_MODEL_GET_CLASS(selection)->set_selection_end (selection, row);
+	ESelectionModelClass *class;
+
+	g_return_if_fail (E_IS_SELECTION_MODEL (selection));
+
+	class = E_SELECTION_MODEL_GET_CLASS (selection);
+	g_return_if_fail (class->set_selection_end != NULL);
+
+	class->set_selection_end (selection, row);
 }
 
 /**
@@ -403,13 +495,15 @@ e_selection_model_set_selection_end (ESelectionModel *selection, gint row)
  */
 void
 e_selection_model_do_something (ESelectionModel *selection,
-				guint                 row,
-				guint                 col,
-				GdkModifierType       state)
+                                guint row,
+                                guint col,
+                                GdkModifierType state)
 {
 	gint shift_p = state & GDK_SHIFT_MASK;
 	gint ctrl_p = state & GDK_CONTROL_MASK;
 	gint row_count;
+
+	g_return_if_fail (E_IS_SELECTION_MODEL (selection));
 
 	selection->old_selection = -1;
 
@@ -418,7 +512,7 @@ e_selection_model_do_something (ESelectionModel *selection,
 	if (col == -1 && row != -1)
 		col = 0;
 
-	row_count = e_selection_model_row_count(selection);
+	row_count = e_selection_model_row_count (selection);
 	if (row_count >= 0 && row < row_count) {
 		switch (selection->mode) {
 		case GTK_SELECTION_SINGLE:
@@ -437,15 +531,15 @@ e_selection_model_do_something (ESelectionModel *selection,
 			}
 			break;
 		default:
-			g_return_if_reached();
+			g_return_if_reached ();
 			break;
 		}
-		e_selection_model_change_cursor(selection, row, col);
-		g_signal_emit(selection,
-			      e_selection_model_signals[CURSOR_CHANGED], 0,
+		e_selection_model_change_cursor (selection, row, col);
+		g_signal_emit (selection,
+			      signals[CURSOR_CHANGED], 0,
 			      row, col);
-		g_signal_emit(selection,
-			      e_selection_model_signals[CURSOR_ACTIVATED], 0,
+		g_signal_emit (selection,
+			      signals[CURSOR_ACTIVATED], 0,
 			      row, col);
 	}
 }
@@ -464,57 +558,72 @@ e_selection_model_do_something (ESelectionModel *selection,
  * they don't want it to change.
  */
 gboolean
-e_selection_model_maybe_do_something      (ESelectionModel *selection,
-					   guint            row,
-					   guint            col,
-					   GdkModifierType  state)
+e_selection_model_maybe_do_something (ESelectionModel *selection,
+                                      guint row,
+                                      guint col,
+                                      GdkModifierType state)
 {
+	g_return_val_if_fail (E_IS_SELECTION_MODEL (selection), FALSE);
+
 	selection->old_selection = -1;
 
-	if (e_selection_model_is_row_selected(selection, row)) {
-		e_selection_model_change_cursor(selection, row, col);
-		g_signal_emit(selection,
-			      e_selection_model_signals[CURSOR_CHANGED], 0,
+	if (e_selection_model_is_row_selected (selection, row)) {
+		e_selection_model_change_cursor (selection, row, col);
+		g_signal_emit (selection,
+			      signals[CURSOR_CHANGED], 0,
 			      row, col);
 		return FALSE;
 	} else {
-		e_selection_model_do_something(selection, row, col, state);
+		e_selection_model_do_something (selection, row, col, state);
 		return TRUE;
 	}
 }
 
 void
 e_selection_model_right_click_down (ESelectionModel *selection,
-				    guint            row,
-				    guint            col,
-				    GdkModifierType  state)
+                                    guint row,
+                                    guint col,
+                                    GdkModifierType state)
 {
+	g_return_if_fail (E_IS_SELECTION_MODEL (selection));
+
 	if (selection->mode == GTK_SELECTION_SINGLE) {
-		selection->old_selection = e_selection_model_cursor_row (selection);
+		selection->old_selection =
+			e_selection_model_cursor_row (selection);
 		e_selection_model_select_single_row (selection, row);
 	} else {
-		e_selection_model_maybe_do_something (selection, row, col, state);
+		e_selection_model_maybe_do_something (
+			selection, row, col, state);
 	}
 }
 
 void
 e_selection_model_right_click_up (ESelectionModel *selection)
 {
-	if (selection->mode == GTK_SELECTION_SINGLE && selection->old_selection != -1) {
-		e_selection_model_select_single_row (selection, selection->old_selection);
-	}
+	g_return_if_fail (E_IS_SELECTION_MODEL (selection));
+
+	if (selection->mode != GTK_SELECTION_SINGLE)
+		return;
+
+	if (selection->old_selection == -1)
+		return;
+
+	e_selection_model_select_single_row (
+		selection, selection->old_selection);
 }
 
 void
 e_selection_model_select_as_key_press (ESelectionModel *selection,
-				       guint            row,
-				       guint            col,
-				       GdkModifierType  state)
+                                       guint row,
+                                       guint col,
+                                       GdkModifierType state)
 {
 	gint cursor_activated = TRUE;
 
 	gint shift_p = state & GDK_SHIFT_MASK;
 	gint ctrl_p = state & GDK_CONTROL_MASK;
+
+	g_return_if_fail (E_IS_SELECTION_MODEL (selection));
 
 	selection->old_selection = -1;
 
@@ -532,28 +641,28 @@ e_selection_model_select_as_key_press (ESelectionModel *selection,
 		e_selection_model_select_single_row (selection, row);
 		break;
 	default:
-		g_return_if_reached();
+		g_return_if_reached ();
 		break;
 	}
 	if (row != -1) {
-		e_selection_model_change_cursor(selection, row, col);
-		g_signal_emit(selection,
-			      e_selection_model_signals[CURSOR_CHANGED], 0,
+		e_selection_model_change_cursor (selection, row, col);
+		g_signal_emit (selection,
+			      signals[CURSOR_CHANGED], 0,
 			      row, col);
 		if (cursor_activated)
-			g_signal_emit(selection,
-				      e_selection_model_signals[CURSOR_ACTIVATED], 0,
+			g_signal_emit (selection,
+				      signals[CURSOR_ACTIVATED], 0,
 				      row, col);
 	}
 }
 
 static gint
 move_selection (ESelectionModel *selection,
-		gboolean              up,
-		GdkModifierType       state)
+                gboolean up,
+                GdkModifierType state)
 {
-	gint row = e_selection_model_cursor_row(selection);
-	gint col = e_selection_model_cursor_col(selection);
+	gint row = e_selection_model_cursor_row (selection);
+	gint col = e_selection_model_cursor_col (selection);
 	gint row_count;
 
 	/* there is no selected row when row is -1 */
@@ -566,10 +675,10 @@ move_selection (ESelectionModel *selection,
 		row++;
 	if (row < 0)
 		row = 0;
-	row_count = e_selection_model_row_count(selection);
+	row_count = e_selection_model_row_count (selection);
 	if (row >= row_count)
 		row = row_count - 1;
-	row = e_sorter_sorted_to_model(selection->sorter, row);
+	row = e_sorter_sorted_to_model (selection->sorter, row);
 
 	e_selection_model_select_as_key_press (selection, row, col, state);
 	return TRUE;
@@ -585,30 +694,33 @@ move_selection (ESelectionModel *selection,
  *
  * Returns: %TRUE if the #ESelectionModel used the key.
  */
-gint
-e_selection_model_key_press      (ESelectionModel *selection,
-				  GdkEventKey          *key)
+gboolean
+e_selection_model_key_press (ESelectionModel *selection,
+                             GdkEventKey *key)
 {
+	g_return_val_if_fail (E_IS_SELECTION_MODEL (selection), FALSE);
+	g_return_val_if_fail (key != NULL, FALSE);
+
 	selection->old_selection = -1;
 
 	switch (key->keyval) {
 	case GDK_Up:
 	case GDK_KP_Up:
-		return move_selection(selection, TRUE, key->state);
+		return move_selection (selection, TRUE, key->state);
 	case GDK_Down:
 	case GDK_KP_Down:
-		return move_selection(selection, FALSE, key->state);
+		return move_selection (selection, FALSE, key->state);
 	case GDK_space:
 	case GDK_KP_Space:
 		if (selection->mode != GTK_SELECTION_SINGLE) {
-			gint row = e_selection_model_cursor_row(selection);
-			gint col = e_selection_model_cursor_col(selection);
+			gint row = e_selection_model_cursor_row (selection);
+			gint col = e_selection_model_cursor_col (selection);
 			if (row == -1)
 				break;
 
 			e_selection_model_toggle_single_row (selection, row);
-			g_signal_emit(selection,
-				      e_selection_model_signals[CURSOR_ACTIVATED], 0,
+			g_signal_emit (selection,
+				      signals[CURSOR_ACTIVATED], 0,
 				      row, col);
 			return TRUE;
 		}
@@ -616,11 +728,11 @@ e_selection_model_key_press      (ESelectionModel *selection,
 	case GDK_Return:
 	case GDK_KP_Enter:
 		if (selection->mode != GTK_SELECTION_SINGLE) {
-			gint row = e_selection_model_cursor_row(selection);
-			gint col = e_selection_model_cursor_col(selection);
+			gint row = e_selection_model_cursor_row (selection);
+			gint col = e_selection_model_cursor_col (selection);
 			e_selection_model_select_single_row (selection, row);
-			g_signal_emit(selection,
-				      e_selection_model_signals[CURSOR_ACTIVATED], 0,
+			g_signal_emit (selection,
+				      signals[CURSOR_ACTIVATED], 0,
 				      row, col);
 			return TRUE;
 		}
@@ -629,9 +741,9 @@ e_selection_model_key_press      (ESelectionModel *selection,
 	case GDK_KP_Home:
 		if (selection->cursor_mode == E_CURSOR_LINE) {
 			gint row = 0;
-			gint cursor_col = e_selection_model_cursor_col(selection);
+			gint cursor_col = e_selection_model_cursor_col (selection);
 
-			row = e_sorter_sorted_to_model(selection->sorter, row);
+			row = e_sorter_sorted_to_model (selection->sorter, row);
 			e_selection_model_select_as_key_press (selection, row, cursor_col, key->state);
 			return TRUE;
 		}
@@ -639,10 +751,10 @@ e_selection_model_key_press      (ESelectionModel *selection,
 	case GDK_End:
 	case GDK_KP_End:
 		if (selection->cursor_mode == E_CURSOR_LINE) {
-			gint row = e_selection_model_row_count(selection) - 1;
-			gint cursor_col = e_selection_model_cursor_col(selection);
+			gint row = e_selection_model_row_count (selection) - 1;
+			gint cursor_col = e_selection_model_cursor_col (selection);
 
-			row = e_sorter_sorted_to_model(selection->sorter, row);
+			row = e_sorter_sorted_to_model (selection->sorter, row);
 			e_selection_model_select_as_key_press (selection, row, cursor_col, key->state);
 			return TRUE;
 		}
@@ -652,37 +764,38 @@ e_selection_model_key_press      (ESelectionModel *selection,
 }
 
 void
-e_selection_model_cursor_changed      (ESelectionModel *selection,
-				       gint              row,
-				       gint              col)
+e_selection_model_cursor_changed (ESelectionModel *selection,
+                                  gint row,
+                                  gint col)
 {
-	g_signal_emit(selection,
-		      e_selection_model_signals[CURSOR_CHANGED], 0,
-		      row, col);
+	g_return_if_fail (E_IS_SELECTION_MODEL (selection));
+
+	g_signal_emit (selection, signals[CURSOR_CHANGED], 0, row, col);
 }
 
 void
-e_selection_model_cursor_activated    (ESelectionModel *selection,
-				       gint              row,
-				       gint              col)
+e_selection_model_cursor_activated (ESelectionModel *selection,
+                                    gint row,
+                                    gint col)
 {
-	g_signal_emit(selection,
-		      e_selection_model_signals[CURSOR_ACTIVATED], 0,
-		      row, col);
+	g_return_if_fail (E_IS_SELECTION_MODEL (selection));
+
+	g_signal_emit (selection, signals[CURSOR_ACTIVATED], 0, row, col);
 }
 
 void
-e_selection_model_selection_changed   (ESelectionModel *selection)
+e_selection_model_selection_changed (ESelectionModel *selection)
 {
-	g_signal_emit(selection,
-		      e_selection_model_signals[SELECTION_CHANGED], 0);
+	g_return_if_fail (E_IS_SELECTION_MODEL (selection));
+
+	g_signal_emit (selection, signals[SELECTION_CHANGED], 0);
 }
 
 void
 e_selection_model_selection_row_changed (ESelectionModel *selection,
-					 gint              row)
+                                         gint row)
 {
-	g_signal_emit(selection,
-		      e_selection_model_signals[SELECTION_ROW_CHANGED], 0,
-		      row);
+	g_return_if_fail (E_IS_SELECTION_MODEL (selection));
+
+	g_signal_emit (selection, signals[SELECTION_ROW_CHANGED], 0, row);
 }

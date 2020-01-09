@@ -43,7 +43,7 @@
 	((obj), E_TYPE_LOGGER, ELoggerPrivate))
 
 struct _ELoggerPrivate {
-	gchar *component;
+	gchar *name;
 	gchar *logfile;
 	FILE *fp;
 
@@ -52,13 +52,16 @@ struct _ELoggerPrivate {
 
 enum {
 	PROP_0,
-	PROP_COMPONENT
+	PROP_NAME
 };
 
-static gpointer parent_class;
+G_DEFINE_TYPE (
+	ELogger,
+	e_logger,
+	G_TYPE_OBJECT)
 
 static gboolean
-flush_logfile (ELogger *logger)
+logger_flush (ELogger *logger)
 {
 	if (logger->priv->fp)
 		fflush (logger->priv->fp);
@@ -68,22 +71,35 @@ flush_logfile (ELogger *logger)
 }
 
 static void
-logger_set_component (ELogger *logger,
-                      const gchar *component)
+logger_set_dirty (ELogger *logger)
+{
+	if (logger->priv->timer)
+		return;
+
+	logger->priv->timer = g_timeout_add (
+		TIMEOUT_INTERVAL, (GSourceFunc) logger_flush, logger);
+}
+
+static void
+logger_set_name (ELogger *logger,
+                 const gchar *name)
 {
 	gchar *temp;
 
-	g_return_if_fail (logger->priv->component == NULL);
+	g_return_if_fail (logger->priv->name == NULL);
 
-	temp = g_strdup_printf ("%s.log.XXXXXX", component);
+	temp = g_strdup_printf ("%s.log.XXXXXX", name);
 
-	logger->priv->component = g_strdup (component);
+	logger->priv->name = g_strdup (name);
 	logger->priv->logfile = e_mktemp (temp);
 	logger->priv->fp = g_fopen (logger->priv->logfile, "w");
 	logger->priv->timer = 0;
 
 	if (!logger->priv->fp)
-		g_warning ("%s: Failed to open log file '%s' for writing.", G_STRFUNC, logger->priv->logfile ? logger->priv->logfile : "[null]");
+		g_warning (
+			"%s: Failed to open log file '%s' for writing.",
+			G_STRFUNC, logger->priv->logfile ?
+			logger->priv->logfile : "[null]");
 
 	g_free (temp);
 }
@@ -95,8 +111,8 @@ logger_set_property (GObject *object,
                      GParamSpec *pspec)
 {
 	switch (property_id) {
-		case PROP_COMPONENT:
-			logger_set_component (
+		case PROP_NAME:
+			logger_set_name (
 				E_LOGGER (object),
 				g_value_get_string (value));
 			return;
@@ -112,9 +128,9 @@ logger_get_property (GObject *object,
                      GParamSpec *pspec)
 {
 	switch (property_id) {
-		case PROP_COMPONENT:
+		case PROP_NAME:
 			g_value_set_string (
-				value, e_logger_get_component (
+				value, e_logger_get_name (
 				E_LOGGER (object)));
 			return;
 	}
@@ -129,23 +145,22 @@ logger_finalize (GObject *object)
 
 	if (logger->priv->timer)
 		g_source_remove (logger->priv->timer);
-	flush_logfile (logger);
+	logger_flush (logger);
 	if (logger->priv->fp)
 		fclose (logger->priv->fp);
 
-	g_free (logger->priv->component);
+	g_free (logger->priv->name);
 	g_free (logger->priv->logfile);
 
 	/* Chain up to parent's finalize() method. */
-	G_OBJECT_CLASS (parent_class)->finalize (object);
+	G_OBJECT_CLASS (e_logger_parent_class)->finalize (object);
 }
 
 static void
-logger_class_init (ELoggerClass *class)
+e_logger_class_init (ELoggerClass *class)
 {
 	GObjectClass *object_class;
 
-	parent_class = g_type_class_peek_parent (class);
 	g_type_class_add_private (class, sizeof (ELoggerPrivate));
 
 	object_class = G_OBJECT_CLASS (class);
@@ -155,77 +170,41 @@ logger_class_init (ELoggerClass *class)
 
 	g_object_class_install_property (
 		object_class,
-		PROP_COMPONENT,
+		PROP_NAME,
 		g_param_spec_string (
-			"component",
-			_("Component"),
-			_("Name of the component being logged"),
+			"name",
+			"Name",
+			"Name of the logger",
 			"anonymous",
 			G_PARAM_READWRITE |
 			G_PARAM_CONSTRUCT_ONLY));
 }
 
 static void
-logger_init (ELogger *logger)
+e_logger_init (ELogger *logger)
 {
 	logger->priv = E_LOGGER_GET_PRIVATE (logger);
 }
 
-GType
-e_logger_get_type (void)
-{
-	static GType type = 0;
-
-	if (G_UNLIKELY (type == 0)) {
-		static const GTypeInfo type_info = {
-			sizeof (ELoggerClass),
-			(GBaseInitFunc) NULL,
-			(GBaseFinalizeFunc) NULL,
-			(GClassInitFunc) logger_class_init,
-			(GClassFinalizeFunc) NULL,
-			NULL,  /* class_data */
-			sizeof (ELogger),
-			0,     /* n_preallocs */
-			(GInstanceInitFunc) logger_init,
-			NULL   /* value_table */
-		};
-
-		type = g_type_register_static (
-			G_TYPE_OBJECT, "ELogger", &type_info, 0);
-	}
-
-	return type;
-}
-
 ELogger *
-e_logger_create (const gchar *component)
+e_logger_new (const gchar *name)
 {
-	g_return_val_if_fail (component != NULL, NULL);
+	g_return_val_if_fail (name != NULL, NULL);
 
-	return g_object_new (E_TYPE_LOGGER, "component", component, NULL);
+	return g_object_new (E_TYPE_LOGGER, "name", name, NULL);
 }
 
 const gchar *
-e_logger_get_component (ELogger *logger)
+e_logger_get_name (ELogger *logger)
 {
 	g_return_val_if_fail (E_IS_LOGGER (logger), NULL);
 
-	return logger->priv->component;
-}
-
-static void
-set_dirty (ELogger *logger)
-{
-	if (logger->priv->timer)
-		return;
-
-	logger->priv->timer = g_timeout_add_seconds (
-		TIMEOUT_INTERVAL, (GSourceFunc) flush_logfile, logger);
+	return logger->priv->name;
 }
 
 void
 e_logger_log (ELogger *logger,
-              gint level,
+              ELogLevel level,
               gchar *primary,
               gchar *secondary)
 {
@@ -240,13 +219,13 @@ e_logger_log (ELogger *logger,
 
 	fprintf (logger->priv->fp, "%d:%ld:%s\n", level, t, primary);
 	fprintf (logger->priv->fp, "%d:%ld:%s\n", level, t, secondary);
-	set_dirty (logger);
+	logger_set_dirty (logger);
 }
 
 void
 e_logger_get_logs (ELogger *logger,
                    ELogFunction func,
-                   gpointer data)
+                   gpointer user_data)
 {
 	FILE *fp;
 	gchar buf[250];
@@ -260,7 +239,10 @@ e_logger_get_logs (ELogger *logger,
 	fp = g_fopen (logger->priv->logfile, "r");
 
 	if (!fp) {
-		g_warning ("%s: Cannot open log file '%s' for reading! No flush yet?\n", G_STRFUNC, logger->priv->logfile ? logger->priv->logfile : "[null]");
+		g_warning (
+			"%s: Cannot open log file '%s' for reading! "
+			"No flush yet?\n", G_STRFUNC, logger->priv->logfile ?
+			logger->priv->logfile : "[null]");
 		return;
 	}
 
@@ -273,13 +255,13 @@ e_logger_get_logs (ELogger *logger,
 			break;
 
 		len = strlen (tmp);
-		if (len > 0 && tmp [len - 1] != '\n' && !feof (fp)) {
+		if (len > 0 && tmp[len - 1] != '\n' && !feof (fp)) {
 			/* there are more characters on a row than 249, so read them all */
 			GString *str = g_string_sized_new (1024);
 
 			g_string_append (str, tmp);
 
-			while (!feof (fp) && len > 0 && tmp [len - 1] != '\n') {
+			while (!feof (fp) && len > 0 && tmp[len - 1] != '\n') {
 				tmp = fgets (buf, sizeof (buf), fp);
 				if (!tmp)
 					break;
@@ -288,11 +270,11 @@ e_logger_get_logs (ELogger *logger,
 				g_string_append (str, tmp);
 			}
 
-			func (str->str, data);
+			func (str->str, user_data);
 
 			g_string_free (str, TRUE);
 		} else
-			func (tmp, data);
+			func (tmp, user_data);
 	}
 
 	fclose (fp);

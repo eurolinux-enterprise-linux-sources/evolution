@@ -24,11 +24,8 @@
 #ifndef __SHARE_FOLDER_H__
 #define __SHARE_FOLDER_H__
 
-G_BEGIN_DECLS
-
 #include <gtk/gtk.h>
-#include <glade/glade.h>
-#include <camel/camel-store.h>
+#include <camel/camel.h>
 #include <e-gw-connection.h>
 #include <libedataserverui/e-name-selector.h>
 
@@ -38,13 +35,15 @@ G_BEGIN_DECLS
 #define IS_SHARE_FOLDER(o)       (G_TYPE_CHECK_INSTANCE_TYPE ((o), SHARE_FOLDER_TYPE))
 #define IS_SHARE_FOLDER_CLASS(k) (G_TYPE_CHECK_CLASS_TYPE ((k), SHARE_FOLDER_TYPE))
 
+G_BEGIN_DECLS
+
 typedef struct _ShareFolder ShareFolder;
 typedef struct _ShareFolderClass ShareFolderClass;
 
 struct _ShareFolder {
 	GtkVBox parent_object;
 
-	GladeXML *xml;
+	GtkBuilder *builder;
 
 	/* General tab */
 

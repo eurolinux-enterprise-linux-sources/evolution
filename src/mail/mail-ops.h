@@ -26,15 +26,10 @@
 
 G_BEGIN_DECLS
 
+#include <camel/camel.h>
+#include <libedataserver/e-account.h>
+
 #include "mail-mt.h"
-
-#include "camel/camel-store.h"
-#include "camel/camel-folder.h"
-#include "camel/camel-filter-driver.h"
-#include "camel/camel-mime-message.h"
-#include "camel/camel-operation.h"
-
-#include "libedataserver/e-account.h"
 
 void mail_append_mail (CamelFolder *folder, CamelMimeMessage *message, CamelMessageInfo *info,
 		       void (*done)(CamelFolder *folder, CamelMimeMessage *msg, CamelMessageInfo *info, gint ok,
@@ -49,18 +44,18 @@ void mail_transfer_messages (CamelFolder *source, GPtrArray *uids,
 			     gpointer data);
 
 /* get a single message, asynchronously */
-void mail_get_message (CamelFolder *folder, const gchar *uid,
+gint mail_get_message (CamelFolder *folder, const gchar *uid,
 		       void (*done) (CamelFolder *folder, const gchar *uid, CamelMimeMessage *msg, gpointer data),
 		       gpointer data,
 		       MailMsgDispatchFunc dispatch);
 
-CamelOperation *
+gint
 mail_get_messagex(CamelFolder *folder, const gchar *uid,
-		  void (*done) (CamelFolder *folder, const gchar *uid, CamelMimeMessage *msg, gpointer data, CamelException *),
+		  void (*done) (CamelFolder *folder, const gchar *uid, CamelMimeMessage *msg, gpointer data, GError **error),
 		  gpointer data, MailMsgDispatchFunc dispatch);
 
 /* get several messages */
-void mail_get_messages (CamelFolder *folder, GPtrArray *uids,
+gint mail_get_messages (CamelFolder *folder, GPtrArray *uids,
 			void (*done) (CamelFolder *folder, GPtrArray *uids, GPtrArray *msgs, gpointer data),
 			gpointer data);
 
@@ -71,7 +66,8 @@ gint mail_get_folder (const gchar *uri, guint32 flags,
 
 /* get quota information for a folder */
 gint mail_get_folder_quota (CamelFolder *folder,
-		 void (*done)(CamelFolder *folder, CamelFolderQuotaInfo *quota, gpointer data),
+		 const gchar *folder_uri,
+		 void (*done)(CamelFolder *folder, const gchar *folder_uri, CamelFolderQuotaInfo *quota, gpointer data),
 		 gpointer data, MailMsgDispatchFunc dispatch);
 
 /* and for a store */
@@ -109,7 +105,7 @@ gint mail_get_folderinfo (CamelStore *store, CamelOperation *op,
 
 /* remove an existing folder */
 void mail_remove_folder (CamelFolder *folder,
-			 void (*done) (CamelFolder *folder, gboolean removed, CamelException *ex, gpointer data),
+			 void (*done) (CamelFolder *folder, gboolean removed, GError **error, gpointer data),
 			 gpointer data);
 
 /* transfer (copy/move) a folder */

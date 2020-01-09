@@ -35,6 +35,10 @@
 #include "e-util/e-categories-config.h"
 #include "common/authentication.h"
 
+#include "gnome-cal.h"
+#include "shell/e-shell-window.h"
+#include "shell/e-shell-view.h"
+
 
 
 /**
@@ -425,6 +429,55 @@ cal_comp_memo_new_with_defaults (ECal *client)
 	return comp;
 }
 
+void
+cal_comp_update_time_by_active_window (ECalComponent *comp, EShell *shell)
+{
+	GtkWindow *window;
+
+	g_return_if_fail (comp != NULL);
+	g_return_if_fail (shell != NULL);
+
+	window = e_shell_get_active_window (shell);
+	if (window && E_IS_SHELL_WINDOW (window)) {
+		EShellWindow *shell_window = E_SHELL_WINDOW (window);
+
+		if (e_shell_window_get_active_view (shell_window)
+		    && g_str_equal (e_shell_window_get_active_view (shell_window), "calendar")) {
+			EShellView *view;
+			GnomeCalendar *gnome_cal;
+			time_t start = 0, end = 0;
+			icaltimezone *zone;
+			struct icaltimetype itt;
+			icalcomponent *icalcomp;
+			icalproperty *prop;
+
+			view = e_shell_window_peek_shell_view (shell_window, "calendar");
+			g_return_if_fail (view != NULL);
+
+			gnome_cal = NULL;
+			g_object_get (G_OBJECT (e_shell_view_get_shell_content (view)), "calendar", &gnome_cal, NULL);
+			g_return_if_fail (gnome_cal != NULL);
+
+			gnome_calendar_get_current_time_range (gnome_cal, &start, &end);
+			g_return_if_fail (start != 0);
+
+			zone = e_cal_model_get_timezone (gnome_calendar_get_model (gnome_cal));
+			itt = icaltime_from_timet_with_zone (start, FALSE, zone);
+
+			icalcomp = e_cal_component_get_icalcomponent (comp);
+			prop = icalcomponent_get_first_property (icalcomp, ICAL_DTSTART_PROPERTY);
+			if (prop) {
+				icalproperty_set_dtstart (prop, itt);
+			} else {
+				prop = icalproperty_new_dtstart (itt);
+				icalcomponent_add_property (icalcomp, prop);
+			}
+
+			e_cal_component_rescan (comp);
+		}
+	}
+}
+
 /**
  * cal_comp_util_get_n_icons:
  * @comp: A calendar component object.
@@ -483,6 +536,7 @@ cal_comp_selection_set_string_list (GtkSelectionData *data, GSList *str_list)
 	/* format is "str1\0str2\0...strN\0" */
 	GSList *p;
 	GByteArray *array;
+	GdkAtom target;
 
 	g_return_if_fail (data != NULL);
 
@@ -497,7 +551,8 @@ cal_comp_selection_set_string_list (GtkSelectionData *data, GSList *str_list)
 			g_byte_array_append (array, c, strlen ((const gchar *) c) + 1);
 	}
 
-	gtk_selection_data_set (data, data->target, 8, array->data, array->len);
+	target = gtk_selection_data_get_target (data);
+	gtk_selection_data_set (data, target, 8, array->data, array->len);
 	g_byte_array_free (array, TRUE);
 }
 
@@ -512,17 +567,22 @@ cal_comp_selection_set_string_list (GtkSelectionData *data, GSList *str_list)
  * @return Newly allocated GSList of strings.
  **/
 GSList *
-cal_comp_selection_get_string_list (GtkSelectionData *data)
+cal_comp_selection_get_string_list (GtkSelectionData *selection_data)
 {
 	/* format is "str1\0str2\0...strN\0" */
 	gchar *inptr, *inend;
 	GSList *list;
+	const guchar *data;
+	gint length;
 
-	g_return_val_if_fail (data != NULL, NULL);
+	g_return_val_if_fail (selection_data != NULL, NULL);
+
+	data = gtk_selection_data_get_data (selection_data);
+	length = gtk_selection_data_get_length (selection_data);
 
 	list = NULL;
-	inptr = (gchar *)data->data;
-	inend = (gchar *)(data->data + data->length);
+	inptr = (gchar *) data;
+	inend = (gchar *) (data + length);
 
 	while (inptr < inend) {
 		gchar *start = inptr;
@@ -749,7 +809,7 @@ cal_comp_process_source_list_drop (ECal *destination, icalcomponent *comp, GdkDr
 				source_source = e_source_list_peek_source_by_uid (source_list, source_uid);
 
 				if (source_source && !E_IS_SOURCE_GROUP (source_source) && !e_source_get_readonly (source_source)) {
-					source_client = auth_new_cal_from_source (source_source, e_cal_get_source_type (destination));
+					source_client = e_auth_new_cal_from_source (source_source, e_cal_get_source_type (destination));
 
 					if (source_client) {
 						gboolean read_only = TRUE;
@@ -859,4 +919,23 @@ comp_util_sanitize_recurrence_master (ECalComponent *comp, ECal *client)
 	e_cal_component_set_recurid (comp, NULL);
 
 	g_object_unref (master);
+}
+
+gchar *
+icalcomp_suggest_filename (icalcomponent *icalcomp, const gchar *default_name)
+{
+	icalproperty *prop;
+	const gchar *summary = NULL;
+
+	if (!icalcomp)
+		return g_strconcat (default_name, ".ics", NULL);
+
+	prop = icalcomponent_get_first_property (icalcomp, ICAL_SUMMARY_PROPERTY);
+	if (prop)
+		summary = icalproperty_get_summary (prop);
+
+	if (!summary || !*summary)
+		summary = default_name;
+
+	return g_strconcat (summary, ".ics", NULL);
 }

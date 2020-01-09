@@ -1,21 +1,23 @@
-AM_CPPFLAGS =					\
-	-I$(top_srcdir)				\
-	-I$(top_srcdir)/widgets			\
-	-I$(top_builddir)/shell			\
-	$(EVOLUTION_CALENDAR_CFLAGS)		\
-	-DEVOLUTION_PLUGINDIR="\"$(plugindir)\"" \
-	-DEVOLUTION_GLADEDIR=\""$(gladedir)"\"          
-
 @EVO_PLUGIN_RULE@
 
 plugin_DATA = 					\
-	org-gnome-publish-calendar.eplug	\
-	org-gnome-publish-calendar.xml	
+	org-gnome-publish-calendar.eplug
 
-glade_DATA =							\
-	publish-calendar.glade				
+ui_DATA =							\
+	publish-calendar.ui				
 
 plugin_LTLIBRARIES = liborg-gnome-publish-calendar.la
+
+liborg_gnome_publish_calendar_la_CPPFLAGS =		\
+	$(AM_CPPFLAGS)					\
+	-I$(top_srcdir)					\
+	-I$(top_srcdir)/widgets				\
+	-I$(top_builddir)/shell				\
+	$(GNOME_PLATFORM_CFLAGS)			\
+	$(E_UTIL_CFLAGS)				\
+	$(EVOLUTION_CALENDAR_CFLAGS)			\
+	-DEVOLUTION_PLUGINDIR="\"$(plugindir)\""	\
+	-DEVOLUTION_UIDIR=\""$(uidir)"\"
 
 liborg_gnome_publish_calendar_la_SOURCES =	\
 	publish-calendar.c			\
@@ -32,13 +34,15 @@ liborg_gnome_publish_calendar_la_LDFLAGS = -module -avoid-version $(NO_UNDEFINED
 
 liborg_gnome_publish_calendar_la_LIBADD =			\
 	$(top_builddir)/e-util/libeutil.la			\
+	$(top_builddir)/shell/libeshell.la			\
 	$(top_builddir)/calendar/gui/libevolution-calendar.la	\
-	$(EVOLUTION_CALENDAR_LIBS)
+	$(E_UTIL_LIBS)						\
+	$(EVOLUTION_CALENDAR_LIBS)				\
+	$(GNOME_PLATFORM_LIBS)
 
 EXTRA_DIST =					\
 	org-gnome-publish-calendar.eplug.xml	\
-	org-gnome-publish-calendar.xml		\
-	$(glade_DATA)
+	$(ui_DATA)
 
 CLEANFILES = org-gnome-publish-calendar.eplug
 

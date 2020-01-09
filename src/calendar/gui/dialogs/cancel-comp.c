@@ -28,7 +28,7 @@
 
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
-#include "e-util/e-error.h"
+#include "e-util/e-alert-dialog.h"
 #include "cancel-comp.h"
 
 
@@ -64,7 +64,10 @@ is_past_event (ECalComponent *comp)
  * Return value: TRUE if the user clicked Yes, FALSE otherwise.
  **/
 gboolean
-cancel_component_dialog (GtkWindow *parent, ECal *client, ECalComponent *comp, gboolean deleting)
+cancel_component_dialog (GtkWindow *parent,
+                         ECal *client,
+                         ECalComponent *comp,
+                         gboolean deleting)
 {
 	ECalComponentVType vtype;
 	const gchar *id;
@@ -105,7 +108,7 @@ cancel_component_dialog (GtkWindow *parent, ECal *client, ECalComponent *comp, g
 		return FALSE;
 	}
 
-	if (e_error_run (parent, id, NULL) == GTK_RESPONSE_YES)
+	if (e_alert_run_dialog_for_args (parent, id, NULL) == GTK_RESPONSE_YES)
 		return TRUE;
 	else
 		return FALSE;

@@ -1,4 +1,7 @@
-AM_CPPFLAGS =						\
+privsolib_LTLIBRARIES = libevolution-smime.la
+
+libevolution_smime_la_CPPFLAGS =			\
+	$(AM_CPPFLAGS)					\
 	-DG_LOG_DOMAIN=\"evolution-smime\"		\
 	-I$(top_srcdir)					\
 	-I$(top_builddir)				\
@@ -6,17 +9,17 @@ AM_CPPFLAGS =						\
 	-I$(top_builddir)/smime/lib			\
 	-I$(top_srcdir)/shell				\
 	-I$(top_builddir)/shell				\
+	-I$(top_srcdir)/widgets				\
+	-I$(top_builddir)/widgets			\
 	-DEVOLUTION_DATADIR=\""$(datadir)"\"		\
-	-DEVOLUTION_GLADEDIR=\""$(gladedir)"\"		\
 	-DEVOLUTION_ETSPECDIR=\""$(etspecdir)"\"	\
 	-DEVOLUTION_IMAGESDIR=\""$(imagesdir)"\"	\
 	-DEVOLUTION_LOCALEDIR=\""$(localedir)"\"	\
-	-DEVOLUTION_UIDIR=\""$(evolutionuidir)"\"	\
+	-DEVOLUTION_UIDIR=\""$(uidir)"\"		\
 	-DPREFIX=\""$(prefix)"\"			\
+	$(GNOME_PLATFORM_CFLAGS)			\
 	$(EVOLUTION_ADDRESSBOOK_CFLAGS)			\
 	$(CERT_UI_CFLAGS)
-
-privsolib_LTLIBRARIES = libevolution-smime.la
 
 libevolution_smime_la_SOURCES = 	\
 	ca-trust-dialog.c		\
@@ -33,17 +36,19 @@ libevolution_smime_la_SOURCES = 	\
 	component.h
 
 
-libevolution_smime_la_LIBADD =			\
-	$(top_builddir)/e-util/libeutil.la	\
-	$(top_builddir)/shell/libeshell.la	\
-	$(top_builddir)/smime/lib/libessmime.la	\
+libevolution_smime_la_LIBADD =				\
+	$(top_builddir)/e-util/libeutil.la		\
+	$(top_builddir)/shell/libeshell.la		\
+	$(top_builddir)/smime/lib/libessmime.la		\
+	$(top_builddir)/widgets/misc/libemiscwidgets.la	\
+	$(GNOME_PLATFORM_LIBS)				\
 	$(CERT_UI_LIBS)
 
 libevolution_smime_la_LDFLAGS = $(NO_UNDEFINED)
 
-glade_DATA = smime-ui.glade
+ui_DATA = smime-ui.ui
 
 EXTRA_DIST =			\
-	$(glade_DATA)
+	$(ui_DATA)
 
 -include $(top_srcdir)/git.mk

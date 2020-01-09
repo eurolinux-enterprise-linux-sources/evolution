@@ -31,11 +31,11 @@
 #include <string.h>
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
-#include <glade/glade.h>
 #include <libedataserver/e-time-utils.h>
 #include "e-util/e-dialog-widgets.h"
 #include <libecal/e-cal-util.h>
 #include <libecal/e-cal-time-util.h>
+#include "e-util/e-util.h"
 #include "e-util/e-dialog-widgets.h"
 #include "e-util/e-util-private.h"
 #include <libebook/e-destination.h>
@@ -48,8 +48,7 @@
 
 
 typedef struct {
-	/* Glade XML data */
-	GladeXML *xml;
+	GtkBuilder *builder;
 
 	/* The alarm  */
 	ECalComponentAlarm *alarm;
@@ -175,7 +174,8 @@ clear_widgets (Dialog *dialog)
 {
 	/* Sane defaults */
 	e_dialog_combo_box_set (dialog->action_combo, E_CAL_COMPONENT_ALARM_DISPLAY, action_map);
-	e_dialog_spin_set (dialog->interval_value, 15);
+	gtk_spin_button_set_value (
+		GTK_SPIN_BUTTON (dialog->interval_value), 15);
 	e_dialog_combo_box_set (dialog->value_units_combo, MINUTES, value_map);
 	e_dialog_combo_box_set (dialog->relative_combo, BEFORE, relative_map);
 	e_dialog_combo_box_set (dialog->time_combo, E_CAL_COMPONENT_ALARM_TRIGGER_RELATIVE_START, time_map);
@@ -252,25 +252,34 @@ alarm_to_repeat_widgets (Dialog *dialog, ECalComponentAlarm *alarm)
 
 	e_cal_component_alarm_get_repeat (dialog->alarm, &repeat);
 
-	if ( repeat.repetitions ) {
-		e_dialog_toggle_set (dialog->repeat_toggle, TRUE);
-		e_dialog_spin_set (dialog->repeat_quantity, repeat.repetitions);
+	if (repeat.repetitions) {
+		gtk_toggle_button_set_active (
+			GTK_TOGGLE_BUTTON (dialog->repeat_toggle), TRUE);
+		gtk_spin_button_set_value (
+			GTK_SPIN_BUTTON (dialog->repeat_quantity),
+			repeat.repetitions);
 	} else
 		return;
 
-	if ( repeat.duration.minutes ) {
+	if (repeat.duration.minutes) {
 		e_dialog_combo_box_set (dialog->repeat_unit_combo, DUR_MINUTES, duration_units_map);
-		e_dialog_spin_set (dialog->repeat_value, repeat.duration.minutes);
+		gtk_spin_button_set_value (
+			GTK_SPIN_BUTTON (dialog->repeat_value),
+			repeat.duration.minutes);
 	}
 
-	if ( repeat.duration.hours ) {
+	if (repeat.duration.hours) {
 		e_dialog_combo_box_set (dialog->repeat_unit_combo, DUR_HOURS, duration_units_map);
-		e_dialog_spin_set (dialog->repeat_value, repeat.duration.hours);
+		gtk_spin_button_set_value (
+			GTK_SPIN_BUTTON (dialog->repeat_value),
+			repeat.duration.hours);
 	}
 
-	if ( repeat.duration.days ) {
+	if (repeat.duration.days) {
 		e_dialog_combo_box_set (dialog->repeat_unit_combo, DUR_DAYS, duration_units_map);
-		e_dialog_spin_set (dialog->repeat_value, repeat.duration.days);
+		gtk_spin_button_set_value (
+			GTK_SPIN_BUTTON (dialog->repeat_value),
+			repeat.duration.days);
 	}
 }
 
@@ -279,27 +288,31 @@ repeat_widgets_to_alarm (Dialog *dialog, ECalComponentAlarm *alarm)
 {
 	ECalComponentAlarmRepeat repeat;
 
-	if (!e_dialog_toggle_get (dialog->repeat_toggle)) {
+	if (!gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (dialog->repeat_toggle))) {
 		repeat.repetitions = 0;
 
 		e_cal_component_alarm_set_repeat (alarm, repeat);
 		return;
 	}
 
-	repeat.repetitions = e_dialog_spin_get_int (dialog->repeat_quantity);
+	repeat.repetitions = gtk_spin_button_get_value_as_int (
+		GTK_SPIN_BUTTON (dialog->repeat_quantity));
 
 	memset (&repeat.duration, 0, sizeof (repeat.duration));
 	switch (e_dialog_combo_box_get (dialog->repeat_unit_combo, duration_units_map)) {
 	case DUR_MINUTES:
-		repeat.duration.minutes = e_dialog_spin_get_int (dialog->repeat_value);
+		repeat.duration.minutes = gtk_spin_button_get_value_as_int (
+			GTK_SPIN_BUTTON (dialog->repeat_value));
 		break;
 
 	case DUR_HOURS:
-		repeat.duration.hours = e_dialog_spin_get_int (dialog->repeat_value);
+		repeat.duration.hours = gtk_spin_button_get_value_as_int (
+			GTK_SPIN_BUTTON (dialog->repeat_value));
 		break;
 
 	case DUR_DAYS:
-		repeat.duration.days = e_dialog_spin_get_int (dialog->repeat_value);
+		repeat.duration.days = gtk_spin_button_get_value_as_int (
+			GTK_SPIN_BUTTON (dialog->repeat_value));
 		break;
 
 	default:
@@ -340,10 +353,11 @@ alarm_to_aalarm_widgets (Dialog *dialog, ECalComponentAlarm *alarm)
 	url = icalattach_get_url (attach);
 	icalattach_unref (attach);
 
-	if ( !(url && *url) )
+	if (!(url && *url))
 		return;
 
-	e_dialog_toggle_set (dialog->aalarm_sound, TRUE);
+	gtk_toggle_button_set_active (
+		GTK_TOGGLE_BUTTON (dialog->aalarm_sound), TRUE);
 	gtk_file_chooser_set_uri (
 		GTK_FILE_CHOOSER (dialog->aalarm_file_chooser), url);
 }
@@ -358,7 +372,8 @@ alarm_to_dalarm_widgets (Dialog *dialog, ECalComponentAlarm *alarm )
 	e_cal_component_alarm_get_description (alarm, &description);
 
 	if (description.value) {
-		e_dialog_toggle_set (dialog->dalarm_message, TRUE);
+		gtk_toggle_button_set_active (
+			GTK_TOGGLE_BUTTON (dialog->dalarm_message), TRUE);
 		text_buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (dialog->dalarm_description));
 		gtk_text_buffer_set_text (text_buffer, description.value, -1);
 	}
@@ -538,7 +553,7 @@ alarm_to_palarm_widgets (Dialog *dialog, ECalComponentAlarm *alarm)
 	url = icalattach_get_url (attach);
 	icalattach_unref (attach);
 
-	if ( !(url && *url) )
+	if (!(url && *url))
 		return;
 
 	e_dialog_editable_set (dialog->palarm_program, url);
@@ -605,13 +620,13 @@ populate_widgets_from_alarm (Dialog *dialog)
 	e_cal_component_alarm_get_trigger (dialog->alarm, trigger);
 	g_return_if_fail ( trigger != NULL );
 
-	if ( *action == E_CAL_COMPONENT_ALARM_NONE )
+	if (*action == E_CAL_COMPONENT_ALARM_NONE)
 		return;
 
 	gtk_window_set_title (GTK_WINDOW (dialog->toplevel),_("Edit Alarm"));
 
 	/* Alarm Types */
-	switch ( trigger->type ) {
+	switch (trigger->type) {
 	case E_CAL_COMPONENT_ALARM_TRIGGER_RELATIVE_START:
 		e_dialog_combo_box_set (dialog->time_combo, E_CAL_COMPONENT_ALARM_TRIGGER_RELATIVE_START, time_map);
 		break;
@@ -623,7 +638,7 @@ populate_widgets_from_alarm (Dialog *dialog)
                 g_warning ("%s: Unexpected alarm type (%d)", G_STRLOC, trigger->type);
 	}
 
-	switch ( trigger->u.rel_duration.is_neg ) {
+	switch (trigger->u.rel_duration.is_neg) {
 	case 1:
 		e_dialog_combo_box_set (dialog->relative_combo, BEFORE, relative_map);
 		break;
@@ -633,18 +648,25 @@ populate_widgets_from_alarm (Dialog *dialog)
 		break;
 	}
 
-	if ( trigger->u.rel_duration.days ) {
+	if (trigger->u.rel_duration.days) {
 		e_dialog_combo_box_set (dialog->value_units_combo, DAYS, value_map);
-		e_dialog_spin_set (dialog->interval_value, trigger->u.rel_duration.days);
-	} else if ( trigger->u.rel_duration.hours ) {
+		gtk_spin_button_set_value (
+			GTK_SPIN_BUTTON (dialog->interval_value),
+			trigger->u.rel_duration.days);
+	} else if (trigger->u.rel_duration.hours) {
 		e_dialog_combo_box_set (dialog->value_units_combo, HOURS, value_map);
-		e_dialog_spin_set (dialog->interval_value, trigger->u.rel_duration.hours);
-	} else if ( trigger->u.rel_duration.minutes ) {
+		gtk_spin_button_set_value (
+			GTK_SPIN_BUTTON (dialog->interval_value),
+			trigger->u.rel_duration.hours);
+	} else if (trigger->u.rel_duration.minutes) {
 		e_dialog_combo_box_set (dialog->value_units_combo, MINUTES, value_map);
-		e_dialog_spin_set (dialog->interval_value, trigger->u.rel_duration.minutes);
+		gtk_spin_button_set_value (
+			GTK_SPIN_BUTTON (dialog->interval_value),
+			trigger->u.rel_duration.minutes);
 	} else {
 		e_dialog_combo_box_set (dialog->value_units_combo, MINUTES, value_map);
-		e_dialog_spin_set (dialog->interval_value, 0);
+		gtk_spin_button_set_value (
+			GTK_SPIN_BUTTON (dialog->interval_value), 0);
 	}
 
 	/* Repeat options */
@@ -693,17 +715,20 @@ dialog_to_alarm (Dialog *dialog)
 	switch (e_dialog_combo_box_get (dialog->value_units_combo, value_map)) {
 	case MINUTES:
 		trigger.u.rel_duration.minutes =
-			e_dialog_spin_get_int (dialog->interval_value);
+			gtk_spin_button_get_value_as_int (
+			GTK_SPIN_BUTTON (dialog->interval_value));
 		break;
 
 	case HOURS:
 		trigger.u.rel_duration.hours =
-			e_dialog_spin_get_int (dialog->interval_value);
+			gtk_spin_button_get_value_as_int (
+			GTK_SPIN_BUTTON (dialog->interval_value));
 		break;
 
 	case DAYS:
 		trigger.u.rel_duration.days =
-			e_dialog_spin_get_int (dialog->interval_value);
+			gtk_spin_button_get_value_as_int (
+			GTK_SPIN_BUTTON (dialog->interval_value));
 		break;
 
 	default:
@@ -751,45 +776,41 @@ dialog_to_alarm (Dialog *dialog)
 static gboolean
 get_widgets (Dialog *dialog)
 {
-#define GW(name) glade_xml_get_widget (dialog->xml, name)
-
-	dialog->toplevel = GW ("alarm-dialog");
+	dialog->toplevel = e_builder_get_widget (dialog->builder, "alarm-dialog");
 	if (!dialog->toplevel)
 		return FALSE;
 
-	dialog->action_combo = GW ("action-combobox");
-	dialog->interval_value = GW ("interval-value");
-	dialog->value_units_combo = GW ("value-units-combobox");
-	dialog->relative_combo = GW ("relative-combobox");
-	dialog->time_combo = GW ("time-combobox");
+	dialog->action_combo = e_builder_get_widget (dialog->builder, "action-combobox");
+	dialog->interval_value = e_builder_get_widget (dialog->builder, "interval-value");
+	dialog->value_units_combo = e_builder_get_widget (dialog->builder, "value-units-combobox");
+	dialog->relative_combo = e_builder_get_widget (dialog->builder, "relative-combobox");
+	dialog->time_combo = e_builder_get_widget (dialog->builder, "time-combobox");
 
-	dialog->repeat_toggle = GW ("repeat-toggle");
-	dialog->repeat_group = GW ("repeat-group");
-	dialog->repeat_quantity = GW ("repeat-quantity");
-	dialog->repeat_value = GW ("repeat-value");
-	dialog->repeat_unit_combo = GW ("repeat-unit-combobox");
+	dialog->repeat_toggle = e_builder_get_widget (dialog->builder, "repeat-toggle");
+	dialog->repeat_group = e_builder_get_widget (dialog->builder, "repeat-group");
+	dialog->repeat_quantity = e_builder_get_widget (dialog->builder, "repeat-quantity");
+	dialog->repeat_value = e_builder_get_widget (dialog->builder, "repeat-value");
+	dialog->repeat_unit_combo = e_builder_get_widget (dialog->builder, "repeat-unit-combobox");
 
-	dialog->option_notebook = GW ("option-notebook");
+	dialog->option_notebook = e_builder_get_widget (dialog->builder, "option-notebook");
 
-	dialog->dalarm_group = GW ("dalarm-group");
-	dialog->dalarm_message = GW ("dalarm-message");
-	dialog->dalarm_description = GW ("dalarm-description");
+	dialog->dalarm_group = e_builder_get_widget (dialog->builder, "dalarm-group");
+	dialog->dalarm_message = e_builder_get_widget (dialog->builder, "dalarm-message");
+	dialog->dalarm_description = e_builder_get_widget (dialog->builder, "dalarm-description");
 
-	dialog->aalarm_group = GW ("aalarm-group");
-	dialog->aalarm_sound = GW ("aalarm-sound");
-	dialog->aalarm_file_chooser = GW ("aalarm-file-chooser");
+	dialog->aalarm_group = e_builder_get_widget (dialog->builder, "aalarm-group");
+	dialog->aalarm_sound = e_builder_get_widget (dialog->builder, "aalarm-sound");
+	dialog->aalarm_file_chooser = e_builder_get_widget (dialog->builder, "aalarm-file-chooser");
 
-	dialog->malarm_group = GW ("malarm-group");
-	dialog->malarm_address_group = GW ("malarm-address-group");
-	dialog->malarm_addressbook = GW ("malarm-addressbook");
-	dialog->malarm_message = GW ("malarm-message");
-	dialog->malarm_description = GW ("malarm-description");
+	dialog->malarm_group = e_builder_get_widget (dialog->builder, "malarm-group");
+	dialog->malarm_address_group = e_builder_get_widget (dialog->builder, "malarm-address-group");
+	dialog->malarm_addressbook = e_builder_get_widget (dialog->builder, "malarm-addressbook");
+	dialog->malarm_message = e_builder_get_widget (dialog->builder, "malarm-message");
+	dialog->malarm_description = e_builder_get_widget (dialog->builder, "malarm-description");
 
-	dialog->palarm_group = GW ("palarm-group");
-	dialog->palarm_program = GW ("palarm-program");
-	dialog->palarm_args = GW ("palarm-args");
-
-#undef GW
+	dialog->palarm_group = e_builder_get_widget (dialog->builder, "palarm-group");
+	dialog->palarm_program = e_builder_get_widget (dialog->builder, "palarm-program");
+	dialog->palarm_args = e_builder_get_widget (dialog->builder, "palarm-args");
 
 	if (dialog->action_combo) {
 		const gchar *actions[] = {
@@ -881,13 +902,9 @@ show_options (Dialog *dialog)
 #endif
 
 static void
-addressbook_clicked_cb (GtkWidget *widget, gpointer data)
+addressbook_clicked_cb (GtkWidget *widget, Dialog *dialog)
 {
-	Dialog *dialog = data;
-	ENameSelectorDialog *name_selector_dialog;
-
-	name_selector_dialog = e_name_selector_peek_dialog (dialog->name_selector);
-	gtk_widget_show (GTK_WIDGET (name_selector_dialog));
+	e_name_selector_show_dialog (dialog->name_selector, dialog->toplevel);
 }
 
 static void
@@ -949,14 +966,14 @@ check_custom_sound (Dialog *dialog)
 	str = gtk_file_chooser_get_filename (
 		GTK_FILE_CHOOSER (dialog->aalarm_file_chooser));
 
-	if ( str && *str ) {
+	if (str && *str) {
 		dir = g_path_get_dirname (str);
-		if ( dir && *dir ) {
+		if (dir && *dir) {
 			calendar_config_set_dir_path (dir);
 		}
 	}
 
-	sens = e_dialog_toggle_get (dialog->aalarm_sound) ? str && *str : TRUE;
+	sens = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (dialog->aalarm_sound)) ? str && *str : TRUE;
 	gtk_dialog_set_response_sensitive (GTK_DIALOG (dialog->toplevel), GTK_RESPONSE_OK, sens);
 
 	g_free (str);
@@ -995,7 +1012,7 @@ check_custom_message (Dialog *dialog)
 	gtk_text_buffer_get_end_iter   (text_buffer, &text_iter_end);
 	str = gtk_text_buffer_get_text (text_buffer, &text_iter_start, &text_iter_end, FALSE);
 
-	sens = e_dialog_toggle_get (dialog->dalarm_message) ? str && *str : TRUE;
+	sens = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (dialog->dalarm_message)) ? str && *str : TRUE;
 	gtk_dialog_set_response_sensitive (GTK_DIALOG (dialog->toplevel), GTK_RESPONSE_OK, sens);
 
 	g_free (str);
@@ -1061,7 +1078,7 @@ check_custom_email (Dialog *dialog)
 	gtk_text_buffer_get_end_iter   (text_buffer, &text_iter_end);
 	str = gtk_text_buffer_get_text (text_buffer, &text_iter_start, &text_iter_end, FALSE);
 
-	sens = (destinations != NULL) && (e_dialog_toggle_get (dialog->malarm_message) ? str && *str : TRUE);
+	sens = (destinations != NULL) && (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (dialog->malarm_message)) ? str && *str : TRUE);
 	gtk_dialog_set_response_sensitive (GTK_DIALOG (dialog->toplevel), GTK_RESPONSE_OK, sens);
 
 	g_list_free (destinations);
@@ -1118,7 +1135,7 @@ action_changed_cb (GtkWidget *action_combo, gpointer data)
 	switch (action) {
 	case E_CAL_COMPONENT_ALARM_AUDIO:
 		dir = calendar_config_get_dir_path ();
-		if ( dir && *dir )
+		if (dir && *dir)
 			gtk_file_chooser_set_current_folder (
 				GTK_FILE_CHOOSER (dialog->aalarm_file_chooser),
 				dir);
@@ -1188,31 +1205,24 @@ gboolean
 alarm_dialog_run (GtkWidget *parent, ECal *ecal, ECalComponentAlarm *alarm)
 {
 	Dialog dialog;
+	GtkWidget *container;
 	gint response_id;
-	gchar *gladefile;
 
 	g_return_val_if_fail (alarm != NULL, FALSE);
 
 	dialog.alarm = alarm;
 	dialog.ecal = ecal;
 
-	gladefile = g_build_filename (EVOLUTION_GLADEDIR,
-				      "alarm-dialog.glade",
-				      NULL);
-	dialog.xml = glade_xml_new (gladefile, NULL, NULL);
-	g_free (gladefile);
-	if (!dialog.xml) {
-		g_message (G_STRLOC ": Could not load the Glade XML file!");
-		return FALSE;
-	}
+	dialog.builder = gtk_builder_new ();
+	e_load_ui_builder_definition (dialog.builder, "alarm-dialog.ui");
 
 	if (!get_widgets (&dialog)) {
-		g_object_unref(dialog.xml);
+		g_object_unref(dialog.builder);
 		return FALSE;
 	}
 
 	if (!setup_select_names (&dialog)) {
-		g_object_unref (dialog.xml);
+		g_object_unref (dialog.builder);
 		return FALSE;
 	}
 
@@ -1221,8 +1231,12 @@ alarm_dialog_run (GtkWidget *parent, ECal *ecal, ECalComponentAlarm *alarm)
 	alarm_to_dialog (&dialog);
 
 	gtk_widget_ensure_style (dialog.toplevel);
-	gtk_container_set_border_width (GTK_CONTAINER (GTK_DIALOG (dialog.toplevel)->vbox), 0);
-	gtk_container_set_border_width (GTK_CONTAINER (GTK_DIALOG (dialog.toplevel)->action_area), 12);
+
+	container = gtk_dialog_get_action_area (GTK_DIALOG (dialog.toplevel));
+	gtk_container_set_border_width (GTK_CONTAINER (container), 12);
+
+	container = gtk_dialog_get_content_area (GTK_DIALOG (dialog.toplevel));
+	gtk_container_set_border_width (GTK_CONTAINER (container), 0);
 
 	gtk_window_set_icon_name (
 		GTK_WINDOW (dialog.toplevel), "x-office-calendar");
@@ -1236,7 +1250,7 @@ alarm_dialog_run (GtkWidget *parent, ECal *ecal, ECalComponentAlarm *alarm)
 		dialog_to_alarm (&dialog);
 
 	gtk_widget_destroy (dialog.toplevel);
-	g_object_unref (dialog.xml);
+	g_object_unref (dialog.builder);
 
 	return response_id == GTK_RESPONSE_OK ? TRUE : FALSE;
 }

@@ -1,4 +1,5 @@
 /*
+ * e-account-combo-box.c
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,7 +22,6 @@
 #include "e-account-combo-box.h"
 
 #include <string.h>
-#include <camel/camel-store.h>
 
 #define E_ACCOUNT_COMBO_BOX_GET_PRIVATE(obj) \
 	(G_TYPE_INSTANCE_GET_PRIVATE \
@@ -40,11 +40,16 @@ enum {
 struct _EAccountComboBoxPrivate {
 	EAccountList *account_list;
 	GHashTable *index;
+	gint num_displayed_accounts;
 };
 
-static gpointer parent_class;
 static CamelSession *camel_session;
 static guint signal_ids[LAST_SIGNAL];
+
+G_DEFINE_TYPE (
+	EAccountComboBox,
+	e_account_combo_box,
+	GTK_TYPE_COMBO_BOX)
 
 static gboolean
 account_combo_box_has_dupes (GList *list,
@@ -106,7 +111,6 @@ static gboolean
 account_combo_box_test_account (EAccount *account)
 {
 	CamelStore *store;
-	CamelException ex;
 	const gchar *url;
 	gboolean writable = FALSE;
 
@@ -123,15 +127,13 @@ account_combo_box_test_account (EAccount *account)
 		return TRUE;
 
 	/* Account must be writable. */
-	camel_exception_init (&ex);
 	url = e_account_get_string (account, E_ACCOUNT_SOURCE_URL);
 	store = CAMEL_STORE (camel_session_get_service (
-		camel_session, url, CAMEL_PROVIDER_STORE, &ex));
+		camel_session, url, CAMEL_PROVIDER_STORE, NULL));
 	if (store != NULL) {
 		writable = (store->mode & CAMEL_STORE_WRITE);
-		camel_object_unref (store);
+		g_object_unref (store);
 	}
-	camel_exception_clear (&ex);
 
 	return writable;
 }
@@ -148,6 +150,8 @@ account_combo_box_refresh_cb (EAccountList *account_list,
 	GHashTable *index;
 	GList *list = NULL;
 	GList *iter;
+
+	combo_box->priv->num_displayed_accounts = 0;
 
 	store = gtk_list_store_new (2, G_TYPE_STRING, E_TYPE_ACCOUNT);
 	model = GTK_TREE_MODEL (store);
@@ -181,6 +185,7 @@ account_combo_box_refresh_cb (EAccountList *account_list,
 		gchar *string;
 
 		account = iter->data;
+		combo_box->priv->num_displayed_accounts++;
 
 		/* Show the account name for duplicate email addresses. */
 		if (account_combo_box_has_dupes (list, account->id->address))
@@ -230,10 +235,12 @@ account_combo_box_constructor (GType type,
                                GObjectConstructParam *construct_properties)
 {
 	GObject *object;
+	GObjectClass *parent_class;
 	GtkCellRenderer *renderer;
 
 	/* Chain up to parent's constructor() method. */
-	object = G_OBJECT_CLASS (parent_class)->constructor (
+	parent_class = G_OBJECT_CLASS (e_account_combo_box_parent_class);
+	object = parent_class->constructor (
 		type, n_construct_properties, construct_properties);
 
 	renderer = gtk_cell_renderer_text_new ();
@@ -264,7 +271,7 @@ account_combo_box_dispose (GObject *object)
 	g_hash_table_remove_all (priv->index);
 
 	/* Chain up to parent's dispose() method. */
-	G_OBJECT_CLASS (parent_class)->dispose (object);
+	G_OBJECT_CLASS (e_account_combo_box_parent_class)->dispose (object);
 }
 
 static void
@@ -277,15 +284,14 @@ account_combo_box_finalize (GObject *object)
 	g_hash_table_destroy (priv->index);
 
 	/* Chain up to parent's finalize() method. */
-	G_OBJECT_CLASS (parent_class)->finalize (object);
+	G_OBJECT_CLASS (e_account_combo_box_parent_class)->finalize (object);
 }
 
 static void
-account_combo_box_class_init (EAccountComboBoxClass *class)
+e_account_combo_box_class_init (EAccountComboBoxClass *class)
 {
 	GObjectClass *object_class;
 
-	parent_class = g_type_class_peek_parent (class);
 	g_type_class_add_private (class, sizeof (EAccountComboBoxPrivate));
 
 	object_class = G_OBJECT_CLASS (class);
@@ -303,7 +309,7 @@ account_combo_box_class_init (EAccountComboBoxClass *class)
 }
 
 static void
-account_combo_box_init (EAccountComboBox *combo_box)
+e_account_combo_box_init (EAccountComboBox *combo_box)
 {
 	GHashTable *index;
 
@@ -315,32 +321,6 @@ account_combo_box_init (EAccountComboBox *combo_box)
 
 	combo_box->priv = E_ACCOUNT_COMBO_BOX_GET_PRIVATE (combo_box);
 	combo_box->priv->index = index;
-}
-
-GType
-e_account_combo_box_get_type (void)
-{
-	static GType type = 0;
-
-	if (G_UNLIKELY (type == 0)) {
-		static const GTypeInfo type_info = {
-			sizeof (EAccountComboBoxClass),
-			(GBaseInitFunc) NULL,
-			(GBaseFinalizeFunc) NULL,
-			(GClassInitFunc) account_combo_box_class_init,
-			(GClassFinalizeFunc) NULL,
-			NULL,  /* class_data */
-			sizeof (EAccountComboBox),
-			0,     /* n_preallocs */
-			(GInstanceInitFunc) account_combo_box_init,
-			NULL   /* value_table */
-		};
-
-		type = g_type_register_static (
-			GTK_TYPE_COMBO_BOX, "EAccountComboBox", &type_info, 0);
-	}
-
-	return type;
 }
 
 GtkWidget *
@@ -512,4 +492,22 @@ e_account_combo_box_set_active_name (EAccountComboBox *combo_box,
 		return FALSE;
 
 	return e_account_combo_box_set_active (combo_box, account);
+}
+
+/**
+ * e_account_combo_box_count_displayed_accounts:
+ * @combo_box: an #EAccountComboBox
+ *
+ * Counts the number of accounts that are displayed in the @combo_box.  This may not
+ * be the actual number of accounts that are configured, as some of those accounts
+ * may be disabled by the user.
+ *
+ * Return value: number of active and valid accounts as shown in the @combo_box.
+ */
+gint
+e_account_combo_box_count_displayed_accounts (EAccountComboBox *combo_box)
+{
+	g_return_val_if_fail (E_IS_ACCOUNT_COMBO_BOX (combo_box), -1);
+
+	return combo_box->priv->num_displayed_accounts;
 }

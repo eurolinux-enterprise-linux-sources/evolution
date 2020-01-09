@@ -4,11 +4,7 @@ images_DATA = \
 	minus.png
 
 EXTRA_DIST = 				\
-	ChangeLog			\
-	ChangeLog.pre-1-4		\
 	README				\
-	broken-image-16.xpm		\
-	broken-image-24.xpm		\
 	empty.xpm			\
 	jump.xpm			\
 	$(images_DATA)

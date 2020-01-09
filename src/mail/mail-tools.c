@@ -34,45 +34,27 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 
-#include <gconf/gconf.h>
-#include <gconf/gconf-client.h>
-
 #include <glib/gi18n.h>
 
-#include <camel/camel-file-utils.h>
-#include <camel/camel-mime-message.h>
-#include <camel/camel-movemail.h>
-#include <camel/camel-vee-folder.h>
-
-#include "filter/filter-option.h"
-#include "filter/filter-input.h"
-
-#include <libedataserver/e-data-server-util.h>
 #include "em-utils.h"
-#include "em-vfolder-context.h"
-#include "em-vfolder-rule.h"
-#include "mail-component.h"
-#include "mail-config.h"
 #include "mail-folder-cache.h"
-#include "mail-mt.h"
 #include "mail-session.h"
 #include "mail-tools.h"
-#include "mail-vfolder.h"
 
 /* **************************************** */
 
 CamelFolder *
-mail_tool_get_inbox (const gchar *url, CamelException *ex)
+mail_tool_get_inbox (const gchar *url, GError **error)
 {
 	CamelStore *store;
 	CamelFolder *folder;
 
-	store = camel_session_get_store (session, url, ex);
+	store = camel_session_get_store (session, url, error);
 	if (!store)
 		return NULL;
 
-	folder = camel_store_get_inbox (store, ex);
-	camel_object_unref (store);
+	folder = camel_store_get_inbox (store, error);
+	g_object_unref (store);
 
 	return folder;
 }
@@ -92,25 +74,30 @@ is_local_provider (CamelStore *store)
 }
 
 CamelFolder *
-mail_tool_get_trash (const gchar *url, gint connect, CamelException *ex)
+mail_tool_get_trash (const gchar *url,
+                     gint connect,
+                     GError **error)
 {
 	CamelStore *store;
 	CamelFolder *trash;
 
 	if (connect)
-		store = camel_session_get_store (session, url, ex);
+		store = camel_session_get_store (session, url, error);
 	else
-		store = (CamelStore *) camel_session_get_service (session, url, CAMEL_PROVIDER_STORE, ex);
+		store = (CamelStore *) camel_session_get_service (
+			session, url, CAMEL_PROVIDER_STORE, error);
 
 	if (!store)
 		return NULL;
 
-	if (connect || ((CamelService *) store)->status == CAMEL_SERVICE_CONNECTED || is_local_provider (store))
-		trash = camel_store_get_trash (store, ex);
+	if (connect ||
+		(CAMEL_SERVICE (store)->status == CAMEL_SERVICE_CONNECTED ||
+		is_local_provider (store)))
+		trash = camel_store_get_trash (store, error);
 	else
 		trash = NULL;
 
-	camel_object_unref (store);
+	g_object_unref (store);
 
 	return trash;
 }
@@ -118,9 +105,11 @@ mail_tool_get_trash (const gchar *url, gint connect, CamelException *ex)
 #ifndef G_OS_WIN32
 
 static gchar *
-mail_tool_get_local_movemail_path (const guchar *uri, CamelException *ex)
+mail_tool_get_local_movemail_path (const guchar *uri,
+                                   GError **error)
 {
 	guchar *safe_uri, *c;
+	const gchar *data_dir;
 	gchar *path, *full;
 	struct stat st;
 
@@ -129,10 +118,15 @@ mail_tool_get_local_movemail_path (const guchar *uri, CamelException *ex)
 		if (strchr("/:;=|%&#!*^()\\, ", *c) || !isprint((gint) *c))
 			*c = '_';
 
-	path = g_strdup_printf("%s/spool", mail_component_peek_base_directory(NULL));
-	if (g_stat(path, &st) == -1 && g_mkdir_with_parents(path, 0777) == -1) {
-		camel_exception_setv(ex, CAMEL_EXCEPTION_SYSTEM, _("Could not create spool directory `%s': %s"),
-				     path, g_strerror(errno));
+	data_dir = mail_session_get_data_dir ();
+	path = g_build_filename (data_dir, "spool", NULL);
+
+	if (g_stat(path, &st) == -1 && g_mkdir_with_parents(path, 0700) == -1) {
+		g_set_error (
+			error, G_FILE_ERROR,
+			g_file_error_from_errno (errno),
+			_("Could not create spool directory '%s': %s"),
+			path, g_strerror(errno));
 		g_free(path);
 		return NULL;
 	}
@@ -147,33 +141,37 @@ mail_tool_get_local_movemail_path (const guchar *uri, CamelException *ex)
 #endif
 
 gchar *
-mail_tool_do_movemail (const gchar *source_url, CamelException *ex)
+mail_tool_do_movemail (const gchar *source_url, GError **error)
 {
 #ifndef G_OS_WIN32
 	gchar *dest_path;
 	struct stat sb;
 	CamelURL *uri;
+	gboolean success;
 
-	uri = camel_url_new(source_url, ex);
+	uri = camel_url_new(source_url, error);
 	if (uri == NULL)
 		return NULL;
 
 	if (strcmp(uri->protocol, "mbox") != 0) {
 		/* This is really only an internal error anyway */
-		camel_exception_setv (ex, CAMEL_EXCEPTION_SERVICE_URL_INVALID,
-				      _("Trying to movemail a non-mbox source `%s'"),
-				      source_url);
+		g_set_error (
+			error, CAMEL_SERVICE_ERROR,
+			CAMEL_SERVICE_ERROR_URL_INVALID,
+			_("Trying to movemail a non-mbox source '%s'"),
+			source_url);
 		camel_url_free(uri);
 		return NULL;
 	}
 
 	/* Set up our destination. */
-	dest_path = mail_tool_get_local_movemail_path ((guchar *)source_url, ex);
+	dest_path = mail_tool_get_local_movemail_path (
+		(guchar *) source_url, error);
 	if (dest_path == NULL)
 		return NULL;
 
 	/* Movemail from source (source_url) to dest_path */
-	camel_movemail (uri->path, dest_path, ex);
+	success = camel_movemail (uri->path, dest_path, error) != -1;
 	camel_url_free(uri);
 
 	if (g_stat (dest_path, &sb) < 0 || sb.st_size == 0) {
@@ -182,7 +180,7 @@ mail_tool_do_movemail (const gchar *source_url, CamelException *ex)
 		return NULL;
 	}
 
-	if (camel_exception_is_set (ex)) {
+	if (!success) {
 		g_free (dest_path);
 		return NULL;
 	}
@@ -251,10 +249,15 @@ mail_tool_remove_xevolution_headers (CamelMimeMessage *message)
 }
 
 void
-mail_tool_restore_xevolution_headers (CamelMimeMessage *message, struct _camel_header_raw *xev)
+mail_tool_restore_xevolution_headers (CamelMimeMessage *message,
+                                      struct _camel_header_raw *xev)
 {
+	CamelMedium *medium;
+
+	medium = CAMEL_MEDIUM (message);
+
 	for (;xev;xev=xev->next)
-		camel_medium_add_header((CamelMedium *)message, xev->name, xev->value);
+		camel_medium_add_header (medium, xev->name, xev->value);
 }
 
 CamelMimePart *
@@ -281,8 +284,8 @@ mail_tool_make_message_attachment (CamelMimeMessage *message)
 	part = camel_mime_part_new ();
 	camel_mime_part_set_disposition (part, "inline");
 	camel_mime_part_set_description (part, desc);
-	camel_medium_set_content_object (CAMEL_MEDIUM (part),
-					 CAMEL_DATA_WRAPPER (message));
+	camel_medium_set_content (
+		CAMEL_MEDIUM (part), CAMEL_DATA_WRAPPER (message));
 	camel_mime_part_set_content_type (part, "message/rfc822");
 	g_free (desc);
 
@@ -290,7 +293,7 @@ mail_tool_make_message_attachment (CamelMimeMessage *message)
 }
 
 CamelFolder *
-mail_tool_uri_to_folder (const gchar *uri, guint32 flags, CamelException *ex)
+mail_tool_uri_to_folder (const gchar *uri, guint32 flags, GError **error)
 {
 	CamelURL *url;
 	CamelStore *store = NULL;
@@ -309,19 +312,23 @@ mail_tool_uri_to_folder (const gchar *uri, guint32 flags, CamelException *ex)
 		/* FIXME?: the filter:get_folder callback should do this itself? */
 		curi = em_uri_to_camel(uri);
 		if (uri == NULL) {
-			camel_exception_setv(ex, CAMEL_EXCEPTION_SYSTEM, _("Invalid folder: `%s'"), uri);
+			g_set_error (
+				error,
+				CAMEL_ERROR, CAMEL_ERROR_GENERIC,
+				_("Invalid folder: '%s'"), uri);
 			return NULL;
 		}
 		uri = curi;
 	}
 
-	url = camel_url_new (uri + offset, ex);
+	url = camel_url_new (uri + offset, error);
 	if (!url) {
 		g_free(curi);
 		return NULL;
 	}
 
-	store = (CamelStore *)camel_session_get_service(session, uri+offset, CAMEL_PROVIDER_STORE, ex);
+	store = (CamelStore *) camel_session_get_service (
+		session, uri + offset, CAMEL_PROVIDER_STORE, error);
 	if (store) {
 		const gchar *name;
 
@@ -338,16 +345,16 @@ mail_tool_uri_to_folder (const gchar *uri, guint32 flags, CamelException *ex)
 
 		if (offset) {
 			if (offset == 7)
-				folder = camel_store_get_trash (store, ex);
+				folder = camel_store_get_trash (store, error);
 			else if (offset == 6)
-				folder = camel_store_get_junk (store, ex);
+				folder = camel_store_get_junk (store, error);
 		} else
-			folder = camel_store_get_folder (store, name, flags, ex);
-		camel_object_unref (store);
+			folder = camel_store_get_folder (store, name, flags, error);
+		g_object_unref (store);
 	}
 
 	if (folder)
-		mail_note_folder (folder);
+		mail_folder_cache_note_folder (mail_folder_cache_get_default (), folder);
 
 	camel_url_free (url);
 	g_free(curi);
@@ -400,18 +407,25 @@ mail_tools_x_evolution_message_parse (gchar *in, guint inlen, GPtrArray **uids)
 gchar *
 mail_tools_folder_to_url (CamelFolder *folder)
 {
+	CamelService *service;
+	CamelStore *parent_store;
+	const gchar *full_name;
 	CamelURL *url;
 	gchar *out;
 
 	g_return_val_if_fail (CAMEL_IS_FOLDER (folder), NULL);
 
-	url = camel_url_copy(((CamelService *)folder->parent_store)->url);
-	if (((CamelService *)folder->parent_store)->provider->url_flags  & CAMEL_URL_FRAGMENT_IS_PATH) {
-		camel_url_set_fragment(url, folder->full_name);
-	} else {
-		gchar *name = g_alloca(strlen(folder->full_name)+2);
+	full_name = camel_folder_get_full_name (folder);
+	parent_store = camel_folder_get_parent_store (folder);
+	service = CAMEL_SERVICE (parent_store);
 
-		sprintf(name, "/%s", folder->full_name);
+	url = camel_url_copy (service->url);
+	if (service->provider->url_flags  & CAMEL_URL_FRAGMENT_IS_PATH) {
+		camel_url_set_fragment(url, full_name);
+	} else {
+		gchar *name = g_alloca(strlen(full_name)+2);
+
+		sprintf(name, "/%s", full_name);
 		camel_url_set_path(url, name);
 	}
 

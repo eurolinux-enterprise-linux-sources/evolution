@@ -48,6 +48,8 @@
 #include <glib/gi18n.h>
 #include <glib/gstdio.h>
 
+#include <camel/camel.h>        /* FIXME: this is where camel_init is defined; it shouldn't include everything else */
+
 /* private NSS defines used by PSM */
 /* (must be declated before cert.h) */
 #define CERT_NewTempCertificate __CERT_NewTempCertificate
@@ -64,13 +66,13 @@
 #include "p12plcy.h"
 #include "pk11func.h"
 #include "nssckbi.h"
+#include <secerr.h>
 #include "secmod.h"
 #include "certdb.h"
 #include "plstr.h"
 #include "prprf.h"
 #include "prmem.h"
 #include "e-util/e-util.h"
-#include "e-util/e-dialog-utils.h"
 #include "e-util/e-util-private.h"
 #include <libedataserverui/e-passwords.h>
 #include <sys/types.h>
@@ -93,9 +95,276 @@ struct _ECertDBPrivate {
 #define PARENT_TYPE G_TYPE_OBJECT
 static GObjectClass *parent_class;
 
-static CERTDERCerts* e_cert_db_get_certs_from_package (PRArenaPool *arena, gchar *data, guint32 length);
+GQuark
+e_certdb_error_quark (void)
+{
+	static GQuark q = 0;
+	if (q == 0)
+		q = g_quark_from_static_string ("e-certdb-error-quark");
 
-
+	return q;
+}
+
+static const gchar *
+nss_error_to_string (glong errorcode)
+{
+#define cs(a,b) case a: return b;
+
+	switch (errorcode) {
+	cs (SEC_ERROR_IO, "An I/O error occurred during security authorization.")
+	cs (SEC_ERROR_LIBRARY_FAILURE, "security library failure.")
+	cs (SEC_ERROR_BAD_DATA, "security library: received bad data.")
+	cs (SEC_ERROR_OUTPUT_LEN, "security library: output length error.")
+	cs (SEC_ERROR_INPUT_LEN, "security library has experienced an input length error.")
+	cs (SEC_ERROR_INVALID_ARGS, "security library: invalid arguments.")
+	cs (SEC_ERROR_INVALID_ALGORITHM, "security library: invalid algorithm.")
+	cs (SEC_ERROR_INVALID_AVA, "security library: invalid AVA.")
+	cs (SEC_ERROR_INVALID_TIME, "Improperly formatted time string.")
+	cs (SEC_ERROR_BAD_DER, "security library: improperly formatted DER-encoded message.")
+	cs (SEC_ERROR_BAD_SIGNATURE, "Peer's certificate has an invalid signature.")
+	cs (SEC_ERROR_EXPIRED_CERTIFICATE, "Peer's Certificate has expired.")
+	cs (SEC_ERROR_REVOKED_CERTIFICATE, "Peer's Certificate has been revoked.")
+	cs (SEC_ERROR_UNKNOWN_ISSUER, "Peer's Certificate issuer is not recognized.")
+	cs (SEC_ERROR_BAD_KEY, "Peer's public key is invalid.")
+	cs (SEC_ERROR_BAD_PASSWORD, "The security password entered is incorrect.")
+	cs (SEC_ERROR_RETRY_PASSWORD, "New password entered incorrectly.  Please try again.")
+	cs (SEC_ERROR_NO_NODELOCK, "security library: no nodelock.")
+	cs (SEC_ERROR_BAD_DATABASE, "security library: bad database.")
+	cs (SEC_ERROR_NO_MEMORY, "security library: memory allocation failure.")
+	cs (SEC_ERROR_UNTRUSTED_ISSUER, "Peer's certificate issuer has been marked as not trusted by the user.")
+	cs (SEC_ERROR_UNTRUSTED_CERT, "Peer's certificate has been marked as not trusted by the user.")
+	cs (SEC_ERROR_DUPLICATE_CERT, "Certificate already exists in your database.")
+	cs (SEC_ERROR_DUPLICATE_CERT_NAME, "Downloaded certificate's name duplicates one already in your database.")
+	cs (SEC_ERROR_ADDING_CERT, "Error adding certificate to database.")
+	cs (SEC_ERROR_FILING_KEY, "Error refiling the key for this certificate.")
+	cs (SEC_ERROR_NO_KEY, "The private key for this certificate cannot be found in key database")
+	cs (SEC_ERROR_CERT_VALID, "This certificate is valid.")
+	cs (SEC_ERROR_CERT_NOT_VALID, "This certificate is not valid.")
+	cs (SEC_ERROR_CERT_NO_RESPONSE, "Cert Library: No Response")
+	cs (SEC_ERROR_EXPIRED_ISSUER_CERTIFICATE, "The certificate issuer's certificate has expired.  Check your system date and time.")
+	cs (SEC_ERROR_CRL_EXPIRED, "The CRL for the certificate's issuer has expired.  Update it or check your system date and time.")
+	cs (SEC_ERROR_CRL_BAD_SIGNATURE, "The CRL for the certificate's issuer has an invalid signature.")
+	cs (SEC_ERROR_CRL_INVALID, "New CRL has an invalid format.")
+	cs (SEC_ERROR_EXTENSION_VALUE_INVALID, "Certificate extension value is invalid.")
+	cs (SEC_ERROR_EXTENSION_NOT_FOUND, "Certificate extension not found.")
+	cs (SEC_ERROR_CA_CERT_INVALID, "Issuer certificate is invalid.")
+	cs (SEC_ERROR_PATH_LEN_CONSTRAINT_INVALID, "Certificate path length constraint is invalid.")
+	cs (SEC_ERROR_CERT_USAGES_INVALID, "Certificate usages field is invalid.")
+	cs (SEC_INTERNAL_ONLY, "**Internal ONLY module**")
+	cs (SEC_ERROR_INVALID_KEY, "The key does not support the requested operation.")
+	cs (SEC_ERROR_UNKNOWN_CRITICAL_EXTENSION, "Certificate contains unknown critical extension.")
+	cs (SEC_ERROR_OLD_CRL, "New CRL is not later than the current one.")
+	cs (SEC_ERROR_NO_EMAIL_CERT, "Not encrypted or signed: you do not yet have an email certificate.")
+	cs (SEC_ERROR_NO_RECIPIENT_CERTS_QUERY, "Not encrypted: you do not have certificates for each of the recipients.")
+	cs (SEC_ERROR_NOT_A_RECIPIENT, "Cannot decrypt: you are not a recipient, or matching certificate and private key not found.")
+	cs (SEC_ERROR_PKCS7_KEYALG_MISMATCH, "Cannot decrypt: key encryption algorithm does not match your certificate.")
+	cs (SEC_ERROR_PKCS7_BAD_SIGNATURE, "Signature verification failed: no signer found, too many signers found, or improper or corrupted data.")
+	cs (SEC_ERROR_UNSUPPORTED_KEYALG, "Unsupported or unknown key algorithm.")
+	cs (SEC_ERROR_DECRYPTION_DISALLOWED, "Cannot decrypt: encrypted using a disallowed algorithm or key size.")
+	cs (XP_SEC_FORTEZZA_BAD_CARD, "Fortezza card has not been properly initialized.  Please remove it and return it to your issuer.")
+	cs (XP_SEC_FORTEZZA_NO_CARD, "No Fortezza cards Found")
+	cs (XP_SEC_FORTEZZA_NONE_SELECTED, "No Fortezza card selected")
+	cs (XP_SEC_FORTEZZA_MORE_INFO, "Please select a personality to get more info on")
+	cs (XP_SEC_FORTEZZA_PERSON_NOT_FOUND, "Personality not found")
+	cs (XP_SEC_FORTEZZA_NO_MORE_INFO, "No more information on that Personality")
+	cs (XP_SEC_FORTEZZA_BAD_PIN, "Invalid Pin")
+	cs (XP_SEC_FORTEZZA_PERSON_ERROR, "Couldn't initialize Fortezza personalities.")
+	cs (SEC_ERROR_NO_KRL, "No KRL for this site's certificate has been found.")
+	cs (SEC_ERROR_KRL_EXPIRED, "The KRL for this site's certificate has expired.")
+	cs (SEC_ERROR_KRL_BAD_SIGNATURE, "The KRL for this site's certificate has an invalid signature.")
+	cs (SEC_ERROR_REVOKED_KEY, "The key for this site's certificate has been revoked.")
+	cs (SEC_ERROR_KRL_INVALID, "New KRL has an invalid format.")
+	cs (SEC_ERROR_NEED_RANDOM, "security library: need random data.")
+	cs (SEC_ERROR_NO_MODULE, "security library: no security module can perform the requested operation.")
+	cs (SEC_ERROR_NO_TOKEN, "The security card or token does not exist, needs to be initialized, or has been removed.")
+	cs (SEC_ERROR_READ_ONLY, "security library: read-only database.")
+	cs (SEC_ERROR_NO_SLOT_SELECTED, "No slot or token was selected.")
+	cs (SEC_ERROR_CERT_NICKNAME_COLLISION, "A certificate with the same nickname already exists.")
+	cs (SEC_ERROR_KEY_NICKNAME_COLLISION, "A key with the same nickname already exists.")
+	cs (SEC_ERROR_SAFE_NOT_CREATED, "error while creating safe object")
+	cs (SEC_ERROR_BAGGAGE_NOT_CREATED, "error while creating baggage object")
+	cs (XP_JAVA_REMOVE_PRINCIPAL_ERROR, "Couldn't remove the principal")
+	cs (XP_JAVA_DELETE_PRIVILEGE_ERROR, "Couldn't delete the privilege")
+	cs (XP_JAVA_CERT_NOT_EXISTS_ERROR, "This principal doesn't have a certificate")
+	cs (SEC_ERROR_BAD_EXPORT_ALGORITHM, "Required algorithm is not allowed.")
+	cs (SEC_ERROR_EXPORTING_CERTIFICATES, "Error attempting to export certificates.")
+	cs (SEC_ERROR_IMPORTING_CERTIFICATES, "Error attempting to import certificates.")
+	cs (SEC_ERROR_PKCS12_DECODING_PFX, "Unable to import.  Decoding error.  File not valid.")
+	cs (SEC_ERROR_PKCS12_INVALID_MAC, "Unable to import.  Invalid MAC.  Incorrect password or corrupt file.")
+	cs (SEC_ERROR_PKCS12_UNSUPPORTED_MAC_ALGORITHM, "Unable to import.  MAC algorithm not supported.")
+	cs (SEC_ERROR_PKCS12_UNSUPPORTED_TRANSPORT_MODE, "Unable to import.  Only password integrity and privacy modes supported.")
+	cs (SEC_ERROR_PKCS12_CORRUPT_PFX_STRUCTURE, "Unable to import.  File structure is corrupt.")
+	cs (SEC_ERROR_PKCS12_UNSUPPORTED_PBE_ALGORITHM, "Unable to import.  Encryption algorithm not supported.")
+	cs (SEC_ERROR_PKCS12_UNSUPPORTED_VERSION, "Unable to import.  File version not supported.")
+	cs (SEC_ERROR_PKCS12_PRIVACY_PASSWORD_INCORRECT, "Unable to import.  Incorrect privacy password.")
+	cs (SEC_ERROR_PKCS12_CERT_COLLISION, "Unable to import.  Same nickname already exists in database.")
+	cs (SEC_ERROR_USER_CANCELLED, "The user pressed cancel.")
+	cs (SEC_ERROR_PKCS12_DUPLICATE_DATA, "Not imported, already in database.")
+	cs (SEC_ERROR_MESSAGE_SEND_ABORTED, "Message not sent.")
+	cs (SEC_ERROR_INADEQUATE_KEY_USAGE, "Certificate key usage inadequate for attempted operation.")
+	cs (SEC_ERROR_INADEQUATE_CERT_TYPE, "Certificate type not approved for application.")
+	cs (SEC_ERROR_CERT_ADDR_MISMATCH, "Address in signing certificate does not match address in message headers.")
+	cs (SEC_ERROR_PKCS12_UNABLE_TO_IMPORT_KEY, "Unable to import.  Error attempting to import private key.")
+	cs (SEC_ERROR_PKCS12_IMPORTING_CERT_CHAIN, "Unable to import.  Error attempting to import certificate chain.")
+	cs (SEC_ERROR_PKCS12_UNABLE_TO_LOCATE_OBJECT_BY_NAME, "Unable to export.  Unable to locate certificate or key by nickname.")
+	cs (SEC_ERROR_PKCS12_UNABLE_TO_EXPORT_KEY, "Unable to export.  Private Key could not be located and exported.")
+	cs (SEC_ERROR_PKCS12_UNABLE_TO_WRITE, "Unable to export.  Unable to write the export file.")
+	cs (SEC_ERROR_PKCS12_UNABLE_TO_READ, "Unable to import.  Unable to read the import file.")
+	cs (SEC_ERROR_PKCS12_KEY_DATABASE_NOT_INITIALIZED, "Unable to export.  Key database corrupt or deleted.")
+	cs (SEC_ERROR_KEYGEN_FAIL, "Unable to generate public/private key pair.")
+	cs (SEC_ERROR_INVALID_PASSWORD, "Password entered is invalid.  Please pick a different one.")
+	cs (SEC_ERROR_RETRY_OLD_PASSWORD, "Old password entered incorrectly.  Please try again.")
+	cs (SEC_ERROR_BAD_NICKNAME, "Certificate nickname already in use.")
+	cs (SEC_ERROR_NOT_FORTEZZA_ISSUER, "Peer FORTEZZA chain has a non-FORTEZZA Certificate.")
+	cs (SEC_ERROR_CANNOT_MOVE_SENSITIVE_KEY, "A sensitive key cannot be moved to the slot where it is needed.")
+	cs (SEC_ERROR_JS_INVALID_MODULE_NAME, "Invalid module name.")
+	cs (SEC_ERROR_JS_INVALID_DLL, "Invalid module path/filename")
+	cs (SEC_ERROR_JS_ADD_MOD_FAILURE, "Unable to add module")
+	cs (SEC_ERROR_JS_DEL_MOD_FAILURE, "Unable to delete module")
+	cs (SEC_ERROR_OLD_KRL, "New KRL is not later than the current one.")
+	cs (SEC_ERROR_CKL_CONFLICT, "New CKL has different issuer than current CKL.  Delete current CKL.")
+	cs (SEC_ERROR_CERT_NOT_IN_NAME_SPACE, "The Certifying Authority for this certificate is not permitted to issue a certificate with this name.")
+	cs (SEC_ERROR_KRL_NOT_YET_VALID, "The key revocation list for this certificate is not yet valid.")
+	cs (SEC_ERROR_CRL_NOT_YET_VALID, "The certificate revocation list for this certificate is not yet valid.")
+	cs (SEC_ERROR_UNKNOWN_CERT, "The requested certificate could not be found.")
+	cs (SEC_ERROR_UNKNOWN_SIGNER, "The signer's certificate could not be found.")
+	cs (SEC_ERROR_CERT_BAD_ACCESS_LOCATION,	 "The location for the certificate status server has invalid format.")
+	cs (SEC_ERROR_OCSP_UNKNOWN_RESPONSE_TYPE, "The OCSP response cannot be fully decoded; it is of an unknown type.")
+	cs (SEC_ERROR_OCSP_BAD_HTTP_RESPONSE, "The OCSP server returned unexpected/invalid HTTP data.")
+	cs (SEC_ERROR_OCSP_MALFORMED_REQUEST, "The OCSP server found the request to be corrupted or improperly formed.")
+	cs (SEC_ERROR_OCSP_SERVER_ERROR, "The OCSP server experienced an internal error.")
+	cs (SEC_ERROR_OCSP_TRY_SERVER_LATER, "The OCSP server suggests trying again later.")
+	cs (SEC_ERROR_OCSP_REQUEST_NEEDS_SIG, "The OCSP server requires a signature on this request.")
+	cs (SEC_ERROR_OCSP_UNAUTHORIZED_REQUEST, "The OCSP server has refused this request as unauthorized.")
+	cs (SEC_ERROR_OCSP_UNKNOWN_RESPONSE_STATUS, "The OCSP server returned an unrecognizable status.")
+	cs (SEC_ERROR_OCSP_UNKNOWN_CERT, "The OCSP server has no status for the certificate.")
+	cs (SEC_ERROR_OCSP_NOT_ENABLED, "You must enable OCSP before performing this operation.")
+	cs (SEC_ERROR_OCSP_NO_DEFAULT_RESPONDER, "You must set the OCSP default responder before performing this operation.")
+	cs (SEC_ERROR_OCSP_MALFORMED_RESPONSE, "The response from the OCSP server was corrupted or improperly formed.")
+	cs (SEC_ERROR_OCSP_UNAUTHORIZED_RESPONSE, "The signer of the OCSP response is not authorized to give status for this certificate.")
+	cs (SEC_ERROR_OCSP_FUTURE_RESPONSE, "The OCSP response is not yet valid (contains a date in the future).")
+	cs (SEC_ERROR_OCSP_OLD_RESPONSE, "The OCSP response contains out-of-date information.")
+	cs (SEC_ERROR_DIGEST_NOT_FOUND, "The CMS or PKCS #7 Digest was not found in signed message.")
+	cs (SEC_ERROR_UNSUPPORTED_MESSAGE_TYPE, "The CMS or PKCS #7 Message type is unsupported.")
+	cs (SEC_ERROR_MODULE_STUCK, "PKCS #11 module could not be removed because it is still in use.")
+	cs (SEC_ERROR_BAD_TEMPLATE, "Could not decode ASN.1 data. Specified template was invalid.")
+	cs (SEC_ERROR_CRL_NOT_FOUND, "No matching CRL was found.")
+	cs (SEC_ERROR_REUSED_ISSUER_AND_SERIAL, "You are attempting to import a cert with the same issuer/serial as an existing cert, but that is not the same cert.")
+	cs (SEC_ERROR_BUSY, "NSS could not shutdown. Objects are still in use.")
+	cs (SEC_ERROR_EXTRA_INPUT, "DER-encoded message contained extra unused data.")
+	cs (SEC_ERROR_UNSUPPORTED_ELLIPTIC_CURVE, "Unsupported elliptic curve.")
+	cs (SEC_ERROR_UNSUPPORTED_EC_POINT_FORM, "Unsupported elliptic curve point form.")
+	cs (SEC_ERROR_UNRECOGNIZED_OID, "Unrecognized Object Identifier.")
+	cs (SEC_ERROR_OCSP_INVALID_SIGNING_CERT, "Invalid OCSP signing certificate in OCSP response.")
+	cs (SEC_ERROR_REVOKED_CERTIFICATE_CRL, "Certificate is revoked in issuer's certificate revocation list.")
+	cs (SEC_ERROR_REVOKED_CERTIFICATE_OCSP, "Issuer's OCSP responder reports certificate is revoked.")
+	cs (SEC_ERROR_CRL_INVALID_VERSION, "Issuer's Certificate Revocation List has an unknown version number.")
+	cs (SEC_ERROR_CRL_V1_CRITICAL_EXTENSION, "Issuer's V1 Certificate Revocation List has a critical extension.")
+	cs (SEC_ERROR_CRL_UNKNOWN_CRITICAL_EXTENSION, "Issuer's V2 Certificate Revocation List has an unknown critical extension.")
+	cs (SEC_ERROR_UNKNOWN_OBJECT_TYPE, "Unknown object type specified.")
+	cs (SEC_ERROR_INCOMPATIBLE_PKCS11, "PKCS #11 driver violates the spec in an incompatible way.")
+	cs (SEC_ERROR_NO_EVENT, "No new slot event is available at this time.")
+	cs (SEC_ERROR_CRL_ALREADY_EXISTS, "CRL already exists.")
+	cs (SEC_ERROR_NOT_INITIALIZED, "NSS is not initialized.")
+	cs (SEC_ERROR_TOKEN_NOT_LOGGED_IN, "The operation failed because the PKCS#11 token is not logged in.")
+	cs (SEC_ERROR_OCSP_RESPONDER_CERT_INVALID, "Configured OCSP responder's certificate is invalid.")
+	cs (SEC_ERROR_OCSP_BAD_SIGNATURE, "OCSP response has an invalid signature.")
+
+	#if defined (NSS_VMAJOR) && defined (NSS_VMINOR) && defined (NSS_VPATCH) && (NSS_VMAJOR > 3 || (NSS_VMAJOR == 3 && NSS_VMINOR > 12) || (NSS_VMAJOR == 3 && NSS_VMINOR == 12 && NSS_VPATCH >= 2))
+	cs (SEC_ERROR_OUT_OF_SEARCH_LIMITS, "Cert validation search is out of search limits")
+	cs (SEC_ERROR_INVALID_POLICY_MAPPING, "Policy mapping contains anypolicy")
+	cs (SEC_ERROR_POLICY_VALIDATION_FAILED, "Cert chain fails policy validation")
+	cs (SEC_ERROR_UNKNOWN_AIA_LOCATION_TYPE, "Unknown location type in cert AIA extension")
+	cs (SEC_ERROR_BAD_HTTP_RESPONSE, "Server returned bad HTTP response")
+	cs (SEC_ERROR_BAD_LDAP_RESPONSE, "Server returned bad LDAP response")
+	cs (SEC_ERROR_FAILED_TO_ENCODE_DATA, "Failed to encode data with ASN1 encoder")
+	cs (SEC_ERROR_BAD_INFO_ACCESS_LOCATION, "Bad information access location in cert extension")
+	cs (SEC_ERROR_LIBPKIX_INTERNAL, "Libpkix internal error occured during cert validation.")
+	cs (SEC_ERROR_PKCS11_GENERAL_ERROR, "A PKCS #11 module returned CKR_GENERAL_ERROR, indicating that an unrecoverable error has occurred.")
+	cs (SEC_ERROR_PKCS11_FUNCTION_FAILED, "A PKCS #11 module returned CKR_FUNCTION_FAILED, indicating that the requested function could not be performed.  Trying the same operation again might succeed.")
+	cs (SEC_ERROR_PKCS11_DEVICE_ERROR, "A PKCS #11 module returned CKR_DEVICE_ERROR, indicating that a problem has occurred with the token or slot.")
+	#endif
+	}
+
+	#undef cs
+
+	return NULL;
+}
+
+static void
+set_nss_error (GError **error)
+{
+	glong err_code;
+	const gchar *err_str;
+
+	if (!error)
+		return;
+
+	g_return_if_fail (*error == NULL);
+
+	err_code = PORT_GetError ();
+
+	if (!err_code)
+		return;
+
+	err_str = nss_error_to_string (err_code);
+	if (!err_str)
+		return;
+
+	*error = g_error_new_literal (E_CERTDB_ERROR, err_code, err_str);
+}
+
+static SECStatus PR_CALLBACK
+collect_certs(gpointer arg, SECItem **certs, gint numcerts)
+{
+	CERTDERCerts *collectArgs;
+	SECItem *cert;
+	SECStatus rv;
+
+	collectArgs = (CERTDERCerts *)arg;
+
+	collectArgs->numcerts = numcerts;
+	collectArgs->rawCerts = (SECItem *) PORT_ArenaZAlloc(
+		collectArgs->arena, sizeof (SECItem) * numcerts);
+	if (collectArgs->rawCerts == NULL)
+		return(SECFailure);
+
+	cert = collectArgs->rawCerts;
+
+	while (numcerts--) {
+		rv = SECITEM_CopyItem(collectArgs->arena, cert, *certs);
+		if (rv == SECFailure)
+			return(SECFailure);
+		cert++;
+		certs++;
+	}
+
+	return (SECSuccess);
+}
+
+static CERTDERCerts*
+e_cert_db_get_certs_from_package (PRArenaPool *arena,
+				  gchar *data,
+				  guint32 length)
+{
+	/*nsNSSShutDownPreventionLock locker;*/
+	CERTDERCerts *collectArgs =
+		(CERTDERCerts *)PORT_ArenaZAlloc(arena, sizeof(CERTDERCerts));
+	SECStatus sec_rv;
+
+	if (!collectArgs)
+		return NULL;
+
+	collectArgs->arena = arena;
+	sec_rv = CERT_DecodeCertPackage(data,
+					length, collect_certs,
+					(gpointer)collectArgs);
+
+	if (sec_rv != SECSuccess)
+		return NULL;
+
+	return collectArgs;
+}
 
 static void
 e_cert_db_dispose (GObject *object)
@@ -155,37 +424,10 @@ pk11_password (PK11SlotInfo* slot, PRBool retry, gpointer  arg)
 static void
 initialize_nss (void)
 {
-	gchar *evolution_dir_path;
-	gboolean success;
+	/* Use camel_init() to initialise NSS consistently... */
+	camel_init(e_get_user_data_dir(), TRUE);
 
-#ifdef G_OS_WIN32
-	/* NSS wants filenames in system codepage */
-	evolution_dir_path = g_win32_locale_filename_from_utf8 (e_get_user_data_dir ());
-#else
-	evolution_dir_path = g_strdup (e_get_user_data_dir ());
-#endif
-
-	/* we initialize NSS here to make sure it only happens once */
-	success = (SECSuccess == NSS_InitReadWrite (evolution_dir_path));
-	if (!success) {
-		success = (SECSuccess == NSS_Init (evolution_dir_path));
-		if (success)
-			g_warning ("opening cert databases read-only");
-	}
-	if (!success) {
-		success = (SECSuccess == NSS_NoDB_Init (evolution_dir_path));
-		if (success)
-			g_warning ("initializing security library without cert databases.");
-	}
-	g_free (evolution_dir_path);
-
-	if (!success) {
-		g_warning ("Failed all methods for initializing NSS");
-		return;
-	}
-
-	NSS_SetDomesticPolicy();
-
+	/* ... except for the bits we only seem to do here. FIXME */
 	PK11_SetPasswordFunc(pk11_password);
 
 	/* Enable ciphers for PKCS#12 */
@@ -269,7 +511,7 @@ install_loadable_roots (void)
 			"/opt/mozilla/lib/mozilla"
 		};
 
-		for (i = 0; i < G_N_ELEMENTS (paths_to_check); i ++) {
+		for (i = 0; i < G_N_ELEMENTS (paths_to_check); i++) {
 			gchar *dll_path = g_module_build_path (paths_to_check [i], "nssckbi");
 
 			if (g_file_test (dll_path, G_FILE_TEST_EXISTS)) {
@@ -413,7 +655,7 @@ e_cert_db_find_cert_by_nickname (ECertDB *certdb,
 		return ecert;
 	}
 	else {
-		/* XXX gerror */
+		set_nss_error (error);
 		return NULL;
 	}
 }
@@ -432,7 +674,7 @@ e_cert_db_find_cert_by_key (ECertDB *certdb,
 	CERTCertificate *cert;
 
 	if (!db_key) {
-		/* XXX gerror */
+		set_nss_error (error);
 		return NULL;
 	}
 
@@ -457,7 +699,7 @@ e_cert_db_find_cert_by_key (ECertDB *certdb,
 		return e_cert;
 	}
 
-	/* XXX gerror */
+	set_nss_error (error);
 	return NULL;
 }
 
@@ -490,47 +732,58 @@ e_cert_db_find_cert_by_email_address (ECertDB *certdb,
 {
 	/*  nsNSSShutDownPreventionLock locker; */
 	ECert *cert;
-	CERTCertificate *any_cert = CERT_FindCertByNicknameOrEmailAddr(CERT_GetDefaultCertDB(),
-								       (gchar *)email);
+	CERTCertificate *any_cert;
 	CERTCertList *certlist;
 
+	any_cert = CERT_FindCertByNicknameOrEmailAddr (
+		CERT_GetDefaultCertDB(), (gchar *) email);
+
 	if (!any_cert) {
-		/* XXX gerror */
+		set_nss_error (error);
 		return NULL;
 	}
 
-	/* any_cert now contains a cert with the right subject, but it might not have the correct usage */
+	/* any_cert now contains a cert with the right subject,
+	 * but it might not have the correct usage. */
 	certlist = CERT_CreateSubjectCertList(NULL,
 					      CERT_GetDefaultCertDB(),
 					      &any_cert->derSubject,
 					      PR_Now(), PR_TRUE);
 	if (!certlist) {
-		/* XXX gerror */
+		set_nss_error (error);
 		CERT_DestroyCertificate(any_cert);
 		return NULL;
 	}
 
-	if (SECSuccess != CERT_FilterCertListByUsage(certlist, certUsageEmailRecipient, PR_FALSE)) {
-		/* XXX gerror */
+	if (SECSuccess != CERT_FilterCertListByUsage (
+		certlist, certUsageEmailRecipient, PR_FALSE)) {
+		set_nss_error (error);
 		CERT_DestroyCertificate(any_cert);
-		/* XXX free certlist? */
+		CERT_DestroyCertList (certlist);
 		return NULL;
 	}
 
 	if (CERT_LIST_END(CERT_LIST_HEAD(certlist), certlist)) {
-		/* XXX gerror */
+		set_nss_error (error);
 		CERT_DestroyCertificate(any_cert);
-		/* XXX free certlist? */
+		CERT_DestroyCertList (certlist);
 		return NULL;
 	}
 
-	cert = e_cert_new (CERT_LIST_HEAD(certlist)->cert);
+	cert = e_cert_new (CERT_DupCertificate (CERT_LIST_HEAD(certlist)->cert));
+
+	CERT_DestroyCertList (certlist);
+	CERT_DestroyCertificate (any_cert);
 
 	return cert;
 }
 
 static gboolean
-confirm_download_ca_cert (ECertDB *cert_db, ECert *cert, gboolean *trust_ssl, gboolean *trust_email, gboolean *trust_objsign)
+confirm_download_ca_cert (ECertDB *cert_db,
+                          ECert *cert,
+                          gboolean *trust_ssl,
+                          gboolean *trust_email,
+                          gboolean *trust_objsign)
 {
 	gboolean rv = FALSE;
 
@@ -618,12 +871,12 @@ handle_ca_cert_download(ECertDB *cert_db, GList *certs, GError **error)
 	}
 
 	if (!certToShow) {
-		/* XXX gerror */
+		set_nss_error (error);
 		return FALSE;
 	}
 
 	if (!e_cert_get_raw_der (certToShow, &raw_der, &der.len)) {
-		/* XXX gerror */
+		set_nss_error (error);
 		return FALSE;
 	}
 
@@ -639,6 +892,7 @@ handle_ca_cert_download(ECertDB *cert_db, GList *certs, GError **error)
 		}
 		if (!tmpCert) {
 			g_warning ("Couldn't create cert from DER blob");
+			set_nss_error (error);
 			return FALSE;
 		}
 	}
@@ -648,9 +902,8 @@ handle_ca_cert_download(ECertDB *cert_db, GList *certs, GError **error)
 #endif
 
 	if (tmpCert->isperm) {
-		/* XXX we shouldn't be popping up dialogs in this code. */
-		e_notice (NULL, GTK_MESSAGE_WARNING, _("Certificate already exists"));
-		/* XXX gerror */
+		if (error && !*error)
+			*error = g_error_new_literal (E_CERTDB_ERROR, 0, _("Certificate already exists"));
 		return FALSE;
 	}
 	else {
@@ -659,8 +912,10 @@ handle_ca_cert_download(ECertDB *cert_db, GList *certs, GError **error)
 		SECStatus srv;
 		CERTCertTrust trust;
 
-		if (!confirm_download_ca_cert (cert_db, certToShow, &trust_ssl, &trust_email, &trust_objsign)) {
-			/* XXX gerror */
+		if (!confirm_download_ca_cert (
+			cert_db, certToShow, &trust_ssl,
+			&trust_email, &trust_objsign)) {
+			set_nss_error (error);
 			return FALSE;
 		}
 
@@ -681,8 +936,33 @@ handle_ca_cert_download(ECertDB *cert_db, GList *certs, GError **error)
 					     nickname,
 					     &trust);
 
+		/* If we aren't logged into the token, then what *should*
+		   happen is the above call should fail, and we should
+		   authenticate and then try again. But see NSS bug #595861.
+		   With NSS 3.12.6 at least, the above call will fail, but
+		   it *will* have added the cert to the database, with
+		   random trust bits. We have to authenticate and then set
+		   the trust bits correctly. And calling
+		   CERT_AddTempCertToPerm() again doesn't work either -- it'll
+		   fail even though it arguably ought to succeed (which is
+		   probably another NSS bug).
+		   So if we get SEC_ERROR_TOKEN_NOT_LOGGED_IN, we first try
+		   CERT_ChangeCertTrust(), and if that doesn't work we hope
+		   we're on a fixed version of NSS and we try calling
+		   CERT_AddTempCertToPerm() again instead.
+		*/
+		if (srv != SECSuccess &&
+		    PORT_GetError () == SEC_ERROR_TOKEN_NOT_LOGGED_IN &&
+		    e_cert_db_login_to_slot (NULL, PK11_GetInternalKeySlot())) {
+			srv = CERT_ChangeCertTrust (CERT_GetDefaultCertDB (),
+						    tmpCert, &trust);
+			if (srv != SECSuccess)
+				srv = CERT_AddTempCertToPerm (tmpCert,
+							      nickname,
+							      &trust);
+		}
 		if (srv != SECSuccess) {
-			/* XXX gerror */
+			set_nss_error (error);
 			return FALSE;
 		}
 
@@ -716,6 +996,27 @@ handle_ca_cert_download(ECertDB *cert_db, GList *certs, GError **error)
 		return TRUE;
 	}
 }
+gboolean e_cert_db_change_cert_trust(CERTCertificate *cert, CERTCertTrust *trust)
+{
+	SECStatus srv;
+
+	srv = CERT_ChangeCertTrust (CERT_GetDefaultCertDB (),
+				    cert, trust);
+	if (srv != SECSuccess &&
+	    PORT_GetError () == SEC_ERROR_TOKEN_NOT_LOGGED_IN &&
+	    e_cert_db_login_to_slot (NULL, PK11_GetInternalKeySlot()))
+		srv = CERT_ChangeCertTrust (CERT_GetDefaultCertDB (),
+					    cert, trust);
+
+	if (srv != SECSuccess) {
+		glong err = PORT_GetError ();
+		g_warning ("CERT_ChangeCertTrust() failed: %s\n",
+			   nss_error_to_string(err));
+		return FALSE;
+	}
+	return TRUE;
+}
+
 
 /* deleting certificates */
 gboolean
@@ -726,7 +1027,7 @@ e_cert_db_delete_cert (ECertDB *certdb,
 	    nsNSSCertificate *nssCert = NS_STATIC_CAST(nsNSSCertificate*, aCert); */
 
 	CERTCertificate *cert;
-	SECStatus srv = SECSuccess;
+
 	if (!e_cert_mark_for_deletion (ecert)) {
 		return FALSE;
 	}
@@ -743,12 +1044,10 @@ e_cert_db_delete_cert (ECertDB *certdb,
 		CERTCertTrust trust;
 
 		e_cert_trust_init_with_values (&trust, 0, 0, 0);
-		srv = CERT_ChangeCertTrust(CERT_GetDefaultCertDB(),
-					   cert, &trust);
+		e_cert_db_change_cert_trust (cert, &trust);
 	}
 
-	/*PR_LOG(gPIPNSSLog, PR_LOG_DEBUG, ("cert deleted: %d", srv));*/
-	return (srv) ? FALSE : TRUE;
+	return TRUE;
 }
 
 /* importing certificates */
@@ -756,6 +1055,7 @@ gboolean
 e_cert_db_import_certs (ECertDB *certdb,
 			gchar *data, guint32 length,
 			ECertType cert_type,
+			GSList **imported_certs,
 			GError **error)
 {
 	/*nsNSSShutDownPreventionLock locker;*/
@@ -766,7 +1066,7 @@ e_cert_db_import_certs (ECertDB *certdb,
 	gboolean rv;
 
 	if (!certCollection) {
-		/* XXX gerror */
+		set_nss_error (error);
 		PORT_FreeArena(arena, PR_FALSE);
 		return FALSE;
 	}
@@ -778,7 +1078,7 @@ e_cert_db_import_certs (ECertDB *certdb,
 
 		cert = e_cert_new_from_der ((gchar *)currItem->data, currItem->len);
 		if (!cert) {
-			/* XXX gerror */
+			set_nss_error (error);
 			g_list_foreach (certs, (GFunc)g_object_unref, NULL);
 			g_list_free (certs);
 			PORT_FreeArena(arena, PR_FALSE);
@@ -789,10 +1089,24 @@ e_cert_db_import_certs (ECertDB *certdb,
 	switch (cert_type) {
 	case E_CERT_CA:
 		rv = handle_ca_cert_download(certdb, certs, error);
+		if (rv && imported_certs) {
+			GList *l;
+
+			/* copy certificates to the caller */
+			*imported_certs = NULL;
+			for (l = certs; l; l = l->next) {
+				ECert *cert = l->data;
+
+				if (cert)
+					*imported_certs = g_slist_prepend (*imported_certs, g_object_ref (cert));
+			}
+
+			*imported_certs = g_slist_reverse (*imported_certs);
+		}
 		break;
 	default:
 		/* We only deal with import CA certs in this method currently.*/
-		/* XXX gerror */
+		set_nss_error (error);
 		PORT_FreeArena(arena, PR_FALSE);
 		rv = FALSE;
 	}
@@ -806,6 +1120,7 @@ e_cert_db_import_certs (ECertDB *certdb,
 gboolean
 e_cert_db_import_email_cert (ECertDB *certdb,
 			     gchar *data, guint32 length,
+			     GSList **imported_certs,
 			     GError **error)
 {
 	/*nsNSSShutDownPreventionLock locker;*/
@@ -819,8 +1134,7 @@ e_cert_db_import_email_cert (ECertDB *certdb,
 	CERTDERCerts *certCollection = e_cert_db_get_certs_from_package (arena, data, length);
 
 	if (!certCollection) {
-		/* XXX g_error */
-
+		set_nss_error (error);
 		PORT_FreeArena(arena, PR_FALSE);
 		return FALSE;
 	}
@@ -828,31 +1142,46 @@ e_cert_db_import_email_cert (ECertDB *certdb,
 	cert = CERT_NewTempCertificate(CERT_GetDefaultCertDB(), certCollection->rawCerts,
 				       (gchar *)NULL, PR_FALSE, PR_TRUE);
 	if (!cert) {
-		/* XXX g_error */
+		set_nss_error (error);
 		rv = FALSE;
 		goto loser;
 	}
 	numcerts = certCollection->numcerts;
 	rawCerts = (SECItem **) PORT_Alloc(sizeof(SECItem *) * numcerts);
-	if ( !rawCerts ) {
-		/* XXX g_error */
+	if (!rawCerts) {
+		set_nss_error (error);
 		rv = FALSE;
 		goto loser;
 	}
 
-	for ( i = 0; i < numcerts; i++ ) {
+	for (i = 0; i < numcerts; i++) {
 		rawCerts[i] = &certCollection->rawCerts[i];
 	}
 
 	srv = CERT_ImportCerts(CERT_GetDefaultCertDB(), certUsageEmailSigner,
 			       numcerts, rawCerts, NULL, PR_TRUE, PR_FALSE,
 			       NULL);
-	if ( srv != SECSuccess ) {
-		/* XXX g_error */
+	if (srv != SECSuccess) {
+		set_nss_error (error);
 		rv = FALSE;
 		goto loser;
 	}
-	srv = CERT_SaveSMimeProfile(cert, NULL, NULL);
+	CERT_SaveSMimeProfile(cert, NULL, NULL);
+
+	if (imported_certs) {
+		*imported_certs = NULL;
+		for (i = 0; i < certCollection->numcerts; i++) {
+			SECItem *currItem = &certCollection->rawCerts[i];
+			ECert *cert;
+
+			cert = e_cert_new_from_der ((gchar *)currItem->data, currItem->len);
+			if (cert)
+				*imported_certs = g_slist_prepend (*imported_certs, cert);
+		}
+
+		*imported_certs = g_slist_reverse (*imported_certs);
+	}
+
 	PORT_Free(rawCerts);
  loser:
 	if (cert)
@@ -879,17 +1208,17 @@ default_nickname (CERTCertificate *cert)
 	CERTCertDBHandle *defaultcertdb = CERT_GetDefaultCertDB();
 
 	username = CERT_GetCommonName(&cert->subject);
-	if ( username == NULL )
+	if (username == NULL)
 		username = PL_strdup("");
 
-	if ( username == NULL )
+	if (username == NULL)
 		goto loser;
 
 	caname = CERT_GetOrgName(&cert->issuer);
-	if ( caname == NULL )
+	if (caname == NULL)
 		caname = PL_strdup("");
 
-	if ( caname == NULL )
+	if (caname == NULL)
 		goto loser;
 
 	count = 1;
@@ -913,12 +1242,12 @@ default_nickname (CERTCertificate *cert)
 		tmp = NULL;
 	}
 	tmp = nickname;
-	while ( 1 ) {
-		if ( count > 1 ) {
+	while (1) {
+		if (count > 1) {
 			nickname = PR_smprintf("%s #%d", tmp, count);
 		}
 
-		if ( nickname == NULL )
+		if (nickname == NULL)
 			goto loser;
 
 		if (PK11_IsInternal(slot)) {
@@ -946,7 +1275,7 @@ default_nickname (CERTCertificate *cert)
 				}
 			}
 		}
-		if ( dummycert == NULL )
+		if (dummycert == NULL)
 			goto done;
 
 		/* found a cert, destroy it and loop */
@@ -956,15 +1285,15 @@ default_nickname (CERTCertificate *cert)
 	} /* end of while (1) */
 
  loser:
-	if ( nickname ) {
+	if (nickname) {
 		PR_Free(nickname);
 	}
 	nickname = NULL;
  done:
-	if ( caname ) {
+	if (caname) {
 		PR_Free(caname);
 	}
-	if ( username )  {
+	if (username)  {
 		PR_Free(username);
 	}
 	if (slot != NULL) {
@@ -1003,27 +1332,27 @@ e_cert_db_import_user_cert (ECertDB *certdb,
 	CERTCertificate * cert=NULL;
 
 	arena = PORT_NewArena(DER_DEFAULT_CHUNKSIZE);
-	if ( arena == NULL ) {
-		/* XXX g_error */
+	if (arena == NULL) {
+		set_nss_error (error);
 		goto loser;
 	}
 
 	collectArgs = e_cert_db_get_certs_from_package (arena, data, length);
 	if (!collectArgs) {
-		/* XXX g_error */
+		set_nss_error (error);
 		goto loser;
 	}
 
 	cert = CERT_NewTempCertificate(CERT_GetDefaultCertDB(), collectArgs->rawCerts,
 				       (gchar *)NULL, PR_FALSE, PR_TRUE);
 	if (!cert) {
-		/* XXX g_error */
+		set_nss_error (error);
 		goto loser;
 	}
 
 	slot = PK11_KeyForCertExists(cert, NULL, NULL);
-	if ( slot == NULL ) {
-		/* XXX g_error */
+	if (slot == NULL) {
+		set_nss_error (error);
 		goto loser;
 	}
 	PK11_FreeSlot(slot);
@@ -1042,7 +1371,7 @@ e_cert_db_import_user_cert (ECertDB *certdb,
 	/* user wants to import the cert */
 	slot = PK11_ImportCertForKey(cert, nickname, NULL);
 	if (!slot) {
-		/* XXX g_error */
+		set_nss_error (error);
 		goto loser;
 	}
 	PK11_FreeSlot(slot);
@@ -1050,7 +1379,7 @@ e_cert_db_import_user_cert (ECertDB *certdb,
 
 	if (numCACerts) {
 		CACerts = collectArgs->rawCerts+1;
-		if ( ! CERT_ImportCAChain(CACerts, numCACerts, certUsageUserCertImport) ) {
+		if (!CERT_ImportCAChain(CACerts, numCACerts, certUsageUserCertImport)) {
 			rv = TRUE;
 		}
 	}
@@ -1059,7 +1388,7 @@ e_cert_db_import_user_cert (ECertDB *certdb,
 	if (arena) {
 		PORT_FreeArena(arena, PR_FALSE);
 	}
-	if ( cert ) {
+	if (cert) {
 		CERT_DestroyCertificate(cert);
 	}
 	return rv;
@@ -1068,6 +1397,7 @@ e_cert_db_import_user_cert (ECertDB *certdb,
 gboolean
 e_cert_db_import_server_cert (ECertDB *certdb,
 			      gchar *data, guint32 length,
+			      GSList **imported_certs,
 			      GError **error)
 {
 	/* not c&p'ing this over at the moment, as we don't have a UI
@@ -1079,6 +1409,7 @@ gboolean
 e_cert_db_import_certs_from_file (ECertDB *cert_db,
 				  const gchar *file_path,
 				  ECertType cert_type,
+				  GSList **imported_certs,
 				  GError **error)
 {
 	gboolean rv;
@@ -1096,25 +1427,25 @@ e_cert_db_import_certs_from_file (ECertDB *cert_db,
 
 	default:
 		/* not supported (yet) */
-		/* XXX gerror */
+		set_nss_error (error);
 		return FALSE;
 	}
 
 	fd = g_open (file_path, O_RDONLY|O_BINARY, 0);
 	if (fd == -1) {
-		/* XXX gerror */
+		set_nss_error (error);
 		return FALSE;
 	}
 
 	if (-1 == fstat (fd, &sb)) {
-		/* XXX gerror */
+		set_nss_error (error);
 		close (fd);
 		return FALSE;
 	}
 
 	buf = g_malloc (sb.st_size);
 	if (!buf) {
-		/* XXX gerror */
+		set_nss_error (error);
 		close (fd);
 		return FALSE;
 	}
@@ -1124,23 +1455,23 @@ e_cert_db_import_certs_from_file (ECertDB *cert_db,
 	close (fd);
 
 	if (bytes_read != sb.st_size) {
-		/* XXX gerror */
+		set_nss_error (error);
 		rv = FALSE;
 	}
 	else {
-		printf ("importing %d bytes from `%s'\n", bytes_read, file_path);
+		printf ("importing %d bytes from '%s'\n", bytes_read, file_path);
 
 		switch (cert_type) {
 		case E_CERT_CA:
-			rv = e_cert_db_import_certs (cert_db, buf, bytes_read, cert_type, error);
+			rv = e_cert_db_import_certs (cert_db, buf, bytes_read, cert_type, imported_certs, error);
 			break;
 
 		case E_CERT_SITE:
-			rv = e_cert_db_import_server_cert (cert_db, buf, bytes_read, error);
+			rv = e_cert_db_import_server_cert (cert_db, buf, bytes_read, imported_certs, error);
 			break;
 
 		case E_CERT_CONTACT:
-			rv = e_cert_db_import_email_cert (cert_db, buf, bytes_read, error);
+			rv = e_cert_db_import_email_cert (cert_db, buf, bytes_read, imported_certs, error);
 			break;
 
 		default:
@@ -1207,63 +1538,11 @@ e_cert_db_login_to_slot (ECertDB *cert_db,
 
 		PK11_SetPasswordFunc(pk11_password);
 		if (PK11_Authenticate (slot, PR_TRUE, NULL) != SECSuccess) {
-			printf ("PK11_Authenticate failed (err = %d/%d)\n", PORT_GetError(), PORT_GetError() + 0x2000);
+			printf ("PK11_Authenticate failed (err = %d/%d)\n",
+				PORT_GetError(), PORT_GetError() + 0x2000);
 			return FALSE;
 		}
 	}
 
 	return TRUE;
-}
-
-
-
-static SECStatus PR_CALLBACK
-collect_certs(gpointer arg, SECItem **certs, gint numcerts)
-{
-	CERTDERCerts *collectArgs;
-	SECItem *cert;
-	SECStatus rv;
-
-	collectArgs = (CERTDERCerts *)arg;
-
-	collectArgs->numcerts = numcerts;
-	collectArgs->rawCerts = (SECItem *) PORT_ArenaZAlloc(collectArgs->arena, sizeof(SECItem) * numcerts);
-	if ( collectArgs->rawCerts == NULL )
-		return(SECFailure);
-
-	cert = collectArgs->rawCerts;
-
-	while ( numcerts-- ) {
-		rv = SECITEM_CopyItem(collectArgs->arena, cert, *certs);
-		if ( rv == SECFailure )
-			return(SECFailure);
-		cert++;
-		certs++;
-	}
-
-	return (SECSuccess);
-}
-
-static CERTDERCerts*
-e_cert_db_get_certs_from_package (PRArenaPool *arena,
-				  gchar *data,
-				  guint32 length)
-{
-	/*nsNSSShutDownPreventionLock locker;*/
-	CERTDERCerts *collectArgs =
-		(CERTDERCerts *)PORT_ArenaZAlloc(arena, sizeof(CERTDERCerts));
-	SECStatus sec_rv;
-
-	if (!collectArgs)
-		return NULL;
-
-	collectArgs->arena = arena;
-	sec_rv = CERT_DecodeCertPackage(data,
-					length, collect_certs,
-					(gpointer)collectArgs);
-
-	if (sec_rv != SECSuccess)
-		return NULL;
-
-	return collectArgs;
 }

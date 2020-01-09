@@ -1,35 +1,29 @@
 eds_datadir = `pkg-config --variable=privdatadir evolution-data-server-1.2`
-weatherdatadir = $(datadir)/evolution/$(BASE_VERSION)/weather
-
-AM_CPPFLAGS =									\
-	-I$(top_srcdir)								\
-	-I$(top_builddir)/shell							\
-	$(EVOLUTION_CALENDAR_CFLAGS)						\
-	$(SOURCE_SEL_CFLAGS)							\
-	-DWEATHER_DATADIR=\""$(weatherdatadir)"\"				\
-	-DWEATHER_EDS_DATADIR=\""$(eds_datadir)/weather"\"			\
-	$(LIBGWEATHER_CFLAGS)
 
 @EVO_PLUGIN_RULE@
 
-weatherdata_DATA = \
-	category_weather_cloudy_16.png		\
-	category_weather_fog_16.png		\
-	category_weather_partly_cloudy_16.png	\
-	category_weather_rain_16.png		\
-	category_weather_snow_16.png		\
-	category_weather_sun_16.png		\
-	category_weather_tstorm_16.png
-
 plugin_DATA = org-gnome-calendar-weather.eplug
 plugin_LTLIBRARIES = liborg-gnome-calendar-weather.la
+
+liborg_gnome_calendar_weather_la_CPPFLAGS =			\
+	$(AM_CPPFLAGS)						\
+	-I$(top_srcdir)						\
+	-I$(top_srcdir)/widgets					\
+	$(GNOME_PLATFORM_CFLAGS)				\
+	$(EVOLUTION_CALENDAR_CFLAGS)				\
+	$(SOURCE_SEL_CFLAGS)					\
+	-DWEATHER_DATADIR=\""$(weatherdatadir)"\"		\
+	-DWEATHER_EDS_DATADIR=\""$(eds_datadir)/weather"\"	\
+	$(LIBGWEATHER_CFLAGS)
 
 liborg_gnome_calendar_weather_la_SOURCES = calendar-weather.c
 liborg_gnome_calendar_weather_la_LDFLAGS = -module -avoid-version $(NO_UNDEFINED)
 liborg_gnome_calendar_weather_la_LIBADD =			\
 	$(top_builddir)/calendar/gui/libevolution-calendar.la	\
+	$(top_builddir)/e-util/libeutil.la			\
 	$(EVOLUTION_CALENDAR_LIBS)				\
-	$(LIBGWEATHER_LIBS)
+	$(LIBGWEATHER_LIBS)					\
+	$(GNOME_PLATFORM_LIBS)
 
 EXTRA_DIST =					\
 	org-gnome-calendar-weather.eplug.xml	\

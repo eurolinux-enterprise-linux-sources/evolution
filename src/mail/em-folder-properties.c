@@ -27,19 +27,16 @@
 #include <string.h>
 
 #include <gtk/gtk.h>
+#include <glib/gi18n.h>
 
 #include <gconf/gconf-client.h>
 
-#include <camel/camel-store.h>
-#include <camel/camel-folder.h>
-#include <camel/camel-vtrash-folder.h>
-#include <camel/camel-vee-folder.h>
-#include <glib/gi18n.h>
+#include <e-util/e-binding.h>
 
 #include "em-folder-properties.h"
 #include "em-config.h"
 
-#include "mail-component.h"
+#include "e-mail-local.h"
 #include "mail-ops.h"
 #include "mail-mt.h"
 #include "mail-vfolder.h"
@@ -47,11 +44,6 @@
 
 struct _prop_data {
 	gpointer object;
-	CamelArgV *argv;
-	GtkWidget **widgets;
-
-	GSList *properties;
-	gchar *name;
 	gint total;
 	gint unread;
 	EMConfig *config;
@@ -70,56 +62,14 @@ emfp_dialog_response (GtkWidget *dialog, gint response, struct _prop_data *prop_
 }
 
 static void
-emfp_commit(EConfig *ec, GSList *items, gpointer data)
-{
-	struct _prop_data *prop_data = data;
-	CamelArgV *argv = prop_data->argv;
-	gint i;
-
-	for (i = 0; i < argv->argc; i++) {
-		CamelArg *arg = &argv->argv[i];
-
-		switch (arg->tag & CAMEL_ARG_TYPE) {
-		case CAMEL_ARG_BOO:
-			arg->ca_int = gtk_toggle_button_get_active ((GtkToggleButton *) prop_data->widgets[i]);
-			break;
-		case CAMEL_ARG_STR:
-			g_free (arg->ca_str);
-			arg->ca_str = (gchar *) gtk_entry_get_text ((GtkEntry *) prop_data->widgets[i]);
-			break;
-		case CAMEL_ARG_INT:
-			arg->ca_int = gtk_spin_button_get_value_as_int ((GtkSpinButton *) prop_data->widgets[i]);
-			break;
-		case CAMEL_ARG_DBL:
-			arg->ca_double = gtk_spin_button_get_value ((GtkSpinButton *) prop_data->widgets[i]);
-			break;
-		default:
-			g_warning ("This shouldn't be reached\n");
-			break;
-		}
-	}
-
-	camel_object_setv (prop_data->object, NULL, argv);
-}
-
-static void
 emfp_free(EConfig *ec, GSList *items, gpointer data)
 {
 	struct _prop_data *prop_data = data;
-	gint i;
 
 	g_slist_free(items);
 
-	for (i = 0; i < prop_data->argv->argc; i++) {
-		if ((prop_data->argv->argv[i].tag & CAMEL_ARG_TYPE) == CAMEL_ARG_STR)
-			g_free (prop_data->argv->argv[i].ca_str);
-	}
-
-	camel_object_free (prop_data->object, CAMEL_FOLDER_PROPERTIES, prop_data->properties);
-	camel_object_free (prop_data->object, CAMEL_FOLDER_NAME, prop_data->name);
-
-	camel_object_unref (prop_data->object);
-	g_free (prop_data->argv);
+	camel_object_state_write (prop_data->object);
+	g_object_unref (prop_data->object);
 
 	camel_folder_quota_info_free (prop_data->quota);
 
@@ -156,15 +106,17 @@ add_numbered_row (GtkTable *table, gint row, const gchar *description, const gch
 static GtkWidget *
 emfp_get_folder_item(EConfig *ec, EConfigItem *item, GtkWidget *parent, GtkWidget *old, gpointer data)
 {
-	GtkWidget *w, *table, *label;
+	GObjectClass *class;
+	GParamSpec **properties;
+	GtkWidget *widget, *table;
 	struct _prop_data *prop_data = data;
-	gint row = 0, i;
-	GSList *l;
+	guint ii, n_properties;
+	gint row = 0;
 
 	if (old)
 		return old;
 
-	table = gtk_table_new (g_slist_length (prop_data->properties) + 2, 2, FALSE);
+	table = gtk_table_new (2, 2, FALSE);
 	gtk_table_set_row_spacings ((GtkTable *) table, 6);
 	gtk_table_set_col_spacings ((GtkTable *) table, 12);
 	gtk_widget_show (table);
@@ -205,73 +157,38 @@ emfp_get_folder_item(EConfig *ec, EConfigItem *item, GtkWidget *parent, GtkWidge
 		}
 	}
 
-	/* setup the ui with the values retrieved */
-	l = prop_data->properties;
-	i = 0;
-	while (l) {
-		CamelProperty *prop = l->data;
+	class = G_OBJECT_GET_CLASS (prop_data->object);
+	properties = g_object_class_list_properties (class, &n_properties);
 
-		switch (prop->tag & CAMEL_ARG_TYPE) {
-		case CAMEL_ARG_BOO:
-			w = gtk_check_button_new_with_label (prop->description);
-			gtk_toggle_button_set_active ((GtkToggleButton *) w, prop_data->argv->argv[i].ca_int != 0);
-			gtk_widget_show (w);
-			gtk_table_attach ((GtkTable *) table, w, 0, 2, row, row + 1, GTK_FILL | GTK_EXPAND, 0, 0, 0);
-			prop_data->widgets[i] = w;
-			break;
-		case CAMEL_ARG_STR:
-			label = gtk_label_new (prop->description);
-			gtk_misc_set_alignment ((GtkMisc *) label, 0.0, 0.5);
-			gtk_widget_show (label);
-			gtk_table_attach ((GtkTable *) table, label, 0, 1, row, row + 1, GTK_FILL, 0, 0, 0);
+	for (ii = 0; ii < n_properties; ii++) {
+		const gchar *blurb;
 
-			w = gtk_entry_new ();
-			gtk_widget_show (w);
-			if (prop_data->argv->argv[i].ca_str) {
-				gtk_entry_set_text ((GtkEntry *) w, prop_data->argv->argv[i].ca_str);
-				camel_object_free (prop_data->object, prop_data->argv->argv[i].tag, prop_data->argv->argv[i].ca_str);
-				prop_data->argv->argv[i].ca_str = NULL;
-			}
-			gtk_table_attach ((GtkTable *) table, w, 1, 2, row, row + 1, GTK_FILL | GTK_EXPAND, 0, 0, 0);
-			prop_data->widgets[i] = w;
-			break;
-		case CAMEL_ARG_INT:
-			label = gtk_label_new (prop->description);
-			gtk_misc_set_alignment ((GtkMisc *) label, 0.0, 0.5);
-			gtk_widget_show (label);
-			gtk_table_attach ((GtkTable *) table, label, 0, 1, row, row + 1, GTK_FILL, 0, 0, 0);
+		if ((properties[ii]->flags & CAMEL_PARAM_PERSISTENT) == 0)
+			continue;
 
-			w = gtk_spin_button_new_with_range (G_MININT, G_MAXINT, 1.0);
-			gtk_spin_button_set_value ((GtkSpinButton *) w, (double) prop_data->argv->argv[i].ca_int);
-			gtk_spin_button_set_numeric ((GtkSpinButton *) w, TRUE);
-			gtk_spin_button_set_digits ((GtkSpinButton *) w, 0);
-			gtk_widget_show (w);
-			gtk_table_attach ((GtkTable *) table, w, 1, 2, row, row + 1, GTK_FILL | GTK_EXPAND, 0, 0, 0);
-			prop_data->widgets[i] = w;
-			break;
-		case CAMEL_ARG_DBL:
-			label = gtk_label_new (prop->description);
-			gtk_misc_set_alignment ((GtkMisc *) label, 0.0, 0.5);
-			gtk_widget_show (label);
-			gtk_table_attach ((GtkTable *) table, label, 0, 1, row, row + 1, GTK_FILL, 0, 0, 0);
+		blurb = g_param_spec_get_blurb (properties[ii]);
 
-			w = gtk_spin_button_new_with_range (G_MININT, G_MAXINT, 1.0);
-			gtk_spin_button_set_value ((GtkSpinButton *) w, prop_data->argv->argv[i].ca_double);
-			gtk_spin_button_set_numeric ((GtkSpinButton *) w, TRUE);
-			gtk_spin_button_set_digits ((GtkSpinButton *) w, 2);
-			gtk_widget_show (w);
-			gtk_table_attach ((GtkTable *) table, w, 1, 2, row, row + 1, GTK_FILL | GTK_EXPAND, 0, 0, 0);
-			prop_data->widgets[i] = w;
-			break;
-		default:
-			g_warning ("This shouldn't be reached\n");
-			break;
+		switch (properties[ii]->value_type) {
+			case G_TYPE_BOOLEAN:
+				widget = gtk_check_button_new_with_label (blurb);
+				e_mutual_binding_new (
+					prop_data->object,
+					properties[ii]->name,
+					widget, "active");
+				gtk_widget_show (widget);
+				gtk_table_attach (
+					GTK_TABLE (table), widget,
+					0, 2, row, row + 1,
+					GTK_FILL | GTK_EXPAND, 0, 0, 0);
+				row++;
+				break;
+			default:
+				g_warn_if_reached ();
+				break;
 		}
-
-		row++;
-		l = l->next;
-		i++;
 	}
+
+	g_free (properties);
 
 	return table;
 }
@@ -287,39 +204,47 @@ static EMConfigItem emfp_items[] = {
 static gboolean emfp_items_translated = FALSE;
 
 static void
-emfp_dialog_got_folder_quota (CamelFolder *folder, CamelFolderQuotaInfo *quota, gpointer data)
+emfp_dialog_got_folder_quota (CamelFolder *folder,
+                              const gchar *folder_uri,
+                              CamelFolderQuotaInfo *quota,
+                              gpointer data)
 {
 	GtkWidget *dialog, *w;
+	GtkWidget *content_area;
 	struct _prop_data *prop_data;
 	GSList *l;
-	gint32 count, i,deleted;
+	gint32 i,deleted;
 	EMConfig *ec;
 	EMConfigTargetFolder *target;
-	CamelArgGetV *arggetv;
-	CamelArgV *argv;
+	EShellWindow *shell_window;
+	EShellView *shell_view;
+	CamelStore *local_store;
+	CamelStore *parent_store;
 	gboolean hide_deleted;
 	GConfClient *gconf;
-	CamelStore *store;
-	gchar *uri = (gchar *)data;
+	const gchar *name;
 
-	if (folder == NULL) {
-		g_free (uri);
+	if (folder == NULL)
 		return;
-	}
 
-	store = folder->parent_store;
+	shell_view = E_SHELL_VIEW (data);
+	shell_window = e_shell_view_get_shell_window (shell_view);
+
+	local_store = e_mail_local_get_store ();
+	parent_store = camel_folder_get_parent_store (folder);
 
 	prop_data = g_malloc0 (sizeof (*prop_data));
-	prop_data->object = folder;
-	camel_object_ref (folder);
+	prop_data->object = g_object_ref (folder);
 	prop_data->quota = camel_folder_quota_info_clone (quota);
 
 	/*
 	  Get number of VISIBLE and DELETED messages, instead of TOTAL messages.  VISIBLE+DELETED
 	   gives the correct count that matches the label below the Send & Receive button
 	*/
-	camel_object_get (folder, NULL, CAMEL_FOLDER_PROPERTIES, &prop_data->properties, CAMEL_FOLDER_NAME, &prop_data->name,
-			  CAMEL_FOLDER_VISIBLE, &prop_data->total, CAMEL_FOLDER_UNREAD, &prop_data->unread, CAMEL_FOLDER_DELETED, &deleted, NULL);
+	name = camel_folder_get_name (folder);
+	prop_data->total = folder->summary->visible_count;
+	prop_data->unread = folder->summary->unread_count;
+	deleted = folder->summary->deleted_count;
 
 	gconf = mail_config_get_gconf_client ();
 	hide_deleted = !gconf_client_get_bool(gconf, "/apps/evolution/mail/display/show_deleted", NULL);
@@ -327,7 +252,7 @@ emfp_dialog_got_folder_quota (CamelFolder *folder, CamelFolderQuotaInfo *quota, 
 	/*
 	   Do the calculation only for those accounts that support VTRASHes
 	 */
-	if (store->flags & CAMEL_STORE_VTRASH) {
+	if (parent_store->flags & CAMEL_STORE_VTRASH) {
 		if (CAMEL_IS_VTRASH_FOLDER(folder))
 			prop_data->total += deleted;
 		else if (!hide_deleted && deleted > 0)
@@ -337,64 +262,38 @@ emfp_dialog_got_folder_quota (CamelFolder *folder, CamelFolderQuotaInfo *quota, 
 	/*
 	 * If the ffolder is junk folder, get total number of mails.
 	 */
-	if (store->flags & CAMEL_STORE_VJUNK) {
-		camel_object_get (folder, NULL, CAMEL_FOLDER_TOTAL, &prop_data->total, NULL);
-	}
+	if (parent_store->flags & CAMEL_STORE_VJUNK)
+		prop_data->total = camel_folder_summary_count (folder->summary);
 
-	if (store == mail_component_peek_local_store(NULL)
-	    && (!strcmp(prop_data->name, "Drafts")
-		|| !strcmp(prop_data->name, "Templates")
-		|| !strcmp(prop_data->name, "Inbox")
-		|| !strcmp(prop_data->name, "Outbox")
-		|| !strcmp(prop_data->name, "Sent"))) {
-		emfp_items[EMFP_FOLDER_SECTION].label = _(prop_data->name);
+	if (parent_store == local_store
+	    && (!strcmp (name, "Drafts")
+		|| !strcmp (name, "Templates")
+		|| !strcmp (name, "Inbox")
+		|| !strcmp (name, "Outbox")
+		|| !strcmp (name, "Sent"))) {
+		emfp_items[EMFP_FOLDER_SECTION].label = gettext (name);
 		if (!emfp_items_translated) {
-			for (i=0;i<sizeof(emfp_items)/sizeof(emfp_items[0]);i++) {
+			for (i = 0; i < G_N_ELEMENTS (emfp_items); i++) {
 				if (emfp_items[i].label)
 					emfp_items[i].label = _(emfp_items[i].label);
 			}
 			emfp_items_translated = TRUE;
 		}
-	} else if (!strcmp(prop_data->name, "INBOX"))
+	} else if (!strcmp (name, "INBOX"))
 		emfp_items[EMFP_FOLDER_SECTION].label = _("Inbox");
 	else
-		emfp_items[EMFP_FOLDER_SECTION].label = prop_data->name;
+		emfp_items[EMFP_FOLDER_SECTION].label = (gchar *) name;
 
-	count = g_slist_length (prop_data->properties);
-
-	prop_data->widgets = g_malloc0 (sizeof (prop_data->widgets[0]) * count);
-
-	/* build an arggetv/argv to retrieve/store the results */
-	argv = g_malloc0 (sizeof (*argv) + (count - CAMEL_ARGV_MAX) * sizeof (argv->argv[0]));
-	argv->argc = count;
-	arggetv = g_malloc0 (sizeof (*arggetv) + (count - CAMEL_ARGV_MAX) * sizeof (arggetv->argv[0]));
-	arggetv->argc = count;
-
-	i = 0;
-	l = prop_data->properties;
-	while (l) {
-		CamelProperty *prop = l->data;
-
-		argv->argv[i].tag = prop->tag;
-		arggetv->argv[i].tag = prop->tag;
-		arggetv->argv[i].ca_ptr = &argv->argv[i].ca_ptr;
-
-		l = l->next;
-		i++;
-	}
-
-	camel_object_getv (prop_data->object, NULL, arggetv);
-	g_free (arggetv);
-	prop_data->argv = argv;
-
-	dialog = gtk_dialog_new_with_buttons (_("Folder Properties"), NULL,
-					      GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_NO_SEPARATOR,
-					      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-					      GTK_STOCK_OK, GTK_RESPONSE_OK,
-					      NULL);
+	dialog = gtk_dialog_new_with_buttons (
+		_("Folder Properties"), GTK_WINDOW (shell_window),
+		GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_NO_SEPARATOR,
+		GTK_STOCK_CLOSE, GTK_RESPONSE_OK, NULL);
 	gtk_window_set_default_size ((GtkWindow *) dialog, 192, 160);
+
 	gtk_widget_ensure_style (dialog);
-	gtk_container_set_border_width ((GtkContainer *) ((GtkDialog *) dialog)->vbox, 12);
+
+	content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+	gtk_container_set_border_width (GTK_CONTAINER (content_area), 12);
 
 	/** @HookPoint-EMConfig: Folder Properties Window
 	 * @Id: org.gnome.evolution.mail.folderConfig
@@ -407,29 +306,31 @@ emfp_dialog_got_folder_quota (CamelFolder *folder, CamelFolderQuotaInfo *quota, 
 	ec = em_config_new(E_CONFIG_BOOK, "org.gnome.evolution.mail.folderConfig");
 	prop_data->config = ec;
 	l = NULL;
-	for (i=0;i<sizeof(emfp_items)/sizeof(emfp_items[0]);i++)
+	for (i = 0; i < G_N_ELEMENTS (emfp_items); i++)
 		l = g_slist_prepend(l, &emfp_items[i]);
-	e_config_add_items((EConfig *)ec, l, emfp_commit, NULL, emfp_free, prop_data);
+	e_config_add_items((EConfig *)ec, l, NULL, NULL, emfp_free, prop_data);
 
-	target = em_config_target_new_folder(ec, folder, uri);
+	target = em_config_target_new_folder(ec, folder, folder_uri);
 	e_config_set_target((EConfig *)ec, (EConfigTarget *)target);
 	w = e_config_create_widget((EConfig *)ec);
 
-	gtk_box_pack_start ((GtkBox *) ((GtkDialog *) dialog)->vbox, w, TRUE, TRUE, 0);
+	gtk_box_pack_start (GTK_BOX (content_area), w, TRUE, TRUE, 0);
 
 	/* we do 'apply on ok' ... since instant apply may apply some very long running tasks */
 
 	g_signal_connect (dialog, "response", G_CALLBACK (emfp_dialog_response), prop_data);
 	gtk_widget_show (dialog);
-
-	g_free (uri);
 }
 
 static void
 emfp_dialog_got_folder (gchar *uri, CamelFolder *folder, gpointer data)
 {
+	EShellView *shell_view = data;
+
 	/* this should be called in a thread too */
-	mail_get_folder_quota (folder, emfp_dialog_got_folder_quota, g_strdup (uri), mail_msg_unordered_push);
+	mail_get_folder_quota (
+		folder, uri, emfp_dialog_got_folder_quota,
+		shell_view, mail_msg_unordered_push);
 }
 
 /**
@@ -442,27 +343,32 @@ emfp_dialog_got_folder (gchar *uri, CamelFolder *folder, gpointer data)
  * as NULL, then the folder @uri will be loaded first.
  **/
 void
-em_folder_properties_show(GtkWindow *parent, CamelFolder *folder, const gchar *uri)
+em_folder_properties_show (EShellView *shell_view,
+                           CamelFolder *folder,
+                           const gchar *uri)
 {
+	g_return_if_fail (E_IS_SHELL_VIEW (shell_view));
+	g_return_if_fail (uri != NULL);
+
 	/* HACK: its the old behaviour, not very 'neat' but it works */
-	if (!strncmp(uri, "vfolder:", 8)) {
-		CamelURL *url = camel_url_new(uri, NULL);
+	if (!strncmp (uri, "vfolder:", 8)) {
+		CamelURL *url = camel_url_new (uri, NULL);
 
 		/* MORE HACK: UNMATCHED is a special folder which you can't modify, so check for it here */
 		if (url == NULL
 		    || url->fragment == NULL
 		    || strcmp(url->fragment, CAMEL_UNMATCHED_NAME) != 0) {
 			if (url)
-				camel_url_free(url);
-			vfolder_edit_rule(uri);
+				camel_url_free (url);
+			vfolder_edit_rule (uri);
 			return;
 		}
-		if (url)
-			camel_url_free(url);
+		if (url != NULL)
+			camel_url_free (url);
 	}
 
 	if (folder == NULL)
-		mail_get_folder(uri, 0, emfp_dialog_got_folder, NULL, mail_msg_unordered_push);
+		mail_get_folder(uri, 0, emfp_dialog_got_folder, shell_view, mail_msg_unordered_push);
 	else
-		emfp_dialog_got_folder((gchar *)uri, folder, NULL);
+		emfp_dialog_got_folder((gchar *)uri, folder, shell_view);
 }

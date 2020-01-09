@@ -29,7 +29,7 @@
 
 #include <gtk/gtk.h>
 
-#include "misc/e-unicode.h"
+#include "e-util/e-unicode.h"
 
 #include "e-table-defines.h"
 #include "e-table-header-utils.h"
@@ -84,7 +84,7 @@ e_table_header_compute_height (ETableCol *ecol, GtkWidget *widget)
 
 	pango_layout_get_pixel_size (layout, NULL, &height);
 
-	if (ecol->is_pixbuf) {
+	if (ecol->icon_name != NULL) {
 		g_return_val_if_fail (ecol->pixbuf != NULL, -1);
 		height = MAX (height, gdk_pixbuf_get_height (ecol->pixbuf));
 	}
@@ -109,6 +109,7 @@ e_table_header_width_extras (GtkStyle *style)
 /* Creates a pixmap that is a composite of a background color and the upper-left
  * corner rectangle of a pixbuf.
  */
+#if 0
 static GdkPixmap *
 make_composite_pixmap (GdkDrawable *drawable, GdkGC *gc,
 		       GdkPixbuf *pixbuf, GdkColor *bg, gint width, gint height,
@@ -216,6 +217,7 @@ make_composite_pixmap (GdkDrawable *drawable, GdkGC *gc,
 
 	return pixmap;
 }
+#endif
 
 /* Default width of the elision arrow in pixels */
 #define ARROW_WIDTH 4
@@ -228,7 +230,8 @@ make_composite_pixmap (GdkDrawable *drawable, GdkGC *gc,
  * @x: X insertion point for the string.
  * @y: Y insertion point for the string's baseline.
  * @layout: the PangoLayout to draw.
- * @str: the string we're drawing, passed in so we can change the layout if it needs eliding.
+ * @str: the string we're drawing, passed in so we can change the layout if
+ *       it needs eliding.
  * @max_width: Maximum width in which the string must fit.
  * @center: Whether to center the string in the available area if it does fit.
  *
@@ -329,6 +332,7 @@ e_table_header_draw_button (GdkDrawable *drawable, ETableCol *ecol,
 	gint xthick, ythick;
 	gint inner_x, inner_y;
 	gint inner_width, inner_height;
+	gint arrow_width = 0, arrow_height = 0;
 	GdkGC *gc;
 	PangoLayout *layout;
 	static gpointer g_label = NULL;
@@ -343,16 +347,17 @@ e_table_header_draw_button (GdkDrawable *drawable, ETableCol *ecol,
 
 	if (g_label == NULL) {
 		GtkWidget *button = gtk_button_new_with_label("Hi");
-		GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+		GtkWidget *window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 		gtk_container_add (GTK_CONTAINER (window), button);
 		gtk_widget_ensure_style (window);
 		gtk_widget_ensure_style (button);
-		g_label = GTK_BIN(button)->child;
+		g_label = gtk_bin_get_child (GTK_BIN (button));
 		g_object_add_weak_pointer (G_OBJECT (g_label), &g_label);
 		gtk_widget_ensure_style (g_label);
+		gtk_widget_realize (g_label);
 	}
 
-	gc = GTK_WIDGET (g_label)->style->fg_gc[state];
+	gc = gtk_widget_get_style (GTK_WIDGET (g_label))->fg_gc[state];
 
 	gdk_gc_set_clip_rectangle (gc, NULL);
 
@@ -376,33 +381,22 @@ e_table_header_draw_button (GdkDrawable *drawable, ETableCol *ecol,
 	inner_x = x + xthick + HEADER_PADDING;
 	inner_y = y + ythick + HEADER_PADDING;
 
-	/* Arrow */
+	/* Arrow space */
 
 	switch (arrow) {
 	case E_TABLE_COL_ARROW_NONE:
 		break;
 
 	case E_TABLE_COL_ARROW_UP:
-	case E_TABLE_COL_ARROW_DOWN: {
-		gint arrow_width, arrow_height;
-
+	case E_TABLE_COL_ARROW_DOWN:
 		arrow_width = MIN (MIN_ARROW_SIZE, inner_width);
 		arrow_height = MIN (MIN_ARROW_SIZE, inner_height);
 
-		gtk_paint_arrow (style, drawable, state,
-				 GTK_SHADOW_NONE, NULL, widget, "header",
-				 (arrow == E_TABLE_COL_ARROW_UP) ? GTK_ARROW_UP : GTK_ARROW_DOWN,
-				 TRUE,
-				 inner_x + inner_width - arrow_width,
-				 inner_y + (inner_height - arrow_height) / 2,
-				 arrow_width, arrow_height);
-
-		inner_width -= arrow_width + HEADER_PADDING;
+		if (ecol->icon_name == NULL)
+			inner_width -= arrow_width + HEADER_PADDING;
 		break;
-	}
-
 	default:
-		g_return_if_reached();
+		g_return_if_reached ();
 	}
 
 	if (inner_width < 1)
@@ -411,11 +405,11 @@ e_table_header_draw_button (GdkDrawable *drawable, ETableCol *ecol,
 	layout = build_header_layout (widget, ecol->text);
 
 	/* Pixbuf or label */
-	if (ecol->is_pixbuf) {
+	if (ecol->icon_name != NULL) {
 		gint pwidth, pheight;
 		gint clip_width, clip_height;
 		gint xpos;
-		GdkPixmap *pixmap;
+		/* GdkPixmap *pixmap; */
 
 		g_return_if_fail (ecol->pixbuf != NULL);
 
@@ -443,6 +437,9 @@ e_table_header_draw_button (GdkDrawable *drawable, ETableCol *ecol,
 						    layout, ecol->text, inner_width - (xpos - inner_x), FALSE);
 		}
 
+		/* FIXME: For some reason, under clutter gdk_draw_rgb_image_dithalign crashes
+		 * Debug that later */
+#if 0
 		pixmap = make_composite_pixmap (drawable, gc,
 						ecol->pixbuf, &style->bg[state],
 						clip_width, clip_height,
@@ -459,10 +456,41 @@ e_table_header_draw_button (GdkDrawable *drawable, ETableCol *ecol,
 					 clip_width, clip_height);
 			g_object_unref (pixmap);
 		}
+#endif
+		gdk_draw_pixbuf (drawable, gc,
+				ecol->pixbuf,
+				0, 0,
+				xpos, inner_y + (inner_height - clip_height) / 2,
+				-1, -1,
+				GDK_RGB_DITHER_NONE,
+				0, 0);
 	} else {
 		e_table_draw_elided_string (drawable, gc, widget,
 					    inner_x, inner_y,
 					    layout, ecol->text, inner_width, FALSE);
+	}
+
+	switch (arrow) {
+	case E_TABLE_COL_ARROW_NONE:
+		break;
+
+	case E_TABLE_COL_ARROW_UP:
+	case E_TABLE_COL_ARROW_DOWN: {
+		if (ecol->icon_name == NULL)
+			inner_width += arrow_width + HEADER_PADDING;
+
+		gtk_paint_arrow (style, drawable, state,
+				 GTK_SHADOW_NONE, NULL, widget, "header",
+				 (arrow == E_TABLE_COL_ARROW_UP) ? GTK_ARROW_UP : GTK_ARROW_DOWN,
+				 (ecol->icon_name == NULL),
+				 inner_x + inner_width - arrow_width,
+				 inner_y + (inner_height - arrow_height) / 2,
+				 arrow_width, arrow_height);
+		break;
+	}
+
+	default:
+		g_return_if_reached ();
 	}
 
 	g_object_unref (layout);

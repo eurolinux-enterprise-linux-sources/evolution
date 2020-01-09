@@ -30,7 +30,10 @@
 
 #define EP_CLASS(e) ((EPrintableClass *)((GtkObject *)e)->klass)
 
-G_DEFINE_TYPE (EPrintable, e_printable, GTK_TYPE_OBJECT)
+G_DEFINE_TYPE (
+	EPrintable,
+	e_printable,
+	GTK_TYPE_OBJECT)
 
 enum {
 	PRINT_PAGE,
@@ -41,14 +44,14 @@ enum {
 	LAST_SIGNAL
 };
 
-static guint e_printable_signals [LAST_SIGNAL] = { 0, };
+static guint e_printable_signals[LAST_SIGNAL] = { 0, };
 
 static void
 e_printable_class_init (EPrintableClass *klass)
 {
 	GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
-	e_printable_signals [PRINT_PAGE] =
+	e_printable_signals[PRINT_PAGE] =
 		g_signal_new ("print_page",
 			      G_OBJECT_CLASS_TYPE (object_class),
 			      G_SIGNAL_RUN_LAST,
@@ -58,7 +61,7 @@ e_printable_class_init (EPrintableClass *klass)
 			      G_TYPE_NONE, 4, G_TYPE_OBJECT, G_TYPE_DOUBLE,
 			      G_TYPE_DOUBLE, G_TYPE_BOOLEAN);
 
-	e_printable_signals [DATA_LEFT] =
+	e_printable_signals[DATA_LEFT] =
 		g_signal_new ("data_left",
 			      G_OBJECT_CLASS_TYPE (object_class),
 			      G_SIGNAL_RUN_LAST,
@@ -67,7 +70,7 @@ e_printable_class_init (EPrintableClass *klass)
 			      e_marshal_BOOLEAN__NONE,
 			      G_TYPE_BOOLEAN, 0, G_TYPE_NONE);
 
-	e_printable_signals [RESET] =
+	e_printable_signals[RESET] =
 		g_signal_new ("reset",
 			      G_OBJECT_CLASS_TYPE (object_class),
 			      G_SIGNAL_RUN_LAST,
@@ -76,7 +79,7 @@ e_printable_class_init (EPrintableClass *klass)
 			      g_cclosure_marshal_VOID__VOID,
 			      G_TYPE_NONE, 0, G_TYPE_NONE);
 
-	e_printable_signals [HEIGHT] =
+	e_printable_signals[HEIGHT] =
 		g_signal_new ("height",
 			      G_OBJECT_CLASS_TYPE (object_class),
 			      G_SIGNAL_RUN_LAST,
@@ -86,7 +89,7 @@ e_printable_class_init (EPrintableClass *klass)
 			      G_TYPE_DOUBLE, 4, G_TYPE_OBJECT, G_TYPE_DOUBLE,
 			      G_TYPE_DOUBLE, G_TYPE_BOOLEAN);
 
-	e_printable_signals [WILL_FIT] =
+	e_printable_signals[WILL_FIT] =
 		g_signal_new ("will_fit",
 			      G_OBJECT_CLASS_TYPE (object_class),
 			      G_SIGNAL_RUN_LAST,
@@ -110,9 +113,9 @@ e_printable_init (EPrintable *e_printable)
 }
 
 EPrintable *
-e_printable_new(void)
+e_printable_new (void)
 {
-	return E_PRINTABLE(g_object_new(E_PRINTABLE_TYPE, NULL));
+	return E_PRINTABLE (g_object_new (E_PRINTABLE_TYPE, NULL));
 }
 
 void
@@ -126,7 +129,7 @@ e_printable_print_page          (EPrintable        *e_printable,
 	g_return_if_fail (E_IS_PRINTABLE (e_printable));
 
 	g_signal_emit (e_printable,
-		       e_printable_signals [PRINT_PAGE], 0,
+		       e_printable_signals[PRINT_PAGE], 0,
 		       context,
 		       width,
 		       height,
@@ -142,7 +145,7 @@ e_printable_data_left           (EPrintable        *e_printable)
 	g_return_val_if_fail (E_IS_PRINTABLE (e_printable), FALSE);
 
 	g_signal_emit (e_printable,
-		       e_printable_signals [DATA_LEFT], 0,
+		       e_printable_signals[DATA_LEFT], 0,
 		       &ret_val);
 
 	return ret_val;
@@ -155,7 +158,7 @@ e_printable_reset               (EPrintable        *e_printable)
 	g_return_if_fail (E_IS_PRINTABLE (e_printable));
 
 	g_signal_emit (e_printable,
-		       e_printable_signals [RESET], 0);
+		       e_printable_signals[RESET], 0);
 }
 
 gdouble
@@ -171,7 +174,7 @@ e_printable_height              (EPrintable        *e_printable,
 	g_return_val_if_fail (E_IS_PRINTABLE (e_printable), -1);
 
 	g_signal_emit (e_printable,
-		       e_printable_signals [HEIGHT], 0,
+		       e_printable_signals[HEIGHT], 0,
 		       context,
 		       width,
 		       max_height,
@@ -194,7 +197,7 @@ e_printable_will_fit            (EPrintable        *e_printable,
 	g_return_val_if_fail (E_IS_PRINTABLE (e_printable), FALSE);
 
 	g_signal_emit (e_printable,
-		       e_printable_signals [WILL_FIT], 0,
+		       e_printable_signals[WILL_FIT], 0,
 		       context,
 		       width,
 		       max_height,

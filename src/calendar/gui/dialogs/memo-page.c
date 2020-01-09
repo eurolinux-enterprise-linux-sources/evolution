@@ -33,19 +33,21 @@
 #include <string.h>
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
-#include <glade/glade.h>
 #include <libedataserverui/e-category-completion.h>
 #include <libedataserverui/e-source-combo-box.h>
 #include <libedataserverui/e-name-selector.h>
 #include <libedataserverui/e-name-selector-entry.h>
 #include <libedataserverui/e-name-selector-list.h>
 #include <widgets/misc/e-dateedit.h>
+#include "misc/e-buffer-tagger.h"
+
+#include "e-util/e-util.h"
+#include "e-util/e-categories-config.h"
+#include "e-util/e-dialog-utils.h"
+#include "e-util/e-dialog-widgets.h"
+#include "e-util/e-util-private.h"
 
 #include "common/authentication.h"
-#include "e-util/e-dialog-widgets.h"
-#include <e-util/e-dialog-utils.h>
-#include "e-util/e-categories-config.h"
-#include "e-util/e-util-private.h"
 #include "../calendar-config.h"
 #include "comp-editor.h"
 #include "comp-editor-util.h"
@@ -58,10 +60,9 @@
 
 /* Private part of the MemoPage structure */
 struct _MemoPagePrivate {
-	/* Glade XML data */
-	GladeXML *xml;
+	GtkBuilder *builder;
 
-	/* Widgets from the Glade file */
+	/* Widgets from the UI file */
 	GtkWidget *main;
 
 	GtkWidget *memo_content;
@@ -124,6 +125,7 @@ clear_widgets (MemoPage *mpage)
 	view = GTK_TEXT_VIEW (mpage->priv->memo_content);
 	buffer = gtk_text_view_get_buffer (view);
 	gtk_text_buffer_set_text (buffer, "", 0);
+	e_buffer_tagger_update_tags (view);
 
 	/* Classification */
 	editor = comp_editor_page_get_editor (COMP_EDITOR_PAGE (mpage));
@@ -159,9 +161,9 @@ memo_page_finalize (GObject *object)
 		priv->main = NULL;
 	}
 
-	if (priv->xml) {
-		g_object_unref (priv->xml);
-		priv->xml = NULL;
+	if (priv->builder) {
+		g_object_unref (priv->builder);
+		priv->builder = NULL;
 	}
 
 	g_free (priv->subscriber_info_text);
@@ -228,6 +230,7 @@ memo_page_fill_widgets (CompEditorPage *page,
 					  "", 0);
 	}
 	e_cal_component_free_text_list (l);
+	e_buffer_tagger_update_tags (GTK_TEXT_VIEW (priv->memo_content));
 
 	/* Start Date. */
 	e_cal_component_get_dtstart (comp, &d);
@@ -317,6 +320,32 @@ memo_page_init (MemoPage *mpage)
 	mpage->priv = MEMO_PAGE_GET_PRIVATE (mpage);
 }
 
+/* returns whether changed info text */
+static gboolean
+check_starts_in_the_past (MemoPage *mpage)
+{
+	MemoPagePrivate *priv;
+	struct icaltimetype start_tt = icaltime_null_time ();
+
+	if ((comp_editor_get_flags (comp_editor_page_get_editor (COMP_EDITOR_PAGE (mpage))) & COMP_EDITOR_NEW_ITEM) == 0)
+		return FALSE;
+
+	priv = mpage->priv;
+
+	start_tt.is_date = TRUE;
+	if (e_date_edit_get_date (E_DATE_EDIT (priv->start_date), &start_tt.year, &start_tt.month, &start_tt.day) &&
+	    comp_editor_test_time_in_the_past (start_tt)) {
+		gchar *tmp = g_strconcat ("<b>", _("Memo's start date is in the past"), "</b>",
+			priv->subscriber_info_text ? "\n" : "", priv->subscriber_info_text, NULL);
+		memo_page_set_info_string (mpage, GTK_STOCK_DIALOG_WARNING, tmp);
+		g_free (tmp);
+	} else {
+		memo_page_set_info_string (mpage, priv->subscriber_info_text ? GTK_STOCK_DIALOG_INFO : NULL, priv->subscriber_info_text);
+	}
+
+	return TRUE;
+}
+
 static void
 sensitize_widgets (MemoPage *mpage)
 {
@@ -351,7 +380,7 @@ sensitize_widgets (MemoPage *mpage)
 		gchar *tmp = g_strconcat ("<b>", _("Memo cannot be fully edited, because you are not the organizer"), "</b>", NULL);
 		memo_page_set_info_string (mpage, GTK_STOCK_DIALOG_INFO, tmp);
 		g_free (tmp);
-	} else {
+	} else if (!check_starts_in_the_past (mpage)) {
 		memo_page_set_info_string (mpage, priv->subscriber_info_text ? GTK_STOCK_DIALOG_INFO : NULL, priv->subscriber_info_text);
 	}
 
@@ -372,6 +401,9 @@ sensitize_widgets (MemoPage *mpage)
 			gtk_widget_grab_focus (priv->to_entry);
 		}
 	}
+
+	action_group = comp_editor_get_action_group (editor, "editable");
+	gtk_action_group_set_sensitive (action_group, !read_only);
 
 	action_group = comp_editor_get_action_group (editor, "individual");
 	gtk_action_group_set_sensitive (action_group, sensitize);
@@ -432,12 +464,14 @@ fill_comp_with_recipients (ENameSelector *name_selector, ECalComponent *comp)
 			if (contact && e_contact_get (contact , E_CONTACT_IS_LIST)) {
 				EBook *book = NULL;
 				ENameSelectorDialog *dialog;
+				ENameSelectorModel *model;
 				EContactStore *c_store;
 				GList *books, *l;
 				gchar *uri = e_contact_get (contact, E_CONTACT_BOOK_URI);
 
 				dialog = e_name_selector_peek_dialog (name_selector);
-				c_store = dialog->name_selector_model->contact_store;
+				model = e_name_selector_dialog_peek_model (dialog);
+				c_store = e_name_selector_model_peek_contact_store (model);
 				books = e_contact_store_get_books (c_store);
 
 				for (l = books; l; l = l->next) {
@@ -485,14 +519,12 @@ fill_comp_with_recipients (ENameSelector *name_selector, ECalComponent *comp)
 
 		for (l = list_dests; l; l = l->next) {
 			EDestination *dest = l->data;
-			const gchar *name, *attendee = NULL;
+			const gchar *attendee = NULL;
 
-			name = e_destination_get_name (dest);
-
-			/* If we couldn't get the attendee prior, get the email address as the default */
-			if (attendee == NULL || *attendee == '\0') {
+			/* If we couldn't get the attendee prior,
+			 * get the email address as the default. */
+			if (attendee == NULL || *attendee == '\0')
 				attendee = e_destination_get_email (dest);
-			}
 
 			if (attendee == NULL || *attendee == '\0')
 				continue;
@@ -764,10 +796,11 @@ get_widgets (MemoPage *mpage)
 	MemoPagePrivate *priv;
 	GSList *accel_groups;
 	GtkWidget *toplevel;
+	GtkWidget *parent;
 
 	priv = mpage->priv;
 
-#define GW(name) glade_xml_get_widget (priv->xml, name)
+#define GW(name) e_builder_get_widget (priv->builder, name)
 
 	priv->main = GW ("memo-page");
 	if (!priv->main) {
@@ -783,7 +816,8 @@ get_widgets (MemoPage *mpage)
 		page->accel_group = g_object_ref (accel_groups->data);
 
 	g_object_ref (priv->main);
-	gtk_container_remove (GTK_CONTAINER (priv->main->parent), priv->main);
+	parent = gtk_widget_get_parent (priv->main);
+	gtk_container_remove (GTK_CONTAINER (parent), priv->main);
 
 	priv->info_hbox = GW ("generic-info");
 	priv->info_icon = GW ("generic-info-image");
@@ -792,6 +826,7 @@ get_widgets (MemoPage *mpage)
 	priv->org_label = GW ("org-label");
 	priv->org_combo = GW ("org-combo");
 	gtk_list_store_clear (GTK_LIST_STORE (gtk_combo_box_get_model (GTK_COMBO_BOX (priv->org_combo))));
+	gtk_combo_box_entry_set_text_column (GTK_COMBO_BOX_ENTRY (priv->org_combo), 0);
 
 	priv->to_button = GW ("to-button");
 	priv->to_hbox = GW ("to-hbox");
@@ -808,8 +843,9 @@ get_widgets (MemoPage *mpage)
 	priv->categories = GW ("categories");
 
 	priv->source_selector = GW ("source");
-
 #undef GW
+
+	e_util_set_source_combo_box_list (priv->source_selector, "/apps/evolution/memos/sources");
 
 	completion = e_category_completion_new ();
 	gtk_entry_set_completion (GTK_ENTRY (priv->categories), completion);
@@ -851,7 +887,7 @@ source_changed_cb (ESourceComboBox *source_combo_box,
 	flags = comp_editor_get_flags (editor);
 
 	source = e_source_combo_box_get_active (source_combo_box);
-	client = auth_new_cal_from_source (source, E_CAL_SOURCE_TYPE_JOURNAL);
+	client = e_auth_new_cal_from_source (source, E_CAL_SOURCE_TYPE_JOURNAL);
 
 	if (!client || !e_cal_open (client, FALSE, NULL)) {
 		GtkWidget *dialog;
@@ -908,13 +944,13 @@ set_subscriber_info_string (MemoPage *mpage,
 		/* Translators: This string is used when we are creating a Memo
 		   on behalf of some other user */
 		mpage->priv->subscriber_info_text = g_markup_printf_escaped (_("You are acting on behalf of %s"), backend_address);
-		memo_page_set_info_string (mpage, GTK_STOCK_DIALOG_INFO, mpage->priv->subscriber_info_text);
 	} else {
 		g_free (mpage->priv->subscriber_info_text);
 		mpage->priv->subscriber_info_text = NULL;
-
-		memo_page_set_info_string (mpage, NULL, NULL);
 	}
+
+	if (!check_starts_in_the_past (mpage))
+		memo_page_set_info_string (mpage, mpage->priv->subscriber_info_text ? GTK_STOCK_DIALOG_INFO : NULL, mpage->priv->subscriber_info_text);
 }
 
 static void
@@ -937,20 +973,29 @@ static void
 to_button_clicked_cb (GtkButton *button,
                       MemoPage *mpage)
 {
-	ENameSelectorDialog *name_selector_dialog;
+	e_name_selector_show_dialog (mpage->priv->name_selector,
+				     mpage->priv->main);
+}
 
-	name_selector_dialog = e_name_selector_peek_dialog (
-		mpage->priv->name_selector);
-	gtk_widget_show (GTK_WIDGET (name_selector_dialog));
+static void
+memo_page_start_date_changed_cb (MemoPage *mpage)
+{
+	check_starts_in_the_past (mpage);
+	comp_editor_page_changed (COMP_EDITOR_PAGE (mpage));
 }
 
 /* Hooks the widget signals */
 static gboolean
 init_widgets (MemoPage *mpage)
 {
+	CompEditor *editor;
 	MemoPagePrivate *priv = mpage->priv;
 	GtkTextBuffer *buffer;
 	GtkTextView *view;
+	GtkAction *action;
+	gboolean active;
+
+	editor = comp_editor_page_get_editor (COMP_EDITOR_PAGE (mpage));
 
 	/* Generic informative messages */
 	gtk_widget_hide (priv->info_hbox);
@@ -964,6 +1009,7 @@ init_widgets (MemoPage *mpage)
 	view = GTK_TEXT_VIEW (priv->memo_content);
 	buffer = gtk_text_view_get_buffer (view);
 	gtk_text_view_set_wrap_mode (view, GTK_WRAP_WORD);
+	e_buffer_tagger_connect (view);
 
 	/* Categories button */
 	g_signal_connect(
@@ -997,7 +1043,7 @@ init_widgets (MemoPage *mpage)
 
 	g_signal_connect_swapped (
 		priv->start_date, "changed",
-		G_CALLBACK (comp_editor_page_changed), mpage);
+		G_CALLBACK (memo_page_start_date_changed_cb), mpage);
 
 	if (priv->name_selector) {
 		ENameSelectorDialog *name_selector_dialog;
@@ -1015,8 +1061,9 @@ init_widgets (MemoPage *mpage)
 			G_CALLBACK (comp_editor_page_changed), mpage);
 	}
 
-	memo_page_set_show_categories (
-		mpage, calendar_config_get_show_categories());
+	action = comp_editor_get_action (editor, "view-categories");
+	active = gtk_toggle_action_get_active (GTK_TOGGLE_ACTION (action));
+	memo_page_set_show_categories (mpage, active);
 
 	return TRUE;
 }
@@ -1106,23 +1153,13 @@ memo_page_construct (MemoPage *mpage)
 	CompEditor *editor;
 	CompEditorFlags flags;
 	EIterator *it;
-	gchar *gladefile;
 	EAccount *a;
 
 	editor = comp_editor_page_get_editor (COMP_EDITOR_PAGE (mpage));
 	flags = comp_editor_get_flags (editor);
 
-	gladefile = g_build_filename (EVOLUTION_GLADEDIR,
-				      "memo-page.glade",
-				      NULL);
-	priv->xml = glade_xml_new (gladefile, NULL, NULL);
-	g_free (gladefile);
-
-	if (!priv->xml) {
-		g_message ("memo_page_construct(): "
-			   "Could not load the Glade XML file!");
-		return NULL;
-	}
+	priv->builder = gtk_builder_new ();
+	e_load_ui_builder_definition (priv->builder, "memo-page.ui");
 
 	if (!get_widgets (mpage)) {
 		g_message ("memo_page_construct(): "
@@ -1208,40 +1245,4 @@ memo_page_new (CompEditor *editor)
 	}
 
 	return mpage;
-}
-
-GtkWidget *memo_page_create_date_edit (void);
-
-GtkWidget *
-memo_page_create_date_edit (void)
-{
-	GtkWidget *widget;
-
-	widget = comp_editor_new_date_edit (TRUE, FALSE, TRUE);
-	e_date_edit_set_allow_no_date_set (E_DATE_EDIT (widget), TRUE);
-	gtk_widget_show (widget);
-
-	return widget;
-}
-
-GtkWidget *memo_page_create_source_combo_box (void);
-
-GtkWidget *
-memo_page_create_source_combo_box (void)
-{
-	GtkWidget *widget;
-	GConfClient *client;
-	ESourceList *source_list;
-
-	client = gconf_client_get_default ();
-	source_list = e_source_list_new_for_gconf (
-		client, "/apps/evolution/memos/sources");
-
-	widget = e_source_combo_box_new (source_list);
-	gtk_widget_show (widget);
-
-	g_object_unref (source_list);
-	g_object_unref (client);
-
-	return widget;
 }

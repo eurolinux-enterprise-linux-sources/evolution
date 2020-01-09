@@ -24,9 +24,9 @@
 #ifndef __E_TABLE_FIELD_CHOOSER_H__
 #define __E_TABLE_FIELD_CHOOSER_H__
 
-#include <glade/glade.h>
 #include <gtk/gtk.h>
 #include <table/e-table-header.h>
+#include <libgnomecanvas/gnome-canvas.h>
 
 G_BEGIN_DECLS
 
@@ -52,7 +52,6 @@ struct _ETableFieldChooser
 	GtkVBox parent;
 
 	/* item specific fields */
-	GladeXML *gui;
 	GnomeCanvas *canvas;
 	GnomeCanvasItem *item;
 
@@ -69,7 +68,7 @@ struct _ETableFieldChooserClass
 	GtkVBoxClass parent_class;
 };
 
-GtkWidget *e_table_field_chooser_new(void);
+GtkWidget *e_table_field_chooser_new (void);
 GType      e_table_field_chooser_get_type (void);
 
 G_END_DECLS

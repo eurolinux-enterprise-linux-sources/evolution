@@ -59,8 +59,8 @@
     <!-- Initial GtkFileChooser Folder -->
 
     <schema>
-      <key>/schemas/apps/evolution/shell/current_folder</key>
-      <applyto>/apps/evolution/shell/current-folder</applyto>
+      <key>/schemas/apps/evolution/shell/file_chooser_folder</key>
+      <applyto>/apps/evolution/shell/file_chooser_folder</applyto>
       <owner>evolution</owner>
       <type>string</type>
       <locale name="C">
@@ -99,8 +99,30 @@
     <!-- View defaults -->
 
     <schema>
-      <key>/schemas/apps/evolution/shell/view_defaults/width</key>
-      <applyto>/apps/evolution/shell/view_defaults/width</applyto>
+      <key>/schemas/apps/evolution/shell/view_defaults/window_y</key>
+      <applyto>/apps/evolution/shell/view_defaults/window_y</applyto>
+      <owner>evolution</owner>
+      <type>int</type>
+      <locale name="C">
+        <short>Default window Y coordinate</short>
+        <long>The default Y coordinate for the main window.</long>
+      </locale>
+    </schema>
+
+    <schema>
+      <key>/schemas/apps/evolution/shell/view_defaults/window_x</key>
+      <applyto>/apps/evolution/shell/view_defaults/window_x</applyto>
+      <owner>evolution</owner>
+      <type>int</type>
+      <locale name="C">
+        <short>Default window X coordinate</short>
+        <long>The default X coordinate for the main window.</long>
+      </locale>
+    </schema>
+
+    <schema>
+      <key>/schemas/apps/evolution/shell/view_defaults/window_width</key>
+      <applyto>/apps/evolution/shell/view_defaults/window_width</applyto>
       <owner>evolution</owner>
       <type>int</type>
       <default>640</default>
@@ -111,8 +133,8 @@
     </schema>
 
     <schema>
-      <key>/schemas/apps/evolution/shell/view_defaults/height</key>
-      <applyto>/apps/evolution/shell/view_defaults/height</applyto>
+      <key>/schemas/apps/evolution/shell/view_defaults/window_height</key>
+      <applyto>/apps/evolution/shell/view_defaults/window_height</applyto>
       <owner>evolution</owner>
       <type>int</type>
       <default>480</default>
@@ -123,20 +145,8 @@
     </schema>
 
     <schema>
-      <key>/schemas/apps/evolution/shell/view_defaults/maximized</key>
-      <applyto>/apps/evolution/shell/view_defaults/maximized</applyto>
-      <owner>evolution</owner>
-      <type>bool</type>
-      <default>TRUE</default>
-      <locale name="C">
-        <short>Default window state</short>
-        <long>Whether or not the window should be maximized.</long>
-      </locale>
-    </schema>
-
-    <schema>
-      <key>/schemas/apps/evolution/shell/view_defaults/maximized</key>
-      <applyto>/apps/evolution/shell/view_defaults/maximized</applyto>
+      <key>/schemas/apps/evolution/shell/view_defaults/window_maximized</key>
+      <applyto>/apps/evolution/shell/view_defaults/window_maximized</applyto>
       <owner>evolution</owner>
       <type>bool</type>
       <default>TRUE</default>
@@ -239,6 +249,7 @@
       <applyto>/apps/evolution/shell/network_config/proxy_type</applyto>
       <owner>evolution</owner>
       <type>int</type>
+      <default>0</default>
       <locale name="C">
         <short>Proxy configuration mode</short>
         <long>Select the proxy configuration mode. Supported values are 0, 1, 2, and 3 representing "use system settings", "no proxy", "use manual proxy configuration" and "use proxy configuration provided in the autoconfig url" respectively.</long>
@@ -375,6 +386,18 @@
       <locale name="C">
         <short>Automatic proxy configuration URL</short>
         <long>URL that provides proxy configuration values.</long>
+      </locale>
+    </schema>
+
+    <schema>
+      <key>/schemas/apps/evolution/shell/express_mode</key>
+      <applyto>/apps/evolution/shell/express_mode</applyto>
+      <owner>evolution</owner>
+      <type>bool</type>
+      <default>false</default>
+      <locale name="C">
+        <short>Enable express mode</short>
+        <long>Flag that enables a much simplified user interface.</long>
       </locale>
     </schema>
 

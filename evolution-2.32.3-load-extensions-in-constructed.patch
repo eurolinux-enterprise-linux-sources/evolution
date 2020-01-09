@@ -1,0 +1,337 @@
+diff -up evolution-2.32.3/calendar/gui/e-calendar-view.c.load-extensions-in-constructed evolution-2.32.3/calendar/gui/e-calendar-view.c
+--- evolution-2.32.3/calendar/gui/e-calendar-view.c.load-extensions-in-constructed	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/e-calendar-view.c	2013-06-14 20:03:52.319991216 +0200
+@@ -346,14 +346,14 @@ calendar_view_finalize (GObject *object)
+ static void
+ calendar_view_constructed (GObject *object)
+ {
++	/* Chain up to parent's constructed() method. */
++	if (G_OBJECT_CLASS (e_calendar_view_parent_class)->constructed)
++		G_OBJECT_CLASS (e_calendar_view_parent_class)->constructed (object);
++
+ 	/* Do this after calendar_view_init() so extensions can query
+ 	 * the GType accurately.  See GInstanceInitFunc documentation
+ 	 * for details of the problem. */
+ 	e_extensible_load_extensions (E_EXTENSIBLE (object));
+-
+-	/* Chain up to parent's constructed() method. */
+-	if (G_OBJECT_CLASS (e_calendar_view_parent_class)->constructed)
+-		G_OBJECT_CLASS (e_calendar_view_parent_class)->constructed (object);
+ }
+ 
+ static void
+diff -up evolution-2.32.3/calendar/gui/e-cal-model.c.load-extensions-in-constructed evolution-2.32.3/calendar/gui/e-cal-model.c
+--- evolution-2.32.3/calendar/gui/e-cal-model.c.load-extensions-in-constructed	2011-04-14 13:42:52.000000000 +0200
++++ evolution-2.32.3/calendar/gui/e-cal-model.c	2013-06-14 20:03:52.321991216 +0200
+@@ -230,11 +230,11 @@ cal_model_get_property (GObject *object,
+ static void
+ cal_model_constructed (GObject *object)
+ {
+-	e_extensible_load_extensions (E_EXTENSIBLE (object));
+-
+ 	/* Chain up to parent's constructed() method. */
+ 	if (G_OBJECT_CLASS (parent_class)->constructed)
+ 		G_OBJECT_CLASS (parent_class)->constructed (object);
++
++	e_extensible_load_extensions (E_EXTENSIBLE (object));
+ }
+ 
+ static void
+diff -up evolution-2.32.3/calendar/gui/e-meeting-store.c.load-extensions-in-constructed evolution-2.32.3/calendar/gui/e-meeting-store.c
+--- evolution-2.32.3/calendar/gui/e-meeting-store.c.load-extensions-in-constructed	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/e-meeting-store.c	2013-06-14 20:03:52.318991216 +0200
+@@ -662,6 +662,17 @@ meeting_store_finalize (GObject *object)
+ }
+ 
+ static void
++meeting_store_constructed (GObject *object)
++{
++	if (G_OBJECT_CLASS (e_meeting_store_parent_class)->constructed) {
++		/* Chain up to parent's constructed() method. */
++		G_OBJECT_CLASS (e_meeting_store_parent_class)->constructed (object);
++	}
++
++	e_extensible_load_extensions (E_EXTENSIBLE (object));
++}
++
++static void
+ e_meeting_store_class_init (EMeetingStoreClass *class)
+ {
+ 	GObjectClass *object_class;
+@@ -672,6 +683,7 @@ e_meeting_store_class_init (EMeetingStor
+ 	object_class->set_property = meeting_store_set_property;
+ 	object_class->get_property = meeting_store_get_property;
+ 	object_class->finalize = meeting_store_finalize;
++	object_class->constructed = meeting_store_constructed;
+ 
+ 	g_object_class_install_property (
+ 		object_class,
+@@ -715,8 +727,6 @@ e_meeting_store_init (EMeetingStore *sto
+ 	store->priv->mutex = g_mutex_new ();
+ 
+ 	store->priv->num_queries = 0;
+-
+-	e_extensible_load_extensions (E_EXTENSIBLE (store));
+ }
+ 
+ GObject *
+diff -up evolution-2.32.3/calendar/gui/e-meeting-time-sel.c.load-extensions-in-constructed evolution-2.32.3/calendar/gui/e-meeting-time-sel.c
+--- evolution-2.32.3/calendar/gui/e-meeting-time-sel.c.load-extensions-in-constructed	2011-03-29 20:38:46.000000000 +0200
++++ evolution-2.32.3/calendar/gui/e-meeting-time-sel.c	2013-06-14 20:03:52.320991216 +0200
+@@ -309,6 +309,16 @@ meeting_time_selector_destroy (GtkObject
+ }
+ 
+ static void
++meeting_time_selector_constructed (GObject *object)
++{
++	/* Chain up to parent's constructed() method. */
++	if (G_OBJECT_CLASS (e_meeting_time_selector_parent_class)->constructed)
++		G_OBJECT_CLASS (e_meeting_time_selector_parent_class)->constructed (object);
++
++	e_extensible_load_extensions (E_EXTENSIBLE (object));
++}
++
++static void
+ e_meeting_time_selector_class_init (EMeetingTimeSelectorClass * class)
+ {
+ 	GObjectClass *object_class;
+@@ -320,6 +330,7 @@ e_meeting_time_selector_class_init (EMee
+ 	object_class = G_OBJECT_CLASS (class);
+ 	object_class->set_property = meeting_time_selector_set_property;
+ 	object_class->get_property = meeting_time_selector_get_property;
++	object_class->constructed = meeting_time_selector_constructed;
+ 
+ 	gtk_object_class = GTK_OBJECT_CLASS (class);
+ 	gtk_object_class->destroy = meeting_time_selector_destroy;
+@@ -394,8 +405,6 @@ e_meeting_time_selector_init (EMeetingTi
+ 
+ 	mts->fb_refresh_not = 0;
+ 	mts->style_change_idle_id = 0;
+-
+-	e_extensible_load_extensions (E_EXTENSIBLE (mts));
+ }
+ 
+ void
+diff -up evolution-2.32.3/mail/em-format-html.c.load-extensions-in-constructed evolution-2.32.3/mail/em-format-html.c
+--- evolution-2.32.3/mail/em-format-html.c.load-extensions-in-constructed	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/mail/em-format-html.c	2013-06-14 20:03:52.318991216 +0200
+@@ -762,6 +762,16 @@ efh_base_init (EMFormatHTMLClass *class)
+ }
+ 
+ static void
++efh_constructed (GObject *object)
++{
++	/* Chain up to parent's constructed() method. */
++	if (G_OBJECT_CLASS (parent_class)->constructed)
++		G_OBJECT_CLASS (parent_class)->constructed (object);
++
++	e_extensible_load_extensions (E_EXTENSIBLE (object));
++}
++
++static void
+ efh_class_init (EMFormatHTMLClass *class)
+ {
+ 	GObjectClass *object_class;
+@@ -775,6 +785,7 @@ efh_class_init (EMFormatHTMLClass *class
+ 	object_class->set_property = efh_set_property;
+ 	object_class->get_property = efh_get_property;
+ 	object_class->finalize = efh_finalize;
++	object_class->constructed = efh_constructed;
+ 
+ 	format_class = EM_FORMAT_CLASS (class);
+ 	format_class->format_clone = efh_format_clone;
+@@ -981,8 +992,6 @@ efh_init (EMFormatHTML *efh,
+ 	g_signal_connect_swapped (
+ 		efh, "notify::mark-citations",
+ 		G_CALLBACK (em_format_queue_redraw), NULL);
+-
+-	e_extensible_load_extensions (E_EXTENSIBLE (efh));
+ }
+ 
+ GType
+diff -up evolution-2.32.3/shell/e-shell-switcher.c.load-extensions-in-constructed evolution-2.32.3/shell/e-shell-switcher.c
+--- evolution-2.32.3/shell/e-shell-switcher.c.load-extensions-in-constructed	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/shell/e-shell-switcher.c	2013-06-14 20:03:52.317991216 +0200
+@@ -437,6 +437,17 @@ shell_switcher_get_text_alignment (GtkTo
+ }
+ 
+ static void
++shell_switcher_constructed (GObject *object)
++{
++	if (G_OBJECT_CLASS (e_shell_switcher_parent_class)->constructed) {
++		/* Chain up to parent's constructed() method. */
++		G_OBJECT_CLASS (e_shell_switcher_parent_class)->constructed (object);
++	}
++
++	e_extensible_load_extensions (E_EXTENSIBLE (object));
++}
++
++static void
+ e_shell_switcher_class_init (EShellSwitcherClass *class)
+ {
+ 	GObjectClass *object_class;
+@@ -449,6 +460,7 @@ e_shell_switcher_class_init (EShellSwitc
+ 	object_class->set_property = shell_switcher_set_property;
+ 	object_class->get_property = shell_switcher_get_property;
+ 	object_class->dispose = shell_switcher_dispose;
++	object_class->constructed = shell_switcher_constructed;
+ 
+ 	widget_class = GTK_WIDGET_CLASS (class);
+ 	widget_class->size_request = shell_switcher_size_request;
+@@ -518,8 +530,6 @@ e_shell_switcher_init (EShellSwitcher *s
+ 	switcher->priv = E_SHELL_SWITCHER_GET_PRIVATE (switcher);
+ 
+ 	gtk_widget_set_has_window (GTK_WIDGET (switcher), FALSE);
+-
+-	e_extensible_load_extensions (E_EXTENSIBLE (switcher));
+ }
+ 
+ static void
+diff -up evolution-2.32.3/widgets/misc/e-attachment-icon-view.c.load-extensions-in-constructed evolution-2.32.3/widgets/misc/e-attachment-icon-view.c
+--- evolution-2.32.3/widgets/misc/e-attachment-icon-view.c.load-extensions-in-constructed	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/widgets/misc/e-attachment-icon-view.c	2013-06-14 20:03:52.316991216 +0200
+@@ -128,6 +128,16 @@ attachment_icon_view_finalize (GObject *
+ 	G_OBJECT_CLASS (e_attachment_icon_view_parent_class)->finalize (object);
+ }
+ 
++static void
++attachment_icon_view_constructed (GObject *object)
++{
++	/* Chain up to parent's constructed() method. */
++	if (G_OBJECT_CLASS (e_attachment_icon_view_parent_class)->constructed)
++		G_OBJECT_CLASS (e_attachment_icon_view_parent_class)->constructed (object);
++
++	e_extensible_load_extensions (E_EXTENSIBLE (object));
++}
++
+ static gboolean
+ attachment_icon_view_button_press_event (GtkWidget *widget,
+                                          GdkEventButton *event)
+@@ -446,6 +456,7 @@ e_attachment_icon_view_class_init (EAtta
+ 	object_class->get_property = attachment_icon_view_get_property;
+ 	object_class->dispose = attachment_icon_view_dispose;
+ 	object_class->finalize = attachment_icon_view_finalize;
++	object_class->constructed = attachment_icon_view_constructed;
+ 
+ 	widget_class = GTK_WIDGET_CLASS (class);
+ 	widget_class->button_press_event = attachment_icon_view_button_press_event;
+@@ -525,8 +536,6 @@ e_attachment_icon_view_init (EAttachment
+ 	gtk_cell_layout_add_attribute (
+ 		cell_layout, renderer, "visible",
+ 		E_ATTACHMENT_STORE_COLUMN_SAVING);
+-
+-	e_extensible_load_extensions (E_EXTENSIBLE (icon_view));
+ }
+ 
+ static void
+diff -up evolution-2.32.3/widgets/misc/e-attachment-tree-view.c.load-extensions-in-constructed evolution-2.32.3/widgets/misc/e-attachment-tree-view.c
+--- evolution-2.32.3/widgets/misc/e-attachment-tree-view.c.load-extensions-in-constructed	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/widgets/misc/e-attachment-tree-view.c	2013-06-14 20:03:52.316991216 +0200
+@@ -121,6 +121,16 @@ attachment_tree_view_finalize (GObject *
+ }
+ 
+ static void
++attachment_tree_view_constructed (GObject *object)
++{
++	/* Chain up to parent's constructed() method. */
++	if (G_OBJECT_CLASS (e_attachment_tree_view_parent_class)->constructed)
++		G_OBJECT_CLASS (e_attachment_tree_view_parent_class)->constructed (object);
++
++	e_extensible_load_extensions (E_EXTENSIBLE (object));
++}
++
++static void
+ attachment_tree_view_render_size (GtkTreeViewColumn *column,
+                                   GtkCellRenderer *renderer,
+                                   GtkTreeModel *model,
+@@ -477,6 +487,7 @@ e_attachment_tree_view_class_init (EAtta
+ 	object_class->get_property = attachment_tree_view_get_property;
+ 	object_class->dispose = attachment_tree_view_dispose;
+ 	object_class->finalize = attachment_tree_view_finalize;
++	object_class->constructed = attachment_tree_view_constructed;
+ 
+ 	widget_class = GTK_WIDGET_CLASS (class);
+ 	widget_class->button_press_event = attachment_tree_view_button_press_event;
+@@ -588,8 +599,6 @@ e_attachment_tree_view_init (EAttachment
+ 	gtk_tree_view_column_add_attribute (
+ 		column, renderer, "text",
+ 		E_ATTACHMENT_STORE_COLUMN_CONTENT_TYPE);
+-
+-	e_extensible_load_extensions (E_EXTENSIBLE (tree_view));
+ }
+ 
+ static void
+diff -up evolution-2.32.3/widgets/misc/e-dateedit.c.load-extensions-in-constructed evolution-2.32.3/widgets/misc/e-dateedit.c
+--- evolution-2.32.3/widgets/misc/e-dateedit.c.load-extensions-in-constructed	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/widgets/misc/e-dateedit.c	2013-06-14 20:03:52.316991216 +0200
+@@ -345,6 +345,16 @@ date_edit_dispose (GObject *object)
+ }
+ 
+ static void
++date_edit_constructed (GObject *object)
++{
++	/* Chain up to parent's constructed() method. */
++	if (G_OBJECT_CLASS (e_date_edit_parent_class)->constructed)
++		G_OBJECT_CLASS (e_date_edit_parent_class)->constructed (object);
++
++	e_extensible_load_extensions (E_EXTENSIBLE (object));
++}
++
++static void
+ e_date_edit_class_init (EDateEditClass *class)
+ {
+ 	GObjectClass *object_class;
+@@ -356,6 +366,7 @@ e_date_edit_class_init (EDateEditClass *
+ 	object_class->set_property = date_edit_set_property;
+ 	object_class->get_property = date_edit_get_property;
+ 	object_class->dispose = date_edit_dispose;
++	object_class->constructed = date_edit_constructed;
+ 
+ 	widget_class = GTK_WIDGET_CLASS (class);
+ 	widget_class->mnemonic_activate = e_date_edit_mnemonic_activate;
+@@ -482,8 +493,6 @@ e_date_edit_init (EDateEdit *dedit)
+ 
+ 	/* Set it to the current time. */
+ 	e_date_edit_set_time (dedit, 0);
+-
+-	e_extensible_load_extensions (E_EXTENSIBLE (dedit));
+ }
+ 
+ /**
+diff -up evolution-2.32.3/widgets/misc/e-web-view.c.load-extensions-in-constructed evolution-2.32.3/widgets/misc/e-web-view.c
+--- evolution-2.32.3/widgets/misc/e-web-view.c.load-extensions-in-constructed	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/widgets/misc/e-web-view.c	2013-06-14 20:03:52.315991216 +0200
+@@ -728,6 +728,16 @@ web_view_finalize (GObject *object)
+ 	G_OBJECT_CLASS (parent_class)->finalize (object);
+ }
+ 
++static void
++web_view_constructed (GObject *object)
++{
++	/* Chain up to parent's constructed() method. */
++	if (G_OBJECT_CLASS (parent_class)->constructed)
++		G_OBJECT_CLASS (parent_class)->constructed (object);
++
++	e_extensible_load_extensions (E_EXTENSIBLE (object));
++}
++
+ static gboolean
+ web_view_button_press_event (GtkWidget *widget,
+                              GdkEventButton *event)
+@@ -1119,6 +1129,7 @@ e_web_view_class_init (EWebViewClass *cl
+ 	object_class->get_property = web_view_get_property;
+ 	object_class->dispose = web_view_dispose;
+ 	object_class->finalize = web_view_finalize;
++	object_class->constructed = web_view_constructed;
+ 
+ 	widget_class = GTK_WIDGET_CLASS (class);
+ 	widget_class->button_press_event = web_view_button_press_event;
+@@ -1469,8 +1480,6 @@ e_web_view_init (EWebView *web_view)
+ 	id = "org.gnome.evolution.webview";
+ 	e_plugin_ui_register_manager (ui_manager, id, web_view);
+ 	e_plugin_ui_enable_manager (ui_manager, id);
+-
+-	e_extensible_load_extensions (E_EXTENSIBLE (web_view));
+ }
+ 
+ GtkWidget *

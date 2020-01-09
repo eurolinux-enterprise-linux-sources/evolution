@@ -35,19 +35,19 @@
 
 #define d(x)
 
-static gint validate(FilterRule *fr);
-static gint filter_eq(FilterRule *fr, FilterRule *cm);
-static xmlNodePtr xml_encode(FilterRule *fr);
-static gint xml_decode(FilterRule *fr, xmlNodePtr, RuleContext *rc);
-static void rule_copy(FilterRule *dest, FilterRule *src);
-/*static void build_code(FilterRule *, GString *out);*/
-static GtkWidget *get_widget(FilterRule *fr, RuleContext *rc);
+static gint validate(EFilterRule *fr, EAlert **alert);
+static gint filter_eq(EFilterRule *fr, EFilterRule *cm);
+static xmlNodePtr xml_encode(EFilterRule *fr);
+static gint xml_decode(EFilterRule *fr, xmlNodePtr, ERuleContext *rc);
+static void rule_copy(EFilterRule *dest, EFilterRule *src);
+/*static void build_code(EFilterRule *, GString *out);*/
+static GtkWidget *get_widget(EFilterRule *fr, ERuleContext *rc);
 
 static void em_filter_rule_class_init(EMFilterRuleClass *klass);
 static void em_filter_rule_init(EMFilterRule *ff);
 static void em_filter_rule_finalise(GObject *obj);
 
-static FilterRuleClass *parent_class = NULL;
+static EFilterRuleClass *parent_class = NULL;
 
 GType
 em_filter_rule_get_type(void)
@@ -67,7 +67,7 @@ em_filter_rule_get_type(void)
 			(GInstanceInitFunc)em_filter_rule_init,
 		};
 
-		type = g_type_register_static(FILTER_TYPE_RULE, "EMFilterRule", &info, 0);
+		type = g_type_register_static(E_TYPE_FILTER_RULE, "EMFilterRule", &info, 0);
 	}
 
 	return type;
@@ -77,9 +77,9 @@ static void
 em_filter_rule_class_init(EMFilterRuleClass *klass)
 {
 	GObjectClass *object_class = G_OBJECT_CLASS(klass);
-	FilterRuleClass *fr_class =(FilterRuleClass *)klass;
+	EFilterRuleClass *fr_class =(EFilterRuleClass *)klass;
 
-	parent_class = g_type_class_ref(FILTER_TYPE_RULE);
+	parent_class = g_type_class_ref(E_TYPE_FILTER_RULE);
 
 	object_class->finalize = em_filter_rule_finalise;
 
@@ -133,23 +133,23 @@ em_filter_rule_new(void)
 }
 
 void
-em_filter_rule_add_action(EMFilterRule *fr, FilterPart *fp)
+em_filter_rule_add_action(EMFilterRule *fr, EFilterPart *fp)
 {
 	fr->actions = g_list_append(fr->actions, fp);
 
-	filter_rule_emit_changed((FilterRule *)fr);
+	e_filter_rule_emit_changed((EFilterRule *)fr);
 }
 
 void
-em_filter_rule_remove_action(EMFilterRule *fr, FilterPart *fp)
+em_filter_rule_remove_action(EMFilterRule *fr, EFilterPart *fp)
 {
 	fr->actions = g_list_remove(fr->actions, fp);
 
-	filter_rule_emit_changed((FilterRule *)fr);
+	e_filter_rule_emit_changed((EFilterRule *)fr);
 }
 
 void
-em_filter_rule_replace_action(EMFilterRule *fr, FilterPart *fp, FilterPart *new)
+em_filter_rule_replace_action(EMFilterRule *fr, EFilterPart *fp, EFilterPart *new)
 {
 	GList *l;
 
@@ -160,30 +160,30 @@ em_filter_rule_replace_action(EMFilterRule *fr, FilterPart *fp, FilterPart *new)
 		fr->actions = g_list_append(fr->actions, new);
 	}
 
-	filter_rule_emit_changed((FilterRule *)fr);
+	e_filter_rule_emit_changed((EFilterRule *)fr);
 }
 
 void
 em_filter_rule_build_action(EMFilterRule *fr, GString *out)
 {
 	g_string_append(out, "(begin\n");
-	filter_part_build_code_list(fr->actions, out);
+	e_filter_part_build_code_list(fr->actions, out);
 	g_string_append(out, ")\n");
 }
 
 static gint
-validate(FilterRule *fr)
+validate(EFilterRule *fr, EAlert **alert)
 {
 	EMFilterRule *ff =(EMFilterRule *)fr;
 	GList *parts;
 	gint valid;
 
-        valid = FILTER_RULE_CLASS(parent_class)->validate(fr);
+	valid = E_FILTER_RULE_CLASS(parent_class)->validate (fr, alert);
 
 	/* validate rule actions */
 	parts = ff->actions;
 	while (parts && valid) {
-		valid = filter_part_validate((FilterPart *)parts->data);
+		valid = e_filter_part_validate ((EFilterPart *)parts->data, alert);
 		parts = parts->next;
 	}
 
@@ -196,9 +196,9 @@ list_eq(GList *al, GList *bl)
 	gint truth = TRUE;
 
 	while (truth && al && bl) {
-		FilterPart *a = al->data, *b = bl->data;
+		EFilterPart *a = al->data, *b = bl->data;
 
-		truth = filter_part_eq(a, b);
+		truth = e_filter_part_eq(a, b);
 		al = al->next;
 		bl = bl->next;
 	}
@@ -207,26 +207,26 @@ list_eq(GList *al, GList *bl)
 }
 
 static gint
-filter_eq(FilterRule *fr, FilterRule *cm)
+filter_eq(EFilterRule *fr, EFilterRule *cm)
 {
-        return FILTER_RULE_CLASS(parent_class)->eq(fr, cm)
+        return E_FILTER_RULE_CLASS(parent_class)->eq(fr, cm)
 		&& list_eq(((EMFilterRule *)fr)->actions,((EMFilterRule *)cm)->actions);
 }
 
 static xmlNodePtr
-xml_encode(FilterRule *fr)
+xml_encode(EFilterRule *fr)
 {
 	EMFilterRule *ff =(EMFilterRule *)fr;
 	xmlNodePtr node, set, work;
 	GList *l;
 
-        node = FILTER_RULE_CLASS(parent_class)->xml_encode(fr);
+        node = E_FILTER_RULE_CLASS(parent_class)->xml_encode(fr);
 	g_return_val_if_fail (node != NULL, NULL);
 	set = xmlNewNode(NULL, (const guchar *)"actionset");
 	xmlAddChild(node, set);
 	l = ff->actions;
 	while (l) {
-		work = filter_part_xml_encode((FilterPart *)l->data);
+		work = e_filter_part_xml_encode((EFilterPart *)l->data);
 		xmlAddChild(set, work);
 		l = l->next;
 	}
@@ -236,11 +236,11 @@ xml_encode(FilterRule *fr)
 }
 
 static void
-load_set(xmlNodePtr node, EMFilterRule *ff, RuleContext *rc)
+load_set(xmlNodePtr node, EMFilterRule *ff, ERuleContext *rc)
 {
 	xmlNodePtr work;
 	gchar *rulename;
-	FilterPart *part;
+	EFilterPart *part;
 
 	work = node->children;
 	while (work) {
@@ -248,8 +248,8 @@ load_set(xmlNodePtr node, EMFilterRule *ff, RuleContext *rc)
 			rulename = (gchar *)xmlGetProp(work, (const guchar *)"name");
 			part = em_filter_context_find_action((EMFilterContext *)rc, rulename);
 			if (part) {
-				part = filter_part_clone(part);
-				filter_part_xml_decode(part, work);
+				part = e_filter_part_clone(part);
+				e_filter_part_xml_decode(part, work);
 				em_filter_rule_add_action(ff, part);
 			} else {
 				g_warning("cannot find rule part '%s'\n", rulename);
@@ -263,13 +263,13 @@ load_set(xmlNodePtr node, EMFilterRule *ff, RuleContext *rc)
 }
 
 static gint
-xml_decode(FilterRule *fr, xmlNodePtr node, RuleContext *rc)
+xml_decode(EFilterRule *fr, xmlNodePtr node, ERuleContext *rc)
 {
 	EMFilterRule *ff =(EMFilterRule *)fr;
 	xmlNodePtr work;
 	gint result;
 
-        result = FILTER_RULE_CLASS(parent_class)->xml_decode(fr, node, rc);
+        result = E_FILTER_RULE_CLASS(parent_class)->xml_decode(fr, node, rc);
 	if (result != 0)
 		return result;
 
@@ -285,7 +285,7 @@ xml_decode(FilterRule *fr, xmlNodePtr node, RuleContext *rc)
 }
 
 static void
-rule_copy(FilterRule *dest, FilterRule *src)
+rule_copy(EFilterRule *dest, EFilterRule *src)
 {
 	EMFilterRule *fdest, *fsrc;
 	GList *node;
@@ -301,37 +301,39 @@ rule_copy(FilterRule *dest, FilterRule *src)
 
 	node = fsrc->actions;
 	while (node) {
-		FilterPart *part = node->data;
+		EFilterPart *part = node->data;
 
 		g_object_ref(part);
 		fdest->actions = g_list_append(fdest->actions, part);
 		node = node->next;
 	}
 
-	FILTER_RULE_CLASS(parent_class)->copy(dest, src);
+	E_FILTER_RULE_CLASS(parent_class)->copy(dest, src);
 }
 
-/*static void build_code(FilterRule *fr, GString *out)
+/*static void build_code(EFilterRule *fr, GString *out)
 {
         return FILTER_RULE_CLASS(parent_class)->build_code(fr, out);
 }*/
 
 struct _part_data {
-	FilterRule *fr;
+	EFilterRule *fr;
 	EMFilterContext *f;
-	FilterPart *part;
+	EFilterPart *part;
 	GtkWidget *partwidget, *container;
 };
 
 static void
 part_combobox_changed (GtkComboBox *combobox, struct _part_data *data)
 {
-	FilterPart *part = NULL;
-	FilterPart *newpart;
+	EFilterPart *part = NULL;
+	EFilterPart *newpart;
 	gint index, i;
 
 	index = gtk_combo_box_get_active (combobox);
-	for (i = 0, part = em_filter_context_next_action (data->f, part); part && i < index; i++, part = em_filter_context_next_action (data->f, part)) {
+	for (i = 0, part = em_filter_context_next_action (data->f, part);
+		part && i < index;
+		i++, part = em_filter_context_next_action (data->f, part)) {
 		/* traverse until reached index */
 	}
 
@@ -347,20 +349,20 @@ part_combobox_changed (GtkComboBox *combobox, struct _part_data *data)
 	if (data->partwidget)
 		gtk_container_remove (GTK_CONTAINER (data->container), data->partwidget);
 
-	newpart = filter_part_clone (part);
-	filter_part_copy_values (newpart, data->part);
+	newpart = e_filter_part_clone (part);
+	e_filter_part_copy_values (newpart, data->part);
 	em_filter_rule_replace_action ((EMFilterRule *)data->fr, data->part, newpart);
 	g_object_unref (data->part);
 	data->part = newpart;
-	data->partwidget = filter_part_get_widget (newpart);
+	data->partwidget = e_filter_part_get_widget (newpart);
 	if (data->partwidget)
 		gtk_box_pack_start (GTK_BOX (data->container), data->partwidget, TRUE, TRUE, 0);
 }
 
 static GtkWidget *
-get_rule_part_widget(EMFilterContext *f, FilterPart *newpart, FilterRule *fr)
+get_rule_part_widget(EMFilterContext *f, EFilterPart *newpart, EFilterRule *fr)
 {
-	FilterPart *part = NULL;
+	EFilterPart *part = NULL;
 	GtkWidget *combobox;
 	GtkWidget *hbox;
 	GtkWidget *p;
@@ -376,7 +378,7 @@ get_rule_part_widget(EMFilterContext *f, FilterPart *newpart, FilterRule *fr)
 	/* only set to automatically clean up the memory and for less_parts */
 	g_object_set_data_full ((GObject *) hbox, "data", data, g_free);
 
-	p = filter_part_get_widget(newpart);
+	p = e_filter_part_get_widget(newpart);
 
 	data->partwidget = p;
 	data->container = hbox;
@@ -405,7 +407,7 @@ get_rule_part_widget(EMFilterContext *f, FilterPart *newpart, FilterRule *fr)
 }
 
 struct _rule_data {
-	FilterRule *fr;
+	EFilterRule *fr;
 	EMFilterContext *f;
 	GtkWidget *parts;
 };
@@ -413,7 +415,7 @@ struct _rule_data {
 static void
 less_parts(GtkWidget *button, struct _rule_data *data)
 {
-	FilterPart *part;
+	EFilterPart *part;
 	GtkWidget *rule;
 	struct _part_data *part_data;
 	GList *l;
@@ -439,7 +441,7 @@ less_parts(GtkWidget *button, struct _rule_data *data)
 }
 
 static void
-attach_rule(GtkWidget *rule, struct _rule_data *data, FilterPart *part, gint row)
+attach_rule(GtkWidget *rule, struct _rule_data *data, EFilterPart *part, gint row)
 {
 	GtkWidget *remove;
 
@@ -463,7 +465,7 @@ do_grab_focus_cb (GtkWidget *widget, gpointer data)
 	if (*done)
 		return;
 
-	if (widget && GTK_WIDGET_CAN_FOCUS (widget)) {
+	if (widget && gtk_widget_get_can_focus (widget)) {
 		*done = TRUE;
 		gtk_widget_grab_focus (widget);
 	}
@@ -472,19 +474,19 @@ do_grab_focus_cb (GtkWidget *widget, gpointer data)
 static void
 more_parts(GtkWidget *button, struct _rule_data *data)
 {
-	FilterPart *new;
+	EFilterPart *new;
 
 	/* create a new rule entry, use the first type of rule */
 	new = em_filter_context_next_action((EMFilterContext *)data->f, NULL);
 	if (new) {
 		GtkWidget *w;
-		guint16 rows;
+		guint rows;
 
-		new = filter_part_clone(new);
+		new = e_filter_part_clone(new);
 		em_filter_rule_add_action((EMFilterRule *)data->fr, new);
 		w = get_rule_part_widget(data->f, new, data->fr);
 
-		rows = GTK_TABLE(data->parts)->nrows;
+		g_object_get (data->parts, "n-rows", &rows, NULL);
 		gtk_table_resize(GTK_TABLE(data->parts), rows + 1, 2);
 		attach_rule(w, data, new, rows);
 
@@ -501,28 +503,31 @@ more_parts(GtkWidget *button, struct _rule_data *data)
 			GtkAdjustment *adjustment;
 
 			adjustment = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (w));
-			if (adjustment)
-				gtk_adjustment_set_value (adjustment, adjustment->upper);
+			if (adjustment) {
+				gdouble upper;
 
+				upper = gtk_adjustment_get_upper (adjustment);
+				gtk_adjustment_set_value (adjustment, upper);
+			}
 		}
 	}
 }
 
 static GtkWidget *
-get_widget(FilterRule *fr, RuleContext *rc)
+get_widget(EFilterRule *fr, ERuleContext *rc)
 {
 	GtkWidget *widget, *hbox, *add, *label;
 	GtkWidget *parts, *inframe, *w;
 	GtkWidget *scrolledwindow;
 	GtkObject *hadj, *vadj;
 	GList *l;
-	FilterPart *part;
+	EFilterPart *part;
 	struct _rule_data *data;
 	EMFilterRule *ff =(EMFilterRule *)fr;
 	gint rows, i = 0;
 	gchar *msg;
 
-        widget = FILTER_RULE_CLASS(parent_class)->get_widget(fr, rc);
+        widget = E_FILTER_RULE_CLASS(parent_class)->get_widget(fr, rc);
 
 	/* and now for the action area */
 	msg = g_strdup_printf("<b>%s</b>", _("Then"));
@@ -557,8 +562,9 @@ get_widget(FilterRule *fr, RuleContext *rc)
 	hbox = gtk_hbox_new(FALSE, 3);
 
 	add = gtk_button_new_with_mnemonic (_("Add Ac_tion"));
-	gtk_button_set_image (GTK_BUTTON (add), gtk_image_new_from_stock (GTK_STOCK_ADD, GTK_ICON_SIZE_BUTTON));
-	/* gtk_button_set_relief(GTK_BUTTON(add), GTK_RELIEF_NONE); */
+	gtk_button_set_image (
+		GTK_BUTTON (add), gtk_image_new_from_stock (
+		GTK_STOCK_ADD, GTK_ICON_SIZE_BUTTON));
 	g_signal_connect(add, "clicked", G_CALLBACK(more_parts), data);
 	gtk_box_pack_start(GTK_BOX(hbox), add, FALSE, FALSE, 0);
 

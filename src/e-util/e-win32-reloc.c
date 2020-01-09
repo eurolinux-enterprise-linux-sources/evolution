@@ -34,21 +34,21 @@
 static const gchar *localedir = NULL;
 
 /* The others are in UTF-8 */
-static const gchar *category_icons;
+static const gchar *bindir;
 static const gchar *datadir;
 static const gchar *ecpsdir;
 static const gchar *etspecdir;
 static const gchar *galviewsdir;
-static const gchar *gladedir;
 static const gchar *helpdir;
-static const gchar *iconsdir;
+static const gchar *icondir;
 static const gchar *imagesdir;
 static const gchar *libdir;
 static const gchar *libexecdir;
+static const gchar *moduledir;
 static const gchar *plugindir;
 static const gchar *prefix;
 static const gchar *privdatadir;
-static const gchar *search_rule_dir;
+static const gchar *ruledir;
 static const gchar *sounddir;
 static const gchar *sysconfdir;
 static const gchar *toolsdir;
@@ -115,18 +115,17 @@ setup (void)
 	/* It makes sense to have some of the paths overridable with
 	 * environment variables.
 	 */
-	category_icons = replace_prefix (full_prefix, EVOLUTION_CATEGORY_ICONS);
+	bindir = replace_prefix (full_prefix, EVOLUTION_BINDIR);
 	datadir = replace_prefix (full_prefix, EVOLUTION_DATADIR);
 	ecpsdir = replace_prefix (full_prefix, EVOLUTION_ECPSDIR);
 	etspecdir = replace_prefix (full_prefix, EVOLUTION_ETSPECDIR);
 	galviewsdir = replace_prefix (full_prefix, EVOLUTION_GALVIEWSDIR);
-	gladedir = replace_prefix (full_prefix, EVOLUTION_GLADEDIR);
 	helpdir = replace_prefix (full_prefix, EVOLUTION_HELPDIR);
-	if (g_getenv ("EVOLUTION_ICONSDIR") &&
-	    g_file_test (g_getenv ("EVOLUTION_ICONSDIR"), G_FILE_TEST_IS_DIR))
-		iconsdir = g_getenv ("EVOLUTION_ICONSDIR");
+	if (g_getenv ("EVOLUTION_ICONDIR") &&
+	    g_file_test (g_getenv ("EVOLUTION_ICONDIR"), G_FILE_TEST_IS_DIR))
+		icondir = g_getenv ("EVOLUTION_ICONDIR");
 	else
-		iconsdir = replace_prefix (full_prefix, EVOLUTION_ICONSDIR);
+		icondir = replace_prefix (full_prefix, EVOLUTION_ICONDIR);
 	if (g_getenv ("EVOLUTION_IMAGESDIR") &&
 	    g_file_test (g_getenv ("EVOLUTION_IMAGESDIR"), G_FILE_TEST_IS_DIR))
 		imagesdir = g_getenv ("EVOLUTION_IMAGESDIR");
@@ -134,9 +133,10 @@ setup (void)
 		imagesdir = replace_prefix (full_prefix, EVOLUTION_IMAGESDIR);
 	libdir = replace_prefix (full_prefix, EVOLUTION_LIBDIR);
 	libexecdir = replace_prefix (full_prefix, EVOLUTION_LIBEXECDIR);
+	moduledir = replace_prefix (full_prefix, EVOLUTION_MODULEDIR);
 	plugindir = replace_prefix (full_prefix, EVOLUTION_PLUGINDIR);
 	privdatadir = replace_prefix (full_prefix, EVOLUTION_PRIVDATADIR);
-	search_rule_dir = replace_prefix (full_prefix, SEARCH_RULE_DIR);
+	ruledir = replace_prefix (full_prefix, EVOLUTION_RULEDIR);
 	sounddir = replace_prefix (full_prefix, EVOLUTION_SOUNDDIR);
 	sysconfdir = replace_prefix (full_prefix, EVOLUTION_SYSCONFDIR);
 	toolsdir = replace_prefix (full_prefix, EVOLUTION_TOOLSDIR);
@@ -157,22 +157,22 @@ _e_get_##varbl (void)				\
         return varbl;				\
 }
 
-GETTER(category_icons)
+GETTER(bindir)
 GETTER(datadir)
 GETTER(ecpsdir)
 GETTER(etspecdir)
 GETTER(galviewsdir)
-GETTER(gladedir)
 GETTER(helpdir)
-GETTER(iconsdir)
+GETTER(icondir)
 GETTER(imagesdir)
 GETTER(libdir)
 GETTER(libexecdir)
 GETTER(localedir)
+GETTER(moduledir)
 GETTER(plugindir)
 GETTER(prefix)
 GETTER(privdatadir)
-GETTER(search_rule_dir)
+GETTER(ruledir)
 GETTER(sounddir)
 GETTER(sysconfdir)
 GETTER(toolsdir)

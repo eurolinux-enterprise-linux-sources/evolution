@@ -1,0 +1,129 @@
+diff -up evolution-2.32.3/mail/em-format-html-display.c.noblock-attach-load evolution-2.32.3/mail/em-format-html-display.c
+--- evolution-2.32.3/mail/em-format-html-display.c.noblock-attach-load	2013-07-25 12:00:12.401029466 +0200
++++ evolution-2.32.3/mail/em-format-html-display.c	2013-07-25 12:00:43.319029152 +0200
+@@ -834,8 +834,10 @@ efhd_attachment_button(EMFormatHTML *efh
+ 		GFileInfo *fileinfo;
+ 
+ 		fileinfo = e_attachment_get_file_info (info->attachment);
+-		g_file_info_set_size (fileinfo, size);
+-		e_attachment_set_file_info (info->attachment, fileinfo);
++		if (fileinfo) {
++			g_file_info_set_size (fileinfo, size);
++			e_attachment_set_file_info (info->attachment, fileinfo);
++		}
+ 	}
+ 
+ 	widget = e_attachment_button_new (view);
+diff -up evolution-2.32.3/modules/calendar/e-cal-attachment-handler.c.noblock-attach-load evolution-2.32.3/modules/calendar/e-cal-attachment-handler.c
+--- evolution-2.32.3/modules/calendar/e-cal-attachment-handler.c.noblock-attach-load	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/modules/calendar/e-cal-attachment-handler.c	2013-07-25 11:59:00.620029160 +0200
+@@ -72,6 +72,10 @@ attachment_handler_get_component (EAttac
+ 	if (component != NULL)
+ 		return component;
+ 
++	if (e_attachment_get_loading (attachment) ||
++	    e_attachment_get_saving (attachment))
++		return NULL;
++
+ 	mime_part = e_attachment_get_mime_part (attachment);
+ 	if (!CAMEL_IS_MIME_PART (mime_part))
+ 		return NULL;
+diff -up evolution-2.32.3/modules/mail/e-mail-attachment-handler.c.noblock-attach-load evolution-2.32.3/modules/mail/e-mail-attachment-handler.c
+--- evolution-2.32.3/modules/mail/e-mail-attachment-handler.c.noblock-attach-load	2011-03-29 20:38:48.000000000 +0200
++++ evolution-2.32.3/modules/mail/e-mail-attachment-handler.c	2013-07-25 11:59:00.621029160 +0200
+@@ -395,6 +395,11 @@ mail_attachment_handler_update_actions (
+ 		goto exit;
+ 
+ 	attachment = E_ATTACHMENT (selected->data);
++
++	if (e_attachment_get_loading (attachment) ||
++	    e_attachment_get_saving (attachment))
++		goto exit;
++
+ 	mime_part = e_attachment_get_mime_part (attachment);
+ 
+ 	if (!CAMEL_IS_MIME_PART (mime_part))
+diff -up evolution-2.32.3/widgets/misc/e-attachment.c.noblock-attach-load evolution-2.32.3/widgets/misc/e-attachment.c
+--- evolution-2.32.3/widgets/misc/e-attachment.c.noblock-attach-load	2011-03-29 20:38:57.000000000 +0200
++++ evolution-2.32.3/widgets/misc/e-attachment.c	2013-07-25 11:59:00.622029160 +0200
+@@ -1725,17 +1725,27 @@ attachment_load_query_info_cb (GFile *fi
+ 		attachment_load_file_read_cb, load_context);
+ }
+ 
++#define ATTACHMENT_LOAD_CONTEXT "attachment-load-context-data"
++
+ static void
+-attachment_load_from_mime_part (LoadContext *load_context)
++attachment_load_from_mime_part_thread (GSimpleAsyncResult *simple,
++				       GObject *object,
++				       GCancellable *cancellable)
+ {
++	LoadContext *load_context;
+ 	GFileInfo *file_info;
+ 	EAttachment *attachment;
+-	GSimpleAsyncResult *simple;
+ 	CamelContentType *content_type;
+ 	CamelMimePart *mime_part;
+ 	const gchar *attribute;
+ 	const gchar *string;
+ 	gchar *allocated;
++	CamelStream *null;
++	CamelDataWrapper *dw;
++
++	load_context = g_object_get_data (G_OBJECT (simple), ATTACHMENT_LOAD_CONTEXT);
++	g_return_if_fail (load_context != NULL);
++	g_object_set_data (G_OBJECT (simple), ATTACHMENT_LOAD_CONTEXT, NULL);
+ 
+ 	attachment = load_context->attachment;
+ 	mime_part = e_attachment_get_mime_part (attachment);
+@@ -1793,6 +1803,13 @@ attachment_load_from_mime_part (LoadCont
+ 		g_file_info_set_attribute_string (
+ 			file_info, attribute, string);
+ 
++	dw = camel_medium_get_content (CAMEL_MEDIUM (mime_part));
++	null = camel_stream_null_new ();
++	/* this actually downloads the part and makes it available later */
++	camel_data_wrapper_decode_to_stream (dw, null, NULL);
++	g_file_info_set_size (file_info, CAMEL_STREAM_NULL (null)->written);
++	g_object_unref (null);
++
+ 	string = camel_mime_part_get_disposition (mime_part);
+ 	e_attachment_set_disposition (attachment, string);
+ 
+@@ -1800,11 +1817,9 @@ attachment_load_from_mime_part (LoadCont
+ 
+ 	g_object_ref (mime_part);
+ 
+-	simple = load_context->simple;
+ 	g_simple_async_result_set_op_res_gpointer (
+ 		simple, mime_part,
+ 		(GDestroyNotify) g_object_unref);
+-	g_simple_async_result_complete (simple);
+ 
+ 	attachment_load_context_free (load_context);
+ }
+@@ -1847,16 +1862,21 @@ e_attachment_load_async (EAttachment *at
+ 	cancellable = attachment->priv->cancellable;
+ 	g_cancellable_reset (cancellable);
+ 
+-	if (file != NULL)
++	if (file != NULL) {
+ 		g_file_query_info_async (
+ 			file, ATTACHMENT_QUERY,
+ 			G_FILE_QUERY_INFO_NONE,G_PRIORITY_DEFAULT,
+ 			cancellable, (GAsyncReadyCallback)
+ 			attachment_load_query_info_cb, load_context);
+ 
+-	else if (mime_part != NULL)
+-		attachment_load_from_mime_part (load_context);
++	} else if (mime_part != NULL) {
++		g_object_set_data (G_OBJECT (load_context->simple), ATTACHMENT_LOAD_CONTEXT, load_context);
+ 
++		g_simple_async_result_run_in_thread (load_context->simple,
++			attachment_load_from_mime_part_thread,
++			G_PRIORITY_DEFAULT,
++			cancellable);
++	}
+ }
+ 
+ gboolean

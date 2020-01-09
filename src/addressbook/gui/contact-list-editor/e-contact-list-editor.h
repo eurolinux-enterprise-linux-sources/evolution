@@ -23,7 +23,6 @@
 #ifndef __E_CONTACT_LIST_EDITOR_H__
 #define __E_CONTACT_LIST_EDITOR_H__
 
-#include <glade/glade.h>
 #include <libedataserverui/e-name-selector.h>
 
 #include "addressbook/gui/contact-editor/eab-editor.h"
@@ -68,7 +67,8 @@ struct _EContactListEditorClass
 };
 
 GType		e_contact_list_editor_get_type	(void);
-EContactListEditor * e_contact_list_editor_new	(EBook *book,
+EABEditor *	e_contact_list_editor_new	(EShell *shell,
+						 EBook *book,
 						 EContact *list_contact,
 						 gboolean is_new_list,
 						 gboolean editable);

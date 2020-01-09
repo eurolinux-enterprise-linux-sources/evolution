@@ -1,0 +1,12 @@
+diff -up evolution-2.32.3/mail/em-account-editor.c.encrypt-cert-select evolution-2.32.3/mail/em-account-editor.c
+--- evolution-2.32.3/mail/em-account-editor.c.encrypt-cert-select	2013-06-24 19:49:40.635962874 +0200
++++ evolution-2.32.3/mail/em-account-editor.c	2013-06-24 19:49:51.954962884 +0200
+@@ -1281,7 +1281,7 @@ smime_encrypt_key_select (GtkWidget *but
+ 	EMAccountEditorPrivate *priv = emae->priv;
+ 	GtkWidget *w;
+ 
+-	w = e_cert_selector_new (E_CERT_SELECTOR_SIGNER, gtk_entry_get_text (priv->smime_encrypt_key));
++	w = e_cert_selector_new (E_CERT_SELECTOR_RECIPIENT, gtk_entry_get_text (priv->smime_encrypt_key));
+ 	gtk_window_set_modal ((GtkWindow *)w, TRUE);
+ 	gtk_window_set_transient_for ((GtkWindow *)w, (GtkWindow *)gtk_widget_get_toplevel (button));
+ 	g_signal_connect (w, "selected", G_CALLBACK(smime_encrypt_key_selected), emae);
